@@ -1,4 +1,4 @@
-module github.com/confio/trade
+module github.com/confio/tgrade
 
 go 1.16
 
