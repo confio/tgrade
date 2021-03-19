@@ -23,9 +23,6 @@ FROM alpine:3.12
 
 COPY --from=go-builder /code/build/tgrade /usr/bin/tgrade
 
-COPY docker/* /opt/
-RUN chmod +x /opt/*.sh
-
 WORKDIR /opt
 
 # rest server
