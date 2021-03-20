@@ -62,7 +62,7 @@ jobs:
 
   test-cover:
     executor: golang
-    parallelism: 4
+    parallelism: 2 # must not be more than number of packages with code
     steps:
       - checkout
       - restore_cache:
@@ -72,7 +72,6 @@ jobs:
           name: Run tests with coverage
           command: |
             export GORACE=halt_on_error=1
-            export VERSION="$(git describe --tags --long | sed 's/v\(.*\)/\1/')"
             export GO111MODULE=on
             mkdir -p /tmp/logs /tmp/workspace/profiles
             for pkg in $(go list ./... | grep -v '/simulation' | circleci tests split); do
