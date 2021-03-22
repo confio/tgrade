@@ -237,8 +237,8 @@ type WasmApp struct {
 	sm *module.SimulationManager
 }
 
-// NewWasmApp returns a reference to an initialized WasmApp.
-func NewWasmApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool,
+// NewTgradeApp returns a reference to an initialized WasmApp.
+func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool,
 	skipUpgradeHeights map[int64]bool, homePath string, invCheckPeriod uint, enabledProposals []wasm.ProposalType,
 	appOpts servertypes.AppOptions, wasmOpts []wasm.Option, baseAppOptions ...func(*baseapp.BaseApp)) *WasmApp {
 
@@ -352,17 +352,25 @@ func NewWasmApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest b
 		panic("error while reading wasm config: " + err.Error())
 	}
 
-	wasmOpts = append(wasmOpts, wasmkeeper.WithMessageHandler(
-		experimental.NewVerboseMessageHandler(
-			wasmkeeper.NewDefaultMessageHandler(
-				app.Router(),
-				app.ibcKeeper.ChannelKeeper,
-				app.scopedWasmKeeper,
-				appCodec,
-				app.transferKeeper,
+	router := experimental.NewTraceRouter(experimental.NewVerboseRouter(app.Router()))
+	app.BaseApp.SetRouter(router)
+
+	wasmOpts = append([]wasm.Option{
+		wasmkeeper.WithMessageHandler(
+			experimental.NewTraceMessageHandler(
+				wasmkeeper.NewDefaultMessageHandler(
+					router,
+					app.ibcKeeper.ChannelKeeper,
+					app.scopedWasmKeeper,
+					appCodec,
+					app.transferKeeper,
+				),
 			),
 		),
-	))
+		wasmkeeper.WithQueryHandler(experimental.NewTraceQueryPlugin(
+			wasmkeeper.DefaultQueryPlugins(app.bankKeeper, app.stakingKeeper, app.distrKeeper, app.ibcKeeper.ChannelKeeper, app.GRPCQueryRouter(), &app.wasmKeeper),
+		)),
+	}, wasmOpts...)
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
 	supportedFeatures := "staking,stargate"
@@ -378,7 +386,7 @@ func NewWasmApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest b
 		&app.ibcKeeper.PortKeeper,
 		scopedWasmKeeper,
 		app.transferKeeper,
-		app.Router(),
+		router,
 		app.GRPCQueryRouter(),
 		wasmDir,
 		wasmConfig,
@@ -459,7 +467,7 @@ func NewWasmApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest b
 	)
 
 	app.mm.RegisterInvariants(&app.crisisKeeper)
-	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
+	app.mm.RegisterRoutes(router, app.QueryRouter(), encodingConfig.Amino)
 	app.mm.RegisterServices(module.NewConfigurator(app.MsgServiceRouter(), app.GRPCQueryRouter()))
 
 	// add test gRPC service for testing gRPC queries in isolation

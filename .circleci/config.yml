@@ -72,13 +72,13 @@ jobs:
           name: Run tests with coverage
           command: |
             export GORACE=halt_on_error=1
-            export VERSION="$(git describe --tags --long | sed 's/v\(.*\)/\1/')"
             export GO111MODULE=on
             mkdir -p /tmp/logs /tmp/workspace/profiles
             for pkg in $(go list ./... | grep -v '/simulation' | circleci tests split); do
               id=$(echo "$pkg" | sed 's|[/.]|_|g')
               go test -mod=readonly -timeout 8m -race -coverprofile=/tmp/workspace/profiles/$id.out -covermode=atomic -tags='ledger test_ledger_mock' "$pkg" | tee "/tmp/logs/$id-$RANDOM.log"
             done
+            ls -la /tmp/workspace/profiles
       - persist_to_workspace:
           root: /tmp/workspace
           paths:
@@ -103,6 +103,7 @@ jobs:
             for prof in $(ls /tmp/workspace/profiles/); do
               tail -n +2 /tmp/workspace/profiles/"$prof" >> coverage.txt
             done
+            ls -la /tmp/workspace/profiles
       - run:
           name: upload
           command: bash <(curl -s https://codecov.io/bash) -f coverage.txt
