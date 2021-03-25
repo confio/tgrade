@@ -3,9 +3,13 @@ module github.com/confio/tgrade
 go 1.15
 
 require (
-	github.com/CosmWasm/wasmd v0.16.0-alpha1.0.20210319085201-d9142662c19a
+	github.com/CosmWasm/wasmd v0.16.0-alpha1.0.20210324131143-55ac19bc7e21
 	github.com/cosmos/cosmos-sdk v0.42.2
+	github.com/gogo/protobuf v1.3.3
+	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/gorilla/mux v1.8.0
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0
+	github.com/kr/text v0.2.0 // indirect
 	github.com/rakyll/statik v0.1.7
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/cast v1.3.1
