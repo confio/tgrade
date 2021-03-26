@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  tgrade1:
+    container_name: tgrade1
+    image: "confio/tgrade:local"
+    command: "tgrade start --trace --home=/node/node0/tgrade --log_level=info"
+    ports:
+      - "26656-26657:26656-26657"
+      - "1317:1317" # rest legacy
+      - "9090:9090" # grpc query
+    volumes:
+      - ./testnet:/node:Z
+    networks:
+      localnet:
+        ipv4_address: 192.168.100.1
+
+networks:
+  localnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.100.0/24

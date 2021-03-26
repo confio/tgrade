@@ -17,6 +17,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/tendermint/tendermint v0.34.8
 	github.com/tendermint/tm-db v0.6.4
+	github.com/tidwall/gjson v1.7.3 // indirect
 )
 
 // https://docs.cosmos.network/v0.41/core/grpc_rest.html#grpc-server

@@ -91,6 +91,9 @@ endif
 install: go.sum
 	go install -mod=readonly $(BUILD_FLAGS) ./cmd/tgrade
 
+build-docker:
+	$(DOCKER) build -t confio/tgrade:local .
+
 ########################################
 ### Tools & dependencies
 
@@ -108,7 +111,7 @@ draw-deps:
 	@goviz -i ./cmd/tgrade -d 2 | dot -Tpng -o dependency-graph.png
 
 clean:
-	rm -rf snapcraft-local.yaml build/
+	rm -rf build/ testnet/
 
 distclean: clean
 	rm -rf vendor/
@@ -180,7 +183,7 @@ proto-lint:
 proto-check-breaking:
 	@$(DOCKER_BUF) breaking --against-input $(HTTPS_GIT)#branch=master
 
-.PHONY: all build-linux install install-debug \
+.PHONY: all build-docker install install-debug \
 	go-mod-cache draw-deps clean build format \
 	test test-all test-build test-cover test-unit test-race \
 	test-sim-import-export
