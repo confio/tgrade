@@ -13,7 +13,7 @@ services:
       - ${REPO_ROOT-.}/testnet:/node:Z
     networks:
       localnet:
-        ipv4_address: 192.168.100.1
+        ipv4_address: 192.168.100.10
 
 networks:
   localnet:
