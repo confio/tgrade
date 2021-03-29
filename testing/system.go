@@ -39,11 +39,10 @@ type SystemUnderTest struct {
 
 func NewSystemUnderTest(verbose bool) *SystemUnderTest {
 	return &SystemUnderTest{
-		chainID:   "testing",
-		outputDir: "./testnet",
-		blockTime: 1500 * time.Millisecond,
-		rpcAddr:   "http://192.168.100.10:26657",
-		//rpcAddr:    "http://localhost:26657",
+		chainID:    "testing",
+		outputDir:  "./testnet",
+		blockTime:  1500 * time.Millisecond,
+		rpcAddr:    "tcp://localhost:26657",
 		nodesCount: 1,
 		outBuff:    ring.New(100),
 		errBuff:    ring.New(100),
@@ -62,6 +61,7 @@ func (s SystemUnderTest) SetupChain() {
 		"--keyring-backend=test",
 		"--commit-timeout=" + s.blockTime.String(),
 		"--minimum-gas-prices=" + s.minGasPrice,
+		"--starting-ip-address", "192.168.10.2",
 	}
 	runInDocker := append([]string{
 		"run",
@@ -134,7 +134,7 @@ func (s SystemUnderTest) awaitChainUp(t *testing.T) {
 
 	started := make(chan struct{})
 	go func() { // query for a non empty block on status page
-		t.Logf("Checking node status page :%s\n", s.rpcAddr)
+		t.Logf("Checking node status: %s\n", s.rpcAddr)
 		for {
 			con, err := client.New(s.rpcAddr, "/websocket")
 			if err != nil || con.Start() != nil {
