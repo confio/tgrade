@@ -83,7 +83,6 @@ func (s SystemUnderTest) StartChain() {
 	dockerComposePath := locateExecutable("docker-compose")
 	cmd := exec.Command(dockerComposePath, "up")
 	cmd.Dir = workDir
-	cmd.Env = append(cmd.Env, "PROJECT_ROOT="+workDir)
 	s.watchLogs(cmd)
 	if err := cmd.Start(); err != nil {
 		panic(fmt.Sprintf("unexpected error %#+v", err))
