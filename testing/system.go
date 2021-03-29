@@ -2,6 +2,7 @@ package testing
 
 import (
 	"bufio"
+	"container/ring"
 	"context"
 	"fmt"
 	client "github.com/tendermint/tendermint/rpc/client/http"
@@ -15,7 +16,7 @@ import (
 	"time"
 )
 
-const workDir = "../" // this be done better
+var workDir string // this be done better
 
 // SystemUnderTest blockchain provisioning
 type SystemUnderTest struct {
@@ -27,8 +28,10 @@ type SystemUnderTest struct {
 	rpcAddr       string
 	nodesCount    int
 	minGasPrice   string
-	out           io.Writer
 	cleanupFn     []CleanupFn
+	outBuff       *ring.Ring
+	errBuff       *ring.Ring
+	out           io.Writer
 }
 
 func NewSystemUnderTest() *SystemUnderTest {
@@ -38,6 +41,8 @@ func NewSystemUnderTest() *SystemUnderTest {
 		blockTime:  1500 * time.Millisecond,
 		rpcAddr:    "http://localhost:26657",
 		nodesCount: 1,
+		outBuff:    ring.New(100),
+		errBuff:    ring.New(100),
 		out:        os.Stdout,
 	}
 }
@@ -68,7 +73,7 @@ func (s SystemUnderTest) StartChain() {
 	dockerComposePath := locateExecutable("docker-compose")
 	cmd := exec.Command(dockerComposePath, "up")
 	cmd.Dir = workDir
-	watchLogs(cmd)
+	s.watchLogs(cmd)
 	if err := cmd.Start(); err != nil {
 		panic(fmt.Sprintf("unexpected error %#+v", err))
 	}
@@ -85,29 +90,29 @@ func (s SystemUnderTest) StartChain() {
 			}
 			atomic.StoreInt64(&s.currentHeight, newBlock.Block.Height)
 			return true
-		}))
+		}),
+	)
 }
 
-func watchLogs(cmd *exec.Cmd) {
+func (s *SystemUnderTest) watchLogs(cmd *exec.Cmd) {
 	errReader, err := cmd.StderrPipe()
 	if err != nil {
 		panic(fmt.Sprintf("unexpected error %#+v", err))
 	}
-	go printToStdout(errReader)
+	go appendToBuf(errReader, s.errBuff)
 
 	outReader, err := cmd.StdoutPipe()
 	if err != nil {
 		panic(fmt.Sprintf("unexpected error %#+v", err))
 	}
-	go printToStdout(outReader)
-
+	go appendToBuf(outReader, s.outBuff)
 }
 
-func printToStdout(r io.ReadCloser) {
+func appendToBuf(r io.ReadCloser, b *ring.Ring) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		s := scanner.Text()
-		fmt.Println(s)
+		b.Value = scanner.Text()
+		b = b.Next()
 	}
 }
 
@@ -161,6 +166,20 @@ func (s SystemUnderTest) StopChain() {
 		panic(fmt.Sprintf("unexpected error :%#+v, output: %s", err, string(out)))
 	}
 	s.Log(string(out))
+}
+
+func (s SystemUnderTest) PrintBuffer() {
+	s.outBuff.Do(func(v interface{}) {
+		if v != nil {
+			fmt.Fprintf(s.out, "err> %s\n", v)
+		}
+	})
+	fmt.Fprint(s.out, "8< chain err -----------------------------------------\n")
+	s.errBuff.Do(func(v interface{}) {
+		if v != nil {
+			fmt.Fprintf(s.out, "err> %s\n", v)
+		}
+	})
 }
 
 func (s SystemUnderTest) CompileBinaries() {
