@@ -25,8 +25,9 @@ func TestMain(m *testing.M) {
 	}
 	// setup single node chain and keyring
 	sut.SetupChain()
-	os.Exit(m.Run())
+	exitCode := m.Run()
 	sut.StopChain()
+	os.Exit(exitCode)
 }
 
 func TestSmokeTest(t *testing.T) {
