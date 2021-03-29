@@ -133,6 +133,7 @@ func (s SystemUnderTest) awaitChainUp(t *testing.T) {
 
 	started := make(chan struct{})
 	go func() { // query for a non empty block on status page
+		t.Logf("Checking node status page :%s\n", s.rpcAddr)
 		for {
 			con, err := client.New(s.rpcAddr, "/websocket")
 			if err != nil || con.Start() != nil {
