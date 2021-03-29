@@ -12,11 +12,11 @@ services:
     volumes:
       - ${REPO_ROOT-.}/testnet:/node:Z
     networks:
-      chainnet:
+      default:
         ipv4_address: 192.168.10.2
 
 networks:
-  chainnet:
+  default:
     driver: bridge
     ipam:
       driver: default
