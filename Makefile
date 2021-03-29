@@ -121,10 +121,13 @@ distclean: clean
 
 
 test: test-unit
-test-all: check test-race test-cover
+test-all: check test-race test-cover test-system
 
 test-unit:
 	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock' ./...
+
+test-system: install build-docker
+	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock system_test' ./testing --wait-time=120s
 
 test-race:
 	@VERSION=$(VERSION) go test -mod=readonly -race -tags='ledger test_ledger_mock' ./...
@@ -186,4 +189,4 @@ proto-check-breaking:
 .PHONY: all build-docker install install-debug \
 	go-mod-cache draw-deps clean build format \
 	test test-all test-build test-cover test-unit test-race \
-	test-sim-import-export
+	test-sim-import-export test-system

@@ -1,6 +1,7 @@
 package testing
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	client "github.com/tendermint/tendermint/rpc/client/http"
@@ -65,8 +66,9 @@ func (s SystemUnderTest) SetupChain() {
 func (s SystemUnderTest) StartChain() {
 	s.Log("Start chain")
 	dockerComposePath := locateExecutable("docker-compose")
-	cmd := exec.Command(dockerComposePath, "--no-ansi", "up")
+	cmd := exec.Command(dockerComposePath, "up")
 	cmd.Dir = workDir
+	watchLogs(cmd)
 	if err := cmd.Start(); err != nil {
 		panic(fmt.Sprintf("unexpected error %#+v", err))
 	}
@@ -84,6 +86,29 @@ func (s SystemUnderTest) StartChain() {
 			atomic.StoreInt64(&s.currentHeight, newBlock.Block.Height)
 			return true
 		}))
+}
+
+func watchLogs(cmd *exec.Cmd) {
+	errReader, err := cmd.StderrPipe()
+	if err != nil {
+		panic(fmt.Sprintf("unexpected error %#+v", err))
+	}
+	go printToStdout(errReader)
+
+	outReader, err := cmd.StdoutPipe()
+	if err != nil {
+		panic(fmt.Sprintf("unexpected error %#+v", err))
+	}
+	go printToStdout(outReader)
+
+}
+
+func printToStdout(r io.ReadCloser) {
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		s := scanner.Text()
+		fmt.Println(s)
+	}
 }
 
 // awaitChainUp ensures the chain is running
@@ -129,7 +154,7 @@ func (s SystemUnderTest) StopChain() {
 	}
 	s.cleanupFn = nil
 	dockerComposePath := locateExecutable("docker-compose")
-	cmd := exec.Command(dockerComposePath, "--no-ansi", "stop")
+	cmd := exec.Command(dockerComposePath, "stop")
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -170,7 +195,7 @@ func (s SystemUnderTest) Restart() {
 	s.Log("Restart chain")
 	s.StopChain()
 	dockerComposePath := locateExecutable("docker-compose")
-	cmd := exec.Command(dockerComposePath, "--no-ansi", "kill")
+	cmd := exec.Command(dockerComposePath, "kill")
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -231,7 +256,7 @@ func NewEventListener(rpcAddr string) EventListener {
 	return EventListener{client: httpClient}
 }
 
-const defaultWaitTime = 30 * time.Second
+var defaultWaitTime = 30 * time.Second
 
 type (
 	CleanupFn     func()

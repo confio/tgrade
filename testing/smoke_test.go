@@ -1,3 +1,5 @@
+// +build system_test
+
 package testing
 
 import (
@@ -12,8 +14,10 @@ var sut *SystemUnderTest
 
 func TestMain(m *testing.M) {
 	rebuild := flag.Bool("rebuild", false, "rebuild artifacts")
+	waitTime := flag.Duration("wait-time", defaultWaitTime, "time to wait for chain events")
 	flag.Parse()
 
+	defaultWaitTime = *waitTime
 	sut = NewSystemUnderTest()
 	if *rebuild {
 		// make install docker-build
