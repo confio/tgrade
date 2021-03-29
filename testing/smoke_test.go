@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 		println("+++> Work dir: ", workDir)
 	}
 	defaultWaitTime = *waitTime
-	sut = NewSystemUnderTest()
+	sut = NewSystemUnderTest(verbose)
 	if *rebuild {
 		// make install docker-build
 		sut.CompileBinaries()

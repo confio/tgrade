@@ -10,7 +10,7 @@ services:
       - "1317:1317" # rest legacy
       - "9090:9090" # grpc query
     volumes:
-      - ${REPO_ROOT-.}/testnet:/node:Z
+      - ${PROJECT_ROOT-.}/testnet:/node:Z
     networks:
       localnet:
         ipv4_address: 192.168.100.10

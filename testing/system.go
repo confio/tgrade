@@ -32,9 +32,10 @@ type SystemUnderTest struct {
 	outBuff       *ring.Ring
 	errBuff       *ring.Ring
 	out           io.Writer
+	verbose       bool
 }
 
-func NewSystemUnderTest() *SystemUnderTest {
+func NewSystemUnderTest(verbose bool) *SystemUnderTest {
 	return &SystemUnderTest{
 		chainID:    "testing",
 		outputDir:  "./testnet",
@@ -44,21 +45,25 @@ func NewSystemUnderTest() *SystemUnderTest {
 		outBuff:    ring.New(100),
 		errBuff:    ring.New(100),
 		out:        os.Stdout,
+		verbose:    verbose,
 	}
 }
 
 func (s SystemUnderTest) SetupChain() {
 	s.Log("Setup chain")
-	tgradePath := locateExecutable("tgrade")
-	cmd := exec.Command(
-		tgradePath,
+	args := []string{
 		"testnet",
-		"--chain-id="+s.chainID,
-		"--output-dir="+s.outputDir,
-		"--v="+strconv.Itoa(s.nodesCount),
+		"--chain-id=" + s.chainID,
+		"--output-dir=" + s.outputDir,
+		"--v=" + strconv.Itoa(s.nodesCount),
 		"--keyring-backend=test",
-		"--commit-timeout="+s.blockTime.String(),
-		"--minimum-gas-prices="+s.minGasPrice,
+		"--commit-timeout=" + s.blockTime.String(),
+		"--minimum-gas-prices=" + s.minGasPrice,
+	}
+	runInDocker := append(append([]string{"run"}, fmt.Sprintf("--volume=%s:/opt", workDir), "confio/tgrade:local", "tgrade"), args...)
+	cmd := exec.Command(
+		locateExecutable("docker"),
+		runInDocker...,
 	)
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
@@ -73,6 +78,7 @@ func (s SystemUnderTest) StartChain() {
 	dockerComposePath := locateExecutable("docker-compose")
 	cmd := exec.Command(dockerComposePath, "up")
 	cmd.Dir = workDir
+	cmd.Env = append(cmd.Env, "PROJECT_ROOT="+workDir)
 	s.watchLogs(cmd)
 	if err := cmd.Start(); err != nil {
 		panic(fmt.Sprintf("unexpected error %#+v", err))
@@ -171,13 +177,13 @@ func (s SystemUnderTest) StopChain() {
 func (s SystemUnderTest) PrintBuffer() {
 	s.outBuff.Do(func(v interface{}) {
 		if v != nil {
-			fmt.Fprintf(s.out, "err> %s\n", v)
+			s.Logf("err> %s\n", v)
 		}
 	})
-	fmt.Fprint(s.out, "8< chain err -----------------------------------------\n")
+	s.Log("8< chain err -----------------------------------------\n")
 	s.errBuff.Do(func(v interface{}) {
 		if v != nil {
-			fmt.Fprintf(s.out, "err> %s\n", v)
+			s.Logf("err> %s\n", v)
 		}
 	})
 }
@@ -223,12 +229,17 @@ func (s SystemUnderTest) Restart() {
 
 	s.Log(string(out))
 	// reset all nodes
-	tgradePath := locateExecutable("tgrade")
+
 	for i := 0; i < s.nodesCount; i++ {
 		s.Logf("unsafe reset node %d", i)
+		args := []string{"unsafe-reset-all",
+			"--home", fmt.Sprintf("%s/node%d/tgrade", s.outputDir, i),
+		}
+		runInDocker := append(append([]string{"run"}, fmt.Sprintf("--volume=%s:/opt", workDir), "confio/tgrade:local", "tgrade"), args...)
 		cmd := exec.Command(
-			tgradePath,
-			"unsafe-reset-all", "--home", fmt.Sprintf("%s/node%d/tgrade", s.outputDir, i))
+			locateExecutable("docker"),
+			runInDocker...,
+		)
 		cmd.Dir = workDir
 		out, err := cmd.CombinedOutput()
 		if err != nil {
@@ -239,7 +250,9 @@ func (s SystemUnderTest) Restart() {
 }
 
 func (s SystemUnderTest) Log(msg string) {
-	fmt.Fprint(s.out, msg)
+	if s.verbose {
+		fmt.Fprint(s.out, msg)
+	}
 }
 
 func (s SystemUnderTest) Logf(msg string, args ...interface{}) {
