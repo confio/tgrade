@@ -126,8 +126,8 @@ test-all: check test-race test-cover test-system
 test-unit:
 	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock' ./...
 
-test-system: install build-docker
-	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock system_test' ./testing --wait-time=120s
+test-system: install
+	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock system_test' ./testing --wait-time=120s --verbose
 
 test-race:
 	@VERSION=$(VERSION) go test -mod=readonly -race -tags='ledger test_ledger_mock' ./...

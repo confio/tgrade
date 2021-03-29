@@ -18,8 +18,8 @@ type TgradeCli struct {
 	Debug       bool
 }
 
-func NewTgradeCli(t *testing.T, sut *SystemUnderTest) *TgradeCli {
-	return NewTgradeCliX(t, sut.rpcAddr, sut.chainID, filepath.Join(sut.outputDir, "node0", "tgrade"), true)
+func NewTgradeCli(t *testing.T, sut *SystemUnderTest, verbose bool) *TgradeCli {
+	return NewTgradeCliX(t, sut.rpcAddr, sut.chainID, filepath.Join(sut.outputDir, "node0", "tgrade"), verbose)
 }
 
 func NewTgradeCliX(t *testing.T, nodeAddress string, chainID string, homeDir string, debug bool) *TgradeCli {
@@ -45,7 +45,7 @@ func (c TgradeCli) run(args []string) string {
 	if c.Debug {
 		c.t.Logf("+++ running `tgrade %s`", strings.Join(args, " "))
 	}
-	cmd := exec.Command("tgrade", args...)
+	cmd := exec.Command(locateExecutable("tgrade"), args...)
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
 	require.NoError(c.t, err, string(out))

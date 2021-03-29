@@ -14,6 +14,11 @@ ADD https://github.com/CosmWasm/wasmvm/releases/download/v0.14.0-beta1/libwasmvm
 RUN sha256sum /lib/libwasmvm_muslc.a | grep b69cf9ffbdfb2f1bd1e6f730ecee1eb0d06a1473840a24709aec7a7df5907d45
 
 WORKDIR /code
+# Speed up build by caching Go dependencies as a separate step
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
 COPY . /code/
 
 # force it to use static lib (from above) not standard libgo_cosmwasm.so file

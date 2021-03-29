@@ -7,34 +7,51 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
 var sut *SystemUnderTest
+var verbose bool
 
 func TestMain(m *testing.M) {
 	rebuild := flag.Bool("rebuild", false, "rebuild artifacts")
 	waitTime := flag.Duration("wait-time", defaultWaitTime, "time to wait for chain events")
+	flag.BoolVar(&verbose, "verbose", false, "verbose output")
 	flag.Parse()
 
+	dir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	workDir = filepath.Join(dir, "../")
+	if verbose {
+		println("+++> Work dir: ", workDir)
+	}
 	defaultWaitTime = *waitTime
-	sut = NewSystemUnderTest()
+	sut = NewSystemUnderTest(verbose)
 	if *rebuild {
-		// make install docker-build
-		sut.CompileBinaries()
+		sut.BuildNewArtifact()
 	}
 	// setup single node chain and keyring
 	sut.SetupChain()
-	os.Exit(m.Run())
+
+	// run tests
+	exitCode := m.Run()
+
+	// postprocess
 	sut.StopChain()
+	if verbose || exitCode != 0 {
+		sut.PrintBuffer()
+	}
+	os.Exit(exitCode)
 }
 
 func TestSmokeTest(t *testing.T) {
-	sut.Restart()
-	sut.StartChain()
-	t.Cleanup(sut.StopChain)
+	sut.Restart(t)
+	sut.StartChain(t)
 
-	cli := NewTgradeCli(t, sut)
+	cli := NewTgradeCli(t, sut, verbose)
 	t.Log("List keys")
 	t.Log("keys", cli.Keys("keys", "list"))
 
@@ -43,7 +60,7 @@ func TestSmokeTest(t *testing.T) {
 	RequireTxSuccess(t, txResult)
 
 	t.Log("Waiting for block")
-	sut.AwaitNextBlock()
+	sut.AwaitNextBlock(t)
 
 	t.Log("Query wasm code list")
 	qResult := cli.CustomQuery("q", "wasm", "list-code")
