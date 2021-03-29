@@ -4,6 +4,7 @@ package testing
 
 import (
 	"flag"
+	"fmt"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 	"os"
@@ -35,7 +36,20 @@ func TestMain(m *testing.M) {
 	}
 	// setup single node chain and keyring
 	sut.SetupChain()
-	exitCode := m.Run()
+
+	// run tests
+	var exitCode int
+	func() {
+		defer func() {
+			if err := recover(); err != nil {
+				fmt.Printf("Recovering panic: %#+v\n", err)
+				exitCode = 1
+			}
+		}()
+		exitCode = m.Run()
+	}()
+
+	// postprocess
 	sut.StopChain()
 	if verbose || exitCode != 0 {
 		sut.PrintBuffer()
