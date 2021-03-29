@@ -60,7 +60,12 @@ func (s SystemUnderTest) SetupChain() {
 		"--commit-timeout=" + s.blockTime.String(),
 		"--minimum-gas-prices=" + s.minGasPrice,
 	}
-	runInDocker := append(append([]string{"run"}, fmt.Sprintf("--volume=%s:/opt", workDir), "confio/tgrade:local", "tgrade"), args...)
+	runInDocker := append([]string{
+		"run",
+		fmt.Sprintf("--volume=%s:/opt", workDir),
+		"confio/tgrade:local",
+		"tgrade",
+	}, args...)
 	cmd := exec.Command(
 		locateExecutable("docker"),
 		runInDocker...,
@@ -188,10 +193,10 @@ func (s SystemUnderTest) PrintBuffer() {
 	})
 }
 
-func (s SystemUnderTest) CompileBinaries() {
+func (s SystemUnderTest) BuildNewContainer() {
 	s.Log("compile binaries")
 	makePath := locateExecutable("make")
-	cmd := exec.Command(makePath, "clean", "install", "build-docker")
+	cmd := exec.Command(makePath, "clean", "build-docker")
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -235,7 +240,13 @@ func (s SystemUnderTest) Restart() {
 		args := []string{"unsafe-reset-all",
 			"--home", fmt.Sprintf("%s/node%d/tgrade", s.outputDir, i),
 		}
-		runInDocker := append(append([]string{"run"}, fmt.Sprintf("--volume=%s:/opt", workDir), "confio/tgrade:local", "tgrade"), args...)
+		runInDocker := append([]string{
+			"run",
+			fmt.Sprintf("--volume=%s:/opt", workDir),
+			"confio/tgrade:local",
+			"tgrade",
+		}, args...)
+
 		cmd := exec.Command(
 			locateExecutable("docker"),
 			runInDocker...,

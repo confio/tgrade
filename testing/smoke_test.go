@@ -31,8 +31,7 @@ func TestMain(m *testing.M) {
 	defaultWaitTime = *waitTime
 	sut = NewSystemUnderTest(verbose)
 	if *rebuild {
-		// make install docker-build
-		sut.CompileBinaries()
+		sut.BuildNewContainer()
 	}
 	// setup single node chain and keyring
 	sut.SetupChain()

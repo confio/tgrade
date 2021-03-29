@@ -47,7 +47,12 @@ func (c TgradeCli) run(args []string) string {
 	if c.Debug {
 		c.t.Logf("+++ running `tgrade %s`", strings.Join(args, " "))
 	}
-	runInDocker := append(append([]string{"run"}, fmt.Sprintf("--volume=%s:/opt", workDir), "confio/tgrade:local", "tgrade"), args...)
+	runInDocker := append([]string{
+		"run",
+		fmt.Sprintf("--volume=%s:/opt", workDir),
+		"confio/tgrade:local",
+		"tgrade",
+	}, args...)
 	cmd := exec.Command(locateExecutable("docker"), runInDocker...)
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
