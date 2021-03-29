@@ -4,7 +4,6 @@ package testing
 
 import (
 	"flag"
-	"fmt"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 	"os"
@@ -38,16 +37,7 @@ func TestMain(m *testing.M) {
 	sut.SetupChain()
 
 	// run tests
-	var exitCode int
-	func() {
-		defer func() {
-			if err := recover(); err != nil {
-				fmt.Printf("Recovering panic: %#+v\n", err)
-				exitCode = 1
-			}
-		}()
-		exitCode = m.Run()
-	}()
+	exitCode := m.Run()
 
 	// postprocess
 	sut.StopChain()
@@ -58,9 +48,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestSmokeTest(t *testing.T) {
-	sut.Restart()
-	sut.StartChain()
-	t.Cleanup(sut.StopChain)
+	sut.Restart(t)
+	sut.StartChain(t)
 
 	cli := NewTgradeCli(t, sut, verbose)
 	t.Log("List keys")
@@ -71,7 +60,7 @@ func TestSmokeTest(t *testing.T) {
 	RequireTxSuccess(t, txResult)
 
 	t.Log("Waiting for block")
-	sut.AwaitNextBlock()
+	sut.AwaitNextBlock(t)
 
 	t.Log("Query wasm code list")
 	qResult := cli.CustomQuery("q", "wasm", "list-code")

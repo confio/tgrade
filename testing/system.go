@@ -5,6 +5,7 @@ import (
 	"container/ring"
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	client "github.com/tendermint/tendermint/rpc/client/http"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/types"
@@ -13,6 +14,7 @@ import (
 	"os/exec"
 	"strconv"
 	"sync/atomic"
+	"testing"
 	"time"
 )
 
@@ -78,26 +80,22 @@ func (s SystemUnderTest) SetupChain() {
 	s.Log(string(out))
 }
 
-func (s SystemUnderTest) StartChain() {
+func (s SystemUnderTest) StartChain(t *testing.T) {
 	s.Log("Start chain")
 	dockerComposePath := locateExecutable("docker-compose")
 	cmd := exec.Command(dockerComposePath, "up")
 	cmd.Dir = workDir
 	s.watchLogs(cmd)
-	if err := cmd.Start(); err != nil {
-		panic(fmt.Sprintf("unexpected error %#+v", err))
-	}
+	require.NoError(t, cmd.Start())
 
-	s.awaitChainUp()
+	s.awaitChainUp(t)
 
-	s.Log("Start new block listener")
-	s.blockListener = NewEventListener(s.rpcAddr)
+	t.Log("Start new block listener")
+	s.blockListener = NewEventListener(t, s.rpcAddr)
 	s.cleanupFn = append(s.cleanupFn,
 		s.blockListener.Subscribe("tm.event='NewBlock'", func(e ctypes.ResultEvent) (more bool) {
 			newBlock, ok := e.Data.(types.EventDataNewBlock)
-			if !ok {
-				panic(fmt.Sprintf("unexpected type %T", e.Data))
-			}
+			require.True(t, ok, "unexpected type %T", e.Data)
 			atomic.StoreInt64(&s.currentHeight, newBlock.Block.Height)
 			return true
 		}),
@@ -127,8 +125,8 @@ func appendToBuf(r io.ReadCloser, b *ring.Ring) {
 }
 
 // awaitChainUp ensures the chain is running
-func (s SystemUnderTest) awaitChainUp() {
-	s.Log("Await chain starts")
+func (s SystemUnderTest) awaitChainUp(t *testing.T) {
+	t.Log("Await chain starts")
 	timeout := defaultWaitTime
 	ctx, done := context.WithTimeout(context.Background(), timeout)
 	defer done()
@@ -153,17 +151,15 @@ func (s SystemUnderTest) awaitChainUp() {
 	select {
 	case <-started:
 	case <-ctx.Done():
-		if err := ctx.Err(); err != nil {
-			panic(fmt.Sprintf("unexpected error: %#+v", err))
-		}
+		require.NoError(t, ctx.Err())
 	case <-time.NewTimer(timeout).C:
-		panic(fmt.Sprintf("timeout waiting for chain start: %s", timeout))
+		t.Fatalf("timeout waiting for chain start: %s", timeout)
 	}
 }
 
 // StopChain stops the system under test and executes all registered cleanup callbacks
 func (s SystemUnderTest) StopChain() {
-	s.Log("stop chain")
+	s.Log("Stop chain")
 	for _, c := range s.cleanupFn {
 		c()
 	}
@@ -204,38 +200,35 @@ func (s SystemUnderTest) BuildNewContainer() {
 }
 
 // AwaitNextBlock is a first class function that any caller can use to ensure a new block was minted
-func (s SystemUnderTest) AwaitNextBlock() {
+func (s SystemUnderTest) AwaitNextBlock(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		for start := atomic.LoadInt64(&s.currentHeight); atomic.LoadInt64(&s.currentHeight) > start; {
-			time.Sleep(s.blockTime) // block time?
+			time.Sleep(s.blockTime)
 		}
 		done <- struct{}{}
 	}()
 	select {
 	case <-done:
 	case <-time.NewTimer(s.blockTime * 2).C:
-		panic(fmt.Sprintf("timeout - no block within %s", s.blockTime*2))
+		t.Fatalf("timeout - no block within %s", s.blockTime*2)
 	}
 }
 
 // Restart stops and clears all nodes state via 'unsafe-reset-all'
-func (s SystemUnderTest) Restart() {
-	s.Log("Restart chain")
+func (s SystemUnderTest) Restart(t *testing.T) {
+	t.Log("Restart chain")
 	s.StopChain()
 	dockerComposePath := locateExecutable("docker-compose")
 	cmd := exec.Command(dockerComposePath, "kill")
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
-	if err != nil {
-		panic(fmt.Sprintf("unexpected error %#v : output: %s", err, string(out)))
-	}
-
+	require.NoError(t, err)
 	s.Log(string(out))
-	// reset all nodes
 
+	// reset all nodes
 	for i := 0; i < s.nodesCount; i++ {
-		s.Logf("unsafe reset node %d", i)
+		t.Logf("Unsafe reset node %d\n", i)
 		args := []string{"unsafe-reset-all",
 			"--home", fmt.Sprintf("%s/node%d/tgrade", s.outputDir, i),
 		}
@@ -252,9 +245,7 @@ func (s SystemUnderTest) Restart() {
 		)
 		cmd.Dir = workDir
 		out, err := cmd.CombinedOutput()
-		if err != nil {
-			panic(fmt.Sprintf("unexpected error %#v : output: %s", err, string(out)))
-		}
+		require.NoError(t, err, string(out))
 		s.Log(string(out))
 	}
 }
@@ -282,20 +273,16 @@ func locateExecutable(file string) string {
 
 // EventListener watches for events on the chain
 type EventListener struct {
+	t      *testing.T
 	client *client.HTTP
 }
 
 // NewEventListener event listener
-func NewEventListener(rpcAddr string) EventListener {
+func NewEventListener(t *testing.T, rpcAddr string) EventListener {
 	httpClient, err := client.New(rpcAddr, "/websocket")
-	if err != nil {
-		panic(fmt.Sprintf("unexpected error %#+v", err))
-	}
-	if err := httpClient.Start(); err != nil {
-		panic(fmt.Sprintf("unexpected error %#+v", err))
-	}
-
-	return EventListener{client: httpClient}
+	require.NoError(t, err)
+	require.NoError(t, httpClient.Start())
+	return EventListener{client: httpClient, t: t}
 }
 
 var defaultWaitTime = 30 * time.Second
@@ -310,10 +297,7 @@ type (
 func (l EventListener) Subscribe(query string, cb EventConsumer) func() {
 	ctx, done := context.WithCancel(context.Background())
 	eventsChan, err := l.client.WSEvents.Subscribe(ctx, "testing", query)
-	if err != nil {
-		panic(fmt.Sprintf("unexpected error %#+v", err))
-	}
-
+	require.NoError(l.t, err)
 	cleanup := func() {
 		ctx, _ := context.WithTimeout(ctx, defaultWaitTime)
 		go l.client.WSEvents.Unsubscribe(ctx, "testing", query)
@@ -335,20 +319,20 @@ func (l EventListener) Subscribe(query string, cb EventConsumer) func() {
 // AwaitQuery waits for single result or timeout
 func (l EventListener) AwaitQuery(query string) *ctypes.ResultEvent {
 	c, result := CapturingEventConsumer()
-	l.Subscribe(query, TimeoutConsumer(defaultWaitTime, c))
+	l.Subscribe(query, TimeoutConsumer(l.t, defaultWaitTime, c))
 	return result
 }
 
 // TimeoutConsumer is an event consumer decorator with a max wait time. Panics when wait time exceeded without
 // a result returned
-func TimeoutConsumer(waitTime time.Duration, next EventConsumer) EventConsumer {
+func TimeoutConsumer(t *testing.T, waitTime time.Duration, next EventConsumer) EventConsumer {
 	ctx, done := context.WithCancel(context.Background())
 	timeout := time.NewTimer(waitTime)
 	go func() {
 		select {
 		case <-ctx.Done():
 		case <-timeout.C:
-			panic(fmt.Sprintf("timeout waiting for new events %s", waitTime))
+			t.Fatalf("timeout waiting for new events %s", waitTime)
 		}
 	}()
 	return func(e ctypes.ResultEvent) (more bool) {
