@@ -10,15 +10,16 @@ services:
       - "1317:1317" # rest legacy
       - "9090:9090" # grpc query
     volumes:
-      - ${PROJECT_ROOT-.}/testnet:/node:Z
+      - ${REPO_ROOT-.}/testnet:/node:Z
     networks:
-      localnet:
-        ipv4_address: 192.168.100.10
+      chainnet:
+        ipv4_address: 192.168.10.2
 
 networks:
-  localnet:
+  chainnet:
     driver: bridge
     ipam:
       driver: default
       config:
-        - subnet: 192.168.100.0/24
+        -
+          subnet: 192.168.10.0/16

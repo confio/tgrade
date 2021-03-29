@@ -39,10 +39,11 @@ type SystemUnderTest struct {
 
 func NewSystemUnderTest(verbose bool) *SystemUnderTest {
 	return &SystemUnderTest{
-		chainID:    "testing",
-		outputDir:  "./testnet",
-		blockTime:  1500 * time.Millisecond,
-		rpcAddr:    "http://localhost:26657",
+		chainID:   "testing",
+		outputDir: "./testnet",
+		blockTime: 1500 * time.Millisecond,
+		rpcAddr:   "http://192.168.100.10:26657",
+		//rpcAddr:    "http://localhost:26657",
 		nodesCount: 1,
 		outBuff:    ring.New(100),
 		errBuff:    ring.New(100),
