@@ -4,6 +4,7 @@ package testing
 
 import (
 	"flag"
+	"fmt"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 	"os"
@@ -31,7 +32,7 @@ func TestMain(m *testing.M) {
 	defaultWaitTime = *waitTime
 	sut = NewSystemUnderTest(verbose)
 	if *rebuild {
-		sut.BuildNewArtifact()
+		sut.BuildNewBinary()
 	}
 	// setup single node chain and keyring
 	sut.SetupChain()
@@ -44,11 +45,12 @@ func TestMain(m *testing.M) {
 	if verbose || exitCode != 0 {
 		sut.PrintBuffer()
 	}
+
 	os.Exit(exitCode)
 }
 
 func TestSmokeTest(t *testing.T) {
-	sut.Restart(t)
+	sut.ResetChain(t)
 	sut.StartChain(t)
 
 	cli := NewTgradeCli(t, sut, verbose)
@@ -62,6 +64,32 @@ func TestSmokeTest(t *testing.T) {
 	t.Log("Waiting for block")
 	sut.AwaitNextBlock(t)
 
+	t.Log("Query wasm code list")
+	qResult := cli.CustomQuery("q", "wasm", "list-code")
+	codes := gjson.Get(qResult, "code_infos.#.id").Array() // see query syntax https://github.com/tidwall/gjson#path-syntax
+	require.Len(t, codes, 1, qResult)
+	require.Equal(t, int64(1), codes[0].Int())
+
+	t.Log("got query result", qResult)
+}
+
+func TestGenesisMsg(t *testing.T) {
+	sut.ResetChain(t)
+	anyAddress := "tgrade12qey0qvmkvdu5yl3x329lhrvqfgzs5vne225q7"
+	args := []string{
+		"add-wasm-genesis-message",
+		"store",
+		"contrib/local/hackatom.wasm.gzip",
+		"--instantiate-everybody=true",
+		"--builder=foo/bar:latest",
+		fmt.Sprintf("--run-as=%s", anyAddress),
+	}
+	revert := sut.ModifyGenesis(t, args...)
+	t.Cleanup(revert)
+
+	sut.StartChain(t)
+
+	cli := NewTgradeCli(t, sut, verbose)
 	t.Log("Query wasm code list")
 	qResult := cli.CustomQuery("q", "wasm", "list-code")
 	codes := gjson.Get(qResult, "code_infos.#.id").Array() // see query syntax https://github.com/tidwall/gjson#path-syntax

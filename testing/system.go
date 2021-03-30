@@ -2,6 +2,7 @@ package testing
 
 import (
 	"bufio"
+	"bytes"
 	"container/ring"
 	"context"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -19,7 +21,7 @@ import (
 	"time"
 )
 
-var workDir string // this be done better
+var workDir string
 
 // SystemUnderTest blockchain provisioning
 type SystemUnderTest struct {
@@ -78,7 +80,7 @@ func (s SystemUnderTest) SetupChain() {
 
 func (s SystemUnderTest) StartChain(t *testing.T) {
 	s.Log("Start chain")
-	s.withEachNodes(t, "start", "--trace", "--log_level=info")
+	s.forEachNodesExecAsync(t, "start", "--trace", "--log_level=info")
 
 	s.awaitChainUp(t)
 
@@ -137,7 +139,7 @@ func (s SystemUnderTest) awaitChainUp(t *testing.T) {
 				con.Stop()
 				continue
 			}
-			s.Logf("Node has block %d", result.SyncInfo.LatestBlockHeight)
+			t.Logf("Node started. Current block: %d\n", result.SyncInfo.LatestBlockHeight)
 			con.Stop()
 			started <- struct{}{}
 		}
@@ -168,22 +170,24 @@ func (s SystemUnderTest) StopChain() {
 	s.Log(string(out))
 }
 
+// PrintBuffer prints the chain logs to the console
 func (s SystemUnderTest) PrintBuffer() {
 	s.outBuff.Do(func(v interface{}) {
 		if v != nil {
-			s.Logf("err> %s\n", v)
+			fmt.Fprintf(s.out, "out> %s\n", v)
 		}
 	})
-	s.Log("8< chain err -----------------------------------------\n")
+	fmt.Fprint(s.out, "8< chain err -----------------------------------------\n")
 	s.errBuff.Do(func(v interface{}) {
 		if v != nil {
-			s.Logf("err> %s\n", v)
+			fmt.Fprintf(s.out, "err> %s\n", v)
 		}
 	})
 }
 
-func (s SystemUnderTest) BuildNewArtifact() {
-	s.Log("install binaries")
+// BuildNewBinary builds and installs new tgrade binary
+func (s SystemUnderTest) BuildNewBinary() {
+	s.Log("Install binaries\n")
 	makePath := locateExecutable("make")
 	cmd := exec.Command(makePath, "clean", "install")
 	cmd.Dir = workDir
@@ -205,13 +209,13 @@ func (s SystemUnderTest) AwaitNextBlock(t *testing.T) {
 	select {
 	case <-done:
 	case <-time.NewTimer(s.blockTime * 2).C:
-		t.Fatalf("timeout - no block within %s", s.blockTime*2)
+		t.Fatalf("Timeout - no block within %s", s.blockTime*2)
 	}
 }
 
-// Restart stops and clears all nodes state via 'unsafe-reset-all'
-func (s SystemUnderTest) Restart(t *testing.T) {
-	t.Log("Restart chain")
+// ResetChain stops and clears all nodes state via 'unsafe-reset-all'
+func (s SystemUnderTest) ResetChain(t *testing.T) {
+	t.Log("ResetChain chain")
 	s.StopChain()
 	cmd := exec.Command(locateExecutable("pkill"), "tgrade")
 	cmd.Dir = workDir
@@ -222,14 +226,60 @@ func (s SystemUnderTest) Restart(t *testing.T) {
 	s.Log(string(out))
 
 	// reset all nodes
-	s.withEachNodes(t, "unsafe-reset-all")
+	s.ForEachNodeExecAndWait(t, "unsafe-reset-all")
 }
 
-func (s SystemUnderTest) withEachNodes(t *testing.T, args ...string) {
-	for i := 0; i < s.nodesCount; i++ {
-		args = append(args, "--home", fmt.Sprintf("%s/node%d/tgrade", s.outputDir, i))
+// ModifyGenesis creates a backup then applies all tgrade commands. return function reverts the changes
+// and should be called in test cleanup
+func (s SystemUnderTest) ModifyGenesis(t *testing.T, args ...string) func() {
+	// backup current genesis
+	backupFilePath := backupGenesis(t, s)
 
-		s.Logf("execute `tgrade %s` node %d\n", strings.Join(args, ","), i)
+	s.ForEachNodeExecAndWait(t, args...)
+	// restore to previous genesis
+	return func() { s.SetGenesis(t, backupFilePath) }
+}
+
+func (s SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
+	in, err := os.Open(srcPath)
+	require.NoError(t, err)
+	defer in.Close()
+	var buf bytes.Buffer
+
+	_, err = io.Copy(&buf, in)
+	require.NoError(t, err)
+
+	s.withEachNodeHome(func(i int, home string) {
+		out, err := os.Create(filepath.Join(workDir, home, "config", "genesis.json"))
+		require.NoError(t, err)
+		defer out.Close()
+
+		_, err = io.Copy(out, bytes.NewReader(buf.Bytes()))
+		require.NoError(t, err)
+		require.NoError(t, out.Close())
+	})
+}
+
+func (s SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, args ...string) {
+	s.withEachNodeHome(func(i int, home string) {
+		args = append(args, "--home", home)
+		s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
+		cmd := exec.Command(
+			locateExecutable("tgrade"),
+			args...,
+		)
+		cmd.Dir = workDir
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err, "node %d: %s", i, string(out))
+		s.Logf("Result: %s\n", string(out))
+	})
+}
+
+func (s SystemUnderTest) forEachNodesExecAsync(t *testing.T, args ...string) []func() error {
+	r := make([]func() error, s.nodesCount)
+	s.withEachNodeHome(func(i int, home string) {
+		args = append(args, "--home", home)
+		s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
 		cmd := exec.Command(
 			locateExecutable("tgrade"),
 			args...,
@@ -237,7 +287,19 @@ func (s SystemUnderTest) withEachNodes(t *testing.T, args ...string) {
 		cmd.Dir = workDir
 		s.watchLogs(cmd)
 		require.NoError(t, cmd.Start(), "node %d", i)
+		r[i] = cmd.Wait
+	})
+	return r
+}
+
+func (s SystemUnderTest) withEachNodeHome(cb func(i int, home string)) {
+	for i := 0; i < s.nodesCount; i++ {
+		cb(i, s.nodePath(i))
 	}
+}
+
+func (s SystemUnderTest) nodePath(i int) string {
+	return fmt.Sprintf("%s/node%d/tgrade", s.outputDir, i)
 }
 
 func (s SystemUnderTest) Log(msg string) {
@@ -322,7 +384,7 @@ func TimeoutConsumer(t *testing.T, waitTime time.Duration, next EventConsumer) E
 		select {
 		case <-ctx.Done():
 		case <-timeout.C:
-			t.Fatalf("timeout waiting for new events %s", waitTime)
+			t.Fatalf("Timeout waiting for new events %s", waitTime)
 		}
 	}()
 	return func(e ctypes.ResultEvent) (more bool) {
@@ -341,4 +403,17 @@ func CapturingEventConsumer() (EventConsumer, *ctypes.ResultEvent) {
 	return func(e ctypes.ResultEvent) (more bool) {
 		return false
 	}, &result
+}
+
+func backupGenesis(t *testing.T, s SystemUnderTest) string {
+	in, err := os.Open(filepath.Join(workDir, s.nodePath(0), "config", "genesis.json"))
+	require.NoError(t, err)
+	workDir := t.TempDir()
+	out, err := os.Create(filepath.Join(workDir, "genesis.json"))
+	require.NoError(t, err)
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	require.NoError(t, err)
+	return out.Name()
 }
