@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 	}
 	workDir = filepath.Join(dir, "../")
 	if verbose {
-		println("+++> Work dir: ", workDir)
+		println("Work dir: ", workDir)
 	}
 	defaultWaitTime = *waitTime
 	sut = NewSystemUnderTest(verbose)

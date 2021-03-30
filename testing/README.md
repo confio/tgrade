@@ -11,13 +11,13 @@ Server and client side are executed in Docker containers
 ## Execute a single test
 
 ```sh
-go test -count=1 -v ./testing --run TestSmokeTest -verbose
+go test -tags system_test -count=1 -v ./testing --run TestSmokeTest  --verbose
 ```
 
-* Force a container rebuild before running the test
+* Force a binary rebuild before running the test
 
 ```sh
-go test -count=1 -v ./testing --run TestSmokeTest -rebuild
+go test -tags system_test -count=1 -v ./testing --run TestSmokeTest  --verbose -rebuild
 ```
 
 ## Disclaimer
