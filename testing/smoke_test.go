@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 	defaultWaitTime = *waitTime
 	sut = NewSystemUnderTest(verbose)
 	if *rebuild {
-		sut.BuildNewContainer()
+		sut.BuildNewArtifact()
 	}
 	// setup single node chain and keyring
 	sut.SetupChain()

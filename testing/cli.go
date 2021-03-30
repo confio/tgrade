@@ -1,7 +1,6 @@
 package testing
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 	"os/exec"
@@ -20,8 +19,7 @@ type TgradeCli struct {
 }
 
 func NewTgradeCli(t *testing.T, sut *SystemUnderTest, verbose bool) *TgradeCli {
-	addr := "http://host.docker.internal:26657" // run client within docker container
-	return NewTgradeCliX(t, addr, sut.chainID, filepath.Join(sut.outputDir, "node0", "tgrade"), verbose)
+	return NewTgradeCliX(t, sut.rpcAddr, sut.chainID, filepath.Join(sut.outputDir, "node0", "tgrade"), verbose)
 }
 
 func NewTgradeCliX(t *testing.T, nodeAddress string, chainID string, homeDir string, debug bool) *TgradeCli {
@@ -47,13 +45,7 @@ func (c TgradeCli) run(args []string) string {
 	if c.Debug {
 		c.t.Logf("+++ running `tgrade %s`", strings.Join(args, " "))
 	}
-	runInDocker := append([]string{
-		"run",
-		fmt.Sprintf("--volume=%s:/opt", workDir),
-		"confio/tgrade:local",
-		"tgrade",
-	}, args...)
-	cmd := exec.Command(locateExecutable("docker"), runInDocker...)
+	cmd := exec.Command(locateExecutable("tgrade"), args...)
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
 	require.NoError(c.t, err, string(out))

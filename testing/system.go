@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -61,17 +62,11 @@ func (s SystemUnderTest) SetupChain() {
 		"--keyring-backend=test",
 		"--commit-timeout=" + s.blockTime.String(),
 		"--minimum-gas-prices=" + s.minGasPrice,
-		"--starting-ip-address", "192.168.10.2",
+		"--starting-ip-address", "", // empty to use host systems
 	}
-	runInDocker := append([]string{
-		"run",
-		fmt.Sprintf("--volume=%s:/opt", workDir),
-		"confio/tgrade:local",
-		"tgrade",
-	}, args...)
 	cmd := exec.Command(
-		locateExecutable("docker"),
-		runInDocker...,
+		locateExecutable("tgrade"),
+		args...,
 	)
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
@@ -83,11 +78,7 @@ func (s SystemUnderTest) SetupChain() {
 
 func (s SystemUnderTest) StartChain(t *testing.T) {
 	s.Log("Start chain")
-	dockerComposePath := locateExecutable("docker-compose")
-	cmd := exec.Command(dockerComposePath, "up")
-	cmd.Dir = workDir
-	s.watchLogs(cmd)
-	require.NoError(t, cmd.Start())
+	s.withEachNodes(t, "start", "--trace", "--log_level=info")
 
 	s.awaitChainUp(t)
 
@@ -146,6 +137,7 @@ func (s SystemUnderTest) awaitChainUp(t *testing.T) {
 				con.Stop()
 				continue
 			}
+			s.Logf("Node has block %d", result.SyncInfo.LatestBlockHeight)
 			con.Stop()
 			started <- struct{}{}
 		}
@@ -166,12 +158,12 @@ func (s SystemUnderTest) StopChain() {
 		c()
 	}
 	s.cleanupFn = nil
-	dockerComposePath := locateExecutable("docker-compose")
-	cmd := exec.Command(dockerComposePath, "stop")
+	cmd := exec.Command(locateExecutable("pkill"), "-15", "tgrade")
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		panic(fmt.Sprintf("unexpected error :%#+v, output: %s", err, string(out)))
+		//panic(fmt.Sprintf("unexpected error :%#+v, output: %s", err, string(out)))
+		s.Logf("failed to stop chain: %s\n", err)
 	}
 	s.Log(string(out))
 }
@@ -190,10 +182,10 @@ func (s SystemUnderTest) PrintBuffer() {
 	})
 }
 
-func (s SystemUnderTest) BuildNewContainer() {
-	s.Log("compile binaries")
+func (s SystemUnderTest) BuildNewArtifact() {
+	s.Log("install binaries")
 	makePath := locateExecutable("make")
-	cmd := exec.Command(makePath, "clean", "build-docker")
+	cmd := exec.Command(makePath, "clean", "install")
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -221,34 +213,30 @@ func (s SystemUnderTest) AwaitNextBlock(t *testing.T) {
 func (s SystemUnderTest) Restart(t *testing.T) {
 	t.Log("Restart chain")
 	s.StopChain()
-	dockerComposePath := locateExecutable("docker-compose")
-	cmd := exec.Command(dockerComposePath, "kill")
+	cmd := exec.Command(locateExecutable("pkill"), "tgrade")
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
-	require.NoError(t, err)
+	if err != nil {
+		s.Logf("failed to kill process: %s", err)
+	}
 	s.Log(string(out))
 
 	// reset all nodes
-	for i := 0; i < s.nodesCount; i++ {
-		t.Logf("Unsafe reset node %d\n", i)
-		args := []string{"unsafe-reset-all",
-			"--home", fmt.Sprintf("%s/node%d/tgrade", s.outputDir, i),
-		}
-		runInDocker := append([]string{
-			"run",
-			fmt.Sprintf("--volume=%s:/opt", workDir),
-			"confio/tgrade:local",
-			"tgrade",
-		}, args...)
+	s.withEachNodes(t, "unsafe-reset-all")
+}
 
+func (s SystemUnderTest) withEachNodes(t *testing.T, args ...string) {
+	for i := 0; i < s.nodesCount; i++ {
+		args = append(args, "--home", fmt.Sprintf("%s/node%d/tgrade", s.outputDir, i))
+
+		s.Logf("execute `tgrade %s` node %d\n", strings.Join(args, ","), i)
 		cmd := exec.Command(
-			locateExecutable("docker"),
-			runInDocker...,
+			locateExecutable("tgrade"),
+			args...,
 		)
 		cmd.Dir = workDir
-		out, err := cmd.CombinedOutput()
-		require.NoError(t, err, string(out))
-		s.Log(string(out))
+		s.watchLogs(cmd)
+		require.NoError(t, cmd.Start(), "node %d", i)
 	}
 }
 
