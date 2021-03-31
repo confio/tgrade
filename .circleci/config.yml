@@ -4,6 +4,7 @@ executors:
   golang:
     docker:
       - image: circleci/golang:1.15
+#        user: root # for local testing: https://github.com/CircleCI-Public/circleci-cli/issues/291
     working_directory: /go/src/github.com/confio/tgrade
 
 commands:
@@ -64,6 +65,7 @@ jobs:
     executor: golang
     parallelism: 2 # must not be more than number of packages with code
     steps:
+      - setup_remote_docker
       - checkout
       - restore_cache:
           keys:
@@ -82,6 +84,22 @@ jobs:
           root: /tmp/workspace
           paths:
             - "profiles/*"
+      - store_artifacts:
+          path: /tmp/logs
+
+  test-system:
+    executor: golang
+    parallelism: 1
+    steps:
+      - setup_remote_docker
+      - checkout
+      - restore_cache:
+          keys:
+            - go-mod-v1-{{ checksum "go.sum" }}
+      - run:
+          name: Build and run system tests
+          command: |
+            make test-system
       - store_artifacts:
           path: /tmp/logs
 
@@ -132,7 +150,8 @@ jobs:
       - attach_workspace:
           at: /tmp/workspace
       - checkout
-      - setup_remote_docker
+      - setup_remote_docker:
+          docker_layer_caching: true
       - run:
           name: Build Docker artifact
           command: docker build --pull -t "confio/tgrade:${CIRCLE_TAG}" .
@@ -177,3 +196,10 @@ workflows:
       - upload-coverage:
           requires:
             - test-cover
+      - test-system:
+          requires:
+            - setup-dependencies
+#          filters:
+#            branches:
+#              only:
+#                - master
