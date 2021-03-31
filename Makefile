@@ -127,7 +127,7 @@ test-unit:
 	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock' ./...
 
 test-system: install
-	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock system_test' ./testing --wait-time=120s --verbose
+	@VERSION=$(VERSION) go test -mod=readonly -tags='ledger test_ledger_mock system_test' ./testing --wait-time=30s --verbose
 
 test-race:
 	@VERSION=$(VERSION) go test -mod=readonly -race -tags='ledger test_ledger_mock' ./...
