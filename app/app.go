@@ -382,7 +382,9 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 
 	// The gov proposal types can be individually enabled
 	if len(enabledProposals) != 0 {
-		govRouter.AddRoute(twasm.RouterKey, wasm.NewWasmProposalHandler(app.twasmKeeper, enabledProposals))
+		// todo (Reviewer): should we route wasm and twasm proposals separate or handle them both in twasm?
+		//govRouter.AddRoute(twasm.RouterKey, wasm.NewWasmProposalHandler(app.twasmKeeper, enabledProposals))
+		govRouter.AddRoute(twasm.RouterKey, twasmkeeper.NewProposalHandler(app.twasmKeeper))
 	}
 
 	var ibcHandler porttypes.IBCModule = wasm.NewIBCHandler(app.twasmKeeper, app.ibcKeeper.ChannelKeeper)

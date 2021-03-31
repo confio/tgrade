@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/CosmWasm/wasmd v0.16.0-alpha1.0.20210331112406-8109bba87111
+	github.com/CosmWasm/wasmvm v0.14.0-beta1 // indirect
 	github.com/cosmos/cosmos-sdk v0.42.3
 	github.com/gogo/protobuf v1.3.3
 	github.com/gorilla/mux v1.8.0
