@@ -26,7 +26,7 @@ func (s TestSupport) IBCKeeper() ibckeeper.Keeper {
 }
 
 func (s TestSupport) WasmKeeper() wasm.Keeper {
-	return s.app.wasmKeeper
+	return s.app.twasmKeeper.Keeper
 }
 
 func (s TestSupport) AppCodec() codec.Marshaler {
