@@ -96,6 +96,9 @@ func Querier(k *Keeper) wasmtypes.QueryServer {
 	return wasmkeeper.NewGrpcQuerier(k.cdc, k.storeKey, k, k.QueryGasLimit())
 }
 
+func (Keeper) Logger(ctx sdk.Context) log.Logger {
+	return ModuleLogger(ctx)
+}
 func ModuleLogger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }

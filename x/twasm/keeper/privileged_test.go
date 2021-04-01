@@ -279,6 +279,72 @@ func TestAppendToPrivilegedContractCallbacks(t *testing.T) {
 	}
 }
 
+func TestRemovePrivilegedContractCallbacks(t *testing.T) {
+	var (
+		myAddr      = sdk.AccAddress(bytes.Repeat([]byte{1}, sdk.AddrLen))
+		otherAddr   = sdk.AccAddress(bytes.Repeat([]byte{2}, sdk.AddrLen))
+		anotheraddr = sdk.AccAddress(bytes.Repeat([]byte{3}, sdk.AddrLen))
+	)
+
+	type tuple struct {
+		a sdk.AccAddress
+		p uint8
+	}
+
+	specs := map[string]struct {
+		setup        func(sdk.Context, *Keeper)
+		expRemaining []tuple
+	}{
+		"one callback": {
+			setup: func(ctx sdk.Context, k *Keeper) {
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
+			},
+		},
+		"multiple callback - same address": {
+			setup: func(ctx sdk.Context, k *Keeper) {
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
+			},
+		},
+		"multiple callback - different address": {
+			setup: func(ctx sdk.Context, k *Keeper) {
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, otherAddr)
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, anotheraddr)
+			},
+			expRemaining: []tuple{{p: 1, a: otherAddr}, {p: 3, a: anotheraddr}},
+		},
+		"different address only": {
+			setup: func(ctx sdk.Context, k *Keeper) {
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, otherAddr)
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, anotheraddr)
+			},
+			expRemaining: []tuple{{p: 1, a: otherAddr}, {p: 2, a: anotheraddr}},
+		},
+		"no callbacks": {
+			setup: func(ctx sdk.Context, k *Keeper) {},
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			ctx, keepers := CreateDefaultTestInput(t, wasmkeeper.WithWasmEngine(NewWasmVMMock()))
+			k := keepers.TWasmKeeper
+			spec.setup(ctx, k)
+
+			// when
+			k.removePrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
+
+			// then
+			var captured []tuple
+			k.IterateContractCallbacksByType(ctx, types.CallbackTypeBeginBlock, func(prio uint8, contractAddr sdk.AccAddress) bool {
+				captured = append(captured, tuple{p: prio, a: contractAddr})
+				return false
+			})
+			assert.Equal(t, spec.expRemaining, captured)
+		})
+	}
+}
+
 func TestIterateContractCallbacksByContract(t *testing.T) {
 	var (
 		myAddr    = sdk.AccAddress(bytes.Repeat([]byte{1}, sdk.AddrLen))
@@ -291,12 +357,13 @@ func TestIterateContractCallbacksByContract(t *testing.T) {
 
 	specs := map[string]struct {
 		setup        func(sdk.Context, *Keeper)
+		captureFirst bool
 		expPersisted []tuple
 	}{
-		"no callbacks": {
+		"no callbacks - no empty store": {
 			setup: func(ctx sdk.Context, k *Keeper) {},
 		},
-		"no callbacks - no empty store": {
+		"no callbacks for address": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, otherAddr)
 			},
@@ -321,6 +388,14 @@ func TestIterateContractCallbacksByContract(t *testing.T) {
 			},
 			expPersisted: []tuple{{p: 1, t: types.CallbackTypeBeginBlock}, {p: 2, t: types.CallbackTypeBeginBlock}},
 		},
+		"multiple callbacks - abort after first": {
+			setup: func(ctx sdk.Context, k *Keeper) {
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
+			},
+			captureFirst: true,
+			expPersisted: []tuple{{p: 1, t: types.CallbackTypeBeginBlock}},
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
@@ -332,7 +407,7 @@ func TestIterateContractCallbacksByContract(t *testing.T) {
 			var captured []tuple
 			k.iterateContractCallbacksByContract(ctx, myAddr, func(t types.PriviledgedCallbackType, prio uint8) bool {
 				captured = append(captured, tuple{t: t, p: prio})
-				return false
+				return spec.captureFirst
 			})
 
 			// then

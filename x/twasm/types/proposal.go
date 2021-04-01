@@ -16,10 +16,6 @@ const (
 )
 
 // todo (Alex): still used?
-// DisableAllProposals contains no wasm gov types.
-var DisableAllProposals []ProposalType
-
-// todo (Alex): still used?
 // EnableAllProposals contains all twasm gov types as keys.
 var EnableAllProposals = []ProposalType{
 	ProposalTypePromoteContract,
@@ -48,9 +44,8 @@ func init() { // register new content types with the sdk
 	govtypes.RegisterProposalType(string(ProposalTypePromoteContract))
 	govtypes.RegisterProposalType(string(ProposalTypeDemoteContract))
 
-	// todo (Alex): choose wasm or twasm prefix
-	govtypes.RegisterProposalTypeCodec(&PromoteToPrivilegedContractProposal{}, "wasm/PromoteToPrivilegedContractProposal")
-	govtypes.RegisterProposalTypeCodec(&DemotePrivilegedContractProposal{}, "wasm/DemotePrivilegedContractProposal")
+	govtypes.RegisterProposalTypeCodec(&PromoteToPrivilegedContractProposal{}, "twasm/PromoteToPrivilegedContractProposal")
+	govtypes.RegisterProposalTypeCodec(&DemotePrivilegedContractProposal{}, "twasm/DemotePrivilegedContractProposal")
 }
 
 // ProposalRoute returns the routing key of a parameter change proposal.

@@ -39,6 +39,15 @@ func (k Keeper) SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) erro
 	if _, err = k.Sudo(ctx, contractAddr, msgBz); err != nil {
 		return sdkerrors.Wrap(err, "sudo")
 	}
+
+	k.Logger(ctx).Info("Set privileged", "contractAddr", contractAddr.String())
+	event := sdk.NewEvent(
+		types.EventTypeSetPrivileged,
+		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+		sdk.NewAttribute(wasmtypes.AttributeKeyContract, contractAddr.String()),
+	)
+	ctx.EventManager().EmitEvent(event)
+
 	return nil
 }
 
@@ -84,6 +93,15 @@ func (k Keeper) UnsetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) er
 		k.removePrivilegedContractCallbacks(ctx, callbackType, contractAddr)
 		return false
 	})
+
+	k.Logger(ctx).Info("Unset privileged", "contractAddr", contractAddr.String())
+	event := sdk.NewEvent(
+		types.EventTypeUnsetPrivileged,
+		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+		sdk.NewAttribute(wasmtypes.AttributeKeyContract, contractAddr.String()),
+	)
+	ctx.EventManager().EmitEvent(event)
+
 	return nil
 }
 
@@ -106,7 +124,7 @@ func (k Keeper) IteratePrivileged(ctx sdk.Context, cb func(sdk.AccAddress) bool)
 }
 
 // appendToPrivilegedContractCallbacks registers given contract for a callback type
-func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PriviledgedCallbackType, contractAddress sdk.AccAddress) {
+func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PriviledgedCallbackType, contractAddr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 
 	// find last position value for callback type
@@ -120,20 +138,46 @@ func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackTyp
 	if newPos <= pos {
 		panic("Overflow in in callback positions")
 	}
-	store.Set(types.GetContractCallbacksSecondaryIndexKey(callbackType, newPos, contractAddress), []byte{1})
+	store.Set(types.GetContractCallbacksSecondaryIndexKey(callbackType, newPos, contractAddr), []byte{1})
+
+	k.Logger(ctx).Info("Add callback", "contractAddr", contractAddr.String(), "callback_type", callbackType.String())
+	event := sdk.NewEvent(
+		types.EventTypeRegisterCallback,
+		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+		sdk.NewAttribute(wasmtypes.AttributeKeyContract, contractAddr.String()),
+		sdk.NewAttribute(types.AttributeKeyCallbackType, callbackType.String()),
+	)
+	ctx.EventManager().EmitEvent(event)
 }
 
 // removePrivilegedContractCallbacks unregisters the given contract for a callback type
-func (k Keeper) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PriviledgedCallbackType, contractAddress sdk.AccAddress) {
+func (k Keeper) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PriviledgedCallbackType, contractAddr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 
-	start := append([]byte{0}, contractAddress...)
-	end := append([]byte{math.MaxUint8}, contractAddress...)
+	start := append([]byte{0}, contractAddr...)
+	end := append([]byte{math.MaxUint8}, contractAddr...)
 	prefixStore := prefix.NewStore(store, types.GetContractCallbacksSecondaryIndexPrefix(callbackType))
 
+	var found bool
 	for it := prefixStore.Iterator(start, end); it.Valid(); it.Next() {
-		prefixStore.Delete(it.Key())
+		itKey := it.Key()
+		if _, addr := splitPositionContract(itKey); !contractAddr.Equals(addr) {
+			continue
+		}
+		prefixStore.Delete(itKey)
+		found = true
 	}
+	if !found {
+		return
+	}
+	k.Logger(ctx).Info("Remove callback", "contractAddr", contractAddr.String(), "callback_type", callbackType.String())
+	event := sdk.NewEvent(
+		types.EventTypeRegisterCallback,
+		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+		sdk.NewAttribute(wasmtypes.AttributeKeyContract, contractAddr.String()),
+		sdk.NewAttribute(types.AttributeKeyCallbackType, callbackType.String()),
+	)
+	ctx.EventManager().EmitEvent(event)
 }
 
 // ExistsPrivilegedContractCallbacks returns if any contract is registered for the given type
@@ -163,10 +207,6 @@ func (k Keeper) IterateContractCallbacksByType(ctx sdk.Context, callbackType typ
 	}
 }
 
-func splitPositionContract(key []byte) (uint8, sdk.AccAddress) {
-	return key[0], key[1:]
-}
-
 // iterateContractCallbacksByContract iterates through all registered callbacks for the given contract. Ordered by type and position asc
 func (k Keeper) iterateContractCallbacksByContract(ctx sdk.Context, contractAddress sdk.AccAddress, cb func(t types.PriviledgedCallbackType, pos uint8) bool) {
 	store := ctx.KVStore(k.storeKey)
@@ -183,9 +223,18 @@ func (k Keeper) iterateContractCallbacksByContract(ctx sdk.Context, contractAddr
 }
 
 // splits source of type `<callbackType><position><contractAddr>`
-func splitUnprefixedContractCallbacksSecondaryIndexKey(s []byte) (types.PriviledgedCallbackType, uint8, sdk.AccAddress) {
-	if len(s) != 1+1+sdk.AddrLen {
-		panic(fmt.Sprintf("unexpected key lenght %d", len(s)))
+func splitUnprefixedContractCallbacksSecondaryIndexKey(key []byte) (types.PriviledgedCallbackType, uint8, sdk.AccAddress) {
+	if len(key) != 1+1+sdk.AddrLen {
+		panic(fmt.Sprintf("unexpected key lenght %d", len(key)))
 	}
-	return types.PriviledgedCallbackType(s[0]), s[1], s[2:]
+	p, a := splitPositionContract(key[1:])
+	return types.PriviledgedCallbackType(key[0]), p, a
+}
+
+// splits source of type `<position><contractAddr>`
+func splitPositionContract(key []byte) (uint8, sdk.AccAddress) {
+	if len(key) != 1+sdk.AddrLen {
+		panic(fmt.Sprintf("unexpected key lenght %d", len(key)))
+	}
+	return key[0], key[1:]
 }
