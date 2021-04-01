@@ -92,7 +92,7 @@ func (k Keeper) setParams(ctx sdk.Context, ps wasmtypes.Params) {
 	k.paramSpace.SetParamSet(ctx, &ps)
 }
 
-func Querier(k *Keeper) wasmtypes.QueryServer {
+func WasmQuerier(k *Keeper) wasmtypes.QueryServer {
 	return wasmkeeper.NewGrpcQuerier(k.cdc, k.storeKey, k, k.QueryGasLimit())
 }
 
