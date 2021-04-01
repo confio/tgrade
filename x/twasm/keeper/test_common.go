@@ -48,6 +48,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
+	"github.com/tendermint/tendermint/libs/rand"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 	"testing"
@@ -284,4 +285,26 @@ func createTestInput(
 		Router:        router,
 	}
 	return ctx, keepers
+}
+
+// NewWasmVMMock creates a new WasmerEngine mock with basic ops for create/instantiation set to noops.
+func NewWasmVMMock(mutators ...func(*wasmtesting.MockWasmer)) *wasmtesting.MockWasmer {
+	mock := &wasmtesting.MockWasmer{
+		CreateFn:      wasmtesting.HashOnlyCreateFn,
+		InstantiateFn: wasmtesting.NoOpInstantiateFn,
+		AnalyzeCodeFn: wasmtesting.HasIBCAnalyzeFn,
+	}
+	for _, m := range mutators {
+		m(mock)
+	}
+	return mock
+
+}
+
+func RandomAddress(_ *testing.T) sdk.AccAddress {
+	return rand.Bytes(sdk.AddrLen)
+}
+
+func RandomBech32Address(t *testing.T) string {
+	return RandomAddress(t).String()
 }

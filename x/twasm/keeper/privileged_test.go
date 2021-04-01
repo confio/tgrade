@@ -425,11 +425,3 @@ func seedTestContract(t *testing.T, ctx sdk.Context, k *Keeper) (uint64, sdk.Acc
 	require.NoError(t, err)
 	return codeID, contractAddr
 }
-
-func NewWasmVMMock() *wasmtesting.MockWasmer {
-	return &wasmtesting.MockWasmer{
-		CreateFn:      wasmtesting.HashOnlyCreateFn,
-		InstantiateFn: wasmtesting.NoOpInstantiateFn,
-		AnalyzeCodeFn: wasmtesting.HasIBCAnalyzeFn,
-	}
-}

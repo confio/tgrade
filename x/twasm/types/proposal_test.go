@@ -2,7 +2,9 @@ package types
 
 import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 	"strings"
 	"testing"
 )
@@ -82,6 +84,34 @@ func TestValidateDemotePrivilegedContractProposal(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+func TestProposalYaml(t *testing.T) {
+	specs := map[string]struct {
+		src govtypes.Content
+		exp string
+	}{
+		"promote proposal": {
+			src: PromoteProposalFixture(),
+			exp: `title: Foo
+description: Bar
+contract: cosmos1qyqszqgpqyqszqgpqyqszqgpqyqszqgpjnp7du
+`,
+		},
+		"demote proposal": {
+			src: DemoteProposalFixture(),
+			exp: `title: Foo
+description: Bar
+contract: cosmos1qyqszqgpqyqszqgpqyqszqgpqyqszqgpjnp7du
+`,
+		},
+	}
+	for msg, spec := range specs {
+		t.Run(msg, func(t *testing.T) {
+			v, err := yaml.Marshal(&spec.src)
+			require.NoError(t, err)
+			assert.Equal(t, spec.exp, string(v))
 		})
 	}
 }
