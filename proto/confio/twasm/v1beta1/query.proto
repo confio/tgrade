@@ -42,10 +42,7 @@ message QueryContractsByCallbackTypeRequest { string callback_type = 2; }
 // QueryContractsByCallbackTypeResponse is the response type for the
 // Query/ContractsByCallbackType RPC method
 message QueryContractsByCallbackTypeResponse {
-  message ContractPosition {
-    string addresses = 1;
-    uint32 position = 2;
-  }
+  message ContractPosition { string addresses = 1; }
   // addresses set of contract addresses
   repeated ContractPosition contracts = 2 [ (gogoproto.nullable) = false ];
 }

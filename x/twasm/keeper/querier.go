@@ -38,10 +38,9 @@ func (q grpcQuerier) ContractsByCallbackType(c context.Context, req *types.Query
 	if cType == nil {
 		return nil, status.Error(codes.NotFound, "callback type")
 	}
-	q.keeper.IterateContractCallbacksByType(sdk.UnwrapSDKContext(c), *cType, func(prio uint8, contractAddr sdk.AccAddress) bool {
+	q.keeper.IterateContractCallbacksByType(sdk.UnwrapSDKContext(c), *cType, func(_ uint8, contractAddr sdk.AccAddress) bool {
 		result.Contracts = append(result.Contracts, types.QueryContractsByCallbackTypeResponse_ContractPosition{
 			Addresses: contractAddr.String(),
-			Position:  uint32(prio),
 		})
 		return false
 	})

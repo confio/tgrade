@@ -79,7 +79,7 @@ func TestQueryContractsByCallbackType(t *testing.T) {
 			state: []sdk.AccAddress{addr1},
 			expRsp: &types.QueryContractsByCallbackTypeResponse{
 				Contracts: []types.QueryContractsByCallbackTypeResponse_ContractPosition{
-					{Position: 1, Addresses: addr1.String()},
+					{Addresses: addr1.String()},
 				},
 			},
 		},
@@ -90,8 +90,8 @@ func TestQueryContractsByCallbackType(t *testing.T) {
 			state: []sdk.AccAddress{addr1, addr2},
 			expRsp: &types.QueryContractsByCallbackTypeResponse{
 				Contracts: []types.QueryContractsByCallbackTypeResponse_ContractPosition{
-					{Position: 1, Addresses: addr1.String()},
-					{Position: 2, Addresses: addr2.String()},
+					{Addresses: addr1.String()},
+					{Addresses: addr2.String()},
 				},
 			},
 		},

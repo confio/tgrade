@@ -156,7 +156,6 @@ Query/ContractsByCallbackType RPC method
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `addresses` | [string](#string) |  |  |
-| `position` | [uint32](#uint32) |  |  |
 
 
 
