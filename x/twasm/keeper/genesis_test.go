@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
@@ -26,15 +27,21 @@ func TestInitGenesis(t *testing.T) {
 		state  types.GenesisState
 		expErr bool
 	}{
-		"import succeeds": {
+		"import with privileged contract": {
 			state: types.GenesisStateFixture(t),
+		},
+		"import without privileged contract": {
+			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = nil
+			}),
 		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 			ctx, keepers := CreateDefaultTestInput(t, wasmkeeper.WithWasmEngine(mock))
 			k := keepers.TWasmKeeper
-
+			b, _ := json.Marshal(spec.state)
+			t.Logf("%s", string(b))
 			msgHandler := wasm.NewHandler(wasmkeeper.NewDefaultPermissionKeeper(k))
 			valset, gotErr := InitGenesis(ctx, k, spec.state, keepers.StakingKeeper, msgHandler)
 			if spec.expErr {
@@ -74,8 +81,13 @@ func TestExportGenesis(t *testing.T) {
 		state  types.GenesisState
 		expErr bool
 	}{
-		"export succeeds": {
+		"export with privileged contract": {
 			state: types.GenesisStateFixture(t),
+		},
+		"export without privileged contracts": {
+			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = nil
+			}),
 		},
 	}
 	for name, spec := range specs {

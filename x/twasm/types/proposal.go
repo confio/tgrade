@@ -20,6 +20,7 @@ var EnableAllProposals = []ProposalType{
 	ProposalTypePromoteContract,
 	ProposalTypeDemoteContract,
 }
+
 func init() { // register new content types with the sdk
 	govtypes.RegisterProposalType(string(ProposalTypePromoteContract))
 	govtypes.RegisterProposalType(string(ProposalTypeDemoteContract))

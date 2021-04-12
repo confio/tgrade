@@ -52,7 +52,7 @@ var DefaultConsensusParams = &abci.ConsensusParams{
 
 func setup(withGenesis bool, invCheckPeriod uint, opts ...wasm.Option) (*TgradeApp, GenesisState) {
 	db := dbm.NewMemDB()
-	app := NewTgradeApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, DefaultNodeHome, invCheckPeriod, wasm.EnableAllProposals, EmptyBaseAppOptions{}, opts)
+	app := NewTgradeApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, DefaultNodeHome, invCheckPeriod, EmptyBaseAppOptions{}, opts)
 	if withGenesis {
 		return app, NewDefaultGenesisState()
 	}
