@@ -19,6 +19,7 @@ type Keeper struct {
 	cdc            codec.Marshaler
 	storeKey       sdk.StoreKey
 	contractKeeper wasmtypes.ContractOpsKeeper
+	paramSpace     paramtypes.Subspace
 }
 
 func NewKeeper(
@@ -42,8 +43,9 @@ func NewKeeper(
 	opts ...wasmkeeper.Option,
 ) Keeper {
 	result := Keeper{
-		cdc:      cdc,
-		storeKey: storeKey,
+		cdc:        cdc,
+		storeKey:   storeKey,
+		paramSpace: paramSpace,
 	}
 	// configure wasm keeper via options
 
@@ -82,14 +84,21 @@ func NewKeeper(
 		supportedFeatures,
 		opts...,
 	)
-	result.contractKeeper = wasmkeeper.NewDefaultPermissionKeeper(result.Keeper)
+	result.contractKeeper = wasmkeeper.NewDefaultPermissionKeeper(&result.Keeper)
 	return result
+}
+
+func (k Keeper) setParams(ctx sdk.Context, ps wasmtypes.Params) {
+	k.paramSpace.SetParamSet(ctx, &ps)
 }
 
 func Querier(k *Keeper) wasmtypes.QueryServer {
 	return wasmkeeper.NewGrpcQuerier(k.cdc, k.storeKey, k, k.QueryGasLimit())
 }
 
+func (Keeper) Logger(ctx sdk.Context) log.Logger {
+	return ModuleLogger(ctx)
+}
 func ModuleLogger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }

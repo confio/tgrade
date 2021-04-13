@@ -8,18 +8,20 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// ValidatorSetSource is a subset of the staking keeper
-type ValidatorSetSource interface {
-	ApplyAndReturnValidatorSetUpdates(sdk.Context) (updates []abci.ValidatorUpdate, err error)
-}
-
 // InitGenesis sets supply information for genesis.
 //
 // CONTRACT: all types of accounts must have been already initialized/created
-func InitGenesis(ctx sdk.Context, keeper *Keeper, data types.GenesisState, stakingKeeper ValidatorSetSource, msgHandler sdk.Handler) ([]abci.ValidatorUpdate, error) {
+func InitGenesis(ctx sdk.Context, keeper *Keeper, data types.GenesisState, stakingKeeper wasmkeeper.ValidatorSetSource, msgHandler sdk.Handler) ([]abci.ValidatorUpdate, error) {
 	result, err := wasmkeeper.InitGenesis(ctx, &keeper.Keeper, data.Wasm, stakingKeeper, msgHandler)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "wasm")
+	}
+	for i, a := range data.PrivilegedContractAddresses {
+		addr, err := sdk.AccAddressFromBech32(a)
+		if err != nil {
+			return nil, sdkerrors.Wrapf(err, "privileged contract: %d", i)
+		}
+		keeper.SetPrivileged(ctx, addr)
 	}
 	return result, nil
 }
@@ -28,5 +30,9 @@ func InitGenesis(ctx sdk.Context, keeper *Keeper, data types.GenesisState, staki
 func ExportGenesis(ctx sdk.Context, keeper *Keeper) *types.GenesisState {
 	var genState types.GenesisState
 	genState.Wasm = *wasmkeeper.ExportGenesis(ctx, &keeper.Keeper)
+	keeper.IteratePrivileged(ctx, func(contract sdk.AccAddress) bool {
+		genState.PrivilegedContractAddresses = append(genState.PrivilegedContractAddresses, contract.String())
+		return false
+	})
 	return &genState
 }

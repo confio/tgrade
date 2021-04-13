@@ -14,10 +14,3 @@ const (
 	// StoreKey is the prefix under which we store this module's data
 	StoreKey = wasmtypes.StoreKey
 )
-
-// nolint
-var (
-	// leave enough space to not conflict with wasm prefixes
-
-	PrivilegedContractsSecondaryIndexPrefix = []byte{0xa0}
-)

@@ -7,6 +7,10 @@
 - [confio/twasm/v1beta1/genesis.proto](#confio/twasm/v1beta1/genesis.proto)
     - [GenesisState](#confio.twasm.v1beta1.GenesisState)
   
+- [confio/twasm/v1beta1/proposal.proto](#confio/twasm/v1beta1/proposal.proto)
+    - [DemotePrivilegedContractProposal](#confio.twasm.v1beta1.DemotePrivilegedContractProposal)
+    - [PromoteToPrivilegedContractProposal](#confio.twasm.v1beta1.PromoteToPrivilegedContractProposal)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -27,6 +31,59 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `wasm` | [cosmwasm.wasm.v1beta1.GenesisState](#cosmwasm.wasm.v1beta1.GenesisState) |  |  |
+| `privileged_contract_addresses` | [string](#string) | repeated |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="confio/twasm/v1beta1/proposal.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## confio/twasm/v1beta1/proposal.proto
+
+
+
+<a name="confio.twasm.v1beta1.DemotePrivilegedContractProposal"></a>
+
+### DemotePrivilegedContractProposal
+PromoteToPrivilegedContractProposal gov proposal content type to remove
+"privileges" from a contract
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `title` | [string](#string) |  | Title is a short summary |
+| `description` | [string](#string) |  | Description is a human readable text |
+| `contract` | [string](#string) |  | Contract is the address of the smart contract |
+
+
+
+
+
+
+<a name="confio.twasm.v1beta1.PromoteToPrivilegedContractProposal"></a>
+
+### PromoteToPrivilegedContractProposal
+PromoteToPrivilegedContractProposal gov proposal content type to add
+"privileges" to a contract
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `title` | [string](#string) |  | Title is a short summary |
+| `description` | [string](#string) |  | Description is a human readable text |
+| `contract` | [string](#string) |  | Contract is the address of the smart contract |
 
 
 

@@ -9,8 +9,12 @@ option go_package = "github.com/confio/tgrade/x/twasm/types";
 
 message GenesisState {
 
-  cosmwasm.wasm.v1beta1.GenesisState wasm = 1 [
-    (gogoproto.nullable) = false,
+  cosmwasm.wasm.v1beta1.GenesisState wasm = 1[(gogoproto.nullable) = false,
     (gogoproto.jsontag) = "wasm_genesis,omitempty"
+  ];
+
+  repeated string privileged_contract_addresses = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "privileged_contract_addresses,omitempty"
   ];
 }
