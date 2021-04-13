@@ -4,6 +4,10 @@
 
 ## Table of Contents
 
+- [confio/twasm/v1beta1/contract_extension.proto](#confio/twasm/v1beta1/contract_extension.proto)
+    - [RegisteredCallback](#confio.twasm.v1beta1.RegisteredCallback)
+    - [TgradeContractDetails](#confio.twasm.v1beta1.TgradeContractDetails)
+  
 - [confio/twasm/v1beta1/genesis.proto](#confio/twasm/v1beta1/genesis.proto)
     - [GenesisState](#confio.twasm.v1beta1.GenesisState)
   
@@ -21,6 +25,53 @@
     - [Query](#confio.twasm.v1beta1.Query)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="confio/twasm/v1beta1/contract_extension.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## confio/twasm/v1beta1/contract_extension.proto
+
+
+
+<a name="confio.twasm.v1beta1.RegisteredCallback"></a>
+
+### RegisteredCallback
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `position` | [uint32](#uint32) |  |  |
+| `callback_type` | [uint32](#uint32) |  |  |
+
+
+
+
+
+
+<a name="confio.twasm.v1beta1.TgradeContractDetails"></a>
+
+### TgradeContractDetails
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `registered_callbacks` | [RegisteredCallback](#confio.twasm.v1beta1.RegisteredCallback) | repeated |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
 
 
 

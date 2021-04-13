@@ -54,9 +54,12 @@ func NewKeeper(
 			router,
 			channelKeeper,
 			capabilityKeeper,
+			bankKeeper,
 			cdc,
 			portSource,
 		),
+		// append our custom message handler
+		NewTgradeHandler(&result),
 	)
 	var queryPlugins wasmkeeper.WASMVMQueryHandler = wasmkeeper.DefaultQueryPlugins(bankKeeper, stakingKeeper, distKeeper, channelKeeper, queryRouter, &result.Keeper)
 
@@ -101,4 +104,9 @@ func (Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 func ModuleLogger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
+}
+
+// setContractDetails stores new tgrade data with the contract info.
+func (k Keeper) setContractDetails(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error {
+	return k.contractKeeper.SetContractInfoExtension(ctx, contract, details)
 }

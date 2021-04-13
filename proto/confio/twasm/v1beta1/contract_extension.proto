@@ -1,0 +1,20 @@
+syntax = "proto3";
+package confio.twasm.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "github.com/confio/tgrade/x/twasm/types";
+option (gogoproto.goproto_stringer_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.equal_all) = true;
+
+message TgradeContractDetails {
+  option (cosmos_proto.implements_interface) = "ContractInfoExtension";
+  repeated RegisteredCallback registered_callbacks = 1;
+}
+
+message RegisteredCallback {
+  uint32 position = 1;
+  uint32 callback_type = 2;
+}

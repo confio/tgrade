@@ -5,7 +5,7 @@ type TgradeSudoMsg struct {
 	PrivilegeChange *PrivilegeChangeMsg `json:"privilege_change,omitempty"`
 }
 
-/// These are called on a contract when it is made privileged or demoted
+// PrivilegeChangeMsg These are called on a contract when it is made privileged or demoted
 type PrivilegeChangeMsg struct {
 	/// This is called when a contract gets "privileged status".
 	/// It is a proper place to call `RegisterXXX` methods that require this status.
