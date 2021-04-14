@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/confio/tgrade/x/twasm/client/cli"
 	"github.com/confio/tgrade/x/twasm/keeper"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"math/rand"
@@ -40,6 +41,7 @@ func (b AppModuleBasic) RegisterLegacyAminoCodec(amino *codec.LegacyAmino) {
 }
 
 func (b AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, serveMux *runtime.ServeMux) {
+	types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(clientCtx))
 	wasmtypes.RegisterQueryHandlerClient(context.Background(), serveMux, wasmtypes.NewQueryClient(clientCtx))
 }
 
@@ -78,7 +80,7 @@ func (b AppModuleBasic) GetTxCmd() *cobra.Command {
 
 // GetQueryCmd returns no root query command for the wasm module.
 func (b AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return wasmcli.GetQueryCmd()
+	return cli.GetQueryCmd()
 }
 
 // RegisterInterfaceTypes implements InterfaceModule
@@ -107,8 +109,10 @@ func NewAppModule(cdc codec.Marshaler, keeper *keeper.Keeper, validatorSetSource
 }
 
 func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewGrpcQuerier(am.keeper))
+	// wasm services
 	wasmtypes.RegisterMsgServer(cfg.MsgServer(), wasmkeeper.NewMsgServerImpl(wasmkeeper.NewDefaultPermissionKeeper(am.keeper)))
-	wasmtypes.RegisterQueryServer(cfg.QueryServer(), keeper.Querier(am.keeper))
+	wasmtypes.RegisterQueryServer(cfg.QueryServer(), keeper.WasmQuerier(am.keeper))
 }
 
 func (am AppModule) LegacyQuerierHandler(amino *codec.LegacyAmino) sdk.Querier {

@@ -11,6 +11,15 @@
     - [DemotePrivilegedContractProposal](#confio.twasm.v1beta1.DemotePrivilegedContractProposal)
     - [PromoteToPrivilegedContractProposal](#confio.twasm.v1beta1.PromoteToPrivilegedContractProposal)
   
+- [confio/twasm/v1beta1/query.proto](#confio/twasm/v1beta1/query.proto)
+    - [QueryContractsByCallbackTypeRequest](#confio.twasm.v1beta1.QueryContractsByCallbackTypeRequest)
+    - [QueryContractsByCallbackTypeResponse](#confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse)
+    - [QueryContractsByCallbackTypeResponse.ContractPosition](#confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse.ContractPosition)
+    - [QueryPrivilegedContractsRequest](#confio.twasm.v1beta1.QueryPrivilegedContractsRequest)
+    - [QueryPrivilegedContractsResponse](#confio.twasm.v1beta1.QueryPrivilegedContractsResponse)
+  
+    - [Query](#confio.twasm.v1beta1.Query)
+  
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -94,6 +103,107 @@ PromoteToPrivilegedContractProposal gov proposal content type to add
  <!-- end enums -->
 
  <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="confio/twasm/v1beta1/query.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## confio/twasm/v1beta1/query.proto
+
+
+
+<a name="confio.twasm.v1beta1.QueryContractsByCallbackTypeRequest"></a>
+
+### QueryContractsByCallbackTypeRequest
+QueryContractsByCallbackTypeRequest is the request type for the
+Query/ContractsByCallbackType RPC method
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `callback_type` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse"></a>
+
+### QueryContractsByCallbackTypeResponse
+QueryContractsByCallbackTypeResponse is the response type for the
+Query/ContractsByCallbackType RPC method
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `contracts` | [QueryContractsByCallbackTypeResponse.ContractPosition](#confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse.ContractPosition) | repeated | addresses set of contract addresses |
+
+
+
+
+
+
+<a name="confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse.ContractPosition"></a>
+
+### QueryContractsByCallbackTypeResponse.ContractPosition
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `addresses` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="confio.twasm.v1beta1.QueryPrivilegedContractsRequest"></a>
+
+### QueryPrivilegedContractsRequest
+QueryPrivilegedContractsResponse is the request type for the
+Query/PrivilegedContracts RPC method
+
+
+
+
+
+
+<a name="confio.twasm.v1beta1.QueryPrivilegedContractsResponse"></a>
+
+### QueryPrivilegedContractsResponse
+QueryPrivilegedContractsResponse is the response type for the
+Query/PrivilegedContracts RPC method
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `addresses` | [string](#string) | repeated | addresses set of contract addresses |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+
+<a name="confio.twasm.v1beta1.Query"></a>
+
+### Query
+Query provides defines the gRPC querier service
+
+| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
+| ----------- | ------------ | ------------- | ------------| ------- | -------- |
+| `PrivilegedContracts` | [QueryPrivilegedContractsRequest](#confio.twasm.v1beta1.QueryPrivilegedContractsRequest) | [QueryPrivilegedContractsResponse](#confio.twasm.v1beta1.QueryPrivilegedContractsResponse) | PrivilegedContracts returns all privileged contracts | GET|/twasm/v1beta1/contracts/privileged|
+| `ContractsByCallbackType` | [QueryContractsByCallbackTypeRequest](#confio.twasm.v1beta1.QueryContractsByCallbackTypeRequest) | [QueryContractsByCallbackTypeResponse](#confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse) | ContractsByCallbackType returns all contracts that have registered for the callback type | GET|/twasm/v1beta1/contracts/callback/{callback_type}|
 
  <!-- end services -->
 

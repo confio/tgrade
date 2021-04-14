@@ -82,7 +82,7 @@ func (k Keeper) UnsetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) er
 	k.clearPrivilegedFlag(ctx, contractAddr)
 
 	// iterate callbacks and remove
-	k.iterateContractCallbacksByContract(ctx, contractAddr, func(callbackType types.PriviledgedCallbackType, pos uint8) bool {
+	k.iterateContractCallbacksByContract(ctx, contractAddr, func(callbackType types.PrivilegedCallbackType, pos uint8) bool {
 		k.removePrivilegedContractCallbacks(ctx, callbackType, contractAddr)
 		return false
 	})
@@ -129,7 +129,7 @@ func (k Keeper) IteratePrivileged(ctx sdk.Context, cb func(sdk.AccAddress) bool)
 }
 
 // appendToPrivilegedContractCallbacks registers given contract for a callback type
-func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PriviledgedCallbackType, contractAddr sdk.AccAddress) {
+func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 
 	// find last position value for callback type
@@ -156,7 +156,7 @@ func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackTyp
 }
 
 // removePrivilegedContractCallbacks unregisters the given contract for a callback type
-func (k Keeper) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PriviledgedCallbackType, contractAddr sdk.AccAddress) {
+func (k Keeper) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 
 	start := append([]byte{0}, contractAddr...)
@@ -186,7 +186,7 @@ func (k Keeper) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType 
 }
 
 // ExistsPrivilegedContractCallbacks returns if any contract is registered for the given type
-func (k Keeper) ExistsPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PriviledgedCallbackType) bool {
+func (k Keeper) ExistsPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType) bool {
 	store := ctx.KVStore(k.storeKey)
 
 	start := []byte{0}
@@ -198,7 +198,7 @@ func (k Keeper) ExistsPrivilegedContractCallbacks(ctx sdk.Context, callbackType 
 }
 
 // IterateContractCallbacksByType iterates through all contracts for the given type by position and address ASC
-func (k Keeper) IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PriviledgedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+func (k Keeper) IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), getContractCallbacksSecondaryIndexPrefix(callbackType))
 	iter := prefixStore.Iterator(nil, nil)
 	for ; iter.Valid(); iter.Next() {
@@ -210,7 +210,7 @@ func (k Keeper) IterateContractCallbacksByType(ctx sdk.Context, callbackType typ
 }
 
 // iterateContractCallbacksByContract iterates through all registered callbacks for the given contract. Ordered by type and position asc
-func (k Keeper) iterateContractCallbacksByContract(ctx sdk.Context, contractAddress sdk.AccAddress, cb func(t types.PriviledgedCallbackType, pos uint8) bool) {
+func (k Keeper) iterateContractCallbacksByContract(ctx sdk.Context, contractAddress sdk.AccAddress, cb func(t types.PrivilegedCallbackType, pos uint8) bool) {
 	store := ctx.KVStore(k.storeKey)
 
 	prefixStore := prefix.NewStore(store, contractCallbacksSecondaryIndexPrefix)
@@ -231,7 +231,7 @@ func privilegedContractsSecondaryIndexKey(contractAddr sdk.AccAddress) []byte {
 
 // contractCallbacksSecondaryIndexKey returns the key for privileged contract callbacks
 // `<prefix><callbackType><position>
-func contractCallbacksSecondaryIndexKey(callbackType types.PriviledgedCallbackType, pos uint8, contractAddr sdk.AccAddress) []byte {
+func contractCallbacksSecondaryIndexKey(callbackType types.PrivilegedCallbackType, pos uint8, contractAddr sdk.AccAddress) []byte {
 	prefix := getContractCallbacksSecondaryIndexPrefix(callbackType)
 	prefixLen := len(prefix)
 	const posLen = 1 // 1 byte for position
@@ -242,16 +242,16 @@ func contractCallbacksSecondaryIndexKey(callbackType types.PriviledgedCallbackTy
 }
 
 // getContractCallbacksSecondaryIndexPrefix return `<prefix><callbackType>`
-func getContractCallbacksSecondaryIndexPrefix(callbackType types.PriviledgedCallbackType) []byte {
+func getContractCallbacksSecondaryIndexPrefix(callbackType types.PrivilegedCallbackType) []byte {
 	return append(contractCallbacksSecondaryIndexPrefix, byte(callbackType))
 }
 
 // splits source of type `<callbackType><position>`
-func splitUnprefixedContractCallbacksSecondaryIndexKey(key []byte) (types.PriviledgedCallbackType, uint8) {
+func splitUnprefixedContractCallbacksSecondaryIndexKey(key []byte) (types.PrivilegedCallbackType, uint8) {
 	if len(key) != 1+1 {
 		panic(fmt.Sprintf("unexpected key lenght %d", len(key)))
 	}
-	return types.PriviledgedCallbackType(key[0]), parseContractPosition(key[1:])
+	return types.PrivilegedCallbackType(key[0]), parseContractPosition(key[1:])
 }
 
 // splits source of type `<position>`

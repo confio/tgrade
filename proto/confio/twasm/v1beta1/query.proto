@@ -1,0 +1,48 @@
+syntax = "proto3";
+package confio.twasm.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "cosmwasm/wasm/v1beta1/types.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+
+option go_package = "github.com/confio/tgrade/x/twasm/types";
+
+// Query provides defines the gRPC querier service
+service Query {
+
+  // PrivilegedContracts returns all privileged contracts
+  rpc PrivilegedContracts(QueryPrivilegedContractsRequest)
+      returns (QueryPrivilegedContractsResponse) {
+    option (google.api.http).get = "/twasm/v1beta1/contracts/privileged";
+  }
+  // ContractsByCallbackType returns all contracts that have registered for the
+  // callback type
+  rpc ContractsByCallbackType(QueryContractsByCallbackTypeRequest)
+      returns (QueryContractsByCallbackTypeResponse) {
+    option (google.api.http).get =
+        "/twasm/v1beta1/contracts/callback/{callback_type}";
+  }
+}
+
+// QueryPrivilegedContractsResponse is the request type for the
+// Query/PrivilegedContracts RPC method
+message QueryPrivilegedContractsRequest {}
+
+// QueryPrivilegedContractsResponse is the response type for the
+// Query/PrivilegedContracts RPC method
+message QueryPrivilegedContractsResponse {
+  // addresses set of contract addresses
+  repeated string addresses = 1;
+}
+// QueryContractsByCallbackTypeRequest is the request type for the
+// Query/ContractsByCallbackType RPC method
+message QueryContractsByCallbackTypeRequest { string callback_type = 2; }
+
+// QueryContractsByCallbackTypeResponse is the response type for the
+// Query/ContractsByCallbackType RPC method
+message QueryContractsByCallbackTypeResponse {
+  message ContractPosition { string addresses = 1; }
+  // addresses set of contract addresses
+  repeated ContractPosition contracts = 2 [ (gogoproto.nullable) = false ];
+}

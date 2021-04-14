@@ -351,7 +351,7 @@ func TestIterateContractCallbacksByContract(t *testing.T) {
 		otherAddr = sdk.AccAddress(bytes.Repeat([]byte{2}, sdk.AddrLen))
 	)
 	type tuple struct {
-		t types.PriviledgedCallbackType
+		t types.PrivilegedCallbackType
 		p uint8
 	}
 
@@ -405,7 +405,7 @@ func TestIterateContractCallbacksByContract(t *testing.T) {
 
 			// when
 			var captured []tuple
-			k.iterateContractCallbacksByContract(ctx, myAddr, func(t types.PriviledgedCallbackType, prio uint8) bool {
+			k.iterateContractCallbacksByContract(ctx, myAddr, func(t types.PrivilegedCallbackType, prio uint8) bool {
 				captured = append(captured, tuple{t: t, p: prio})
 				return spec.captureFirst
 			})
