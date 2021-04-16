@@ -9,8 +9,9 @@ import (
 
 func AddGenesisWasmMsgCmd(defaultNodeHome string) *cobra.Command {
 	txCmd := &cobra.Command{
-		Use:                        "add-wasm-genesis-message",
-		Short:                      "Wasm genesis subcommands",
+		Use:                        "wasm-genesis-message",
+		Short:                      "Wasm genesis message subcommands",
+		Aliases:                    []string{"wasm-genesis-msg", "wasm-genesis-messages"},
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
@@ -22,6 +23,21 @@ func AddGenesisWasmMsgCmd(defaultNodeHome string) *cobra.Command {
 		wasmcli.GenesisExecuteContractCmd(defaultNodeHome, genIO),
 		wasmcli.GenesisListContractsCmd(defaultNodeHome, genIO),
 		wasmcli.GenesisListCodesCmd(defaultNodeHome, genIO),
+	)
+	return txCmd
+
+}
+func GenesisWasmFlagsCmd(defaultNodeHome string) *cobra.Command {
+	txCmd := &cobra.Command{
+		Use:                        "wasm-genesis-flags",
+		Short:                      "Wasm genesis flag subcommands",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
+	}
+	genIO := cli.NewGenesisIO()
+	txCmd.AddCommand(
+		cli.GenesisSetPrivileged(defaultNodeHome, genIO),
 	)
 	return txCmd
 

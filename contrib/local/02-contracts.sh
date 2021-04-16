@@ -6,7 +6,7 @@ KEY=node0
 echo "-----------------------"
 echo "## Add new CosmWasm contract"
 RESP=$(tgrade tx wasm store "$DIR/hackatom.wasm.gzip" \
-  --from $KEY --gas 1500000 -y --chain-id=testing --node=http://localhost:26657 -b block \
+  --from $KEY --gas 2500000 -y --chain-id=testing --node=http://localhost:26657 -b block \
   --keyring-backend=test --keyring-dir=testnet/node0/tgrade)
 
 CODE_ID=$(echo "$RESP" | jq -r '.logs[0].events[0].attributes[-1].value')

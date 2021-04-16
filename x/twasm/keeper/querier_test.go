@@ -23,13 +23,13 @@ func TestQueryPrivilegedContracts(t *testing.T) {
 		"single found": {
 			state: []sdk.AccAddress{addr1},
 			expRsp: &types.QueryPrivilegedContractsResponse{
-				Addresses: []string{addr1.String()},
+				Contracts: []string{addr1.String()},
 			},
 		},
 		"multiple found": {
 			state: []sdk.AccAddress{addr1, addr2},
 			expRsp: &types.QueryPrivilegedContractsResponse{
-				Addresses: []string{addr1.String(), addr2.String()},
+				Contracts: []string{addr1.String(), addr2.String()},
 			},
 		},
 	}
@@ -78,9 +78,7 @@ func TestQueryContractsByCallbackType(t *testing.T) {
 			},
 			state: []sdk.AccAddress{addr1},
 			expRsp: &types.QueryContractsByCallbackTypeResponse{
-				Contracts: []types.QueryContractsByCallbackTypeResponse_ContractPosition{
-					{Addresses: addr1.String()},
-				},
+				Contracts: []string{addr1.String()},
 			},
 		},
 		"multiple found": {
@@ -89,10 +87,7 @@ func TestQueryContractsByCallbackType(t *testing.T) {
 			},
 			state: []sdk.AccAddress{addr1, addr2},
 			expRsp: &types.QueryContractsByCallbackTypeResponse{
-				Contracts: []types.QueryContractsByCallbackTypeResponse_ContractPosition{
-					{Addresses: addr1.String()},
-					{Addresses: addr2.String()},
-				},
+				Contracts: []string{addr1.String(), addr2.String()},
 			},
 		},
 		"unknown callback type": {

@@ -66,7 +66,7 @@ func TestSmokeTest(t *testing.T) {
 
 	t.Log("Query wasm code list")
 	qResult := cli.CustomQuery("q", "wasm", "list-code")
-	codes := gjson.Get(qResult, "code_infos.#.id").Array() // see query syntax https://github.com/tidwall/gjson#path-syntax
+	codes := gjson.Get(qResult, "code_infos.#.code_id").Array()
 	require.Len(t, codes, 1, qResult)
 	require.Equal(t, int64(1), codes[0].Int())
 
@@ -77,22 +77,21 @@ func TestGenesisMsg(t *testing.T) {
 	sut.ResetChain(t)
 	anyAddress := "tgrade12qey0qvmkvdu5yl3x329lhrvqfgzs5vne225q7"
 	args := []string{
-		"add-wasm-genesis-message",
+		"wasm-genesis-message",
 		"store",
 		"contrib/local/hackatom.wasm.gzip",
 		"--instantiate-everybody=true",
 		"--builder=foo/bar:latest",
 		fmt.Sprintf("--run-as=%s", anyAddress),
 	}
-	revert := sut.ModifyGenesis(t, args...)
-	t.Cleanup(revert)
+	sut.ModifyGenesis(t, args)
 
 	sut.StartChain(t)
 
 	t.Log("Query wasm code list")
 	cli := NewTgradeCli(t, sut, verbose)
 	qResult := cli.CustomQuery("q", "wasm", "list-code")
-	codes := gjson.Get(qResult, "code_infos.#.id").Array() // see query syntax https://github.com/tidwall/gjson#path-syntax
+	codes := gjson.Get(qResult, "code_infos.#.code_id").Array()
 	require.Len(t, codes, 1, qResult)
 	require.Equal(t, int64(1), codes[0].Int())
 
@@ -101,8 +100,62 @@ func TestGenesisMsg(t *testing.T) {
 
 func TestPrivileged(t *testing.T) {
 	sut.ResetChain(t)
+	anyAddress := "tgrade12qey0qvmkvdu5yl3x329lhrvqfgzs5vne225q7"
+	commands := [][]string{
+		{
+			"wasm-genesis-message",
+			"store",
+			"testing/contracts/cw4_group.wasm",
+			"--instantiate-everybody=true",
+			"--builder=foo/bar:latest",
+			fmt.Sprintf("--run-as=%s", anyAddress),
+		},
+		{
+			"wasm-genesis-message",
+			"store",
+			"testing/contracts/tgrade_valset.wasm",
+			"--instantiate-everybody=true",
+			"--builder=foo/bar:latest",
+			fmt.Sprintf("--run-as=%s", anyAddress),
+		},
+		{
+			"wasm-genesis-message",
+			"instantiate-contract",
+			"1",
+			`{"members":[{"addr":"tgrade189s8e528jm7scum9scw2g5z8yg7csdx39fu0gm", "weight": 1}]}`,
+			"--label=testing",
+			fmt.Sprintf("--run-as=%s", anyAddress),
+		},
+		{
+			"wasm-genesis-message",
+			"instantiate-contract",
+			"2",
+			`{"membership":"tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy", "min_weight": 1, "max_validators":1, "epoch_length":1, "initial_keys":[{"operator":"tgrade189s8e528jm7scum9scw2g5z8yg7csdx39fu0gm","validator_pubkey":"N30jveAajHGhSOJ+jfpz5KYQWjmXRlQN0Y0MCZfCnKc="}]}`,
+			"--label=testing",
+			fmt.Sprintf("--run-as=%s", anyAddress),
+		},
+		{
+			"wasm-genesis-flags",
+			"set-privileged",
+			"tgrade10pyejy66429refv3g35g2t7am0was7yanjs539",
+		},
+	}
+	sut.ModifyGenesis(t, commands...)
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
-	_ = cli.CustomQuery("q", "wasm", "privileged-contracts")
-	_ = cli.CustomQuery("q", "wasm", "callback-contracts", "begin_block")
+
+	// and then should be in list of privileged contracts
+	qResult := cli.CustomQuery("q", "wasm", "privileged-contracts")
+	contracts := gjson.Get(qResult, "contracts").Array()
+	require.Len(t, contracts, 1, qResult)
+	require.Equal(t, "tgrade10pyejy66429refv3g35g2t7am0was7yanjs539", contracts[0].String())
+	t.Log("got query result", qResult)
+
+	// and registered for validator update
+	qResult = cli.CustomQuery("q", "wasm", "callback-contracts", "validator_set_update")
+	contracts = gjson.Get(qResult, "contracts").Array()
+
+	require.Len(t, contracts, 1, qResult)
+	require.Equal(t, "tgrade10pyejy66429refv3g35g2t7am0was7yanjs539", contracts[0].String())
+	t.Log("got query result", qResult)
 }

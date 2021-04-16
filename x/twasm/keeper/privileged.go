@@ -47,7 +47,6 @@ func (k Keeper) SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) erro
 		sdk.NewAttribute(wasmtypes.AttributeKeyContract, contractAddr.String()),
 	)
 	ctx.EventManager().EmitEvent(event)
-
 	return nil
 }
 
@@ -57,11 +56,6 @@ func (k Keeper) SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) erro
 // - remove privileged flag
 // - remove all callbacks for the contract
 func (k Keeper) UnsetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) error {
-	contractInfo := k.GetContractInfo(ctx, contractAddr)
-	if contractInfo == nil {
-		return sdkerrors.Wrap(wasmtypes.ErrNotFound, "contractAddr")
-	}
-
 	// call contract to unregister for callbacks
 	msg := contract.TgradeSudoMsg{PrivilegeChange: &contract.PrivilegeChangeMsg{Demoted: &struct{}{}}}
 	msgBz, err := json.Marshal(&msg)
@@ -73,6 +67,12 @@ func (k Keeper) UnsetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) er
 		return sdkerrors.Wrap(err, "sudo")
 	}
 
+	// load after sudo so that unregister messages were handled
+	contractInfo := k.GetContractInfo(ctx, contractAddr)
+	if contractInfo == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrNotFound, "contractAddr")
+	}
+
 	// remove from cache
 	if err := k.contractKeeper.UnpinCode(ctx, contractInfo.CodeID); err != nil {
 		return sdkerrors.Wrapf(err, "unpin")
@@ -81,15 +81,19 @@ func (k Keeper) UnsetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) er
 	// remove privileged flag
 	k.clearPrivilegedFlag(ctx, contractAddr)
 
-	// iterate callbacks and remove
-	details, err := types.ContractDetails(*contractInfo)
-	if err != nil {
+	// remove remaining callbacks
+	var details types.TgradeContractDetails
+	if err := contractInfo.ReadExtension(&details); err != nil {
 		return err
 	}
 	details.IterateRegisteredCallbacks(func(callbackType types.PrivilegedCallbackType, pos uint8) bool {
 		k.removePrivilegedContractCallbacks(ctx, callbackType, pos, contractAddr)
+		details.RemoveRegisteredCallback(callbackType, pos)
 		return false
 	})
+	if err := k.setContractDetails(ctx, contractAddr, &details); err != nil {
+		return sdkerrors.Wrap(err, "store contract info extension")
+	}
 
 	k.Logger(ctx).Info("Unset privileged", "contractAddr", contractAddr.String())
 	event := sdk.NewEvent(
@@ -98,7 +102,35 @@ func (k Keeper) UnsetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) er
 		sdk.NewAttribute(wasmtypes.AttributeKeyContract, contractAddr.String()),
 	)
 	ctx.EventManager().EmitEvent(event)
+	return nil
+}
 
+// importPrivileged import from genesis
+func (k Keeper) importPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress, codeID uint64, details types.TgradeContractDetails) error {
+	// add to cache
+	if err := k.contractKeeper.PinCode(ctx, codeID); err != nil {
+		return sdkerrors.Wrapf(err, "pin")
+	}
+
+	// set privileged flag
+	k.setPrivilegedFlag(ctx, contractAddr)
+
+	store := ctx.KVStore(k.storeKey)
+	for _, c := range details.RegisteredCallbacks {
+		var (
+			callbackType = types.PrivilegedCallbackTypeFrom(c.CallbackType)
+			pos          = uint8(c.Position)
+		)
+		if callbackType == nil {
+			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "unknown callback type: %q", c.CallbackType)
+		}
+		key := contractCallbacksSecondaryIndexKey(*callbackType, pos)
+		if store.Has(key) {
+			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis,
+				"callback exists already: %s for contract %s", callbackType.String(), contractAddr.String())
+		}
+		k.storeCallbackRegistration(ctx, *callbackType, pos, contractAddr)
+	}
 	return nil
 }
 
@@ -147,7 +179,7 @@ func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackTyp
 	if newPos <= pos {
 		panic("Overflow in in callback positions")
 	}
-	store.Set(contractCallbacksSecondaryIndexKey(callbackType, newPos), contractAddr)
+	k.storeCallbackRegistration(ctx, callbackType, newPos, contractAddr)
 
 	k.Logger(ctx).Info("Add callback", "contractAddr", contractAddr.String(), "callback_type", callbackType.String())
 	event := sdk.NewEvent(
@@ -157,15 +189,21 @@ func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackTyp
 		sdk.NewAttribute(types.AttributeKeyCallbackType, callbackType.String()),
 	)
 	ctx.EventManager().EmitEvent(event)
-	return pos
+	return newPos
+}
+
+// storeCallbackRegistration persists the callback registration the contract
+func (k Keeper) storeCallbackRegistration(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8, contractAddr sdk.AccAddress) {
+	store := ctx.KVStore(k.storeKey)
+	store.Set(contractCallbacksSecondaryIndexKey(callbackType, pos), contractAddr)
 }
 
 // removePrivilegedContractCallbacks unregisters the given contract for a callback type
-func (k Keeper) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8, contractAddr sdk.AccAddress) {
+func (k Keeper) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8, contractAddr sdk.AccAddress) bool {
 	store := ctx.KVStore(k.storeKey)
 	key := contractCallbacksSecondaryIndexKey(callbackType, pos)
 	if !store.Has(key) {
-		return
+		return false
 	}
 	store.Delete(key)
 	k.Logger(ctx).Info("Remove callback", "contractAddr", contractAddr.String(), "callback_type", callbackType.String())
@@ -176,10 +214,11 @@ func (k Keeper) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType 
 		sdk.NewAttribute(types.AttributeKeyCallbackType, callbackType.String()),
 	)
 	ctx.EventManager().EmitEvent(event)
+	return true
 }
 
-// ExistsPrivilegedContractCallbacks returns if any contract is registered for the given type
-func (k Keeper) ExistsPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType) bool {
+// ExistsAnyPrivilegedContractCallback returns if any contract is registered for the given type
+func (k Keeper) ExistsAnyPrivilegedContractCallback(ctx sdk.Context, callbackType types.PrivilegedCallbackType) bool {
 	store := ctx.KVStore(k.storeKey)
 
 	start := []byte{0}

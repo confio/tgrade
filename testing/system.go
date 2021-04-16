@@ -76,6 +76,13 @@ func (s SystemUnderTest) SetupChain() {
 		panic(fmt.Sprintf("unexpected error :%#+v, output: %s", err, string(out)))
 	}
 	s.Log(string(out))
+
+	// backup genesis
+	src := filepath.Join(workDir, s.nodePath(0), "config", "genesis.json")
+	dest := filepath.Join(workDir, s.nodePath(0), "config", "genesis.json.orig")
+	if _, err := copyFile(src, dest); err != nil {
+		panic(fmt.Sprintf("copy failed :%#+v", err))
+	}
 }
 
 func (s SystemUnderTest) StartChain(t *testing.T) {
@@ -164,7 +171,6 @@ func (s SystemUnderTest) StopChain() {
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		//panic(fmt.Sprintf("unexpected error :%#+v, output: %s", err, string(out)))
 		s.Logf("failed to stop chain: %s\n", err)
 	}
 	s.Log(string(out))
@@ -217,6 +223,7 @@ func (s SystemUnderTest) AwaitNextBlock(t *testing.T) {
 func (s SystemUnderTest) ResetChain(t *testing.T) {
 	t.Log("ResetChain chain")
 	s.StopChain()
+	restoreOriginalGenesis(t, s)
 	cmd := exec.Command(locateExecutable("pkill"), "tgrade")
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
@@ -226,20 +233,15 @@ func (s SystemUnderTest) ResetChain(t *testing.T) {
 	s.Log(string(out))
 
 	// reset all nodes
-	s.ForEachNodeExecAndWait(t, "unsafe-reset-all")
+	s.ForEachNodeExecAndWait(t, []string{"unsafe-reset-all"})
 }
 
-// ModifyGenesis creates a backup then applies all tgrade commands. return function reverts the changes
-// and should be called in test cleanup
-func (s SystemUnderTest) ModifyGenesis(t *testing.T, args ...string) func() {
-	// backup current genesis
-	backupFilePath := backupGenesis(t, s)
-
-	s.ForEachNodeExecAndWait(t, args...)
-	// restore to previous genesis
-	return func() { s.SetGenesis(t, backupFilePath) }
+// ModifyGenesis executes the commands to modify the genesis
+func (s SystemUnderTest) ModifyGenesis(t *testing.T, cmds ...[]string) {
+	s.ForEachNodeExecAndWait(t, cmds...)
 }
 
+// SetGenesis copy genesis file to all nodes
 func (s SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
 	in, err := os.Open(srcPath)
 	require.NoError(t, err)
@@ -260,21 +262,25 @@ func (s SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
 	})
 }
 
-func (s SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, args ...string) {
+// ForEachNodeExecAndWait runs the given tgrade commands for all cluster nodes synchronously
+func (s SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string) {
 	s.withEachNodeHome(func(i int, home string) {
-		args = append(args, "--home", home)
-		s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
-		cmd := exec.Command(
-			locateExecutable("tgrade"),
-			args...,
-		)
-		cmd.Dir = workDir
-		out, err := cmd.CombinedOutput()
-		require.NoError(t, err, "node %d: %s", i, string(out))
-		s.Logf("Result: %s\n", string(out))
+		for _, args := range cmds {
+			args = append(args, "--home", home)
+			s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
+			cmd := exec.Command(
+				locateExecutable("tgrade"),
+				args...,
+			)
+			cmd.Dir = workDir
+			out, err := cmd.CombinedOutput()
+			require.NoError(t, err, "node %d: %s", i, string(out))
+			s.Logf("Result: %s\n", string(out))
+		}
 	})
 }
 
+// forEachNodesExecAsync runs the given tgrade command for all cluster nodes and returns without waiting
 func (s SystemUnderTest) forEachNodesExecAsync(t *testing.T, args ...string) []func() error {
 	r := make([]func() error, s.nodesCount)
 	s.withEachNodeHome(func(i int, home string) {
@@ -312,6 +318,7 @@ func (s SystemUnderTest) Logf(msg string, args ...interface{}) {
 	s.Log(fmt.Sprintf(msg, args...))
 }
 
+// locateExecutable looks up the binary on the OS path.
 func locateExecutable(file string) string {
 	path, err := exec.LookPath(file)
 	if err != nil {
@@ -405,15 +412,25 @@ func CapturingEventConsumer() (EventConsumer, *ctypes.ResultEvent) {
 	}, &result
 }
 
-func backupGenesis(t *testing.T, s SystemUnderTest) string {
-	in, err := os.Open(filepath.Join(workDir, s.nodePath(0), "config", "genesis.json"))
-	require.NoError(t, err)
-	workDir := t.TempDir()
-	out, err := os.Create(filepath.Join(workDir, "genesis.json"))
-	require.NoError(t, err)
+// restoreOriginalGenesis replace nodes genesis by the one created on setup
+func restoreOriginalGenesis(t *testing.T, s SystemUnderTest) {
+	src := filepath.Join(workDir, s.nodePath(0), "config", "genesis.json.orig")
+	s.SetGenesis(t, src)
+}
+
+// copyFile copy source file to dest file path
+func copyFile(src, dest string) (*os.File, error) {
+	in, err := os.Open(src)
+	if err != nil {
+		return nil, err
+	}
+
+	out, err := os.Create(dest)
+	if err != nil {
+		return nil, err
+	}
 	defer out.Close()
 
 	_, err = io.Copy(out, in)
-	require.NoError(t, err)
-	return out.Name()
+	return out, err
 }

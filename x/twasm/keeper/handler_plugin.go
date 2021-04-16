@@ -14,7 +14,7 @@ import (
 type tgradeKeeper interface {
 	IsPrivileged(ctx sdk.Context, contract sdk.AccAddress) bool
 	appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) uint8
-	removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8, contractAddr sdk.AccAddress)
+	removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8, contractAddr sdk.AccAddress) bool
 	setContractDetails(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error
 	GetContractInfo(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
 }
@@ -53,48 +53,50 @@ func (h TgradeHandler) handleHooks(ctx sdk.Context, contractAddr sdk.AccAddress,
 	if contractInfo == nil {
 		return nil, nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract info")
 	}
-	details, err := types.ContractDetails(*contractInfo)
-	if err != nil {
+
+	var details types.TgradeContractDetails
+	if err := contractInfo.ReadExtension(&details); err != nil {
 		return nil, nil, err
 	}
 
-	register := func(tp types.PrivilegedCallbackType) {
-		if details.HasRegisteredContractCallback(tp) {
-			return
+	register := func(c types.PrivilegedCallbackType) error {
+		if details.HasRegisteredContractCallback(c) {
+			return nil
 		}
-		pos := h.keeper.appendToPrivilegedContractCallbacks(ctx, tp, contractAddr)
-		details.AddRegisteredCallback(tp, pos)
-		h.keeper.setContractDetails(ctx, contractAddr, details)
+		pos := h.keeper.appendToPrivilegedContractCallbacks(ctx, c, contractAddr)
+		details.AddRegisteredCallback(c, pos)
+		return h.keeper.setContractDetails(ctx, contractAddr, &details)
 	}
-	unregister := func(tp types.PrivilegedCallbackType) {
+	unregister := func(tp types.PrivilegedCallbackType) error {
 		if !details.HasRegisteredContractCallback(tp) {
-			return
+			return nil
 		}
-		details.IterateRegisteredCallbacks(func(t types.PrivilegedCallbackType, pos uint8) bool {
-			if t != tp {
+		details.IterateRegisteredCallbacks(func(c types.PrivilegedCallbackType, pos uint8) bool {
+			if c != tp {
 				return false
 			}
-			h.keeper.removePrivilegedContractCallbacks(ctx, t, pos, contractAddr)
-			details.RemoveRegisteredCallback(t, pos)
+			h.keeper.removePrivilegedContractCallbacks(ctx, c, pos, contractAddr)
+			details.RemoveRegisteredCallback(c, pos)
 			return false
 		})
-		h.keeper.setContractDetails(ctx, contractAddr, details)
+		return h.keeper.setContractDetails(ctx, contractAddr, &details)
 	}
+	var err error
 	switch {
 	case hooks.RegisterBeginBlock != nil:
-		register(types.CallbackTypeBeginBlock)
+		err = register(types.CallbackTypeBeginBlock)
 	case hooks.UnregisterBeginBlock != nil:
-		unregister(types.CallbackTypeBeginBlock)
+		err = unregister(types.CallbackTypeBeginBlock)
 	case hooks.RegisterEndBlock != nil:
-		register(types.CallbackTypeEndBlock)
+		err = register(types.CallbackTypeEndBlock)
 	case hooks.UnregisterEndBlock != nil:
-		unregister(types.CallbackTypeEndBlock)
+		err = unregister(types.CallbackTypeEndBlock)
 	case hooks.RegisterValidatorSetUpdate != nil:
-		register(types.CallbackTypeValidatorSetUpdate)
+		err = register(types.CallbackTypeValidatorSetUpdate)
 	case hooks.UnregisterValidatorSetUpdate != nil:
-		unregister(types.CallbackTypeValidatorSetUpdate)
+		err = unregister(types.CallbackTypeValidatorSetUpdate)
 	default:
 		return nil, nil, wasmtypes.ErrUnknownMsg
 	}
-	return nil, nil, nil
+	return nil, nil, err
 }

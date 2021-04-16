@@ -26,7 +26,7 @@ func NewGrpcQuerier(keeper queryKeeper) *grpcQuerier {
 func (q grpcQuerier) PrivilegedContracts(c context.Context, _ *types.QueryPrivilegedContractsRequest) (*types.QueryPrivilegedContractsResponse, error) {
 	var result types.QueryPrivilegedContractsResponse
 	q.keeper.IteratePrivileged(sdk.UnwrapSDKContext(c), func(address sdk.AccAddress) bool {
-		result.Addresses = append(result.Addresses, address.String())
+		result.Contracts = append(result.Contracts, address.String())
 		return false
 	})
 	return &result, nil
@@ -39,9 +39,7 @@ func (q grpcQuerier) ContractsByCallbackType(c context.Context, req *types.Query
 		return nil, status.Error(codes.NotFound, "callback type")
 	}
 	q.keeper.IterateContractCallbacksByType(sdk.UnwrapSDKContext(c), *cType, func(_ uint8, contractAddr sdk.AccAddress) bool {
-		result.Contracts = append(result.Contracts, types.QueryContractsByCallbackTypeResponse_ContractPosition{
-			Addresses: contractAddr.String(),
-		})
+		result.Contracts = append(result.Contracts, contractAddr.String())
 		return false
 	})
 	return &result, nil

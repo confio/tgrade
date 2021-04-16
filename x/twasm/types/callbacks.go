@@ -1,6 +1,9 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+)
 
 // PrivilegedCallbackType is a system callback to a contract
 type PrivilegedCallbackType byte
@@ -49,4 +52,12 @@ func AllCallbackTypeNames() []string {
 
 func (t PrivilegedCallbackType) String() string {
 	return callbackTypeToString[t]
+}
+
+// ValidateBasic checks if the callback type was registered
+func (t PrivilegedCallbackType) ValidateBasic() error {
+	if _, ok := callbackTypeToString[t]; !ok {
+		return wasmtypes.ErrInvalid
+	}
+	return nil
 }

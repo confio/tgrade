@@ -23,6 +23,11 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&PromoteToPrivilegedContractProposal{},
 		&DemotePrivilegedContractProposal{},
 	)
+	registry.RegisterImplementations(
+		(*wasmtypes.ContractInfoExtension)(nil),
+		&TgradeContractDetails{},
+	)
+
 	//msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 

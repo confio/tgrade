@@ -16,5 +16,5 @@ message TgradeContractDetails {
 
 message RegisteredCallback {
   uint32 position = 1;
-  uint32 callback_type = 2;
+  string callback_type = 2;
 }

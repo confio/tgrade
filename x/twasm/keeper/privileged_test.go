@@ -7,6 +7,7 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
 	cosmwasm "github.com/CosmWasm/wasmvm"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/confio/tgrade/x/twasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
@@ -146,13 +147,20 @@ func TestUnsetPrivileged(t *testing.T) {
 			k := keepers.TWasmKeeper
 			codeID, contractAddr := seedTestContract(t, ctx, k)
 
+			h := NewTgradeHandler(k)
 			// and privileged with a callback
 			k.setPrivilegedFlag(ctx, contractAddr)
-			k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeEndBlock, contractAddr)
-			k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, contractAddr)
+			_, _, err := h.handleHooks(ctx, contractAddr, &contract.Hooks{
+				RegisterBeginBlock: &struct{}{},
+			})
+			require.NoError(t, err)
+			_, _, err = h.handleHooks(ctx, contractAddr, &contract.Hooks{
+				RegisterEndBlock: &struct{}{},
+			})
+			require.NoError(t, err)
 
 			// when
-			err := k.UnsetPrivileged(ctx, contractAddr)
+			err = k.UnsetPrivileged(ctx, contractAddr)
 
 			// then
 			if spec.expErr {
@@ -163,16 +171,21 @@ func TestUnsetPrivileged(t *testing.T) {
 
 			var expChecksum cosmwasm.Checksum = k.GetCodeInfo(ctx, codeID).CodeHash
 
-			// then expect pinned to cache
+			// then expect unpinned from cache
 			assert.Equal(t, expChecksum, *capturedUnpinChecksum)
-			// and flag set
+			// and flag not set
 			assert.False(t, k.IsPrivileged(ctx, contractAddr))
 			// and callbacks removed
-			assert.False(t, k.ExistsPrivilegedContractCallbacks(ctx, types.CallbackTypeEndBlock))
-			assert.False(t, k.ExistsPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock))
+			assert.False(t, k.ExistsAnyPrivilegedContractCallback(ctx, types.CallbackTypeEndBlock))
+			assert.False(t, k.ExistsAnyPrivilegedContractCallback(ctx, types.CallbackTypeBeginBlock))
 			// and sudo called
 			assert.Equal(t, expChecksum, *capturedSudoChecksum)
 			assert.JSONEq(t, `{"privilege_change":{"demoted":{}}}`, string(capturedSudoMsg), "got %s", string(capturedSudoMsg))
+			// and state updated
+			info := k.GetContractInfo(ctx, contractAddr)
+			var details types.TgradeContractDetails
+			require.NoError(t, info.ReadExtension(&details))
+			assert.Empty(t, details.RegisteredCallbacks)
 		})
 	}
 }
@@ -280,7 +293,6 @@ func TestAppendToPrivilegedContractCallbacks(t *testing.T) {
 }
 
 func TestRemovePrivilegedContractCallbacks(t *testing.T) {
-	t.Skip("temporary deactivated during refactorings")
 	var (
 		myAddr      = sdk.AccAddress(bytes.Repeat([]byte{1}, sdk.AddrLen))
 		otherAddr   = sdk.AccAddress(bytes.Repeat([]byte{2}, sdk.AddrLen))
@@ -294,36 +306,48 @@ func TestRemovePrivilegedContractCallbacks(t *testing.T) {
 
 	specs := map[string]struct {
 		setup        func(sdk.Context, *Keeper)
+		srcPos       uint8
+		expRemoved   bool
 		expRemaining []tuple
 	}{
 		"one callback": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
 			},
+			srcPos:     1,
+			expRemoved: true,
 		},
-		"multiple callback - same address": {
+		"multiple callback - first": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
 			},
+			srcPos:       1,
+			expRemoved:   true,
+			expRemaining: []tuple{{p: 2, a: myAddr}},
 		},
-		"multiple callback - different address": {
+		"multiple callback - middle": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, otherAddr)
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, anotheraddr)
 			},
+			srcPos:       2,
+			expRemoved:   true,
 			expRemaining: []tuple{{p: 1, a: otherAddr}, {p: 3, a: anotheraddr}},
 		},
-		"different address only": {
+		"non existing position": {
 			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, otherAddr)
-				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, anotheraddr)
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
 			},
-			expRemaining: []tuple{{p: 1, a: otherAddr}, {p: 2, a: anotheraddr}},
+			srcPos:       2,
+			expRemoved:   false,
+			expRemaining: []tuple{{p: 1, a: myAddr}},
 		},
 		"no callbacks": {
-			setup: func(ctx sdk.Context, k *Keeper) {},
+			setup:      func(ctx sdk.Context, k *Keeper) {},
+			srcPos:     1,
+			expRemoved: false,
 		},
 	}
 	for name, spec := range specs {
@@ -333,7 +357,7 @@ func TestRemovePrivilegedContractCallbacks(t *testing.T) {
 			spec.setup(ctx, k)
 
 			// when
-			//k.removePrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
+			removed := k.removePrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, spec.srcPos, myAddr)
 
 			// then
 			var captured []tuple
@@ -342,6 +366,7 @@ func TestRemovePrivilegedContractCallbacks(t *testing.T) {
 				return false
 			})
 			assert.Equal(t, spec.expRemaining, captured)
+			assert.Equal(t, spec.expRemoved, removed)
 		})
 	}
 }
