@@ -11,6 +11,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
+// tgradeKeeper defines a subset of Keeper
 type tgradeKeeper interface {
 	IsPrivileged(ctx sdk.Context, contract sdk.AccAddress) bool
 	appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) uint8
@@ -21,14 +22,17 @@ type tgradeKeeper interface {
 
 var _ wasmkeeper.Messenger = TgradeHandler{}
 
+// TgradeHandler is a custom message handler plugin for wasmd.
 type TgradeHandler struct {
 	keeper tgradeKeeper
 }
 
+// NewTgradeHandler constructor
 func NewTgradeHandler(keeper tgradeKeeper) *TgradeHandler {
 	return &TgradeHandler{keeper: keeper}
 }
 
+// DispatchMsg handles wasmVM message for privileged contracts
 func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress, contractIBCPortID string, msg wasmvmtypes.CosmosMsg) (events []sdk.Event, data [][]byte, err error) {
 	if msg.Custom == nil {
 		return nil, nil, wasmtypes.ErrUnknownMsg
@@ -42,21 +46,22 @@ func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress,
 	}
 	switch {
 	case tMsg.Hooks != nil:
-		return h.handleHooks(ctx, contractAddr, tMsg.Hooks)
+		return nil, nil, h.handleHooks(ctx, contractAddr, tMsg.Hooks)
 
 	}
 	return nil, nil, wasmtypes.ErrUnknownMsg
 }
 
-func (h TgradeHandler) handleHooks(ctx sdk.Context, contractAddr sdk.AccAddress, hooks *contract.Hooks) ([]sdk.Event, [][]byte, error) {
+// handle register/ unregister hook messages
+func (h TgradeHandler) handleHooks(ctx sdk.Context, contractAddr sdk.AccAddress, hooks *contract.Hooks) error {
 	contractInfo := h.keeper.GetContractInfo(ctx, contractAddr)
 	if contractInfo == nil {
-		return nil, nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract info")
+		return sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract info")
 	}
 
 	var details types.TgradeContractDetails
 	if err := contractInfo.ReadExtension(&details); err != nil {
-		return nil, nil, err
+		return err
 	}
 
 	register := func(c types.PrivilegedCallbackType) error {
@@ -81,22 +86,20 @@ func (h TgradeHandler) handleHooks(ctx sdk.Context, contractAddr sdk.AccAddress,
 		})
 		return h.keeper.setContractDetails(ctx, contractAddr, &details)
 	}
-	var err error
 	switch {
 	case hooks.RegisterBeginBlock != nil:
-		err = register(types.CallbackTypeBeginBlock)
+		return register(types.CallbackTypeBeginBlock)
 	case hooks.UnregisterBeginBlock != nil:
-		err = unregister(types.CallbackTypeBeginBlock)
+		return unregister(types.CallbackTypeBeginBlock)
 	case hooks.RegisterEndBlock != nil:
-		err = register(types.CallbackTypeEndBlock)
+		return register(types.CallbackTypeEndBlock)
 	case hooks.UnregisterEndBlock != nil:
-		err = unregister(types.CallbackTypeEndBlock)
+		return unregister(types.CallbackTypeEndBlock)
 	case hooks.RegisterValidatorSetUpdate != nil:
-		err = register(types.CallbackTypeValidatorSetUpdate)
+		return register(types.CallbackTypeValidatorSetUpdate)
 	case hooks.UnregisterValidatorSetUpdate != nil:
-		err = unregister(types.CallbackTypeValidatorSetUpdate)
+		return unregister(types.CallbackTypeValidatorSetUpdate)
 	default:
-		return nil, nil, wasmtypes.ErrUnknownMsg
+		return wasmtypes.ErrUnknownMsg
 	}
-	return nil, nil, err
 }

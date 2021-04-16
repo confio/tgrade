@@ -73,32 +73,7 @@ func TestSmokeTest(t *testing.T) {
 	t.Log("got query result", qResult)
 }
 
-func TestGenesisMsg(t *testing.T) {
-	sut.ResetChain(t)
-	anyAddress := "tgrade12qey0qvmkvdu5yl3x329lhrvqfgzs5vne225q7"
-	args := []string{
-		"wasm-genesis-message",
-		"store",
-		"contrib/local/hackatom.wasm.gzip",
-		"--instantiate-everybody=true",
-		"--builder=foo/bar:latest",
-		fmt.Sprintf("--run-as=%s", anyAddress),
-	}
-	sut.ModifyGenesis(t, args)
-
-	sut.StartChain(t)
-
-	t.Log("Query wasm code list")
-	cli := NewTgradeCli(t, sut, verbose)
-	qResult := cli.CustomQuery("q", "wasm", "list-code")
-	codes := gjson.Get(qResult, "code_infos.#.code_id").Array()
-	require.Len(t, codes, 1, qResult)
-	require.Equal(t, int64(1), codes[0].Int())
-
-	t.Log("got query result", qResult)
-}
-
-func TestPrivileged(t *testing.T) {
+func TestPrivilegedInGenesis(t *testing.T) {
 	sut.ResetChain(t)
 	anyAddress := "tgrade12qey0qvmkvdu5yl3x329lhrvqfgzs5vne225q7"
 	commands := [][]string{
@@ -140,6 +115,8 @@ func TestPrivileged(t *testing.T) {
 			"tgrade10pyejy66429refv3g35g2t7am0was7yanjs539",
 		},
 	}
+	// contract addresses are deterministic. You can get a list of all contracts in genesis via
+	// `tgrade wasm-genesis-message list-contracts --home ./testnet/node0/tgrade`
 	sut.ModifyGenesis(t, commands...)
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)

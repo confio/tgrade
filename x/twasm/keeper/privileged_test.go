@@ -150,11 +150,11 @@ func TestUnsetPrivileged(t *testing.T) {
 			h := NewTgradeHandler(k)
 			// and privileged with a callback
 			k.setPrivilegedFlag(ctx, contractAddr)
-			_, _, err := h.handleHooks(ctx, contractAddr, &contract.Hooks{
+			err := h.handleHooks(ctx, contractAddr, &contract.Hooks{
 				RegisterBeginBlock: &struct{}{},
 			})
 			require.NoError(t, err)
-			_, _, err = h.handleHooks(ctx, contractAddr, &contract.Hooks{
+			err = h.handleHooks(ctx, contractAddr, &contract.Hooks{
 				RegisterEndBlock: &struct{}{},
 			})
 			require.NoError(t, err)
