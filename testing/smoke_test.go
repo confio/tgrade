@@ -135,4 +135,11 @@ func TestPrivilegedInGenesis(t *testing.T) {
 	require.Len(t, contracts, 1, qResult)
 	require.Equal(t, "tgrade10pyejy66429refv3g35g2t7am0was7yanjs539", contracts[0].String())
 	t.Log("got query result", qResult)
+
+	// and smart query internals
+	qResult = cli.CustomQuery("q", "wasm", "contract-state", "smart", contracts[0].String(), `{"list_active_validators":{}}`)
+
+	validators := gjson.Get(qResult, "data.validators").Array()
+	require.Len(t, validators, 1, qResult)
+	t.Log("got query result", qResult)
 }

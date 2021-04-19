@@ -101,6 +101,7 @@ func (s SystemUnderTest) StartChain(t *testing.T) {
 			return true
 		}),
 	)
+	s.AwaitNextBlock(t)
 }
 
 func (s *SystemUnderTest) watchLogs(cmd *exec.Cmd) {

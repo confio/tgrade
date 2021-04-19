@@ -153,12 +153,13 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONMarshaler) json
 
 // BeginBlock returns the begin blocker for the wasm module.
 func (am AppModule) BeginBlock(ctx sdk.Context, b abci.RequestBeginBlock) {
+	BeginBlocker(ctx, am.keeper, b)
 }
 
 // EndBlock returns the end blocker for the wasm module. It returns no validator
 // updates.
 func (am AppModule) EndBlock(ctx sdk.Context, b abci.RequestEndBlock) []abci.ValidatorUpdate {
-	return nil
+	return EndBlocker(ctx, am.keeper, b)
 }
 
 //____________________________________________________________________________
