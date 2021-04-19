@@ -1,12 +1,12 @@
 package types
 
 import (
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestGenesisValidate(t *testing.T) {
-
 	specs := map[string]struct {
 		state  GenesisState
 		expErr bool
@@ -29,6 +29,20 @@ func TestGenesisValidate(t *testing.T) {
 		"privileged address invalid": {
 			state: GenesisStateFixture(t, func(state *GenesisState) {
 				state.PrivilegedContractAddresses = []string{"invalid"}
+			}),
+			expErr: true,
+		},
+		"duplicate privileged contract address": {
+			state: GenesisStateFixture(t, func(state *GenesisState) {
+				state.PrivilegedContractAddresses = append(state.PrivilegedContractAddresses, state.PrivilegedContractAddresses[0])
+			}),
+			expErr: true,
+		},
+		"invalid extension": {
+			state: GenesisStateFixture(t, func(state *GenesisState) {
+				var invalidType govtypes.Proposal // any protobuf type
+				err := state.Wasm.Contracts[0].ContractInfo.SetExtension(&invalidType)
+				require.NoError(t, err)
 			}),
 			expErr: true,
 		},

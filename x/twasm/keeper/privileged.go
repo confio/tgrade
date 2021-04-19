@@ -217,6 +217,13 @@ func (k Keeper) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType 
 	return true
 }
 
+// getPrivilegedContractCallback returns the key stored at the given type and position. Result can be nil when none exists
+func (k Keeper) getPrivilegedContractCallback(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8) sdk.AccAddress {
+	store := ctx.KVStore(k.storeKey)
+	key := contractCallbacksSecondaryIndexKey(callbackType, pos)
+	return store.Get(key)
+}
+
 // ExistsAnyPrivilegedContractCallback returns if any contract is registered for the given type
 func (k Keeper) ExistsAnyPrivilegedContractCallback(ctx sdk.Context, callbackType types.PrivilegedCallbackType) bool {
 	store := ctx.KVStore(k.storeKey)
@@ -237,22 +244,6 @@ func (k Keeper) IterateContractCallbacksByType(ctx sdk.Context, callbackType typ
 		// cb returns true to stop early
 		if cb(parseContractPosition(iter.Key()), iter.Value()) {
 			return
-		}
-	}
-}
-
-// iterateContractCallbacksByContract iterates through all registered callbacks for the given contract. Ordered by type and position asc
-func (k Keeper) iterateContractCallbacksByContract(ctx sdk.Context, contractAddress sdk.AccAddress, cb func(t types.PrivilegedCallbackType, pos uint8) bool) {
-	store := ctx.KVStore(k.storeKey)
-
-	prefixStore := prefix.NewStore(store, contractCallbacksSecondaryIndexPrefix)
-	for it := prefixStore.Iterator(nil, nil); it.Valid(); it.Next() {
-		t, pos := splitUnprefixedContractCallbacksSecondaryIndexKey(it.Key())
-		addr := it.Value()
-		if sdk.AccAddress(addr).Equals(contractAddress) { // index is not optimized for this. so we find all and have to check
-			if cb(t, pos) {
-				return
-			}
 		}
 	}
 }

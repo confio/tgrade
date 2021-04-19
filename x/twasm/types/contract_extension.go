@@ -51,7 +51,7 @@ func (d TgradeContractDetails) ValidateBasic() error {
 		}
 		callbackType := *PrivilegedCallbackTypeFrom(c.CallbackType)
 		if _, exists := unique[callbackType]; exists {
-			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "callback %s", callbackType.String())
+			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "callback %q", callbackType.String())
 		}
 		unique[callbackType] = struct{}{}
 	}
@@ -62,6 +62,9 @@ func (d TgradeContractDetails) ValidateBasic() error {
 func (r RegisteredCallback) ValidateBasic() error {
 	if r.Position > math.MaxUint8 {
 		return sdkerrors.Wrap(wasmtypes.ErrInvalid, "position exceeds max")
+	}
+	if r.Position == 0 {
+		return sdkerrors.Wrap(wasmtypes.ErrEmpty, "position")
 	}
 	tp := PrivilegedCallbackTypeFrom(r.CallbackType)
 	if tp == nil {

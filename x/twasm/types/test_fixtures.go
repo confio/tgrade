@@ -60,6 +60,20 @@ func GenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisS
 	return genesisState
 }
 
+func TgradeContractDetailsFixture(t *testing.T, mutators ...func(d *TgradeContractDetails)) TgradeContractDetails {
+	t.Helper()
+	d := TgradeContractDetails{
+		RegisteredCallbacks: []*RegisteredCallback{{
+			Position:     1,
+			CallbackType: "begin_block",
+		}},
+	}
+	for _, m := range mutators {
+		m(&d)
+	}
+	return d
+}
+
 func RandomAddress(_ *testing.T) sdk.AccAddress {
 	return rand.Bytes(sdk.AddrLen)
 }
