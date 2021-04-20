@@ -85,7 +85,7 @@ func (s SystemUnderTest) SetupChain() {
 	}
 }
 
-func (s SystemUnderTest) StartChain(t *testing.T) {
+func (s *SystemUnderTest) StartChain(t *testing.T) {
 	s.Log("Start chain")
 	s.forEachNodesExecAsync(t, "start", "--trace", "--log_level=info")
 
@@ -205,10 +205,10 @@ func (s SystemUnderTest) BuildNewBinary() {
 }
 
 // AwaitNextBlock is a first class function that any caller can use to ensure a new block was minted
-func (s SystemUnderTest) AwaitNextBlock(t *testing.T) {
+func (s *SystemUnderTest) AwaitNextBlock(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
-		for start := atomic.LoadInt64(&s.currentHeight); atomic.LoadInt64(&s.currentHeight) > start; {
+		for start := atomic.LoadInt64(&s.currentHeight); atomic.LoadInt64(&s.currentHeight) == start; {
 			time.Sleep(s.blockTime)
 		}
 		done <- struct{}{}
@@ -235,6 +235,9 @@ func (s SystemUnderTest) ResetChain(t *testing.T) {
 
 	// reset all nodes
 	s.ForEachNodeExecAndWait(t, []string{"unsafe-reset-all"})
+	s.withEachNodeHome(func(i int, home string) {
+		os.Remove(filepath.Join(workDir, home, "wasm"))
+	})
 }
 
 // ModifyGenesis executes the commands to modify the genesis
@@ -305,6 +308,7 @@ func (s SystemUnderTest) withEachNodeHome(cb func(i int, home string)) {
 	}
 }
 
+// nodePath returns the path of the node within the work dir. not absolute
 func (s SystemUnderTest) nodePath(i int) string {
 	return fmt.Sprintf("%s/node%d/tgrade", s.outputDir, i)
 }

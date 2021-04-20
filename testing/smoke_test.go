@@ -3,9 +3,12 @@
 package testing
 
 import (
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/p2p"
 	"github.com/tidwall/gjson"
 	"os"
 	"path/filepath"
@@ -75,6 +78,11 @@ func TestSmokeTest(t *testing.T) {
 
 func TestPrivilegedInGenesis(t *testing.T) {
 	sut.ResetChain(t)
+	var pubKey string
+	sut.withEachNodeHome(func(i int, home string) {
+		k := readPubkey(t, filepath.Join(workDir, home, "config", "priv_validator_key.json"))
+		pubKey = base64.StdEncoding.EncodeToString(k.Bytes())
+	})
 	anyAddress := "tgrade12qey0qvmkvdu5yl3x329lhrvqfgzs5vne225q7"
 	commands := [][]string{
 		{
@@ -105,7 +113,7 @@ func TestPrivilegedInGenesis(t *testing.T) {
 			"wasm-genesis-message",
 			"instantiate-contract",
 			"2",
-			`{"membership":"tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy", "min_weight": 1, "max_validators":1, "epoch_length":1, "initial_keys":[{"operator":"tgrade189s8e528jm7scum9scw2g5z8yg7csdx39fu0gm","validator_pubkey":"N30jveAajHGhSOJ+jfpz5KYQWjmXRlQN0Y0MCZfCnKc="}]}`,
+			fmt.Sprintf(`{"membership":"tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy", "min_weight": 1, "max_validators":1, "epoch_length":1, "initial_keys":[{"operator":"tgrade189s8e528jm7scum9scw2g5z8yg7csdx39fu0gm","validator_pubkey":"%s"}]}`, pubKey),
 			"--label=testing",
 			fmt.Sprintf("--run-as=%s", anyAddress),
 		},
@@ -142,4 +150,10 @@ func TestPrivilegedInGenesis(t *testing.T) {
 	validators := gjson.Get(qResult, "data.validators").Array()
 	require.Len(t, validators, 1, qResult)
 	t.Log("got query result", qResult)
+}
+
+func readPubkey(t *testing.T, filePath string) crypto.PubKey {
+	key, err := p2p.LoadOrGenNodeKey(filePath)
+	require.NoError(t, err)
+	return key.PubKey()
 }
