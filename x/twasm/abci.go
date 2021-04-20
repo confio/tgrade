@@ -44,7 +44,7 @@ func BeginBlocker(parentCtx sdk.Context, k Sudoer, b abci.RequestBeginBlock) {
 				Power:   convUint64(e.Validator.Power),
 			},
 			Height:           convUint64(e.Height),
-			Time:             convUint64(int64(e.Time.Nanosecond())),
+			Time:             convUint64(e.Time.Unix()),
 			TotalVotingPower: convUint64(e.TotalVotingPower),
 		}
 	}
