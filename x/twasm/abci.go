@@ -17,7 +17,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// Sudoer used in abci begin block
+// Sudoer used in abci
 type Sudoer interface {
 	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
 	IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
@@ -58,11 +58,11 @@ func BeginBlocker(parentCtx sdk.Context, k Sudoer, b abci.RequestBeginBlock) {
 	}
 	logger := keeper.ModuleLogger(parentCtx)
 	k.IterateContractCallbacksByType(parentCtx, types.CallbackTypeBeginBlock, func(pos uint8, contractAddr sdk.AccAddress) bool {
-		// any panic will crash the node so we are better taking care of them here
-		defer recoverToLog(logger, contractAddr)()
-
 		logger.Debug("privileged contract callback", "type", "begin-block", "msg", string(msgBz))
 		ctx, commit := parentCtx.CacheContext()
+
+		// any panic will crash the node so we are better taking care of them here
+		defer recoverToLog(logger, contractAddr)()
 
 		if _, err := k.Sudo(ctx, contractAddr, msgBz); err != nil {
 			logger.Error("begin block contract failed",
@@ -75,7 +75,7 @@ func BeginBlocker(parentCtx sdk.Context, k Sudoer, b abci.RequestBeginBlock) {
 	})
 }
 
-func EndBlocker(parentCtx sdk.Context, k Sudoer, b abci.RequestEndBlock) []abci.ValidatorUpdate {
+func EndBlocker(parentCtx sdk.Context, k Sudoer) []abci.ValidatorUpdate {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 
 	sudoMsg := contract.TgradeSudoMsg{EndBlock: &struct{}{}}
@@ -85,11 +85,11 @@ func EndBlocker(parentCtx sdk.Context, k Sudoer, b abci.RequestEndBlock) []abci.
 	}
 	logger := keeper.ModuleLogger(parentCtx)
 	k.IterateContractCallbacksByType(parentCtx, types.CallbackTypeEndBlock, func(pos uint8, contractAddr sdk.AccAddress) bool {
-		// any panic will crash the node so we are better taking care of them here
-		defer recoverToLog(logger, contractAddr)()
-
 		logger.Debug("privileged contract callback", "type", "end-block", "msg", string(msgBz))
 		ctx, commit := parentCtx.CacheContext()
+
+		// any panic will crash the node so we are better taking care of them here
+		defer recoverToLog(logger, contractAddr)()
 
 		if _, err := k.Sudo(ctx, contractAddr, msgBz); err != nil {
 			logger.Error("end block contract failed",
