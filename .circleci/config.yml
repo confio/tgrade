@@ -135,6 +135,9 @@ jobs:
           name: Build Docker artifact
           command: docker build --pull -t "confio/tgrade:${CIRCLE_SHA1}" .
       - run:
+          name: Smoke test Docker artifact
+          command: docker run "confio/tgrade:${CIRCLE_SHA1}" tgrade version
+      - run:
           name: Push application Docker image to docker hub
           command: |
             if [ "${CIRCLE_BRANCH}" = "master" ]; then
