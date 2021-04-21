@@ -4,52 +4,22 @@ package testing
 
 import (
 	"encoding/base64"
-	"flag"
 	"fmt"
+	testingcontracts "github.com/confio/tgrade/testing/contracts"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/p2p"
 	"github.com/tidwall/gjson"
-	"os"
 	"path/filepath"
 	"testing"
 )
 
-var sut *SystemUnderTest
-var verbose bool
-
 func TestMain(m *testing.M) {
-	rebuild := flag.Bool("rebuild", false, "rebuild artifacts")
-	waitTime := flag.Duration("wait-time", defaultWaitTime, "time to wait for chain events")
-	flag.BoolVar(&verbose, "verbose", false, "verbose output")
-	flag.Parse()
-
-	dir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	workDir = filepath.Join(dir, "../")
-	if verbose {
-		println("Work dir: ", workDir)
-	}
-	defaultWaitTime = *waitTime
-	sut = NewSystemUnderTest(verbose)
-	if *rebuild {
-		sut.BuildNewBinary()
-	}
-	// setup single node chain and keyring
-	sut.SetupChain()
-
-	// run tests
-	exitCode := m.Run()
-
-	// postprocess
-	sut.StopChain()
-	if verbose || exitCode != 0 {
-		sut.PrintBuffer()
-	}
-
-	os.Exit(exitCode)
+	RunTestMain(m)
 }
 
 func TestSmokeTest(t *testing.T) {
@@ -76,14 +46,40 @@ func TestSmokeTest(t *testing.T) {
 	t.Log("got query result", qResult)
 }
 
+// TestPrivilegedInGenesis instantiates the tgrade valset contract and setup cluster to run n-1 validators.
 func TestPrivilegedInGenesis(t *testing.T) {
 	sut.ResetChain(t)
-	var pubKey string
+	// contract addresses are deterministic. You can get a list of all contracts in genesis via
+	// `tgrade wasm-genesis-message list-contracts --home ./testnet/node0/tgrade`
+	const (
+		cw4ContractAddr    = "tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy"
+		valsetContractAddr = "tgrade10pyejy66429refv3g35g2t7am0was7yanjs539"
+		anyAddress         = "tgrade12qey0qvmkvdu5yl3x329lhrvqfgzs5vne225q7"
+	)
+	// prepare contract init messages with chain validator data
+	cw4initMsg := testingcontracts.CW4InitMsg{Members: make([]testingcontracts.CW4Member, sut.nodesCount)}
+	valsetInitMsg := testingcontracts.ValsetInitMsg{
+		Membership:    cw4ContractAddr,
+		MinWeight:     1,
+		MaxValidators: 100,
+		EpochLength:   1,
+		InitialKeys:   make([]testingcontracts.ValsetInitKey, sut.nodesCount),
+	}
+
 	sut.withEachNodeHome(func(i int, home string) {
 		k := readPubkey(t, filepath.Join(workDir, home, "config", "priv_validator_key.json"))
-		pubKey = base64.StdEncoding.EncodeToString(k.Bytes())
+		pubKey := base64.StdEncoding.EncodeToString(k.Bytes())
+		addr := randomBech32Addr()
+		cw4initMsg.Members[i] = testingcontracts.CW4Member{
+			Addr:   addr,
+			Weight: sut.nodesCount - i, // unique weight
+		}
+		valsetInitMsg.InitialKeys[i] = testingcontracts.ValsetInitKey{
+			Operator:        addr,
+			ValidatorPubkey: pubKey,
+		}
 	})
-	anyAddress := "tgrade12qey0qvmkvdu5yl3x329lhrvqfgzs5vne225q7"
+
 	commands := [][]string{
 		{
 			"wasm-genesis-message",
@@ -105,7 +101,7 @@ func TestPrivilegedInGenesis(t *testing.T) {
 			"wasm-genesis-message",
 			"instantiate-contract",
 			"1",
-			`{"members":[{"addr":"tgrade189s8e528jm7scum9scw2g5z8yg7csdx39fu0gm", "weight": 1}]}`,
+			cw4initMsg.Json(t),
 			"--label=testing",
 			fmt.Sprintf("--run-as=%s", anyAddress),
 		},
@@ -113,18 +109,16 @@ func TestPrivilegedInGenesis(t *testing.T) {
 			"wasm-genesis-message",
 			"instantiate-contract",
 			"2",
-			fmt.Sprintf(`{"membership":"tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy", "min_weight": 1, "max_validators":1, "epoch_length":1, "initial_keys":[{"operator":"tgrade189s8e528jm7scum9scw2g5z8yg7csdx39fu0gm","validator_pubkey":"%s"}]}`, pubKey),
+			valsetInitMsg.Json(t),
 			"--label=testing",
 			fmt.Sprintf("--run-as=%s", anyAddress),
 		},
 		{
 			"wasm-genesis-flags",
 			"set-privileged",
-			"tgrade10pyejy66429refv3g35g2t7am0was7yanjs539",
+			valsetContractAddr,
 		},
 	}
-	// contract addresses are deterministic. You can get a list of all contracts in genesis via
-	// `tgrade wasm-genesis-message list-contracts --home ./testnet/node0/tgrade`
 	sut.ModifyGenesis(t, commands...)
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
@@ -133,7 +127,7 @@ func TestPrivilegedInGenesis(t *testing.T) {
 	qResult := cli.CustomQuery("q", "wasm", "privileged-contracts")
 	contracts := gjson.Get(qResult, "contracts").Array()
 	require.Len(t, contracts, 1, qResult)
-	require.Equal(t, "tgrade10pyejy66429refv3g35g2t7am0was7yanjs539", contracts[0].String())
+	require.Equal(t, valsetContractAddr, contracts[0].String())
 	t.Log("got query result", qResult)
 
 	// and registered for validator update
@@ -141,15 +135,29 @@ func TestPrivilegedInGenesis(t *testing.T) {
 	contracts = gjson.Get(qResult, "contracts").Array()
 
 	require.Len(t, contracts, 1, qResult)
-	require.Equal(t, "tgrade10pyejy66429refv3g35g2t7am0was7yanjs539", contracts[0].String())
+	require.Equal(t, valsetContractAddr, contracts[0].String())
 	t.Log("got query result", qResult)
 
 	// and smart query internals
 	qResult = cli.CustomQuery("q", "wasm", "contract-state", "smart", contracts[0].String(), `{"list_active_validators":{}}`)
 
 	validators := gjson.Get(qResult, "data.validators").Array()
-	require.Len(t, validators, 1, qResult)
+	require.Len(t, validators, sut.nodesCount, qResult)
 	t.Log("got query result", qResult)
+
+	// and ensure validator count via rpc call
+	sut.AwaitNextBlock(t)
+	v := sut.RPCClient(t).Validators()
+	require.Len(t, v, sut.nodesCount, "got %#v", v)
+	for i := 0; i < sut.nodesCount; i++ {
+		// ordered by power desc
+		assert.Equal(t, int64(sut.nodesCount-i), v[i].VotingPower, "address: %s", v[i].Address.String())
+	}
+}
+
+func randomBech32Addr() string {
+	bech32Addr, _ := bech32.ConvertAndEncode("tgrade", rand.Bytes(sdk.AddrLen))
+	return bech32Addr
 }
 
 func readPubkey(t *testing.T, filePath string) crypto.PubKey {

@@ -19,7 +19,7 @@ type TgradeCli struct {
 }
 
 func NewTgradeCli(t *testing.T, sut *SystemUnderTest, verbose bool) *TgradeCli {
-	return NewTgradeCliX(t, sut.rpcAddr, sut.chainID, filepath.Join(sut.outputDir, "node0", "tgrade"), verbose)
+	return NewTgradeCliX(t, sut.rpcAddr, sut.chainID, filepath.Join(sut.nodePath(0)), verbose)
 }
 
 func NewTgradeCliX(t *testing.T, nodeAddress string, chainID string, homeDir string, debug bool) *TgradeCli {

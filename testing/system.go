@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	client "github.com/tendermint/tendermint/rpc/client/http"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/tendermint/tendermint/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 	"io"
 	"os"
 	"os/exec"
@@ -40,13 +40,13 @@ type SystemUnderTest struct {
 	verbose       bool
 }
 
-func NewSystemUnderTest(verbose bool) *SystemUnderTest {
+func NewSystemUnderTest(verbose bool, nodesCount int) *SystemUnderTest {
 	return &SystemUnderTest{
 		chainID:    "testing",
 		outputDir:  "./testnet",
 		blockTime:  1500 * time.Millisecond,
 		rpcAddr:    "tcp://localhost:26657",
-		nodesCount: 1,
+		nodesCount: nodesCount,
 		outBuff:    ring.New(100),
 		errBuff:    ring.New(100),
 		out:        os.Stdout,
@@ -55,7 +55,10 @@ func NewSystemUnderTest(verbose bool) *SystemUnderTest {
 }
 
 func (s SystemUnderTest) SetupChain() {
-	s.Log("Setup chain")
+	s.Logf("Setup chain: %s\n", s.outputDir)
+	if err := os.RemoveAll(filepath.Join(workDir, s.outputDir)); err != nil {
+		panic(err.Error())
+	}
 	args := []string{
 		"testnet",
 		"--chain-id=" + s.chainID,
@@ -65,6 +68,7 @@ func (s SystemUnderTest) SetupChain() {
 		"--commit-timeout=" + s.blockTime.String(),
 		"--minimum-gas-prices=" + s.minGasPrice,
 		"--starting-ip-address", "", // empty to use host systems
+		"--single-machine",
 	}
 	cmd := exec.Command(
 		locateExecutable("tgrade"),
@@ -86,7 +90,7 @@ func (s SystemUnderTest) SetupChain() {
 }
 
 func (s *SystemUnderTest) StartChain(t *testing.T) {
-	s.Log("Start chain")
+	s.Log("Start chain\n")
 	s.forEachNodesExecAsync(t, "start", "--trace", "--log_level=info")
 
 	s.awaitChainUp(t)
@@ -95,7 +99,7 @@ func (s *SystemUnderTest) StartChain(t *testing.T) {
 	s.blockListener = NewEventListener(t, s.rpcAddr)
 	s.cleanupFn = append(s.cleanupFn,
 		s.blockListener.Subscribe("tm.event='NewBlock'", func(e ctypes.ResultEvent) (more bool) {
-			newBlock, ok := e.Data.(types.EventDataNewBlock)
+			newBlock, ok := e.Data.(tmtypes.EventDataNewBlock)
 			require.True(t, ok, "unexpected type %T", e.Data)
 			atomic.StoreInt64(&s.currentHeight, newBlock.Block.Height)
 			return true
@@ -104,21 +108,27 @@ func (s *SystemUnderTest) StartChain(t *testing.T) {
 	s.AwaitNextBlock(t)
 }
 
-func (s *SystemUnderTest) watchLogs(cmd *exec.Cmd) {
+// watchLogs stores stdout/stderr in a file and in a ring buffer to output the last n lines on test error
+func (s *SystemUnderTest) watchLogs(node int, cmd *exec.Cmd) {
+	logfile, err := os.Create(filepath.Join(workDir, s.outputDir, fmt.Sprintf("node%d.out", node)))
+	if err != nil {
+		panic(fmt.Sprintf("open logfile error %#+v", err))
+	}
+
 	errReader, err := cmd.StderrPipe()
 	if err != nil {
-		panic(fmt.Sprintf("unexpected error %#+v", err))
+		panic(fmt.Sprintf("stderr reader error %#+v", err))
 	}
-	go appendToBuf(errReader, s.errBuff)
+	go appendToBuf(io.TeeReader(errReader, logfile), s.errBuff)
 
 	outReader, err := cmd.StdoutPipe()
 	if err != nil {
-		panic(fmt.Sprintf("unexpected error %#+v", err))
+		panic(fmt.Sprintf("stdout reader error %#+v", err))
 	}
-	go appendToBuf(outReader, s.outBuff)
+	go appendToBuf(io.TeeReader(outReader, logfile), s.outBuff)
 }
 
-func appendToBuf(r io.ReadCloser, b *ring.Ring) {
+func appendToBuf(r io.Reader, b *ring.Ring) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		b.Value = scanner.Text()
@@ -267,10 +277,13 @@ func (s SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
 }
 
 // ForEachNodeExecAndWait runs the given tgrade commands for all cluster nodes synchronously
-func (s SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string) {
+// The commands output is returned for each node.
+func (s SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string) [][]string {
+	result := make([][]string, s.nodesCount)
 	s.withEachNodeHome(func(i int, home string) {
-		for _, args := range cmds {
-			args = append(args, "--home", home)
+		result[i] = make([]string, len(cmds))
+		for j, xargs := range cmds {
+			args := append(xargs, "--home", home)
 			s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
 			cmd := exec.Command(
 				locateExecutable("tgrade"),
@@ -280,22 +293,24 @@ func (s SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string) 
 			out, err := cmd.CombinedOutput()
 			require.NoError(t, err, "node %d: %s", i, string(out))
 			s.Logf("Result: %s\n", string(out))
+			result[i][j] = string(out)
 		}
 	})
+	return result
 }
 
 // forEachNodesExecAsync runs the given tgrade command for all cluster nodes and returns without waiting
-func (s SystemUnderTest) forEachNodesExecAsync(t *testing.T, args ...string) []func() error {
+func (s SystemUnderTest) forEachNodesExecAsync(t *testing.T, xargs ...string) []func() error {
 	r := make([]func() error, s.nodesCount)
 	s.withEachNodeHome(func(i int, home string) {
-		args = append(args, "--home", home)
+		args := append(xargs, "--home", home)
 		s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
 		cmd := exec.Command(
 			locateExecutable("tgrade"),
 			args...,
 		)
 		cmd.Dir = workDir
-		s.watchLogs(cmd)
+		s.watchLogs(i, cmd)
 		require.NoError(t, cmd.Start(), "node %d", i)
 		r[i] = cmd.Wait
 	})
@@ -321,6 +336,43 @@ func (s SystemUnderTest) Log(msg string) {
 
 func (s SystemUnderTest) Logf(msg string, args ...interface{}) {
 	s.Log(fmt.Sprintf(msg, args...))
+}
+
+func (s SystemUnderTest) RPCClient(t *testing.T) RPCClient {
+	return NewRPCCLient(t, s.rpcAddr)
+}
+
+func (s SystemUnderTest) AllPeers(t *testing.T) []string {
+	result := make([]string, s.nodesCount)
+	for i, n := range s.AllNodes(t) {
+		result[i] = n.PeerAddr()
+	}
+	return result
+}
+
+func (s SystemUnderTest) AllNodes(t *testing.T) []Node {
+	result := make([]Node, s.nodesCount)
+	outs := s.ForEachNodeExecAndWait(t, []string{"tendermint", "show-node-id"})
+	for i, out := range outs {
+		result[i] = Node{
+			ID:      out[0],
+			IP:      "127.0.0.1",
+			RPCPort: 25567 + i,
+			P2PPort: 15566 + i,
+		}
+	}
+	return result
+}
+
+type Node struct {
+	ID      string
+	IP      string
+	RPCPort int
+	P2PPort int
+}
+
+func (n Node) PeerAddr() string {
+	return fmt.Sprintf("%s@%s:%d", n.ID, n.IP, n.RPCPort)
 }
 
 // locateExecutable looks up the binary on the OS path.
