@@ -140,7 +140,7 @@ jobs:
       - run:
           name: Push application Docker image to docker hub
           command: |
-            if [ "${CIRCLE_BRANCH}" = "master" ]; then
+            if [ "${CIRCLE_BRANCH}" = "main" ]; then
               docker tag "confio/tgrade:${CIRCLE_SHA1}" confio/tgrade:latest
               docker login --password-stdin -u "$DOCKER_USER" \<<<"$DOCKER_PASS"
               docker push confio/tgrade:latest
@@ -169,14 +169,14 @@ workflows:
   version: 2
   test-suite:
     jobs:
-      # this is now a slow process... let's only run on master
+      # this is now a slow process... let's only run on main
       - docker-image:
           requires:
             - setup-dependencies
           filters:
             branches:
               only:
-                - master
+                - main
       - docker-tagged:
           filters:
             tags:
@@ -196,13 +196,14 @@ workflows:
       - test-cover:
           requires:
             - setup-dependencies
-      - upload-coverage:
-          requires:
-            - test-cover
+# No coverage upload supported for private repos
+#      - upload-coverage:
+#          requires:
+#            - test-cover
       - test-system:
           requires:
             - setup-dependencies
 #          filters:
 #            branches:
 #              only:
-#                - master
+#                - main
