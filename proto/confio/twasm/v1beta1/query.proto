@@ -32,8 +32,8 @@ message QueryPrivilegedContractsRequest {}
 // QueryPrivilegedContractsResponse is the response type for the
 // Query/PrivilegedContracts RPC method
 message QueryPrivilegedContractsResponse {
-  // addresses set of contract addresses
-  repeated string addresses = 1;
+  // contracts are a set of contract addresses
+  repeated string contracts = 1;
 }
 // QueryContractsByCallbackTypeRequest is the request type for the
 // Query/ContractsByCallbackType RPC method
@@ -42,7 +42,6 @@ message QueryContractsByCallbackTypeRequest { string callback_type = 2; }
 // QueryContractsByCallbackTypeResponse is the response type for the
 // Query/ContractsByCallbackType RPC method
 message QueryContractsByCallbackTypeResponse {
-  message ContractPosition { string addresses = 1; }
-  // addresses set of contract addresses
-  repeated ContractPosition contracts = 2 [ (gogoproto.nullable) = false ];
+  // contracts are a set of contract addresses
+  repeated string contracts = 1;
 }

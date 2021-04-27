@@ -3,9 +3,12 @@
 package testing
 
 import (
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/p2p"
 	"github.com/tidwall/gjson"
 	"os"
 	"path/filepath"
@@ -66,43 +69,91 @@ func TestSmokeTest(t *testing.T) {
 
 	t.Log("Query wasm code list")
 	qResult := cli.CustomQuery("q", "wasm", "list-code")
-	codes := gjson.Get(qResult, "code_infos.#.id").Array() // see query syntax https://github.com/tidwall/gjson#path-syntax
+	codes := gjson.Get(qResult, "code_infos.#.code_id").Array()
 	require.Len(t, codes, 1, qResult)
 	require.Equal(t, int64(1), codes[0].Int())
 
 	t.Log("got query result", qResult)
 }
 
-func TestGenesisMsg(t *testing.T) {
+func TestPrivilegedInGenesis(t *testing.T) {
 	sut.ResetChain(t)
+	var pubKey string
+	sut.withEachNodeHome(func(i int, home string) {
+		k := readPubkey(t, filepath.Join(workDir, home, "config", "priv_validator_key.json"))
+		pubKey = base64.StdEncoding.EncodeToString(k.Bytes())
+	})
 	anyAddress := "tgrade12qey0qvmkvdu5yl3x329lhrvqfgzs5vne225q7"
-	args := []string{
-		"add-wasm-genesis-message",
-		"store",
-		"contrib/local/hackatom.wasm.gzip",
-		"--instantiate-everybody=true",
-		"--builder=foo/bar:latest",
-		fmt.Sprintf("--run-as=%s", anyAddress),
+	commands := [][]string{
+		{
+			"wasm-genesis-message",
+			"store",
+			"testing/contracts/cw4_group.wasm",
+			"--instantiate-everybody=true",
+			"--builder=foo/bar:latest",
+			fmt.Sprintf("--run-as=%s", anyAddress),
+		},
+		{
+			"wasm-genesis-message",
+			"store",
+			"testing/contracts/tgrade_valset.wasm",
+			"--instantiate-everybody=true",
+			"--builder=foo/bar:latest",
+			fmt.Sprintf("--run-as=%s", anyAddress),
+		},
+		{
+			"wasm-genesis-message",
+			"instantiate-contract",
+			"1",
+			`{"members":[{"addr":"tgrade189s8e528jm7scum9scw2g5z8yg7csdx39fu0gm", "weight": 1}]}`,
+			"--label=testing",
+			fmt.Sprintf("--run-as=%s", anyAddress),
+		},
+		{
+			"wasm-genesis-message",
+			"instantiate-contract",
+			"2",
+			fmt.Sprintf(`{"membership":"tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy", "min_weight": 1, "max_validators":1, "epoch_length":1, "initial_keys":[{"operator":"tgrade189s8e528jm7scum9scw2g5z8yg7csdx39fu0gm","validator_pubkey":"%s"}]}`, pubKey),
+			"--label=testing",
+			fmt.Sprintf("--run-as=%s", anyAddress),
+		},
+		{
+			"wasm-genesis-flags",
+			"set-privileged",
+			"tgrade10pyejy66429refv3g35g2t7am0was7yanjs539",
+		},
 	}
-	revert := sut.ModifyGenesis(t, args...)
-	t.Cleanup(revert)
-
+	// contract addresses are deterministic. You can get a list of all contracts in genesis via
+	// `tgrade wasm-genesis-message list-contracts --home ./testnet/node0/tgrade`
+	sut.ModifyGenesis(t, commands...)
 	sut.StartChain(t)
-
-	t.Log("Query wasm code list")
 	cli := NewTgradeCli(t, sut, verbose)
-	qResult := cli.CustomQuery("q", "wasm", "list-code")
-	codes := gjson.Get(qResult, "code_infos.#.id").Array() // see query syntax https://github.com/tidwall/gjson#path-syntax
-	require.Len(t, codes, 1, qResult)
-	require.Equal(t, int64(1), codes[0].Int())
 
+	// and then should be in list of privileged contracts
+	qResult := cli.CustomQuery("q", "wasm", "privileged-contracts")
+	contracts := gjson.Get(qResult, "contracts").Array()
+	require.Len(t, contracts, 1, qResult)
+	require.Equal(t, "tgrade10pyejy66429refv3g35g2t7am0was7yanjs539", contracts[0].String())
+	t.Log("got query result", qResult)
+
+	// and registered for validator update
+	qResult = cli.CustomQuery("q", "wasm", "callback-contracts", "validator_set_update")
+	contracts = gjson.Get(qResult, "contracts").Array()
+
+	require.Len(t, contracts, 1, qResult)
+	require.Equal(t, "tgrade10pyejy66429refv3g35g2t7am0was7yanjs539", contracts[0].String())
+	t.Log("got query result", qResult)
+
+	// and smart query internals
+	qResult = cli.CustomQuery("q", "wasm", "contract-state", "smart", contracts[0].String(), `{"list_active_validators":{}}`)
+
+	validators := gjson.Get(qResult, "data.validators").Array()
+	require.Len(t, validators, 1, qResult)
 	t.Log("got query result", qResult)
 }
 
-func TestPrivileged(t *testing.T) {
-	sut.ResetChain(t)
-	sut.StartChain(t)
-	cli := NewTgradeCli(t, sut, verbose)
-	_ = cli.CustomQuery("q", "wasm", "privileged-contracts")
-	_ = cli.CustomQuery("q", "wasm", "callback-contracts", "begin_block")
+func readPubkey(t *testing.T, filePath string) crypto.PubKey {
+	key, err := p2p.LoadOrGenNodeKey(filePath)
+	require.NoError(t, err)
+	return key.PubKey()
 }

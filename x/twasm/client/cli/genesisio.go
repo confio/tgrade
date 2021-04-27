@@ -26,16 +26,26 @@ func NewGenesisIO() *GenesisIO {
 	return &GenesisIO{GenesisReader: GenesisReader{}}
 }
 
-// AlterModuleState loads the genesis from the default or set home dir,
+// AlterWasmModuleState loads the genesis from the default or set home dir,
 // unmarshalls the wasm module section into the object representation
 // calls the callback function to modify it
 // and marshals the modified state back into the genesis file
 func (x GenesisIO) AlterWasmModuleState(cmd *cobra.Command, callback func(state *wasmtypes.GenesisState, appState map[string]json.RawMessage) error) error {
+	return x.AlterTWasmModuleState(cmd, func(state *types.GenesisState, appState map[string]json.RawMessage) error {
+		return callback(&state.Wasm, appState)
+	})
+}
+
+// AlterTWasmModuleState loads the genesis from the default or set home dir,
+// unmarshalls the twasm module section into the object representation
+// calls the callback function to modify it
+// and marshals the modified state back into the genesis file
+func (x GenesisIO) AlterTWasmModuleState(cmd *cobra.Command, callback func(state *types.GenesisState, appState map[string]json.RawMessage) error) error {
 	g, err := x.ReadTWasmGenesis(cmd)
 	if err != nil {
 		return err
 	}
-	if err := callback(&g.twasmModuleState.Wasm, g.AppState); err != nil {
+	if err := callback(&g.twasmModuleState, g.AppState); err != nil {
 		return err
 	}
 	// and store update

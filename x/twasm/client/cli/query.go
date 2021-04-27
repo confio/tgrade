@@ -37,10 +37,11 @@ func GetQueryCmd() *cobra.Command {
 
 func GetCmdShowCallbackContracts() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "callback-contracts <callback_type>",
-		Short: "List all contract addresses for given callback type",
-		Long:  fmt.Sprintf("List all contracts for callback type [%s]", strings.Join(types.AllCallbackTypeNames(), ", ")),
-		Args:  cobra.ExactArgs(1),
+		Use:     "callback-contracts <callback_type>",
+		Short:   "List all contract addresses for given callback type",
+		Long:    fmt.Sprintf("List all contracts for callback type [%s]", strings.Join(types.AllCallbackTypeNames(), ", ")),
+		Aliases: []string{"callback-contract"},
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -62,7 +63,7 @@ func GetCmdShowCallbackContracts() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return clientCtx.WithJSONMarshaler(&wasmcli.VanillaStdJsonMarshaller{}).PrintProto(res)
+			return clientCtx.PrintProto(res)
 		},
 	}
 	flags.AddQueryFlagsToCmd(cmd)
@@ -72,10 +73,11 @@ func GetCmdShowCallbackContracts() *cobra.Command {
 // GetCmdListPrivilegedContracts lists all privileged contracts
 func GetCmdListPrivilegedContracts() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "privileged-contracts",
-		Short: "List all privileged contract addresses",
-		Long:  "List all contract addresses with privileged permission set",
-		Args:  cobra.ExactArgs(0),
+		Use:     "privileged-contracts",
+		Short:   "List all privileged contract addresses",
+		Long:    "List all contract addresses with privileged permission set",
+		Aliases: []string{"privileged-contract"},
+		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -90,7 +92,7 @@ func GetCmdListPrivilegedContracts() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return clientCtx.WithJSONMarshaler(&wasmcli.VanillaStdJsonMarshaller{}).PrintProto(res)
+			return clientCtx.PrintProto(res)
 		},
 	}
 	flags.AddQueryFlagsToCmd(cmd)

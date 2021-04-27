@@ -4,6 +4,10 @@
 
 ## Table of Contents
 
+- [confio/twasm/v1beta1/contract_extension.proto](#confio/twasm/v1beta1/contract_extension.proto)
+    - [RegisteredCallback](#confio.twasm.v1beta1.RegisteredCallback)
+    - [TgradeContractDetails](#confio.twasm.v1beta1.TgradeContractDetails)
+  
 - [confio/twasm/v1beta1/genesis.proto](#confio/twasm/v1beta1/genesis.proto)
     - [GenesisState](#confio.twasm.v1beta1.GenesisState)
   
@@ -14,13 +18,59 @@
 - [confio/twasm/v1beta1/query.proto](#confio/twasm/v1beta1/query.proto)
     - [QueryContractsByCallbackTypeRequest](#confio.twasm.v1beta1.QueryContractsByCallbackTypeRequest)
     - [QueryContractsByCallbackTypeResponse](#confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse)
-    - [QueryContractsByCallbackTypeResponse.ContractPosition](#confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse.ContractPosition)
     - [QueryPrivilegedContractsRequest](#confio.twasm.v1beta1.QueryPrivilegedContractsRequest)
     - [QueryPrivilegedContractsResponse](#confio.twasm.v1beta1.QueryPrivilegedContractsResponse)
   
     - [Query](#confio.twasm.v1beta1.Query)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="confio/twasm/v1beta1/contract_extension.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## confio/twasm/v1beta1/contract_extension.proto
+
+
+
+<a name="confio.twasm.v1beta1.RegisteredCallback"></a>
+
+### RegisteredCallback
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `position` | [uint32](#uint32) |  |  |
+| `callback_type` | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="confio.twasm.v1beta1.TgradeContractDetails"></a>
+
+### TgradeContractDetails
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `registered_callbacks` | [RegisteredCallback](#confio.twasm.v1beta1.RegisteredCallback) | repeated |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
 
 
 
@@ -140,22 +190,7 @@ Query/ContractsByCallbackType RPC method
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `contracts` | [QueryContractsByCallbackTypeResponse.ContractPosition](#confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse.ContractPosition) | repeated | addresses set of contract addresses |
-
-
-
-
-
-
-<a name="confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse.ContractPosition"></a>
-
-### QueryContractsByCallbackTypeResponse.ContractPosition
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `addresses` | [string](#string) |  |  |
+| `contracts` | [string](#string) | repeated | contracts are a set of contract addresses |
 
 
 
@@ -182,7 +217,7 @@ Query/PrivilegedContracts RPC method
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `addresses` | [string](#string) | repeated | addresses set of contract addresses |
+| `contracts` | [string](#string) | repeated | contracts are a set of contract addresses |
 
 
 

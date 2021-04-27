@@ -5,10 +5,13 @@ import (
 	"errors"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmwasm "github.com/CosmWasm/wasmvm"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/confio/tgrade/x/twasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -146,13 +149,20 @@ func TestUnsetPrivileged(t *testing.T) {
 			k := keepers.TWasmKeeper
 			codeID, contractAddr := seedTestContract(t, ctx, k)
 
+			h := NewTgradeHandler(k)
 			// and privileged with a callback
 			k.setPrivilegedFlag(ctx, contractAddr)
-			k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeEndBlock, contractAddr)
-			k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, contractAddr)
+			err := h.handleHooks(ctx, contractAddr, &contract.Hooks{
+				RegisterBeginBlock: &struct{}{},
+			})
+			require.NoError(t, err)
+			err = h.handleHooks(ctx, contractAddr, &contract.Hooks{
+				RegisterEndBlock: &struct{}{},
+			})
+			require.NoError(t, err)
 
 			// when
-			err := k.UnsetPrivileged(ctx, contractAddr)
+			err = k.UnsetPrivileged(ctx, contractAddr)
 
 			// then
 			if spec.expErr {
@@ -163,16 +173,21 @@ func TestUnsetPrivileged(t *testing.T) {
 
 			var expChecksum cosmwasm.Checksum = k.GetCodeInfo(ctx, codeID).CodeHash
 
-			// then expect pinned to cache
+			// then expect unpinned from cache
 			assert.Equal(t, expChecksum, *capturedUnpinChecksum)
-			// and flag set
+			// and flag not set
 			assert.False(t, k.IsPrivileged(ctx, contractAddr))
 			// and callbacks removed
-			assert.False(t, k.ExistsPrivilegedContractCallbacks(ctx, types.CallbackTypeEndBlock))
-			assert.False(t, k.ExistsPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock))
+			assert.False(t, k.ExistsAnyPrivilegedContractCallback(ctx, types.CallbackTypeEndBlock))
+			assert.False(t, k.ExistsAnyPrivilegedContractCallback(ctx, types.CallbackTypeBeginBlock))
 			// and sudo called
 			assert.Equal(t, expChecksum, *capturedSudoChecksum)
 			assert.JSONEq(t, `{"privilege_change":{"demoted":{}}}`, string(capturedSudoMsg), "got %s", string(capturedSudoMsg))
+			// and state updated
+			info := k.GetContractInfo(ctx, contractAddr)
+			var details types.TgradeContractDetails
+			require.NoError(t, info.ReadExtension(&details))
+			assert.Empty(t, details.RegisteredCallbacks)
 		})
 	}
 }
@@ -235,29 +250,49 @@ func TestAppendToPrivilegedContractCallbacks(t *testing.T) {
 
 	specs := map[string]struct {
 		setup        func(sdk.Context, *Keeper)
+		srcType      types.PrivilegedCallbackType
+		expPos       uint8
 		expPersisted []tuple
+		expErr       *sdkerrors.Error
 	}{
 		"first callback": {
 			setup:        func(ctx sdk.Context, k *Keeper) {},
+			srcType:      types.CallbackTypeBeginBlock,
+			expPos:       1,
 			expPersisted: []tuple{{p: 1, a: addr1}},
 		},
 		"second callback - ordered by position": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, addr3)
 			},
+			srcType:      types.CallbackTypeBeginBlock,
+			expPos:       2,
 			expPersisted: []tuple{{p: 1, a: addr3}, {p: 2, a: addr1}},
 		},
 		"second callback with same address": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, addr1)
 			},
+			srcType:      types.CallbackTypeBeginBlock,
+			expPos:       2,
 			expPersisted: []tuple{{p: 1, a: addr1}, {p: 2, a: addr1}},
 		},
 		"other callback type - separate group": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeEndBlock, addr2)
 			},
+			srcType:      types.CallbackTypeBeginBlock,
+			expPos:       1,
 			expPersisted: []tuple{{p: 1, a: addr1}},
+		},
+		"singleton type fails when other exists": {
+			setup: func(ctx sdk.Context, k *Keeper) {
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeValidatorSetUpdate, addr1)
+			},
+			srcType:      types.CallbackTypeValidatorSetUpdate,
+			expPersisted: []tuple{{p: 1, a: addr1}},
+			expPos:       0,
+			expErr:       wasmtypes.ErrDuplicate,
 		},
 	}
 	for name, spec := range specs {
@@ -266,11 +301,12 @@ func TestAppendToPrivilegedContractCallbacks(t *testing.T) {
 			k := keepers.TWasmKeeper
 			spec.setup(ctx, k)
 			// when
-			k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, addr1)
-
+			gotPos, gotErr := k.appendToPrivilegedContractCallbacks(ctx, spec.srcType, addr1)
+			assert.True(t, spec.expErr.Is(gotErr), "expected %v but got #%+v", spec.expErr, gotErr)
 			// then
+			assert.Equal(t, spec.expPos, gotPos)
 			var captured []tuple
-			k.IterateContractCallbacksByType(ctx, types.CallbackTypeBeginBlock, func(prio uint8, contractAddr sdk.AccAddress) bool {
+			k.IterateContractCallbacksByType(ctx, spec.srcType, func(prio uint8, contractAddr sdk.AccAddress) bool {
 				captured = append(captured, tuple{p: prio, a: contractAddr})
 				return false
 			})
@@ -293,36 +329,48 @@ func TestRemovePrivilegedContractCallbacks(t *testing.T) {
 
 	specs := map[string]struct {
 		setup        func(sdk.Context, *Keeper)
+		srcPos       uint8
+		expRemoved   bool
 		expRemaining []tuple
 	}{
 		"one callback": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
 			},
+			srcPos:     1,
+			expRemoved: true,
 		},
-		"multiple callback - same address": {
+		"multiple callback - first": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
 			},
+			srcPos:       1,
+			expRemoved:   true,
+			expRemaining: []tuple{{p: 2, a: myAddr}},
 		},
-		"multiple callback - different address": {
+		"multiple callback - middle": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, otherAddr)
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, anotheraddr)
 			},
+			srcPos:       2,
+			expRemoved:   true,
 			expRemaining: []tuple{{p: 1, a: otherAddr}, {p: 3, a: anotheraddr}},
 		},
-		"different address only": {
+		"non existing position": {
 			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, otherAddr)
-				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, anotheraddr)
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
 			},
-			expRemaining: []tuple{{p: 1, a: otherAddr}, {p: 2, a: anotheraddr}},
+			srcPos:       2,
+			expRemoved:   false,
+			expRemaining: []tuple{{p: 1, a: myAddr}},
 		},
 		"no callbacks": {
-			setup: func(ctx sdk.Context, k *Keeper) {},
+			setup:      func(ctx sdk.Context, k *Keeper) {},
+			srcPos:     1,
+			expRemoved: false,
 		},
 	}
 	for name, spec := range specs {
@@ -332,7 +380,7 @@ func TestRemovePrivilegedContractCallbacks(t *testing.T) {
 			spec.setup(ctx, k)
 
 			// when
-			k.removePrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
+			removed := k.removePrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, spec.srcPos, myAddr)
 
 			// then
 			var captured []tuple
@@ -341,77 +389,7 @@ func TestRemovePrivilegedContractCallbacks(t *testing.T) {
 				return false
 			})
 			assert.Equal(t, spec.expRemaining, captured)
-		})
-	}
-}
-
-func TestIterateContractCallbacksByContract(t *testing.T) {
-	var (
-		myAddr    = sdk.AccAddress(bytes.Repeat([]byte{1}, sdk.AddrLen))
-		otherAddr = sdk.AccAddress(bytes.Repeat([]byte{2}, sdk.AddrLen))
-	)
-	type tuple struct {
-		t types.PrivilegedCallbackType
-		p uint8
-	}
-
-	specs := map[string]struct {
-		setup        func(sdk.Context, *Keeper)
-		captureFirst bool
-		expPersisted []tuple
-	}{
-		"no callbacks - no empty store": {
-			setup: func(ctx sdk.Context, k *Keeper) {},
-		},
-		"no callbacks for address": {
-			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, otherAddr)
-			},
-		},
-		"one callback": {
-			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeEndBlock, myAddr)
-			},
-			expPersisted: []tuple{{p: 1, t: types.CallbackTypeEndBlock}},
-		},
-		"multiple callbacks - ordered by type": {
-			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeEndBlock, myAddr)
-				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
-			},
-			expPersisted: []tuple{{p: 1, t: types.CallbackTypeBeginBlock}, {p: 1, t: types.CallbackTypeEndBlock}},
-		},
-		"multiple callbacks same type - ordered by position": {
-			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
-				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
-			},
-			expPersisted: []tuple{{p: 1, t: types.CallbackTypeBeginBlock}, {p: 2, t: types.CallbackTypeBeginBlock}},
-		},
-		"multiple callbacks - abort after first": {
-			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
-				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, myAddr)
-			},
-			captureFirst: true,
-			expPersisted: []tuple{{p: 1, t: types.CallbackTypeBeginBlock}},
-		},
-	}
-	for name, spec := range specs {
-		t.Run(name, func(t *testing.T) {
-			ctx, keepers := CreateDefaultTestInput(t, wasmkeeper.WithWasmEngine(NewWasmVMMock()))
-			k := keepers.TWasmKeeper
-			spec.setup(ctx, k)
-
-			// when
-			var captured []tuple
-			k.iterateContractCallbacksByContract(ctx, myAddr, func(t types.PrivilegedCallbackType, prio uint8) bool {
-				captured = append(captured, tuple{t: t, p: prio})
-				return spec.captureFirst
-			})
-
-			// then
-			assert.Equal(t, spec.expPersisted, captured)
+			assert.Equal(t, spec.expRemoved, removed)
 		})
 	}
 }
