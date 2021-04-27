@@ -14,7 +14,7 @@ import (
 // tgradeKeeper defines a subset of Keeper
 type tgradeKeeper interface {
 	IsPrivileged(ctx sdk.Context, contract sdk.AccAddress) bool
-	appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) uint8
+	appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) (uint8, error)
 	removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8, contractAddr sdk.AccAddress) bool
 	setContractDetails(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error
 	GetContractInfo(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
@@ -68,9 +68,12 @@ func (h TgradeHandler) handleHooks(ctx sdk.Context, contractAddr sdk.AccAddress,
 		if details.HasRegisteredContractCallback(c) {
 			return nil
 		}
-		pos := h.keeper.appendToPrivilegedContractCallbacks(ctx, c, contractAddr)
+		pos, err := h.keeper.appendToPrivilegedContractCallbacks(ctx, c, contractAddr)
+		if err != nil {
+			return sdkerrors.Wrap(err, "callback registration")
+		}
 		details.AddRegisteredCallback(c, pos)
-		return h.keeper.setContractDetails(ctx, contractAddr, &details)
+		return sdkerrors.Wrap(h.keeper.setContractDetails(ctx, contractAddr, &details), "store details")
 	}
 	unregister := func(tp types.PrivilegedCallbackType) error {
 		if !details.HasRegisteredContractCallback(tp) {
@@ -84,7 +87,7 @@ func (h TgradeHandler) handleHooks(ctx sdk.Context, contractAddr sdk.AccAddress,
 			details.RemoveRegisteredCallback(c, pos)
 			return false
 		})
-		return h.keeper.setContractDetails(ctx, contractAddr, &details)
+		return sdkerrors.Wrap(h.keeper.setContractDetails(ctx, contractAddr, &details), "store details")
 	}
 	switch {
 	case hooks.RegisterBeginBlock != nil:

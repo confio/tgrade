@@ -5,11 +5,13 @@ import (
 	"errors"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmwasm "github.com/CosmWasm/wasmvm"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/confio/tgrade/x/twasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -248,29 +250,49 @@ func TestAppendToPrivilegedContractCallbacks(t *testing.T) {
 
 	specs := map[string]struct {
 		setup        func(sdk.Context, *Keeper)
+		srcType      types.PrivilegedCallbackType
+		expPos       uint8
 		expPersisted []tuple
+		expErr       *sdkerrors.Error
 	}{
 		"first callback": {
 			setup:        func(ctx sdk.Context, k *Keeper) {},
+			srcType:      types.CallbackTypeBeginBlock,
+			expPos:       1,
 			expPersisted: []tuple{{p: 1, a: addr1}},
 		},
 		"second callback - ordered by position": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, addr3)
 			},
+			srcType:      types.CallbackTypeBeginBlock,
+			expPos:       2,
 			expPersisted: []tuple{{p: 1, a: addr3}, {p: 2, a: addr1}},
 		},
 		"second callback with same address": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, addr1)
 			},
+			srcType:      types.CallbackTypeBeginBlock,
+			expPos:       2,
 			expPersisted: []tuple{{p: 1, a: addr1}, {p: 2, a: addr1}},
 		},
 		"other callback type - separate group": {
 			setup: func(ctx sdk.Context, k *Keeper) {
 				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeEndBlock, addr2)
 			},
+			srcType:      types.CallbackTypeBeginBlock,
+			expPos:       1,
 			expPersisted: []tuple{{p: 1, a: addr1}},
+		},
+		"singleton type fails when other exists": {
+			setup: func(ctx sdk.Context, k *Keeper) {
+				k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeValidatorSetUpdate, addr1)
+			},
+			srcType:      types.CallbackTypeValidatorSetUpdate,
+			expPersisted: []tuple{{p: 1, a: addr1}},
+			expPos:       0,
+			expErr:       wasmtypes.ErrDuplicate,
 		},
 	}
 	for name, spec := range specs {
@@ -279,11 +301,12 @@ func TestAppendToPrivilegedContractCallbacks(t *testing.T) {
 			k := keepers.TWasmKeeper
 			spec.setup(ctx, k)
 			// when
-			k.appendToPrivilegedContractCallbacks(ctx, types.CallbackTypeBeginBlock, addr1)
-
+			gotPos, gotErr := k.appendToPrivilegedContractCallbacks(ctx, spec.srcType, addr1)
+			assert.True(t, spec.expErr.Is(gotErr), "expected %v but got #%+v", spec.expErr, gotErr)
 			// then
+			assert.Equal(t, spec.expPos, gotPos)
 			var captured []tuple
-			k.IterateContractCallbacksByType(ctx, types.CallbackTypeBeginBlock, func(prio uint8, contractAddr sdk.AccAddress) bool {
+			k.IterateContractCallbacksByType(ctx, spec.srcType, func(prio uint8, contractAddr sdk.AccAddress) bool {
 				captured = append(captured, tuple{p: prio, a: contractAddr})
 				return false
 			})

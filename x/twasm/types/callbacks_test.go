@@ -70,5 +70,19 @@ func TestPrivilegedCallbackTypeValidation(t *testing.T) {
 			require.NoError(t, gotErr)
 		})
 	}
+}
 
+func TestPrivilegedCallbackTypeSingletons(t *testing.T) {
+	// sanity check with manually curated list
+	specs := map[PrivilegedCallbackType]bool{
+		CallbackTypeBeginBlock:         false,
+		CallbackTypeEndBlock:           false,
+		CallbackTypeValidatorSetUpdate: true,
+	}
+	for c, exp := range specs {
+		t.Run(c.String(), func(t *testing.T) {
+			assert.Equal(t, c.IsSingleton(), exp)
+		})
+	}
+	require.Len(t, specs, len(AllCallbackTypeNames()), "got %v", AllCallbackTypeNames())
 }

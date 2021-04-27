@@ -165,7 +165,7 @@ func (k Keeper) IteratePrivileged(ctx sdk.Context, cb func(sdk.AccAddress) bool)
 }
 
 // appendToPrivilegedContractCallbacks registers given contract for a callback type.
-func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddr sdk.AccAddress) uint8 {
+func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddr sdk.AccAddress) (uint8, error) {
 	store := ctx.KVStore(k.storeKey)
 
 	// find last position value for callback type
@@ -174,6 +174,9 @@ func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackTyp
 	if it.Valid() {
 		key := it.Key()
 		pos = key[0]
+		if callbackType.IsSingleton() {
+			return 0, wasmtypes.ErrDuplicate
+		}
 	}
 	newPos := pos + 1
 	if newPos <= pos {
@@ -189,7 +192,7 @@ func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackTyp
 		sdk.NewAttribute(types.AttributeKeyCallbackType, callbackType.String()),
 	)
 	ctx.EventManager().EmitEvent(event)
-	return newPos
+	return newPos, nil
 }
 
 // storeCallbackRegistration persists the callback registration the contract

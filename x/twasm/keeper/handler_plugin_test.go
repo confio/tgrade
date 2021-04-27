@@ -84,9 +84,9 @@ func TestTgradeHandlesHooks(t *testing.T) {
 	}
 
 	var capturedRegistrations []registration
-	captureRegistrations := func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) uint8 {
+	captureRegistrations := func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) (uint8, error) {
 		capturedRegistrations = append(capturedRegistrations, registration{cb: callbackType, addr: contractAddress})
-		return 1
+		return 1, nil
 	}
 	var capturedUnRegistrations []unregistration
 	captureUnRegistrations := func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8, contractAddress sdk.AccAddress) bool {
@@ -137,6 +137,19 @@ func TestTgradeHandlesHooks(t *testing.T) {
 				RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "validator_set_update"}},
 			},
 			expRegistrations: []registration{{cb: types.CallbackTypeValidatorSetUpdate, addr: myContractAddr}},
+		},
+		"register hook fails": {
+			src: contract.Hooks{RegisterValidatorSetUpdate: &struct{}{}},
+			setup: func(m *handlerTgradeKeeperMock) {
+				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					r := wasmtypes.ContractInfoFixture()
+					return &r
+				}
+				m.appendToPrivilegedContractCallbacksFn = func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) (uint8, error) {
+					return 0, wasmtypes.ErrDuplicate
+				}
+			},
+			expErr: wasmtypes.ErrDuplicate,
 		},
 		"unregister begin block": {
 			src: contract.Hooks{UnregisterBeginBlock: &struct{}{}},
@@ -251,17 +264,19 @@ func noopRegisterHook(m *handlerTgradeKeeperMock) {
 		})
 		return &v
 	}
-	m.appendToPrivilegedContractCallbacksFn = func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) uint8 {
-		return 1
+	m.appendToPrivilegedContractCallbacksFn = func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) (uint8, error) {
+		return 1, nil
 	}
 	m.setContractDetailsFn = func(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error {
 		return nil
 	}
 }
 
+var _ tgradeKeeper = handlerTgradeKeeperMock{}
+
 type handlerTgradeKeeperMock struct {
 	IsPrivilegedFn                        func(ctx sdk.Context, contract sdk.AccAddress) bool
-	appendToPrivilegedContractCallbacksFn func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) uint8
+	appendToPrivilegedContractCallbacksFn func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) (uint8, error)
 	removePrivilegedContractCallbacksFn   func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8, contractAddr sdk.AccAddress) bool
 	setContractDetailsFn                  func(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error
 	GetContractInfoFn                     func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
@@ -274,7 +289,7 @@ func (m handlerTgradeKeeperMock) IsPrivileged(ctx sdk.Context, contract sdk.AccA
 	return m.IsPrivilegedFn(ctx, contract)
 }
 
-func (m handlerTgradeKeeperMock) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) uint8 {
+func (m handlerTgradeKeeperMock) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) (uint8, error) {
 	if m.appendToPrivilegedContractCallbacksFn == nil {
 		panic("not expected to be called")
 	}
