@@ -5,20 +5,29 @@ package testing
 import (
 	"flag"
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/tendermint/tendermint/libs/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 )
 
 var sut *SystemUnderTest
 var verbose bool
 
-func RunTestMain(m *testing.M) {
+func TestMain(m *testing.M) {
 	rebuild := flag.Bool("rebuild", false, "rebuild artifacts")
 	waitTime := flag.Duration("wait-time", defaultWaitTime, "time to wait for chain events")
 	nodesCount := flag.Int("nodes-count", 4, "number of nodes in the cluster")
 	flag.BoolVar(&verbose, "verbose", false, "verbose output")
 	flag.Parse()
+
+	// fail fast on most common setup issue
+	requireEnoughFileHandlers(*nodesCount)
 
 	dir, err := os.Getwd()
 	if err != nil {
@@ -49,6 +58,30 @@ func RunTestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
+// requireEnoughFileHandlers uses `ulimit`
+func requireEnoughFileHandlers(nodesCount int) error {
+	ulimit, err := exec.LookPath("ulimit")
+	if err != nil || ulimit == "" { // skip when not available
+		return nil
+	}
+
+	cmd := exec.Command(ulimit, "-n")
+	cmd.Dir = workDir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		panic(fmt.Sprintf("unexpected error :%#+v, output: %s", err, string(out)))
+	}
+	fileDescrCount, err := strconv.Atoi(strings.Trim(string(out), " \t\n"))
+	if err != nil {
+		panic(fmt.Sprintf("unexpected error :%#+v, output: %s", err, string(out)))
+	}
+	expFH := nodesCount * 250 // random number that worked on my box
+	if fileDescrCount < expFH {
+		panic(fmt.Sprintf("Fail fast. Insufficient setup. Run `ulimit -n %d`", expFH))
+	}
+	return err
+}
+
 const (
 	successFlag = `
  ___ _   _  ___ ___ ___  ___ ___ 
@@ -70,4 +103,14 @@ func printResultFlag(ok bool) {
 	} else {
 		fmt.Println(failureFlag)
 	}
+}
+
+func randomBech32Addr() string {
+	src := rand.Bytes(sdk.AddrLen)
+	return encodeBech32Addr(src)
+}
+
+func encodeBech32Addr(src []byte) string {
+	bech32Addr, _ := bech32.ConvertAndEncode("tgrade", src)
+	return bech32Addr
 }

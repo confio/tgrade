@@ -11,6 +11,7 @@ import (
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -86,6 +87,12 @@ func (s SystemUnderTest) SetupChain() {
 	dest := filepath.Join(workDir, s.nodePath(0), "config", "genesis.json.orig")
 	if _, err := copyFile(src, dest); err != nil {
 		panic(fmt.Sprintf("copy failed :%#+v", err))
+	}
+	// backup keyring
+	src = filepath.Join(workDir, s.nodePath(0), "keyring-test")
+	dest = filepath.Join(workDir, s.outputDir, "keyring-test")
+	if err := copyFilesInDir(src, dest); err != nil {
+		panic(fmt.Sprintf("copy files from dir :%#+v", err))
 	}
 }
 
@@ -215,26 +222,35 @@ func (s SystemUnderTest) BuildNewBinary() {
 }
 
 // AwaitNextBlock is a first class function that any caller can use to ensure a new block was minted
-func (s *SystemUnderTest) AwaitNextBlock(t *testing.T) {
+func (s *SystemUnderTest) AwaitNextBlock(t *testing.T, timeout ...time.Duration) {
+	t.Helper()
+	var maxWaitTime = s.blockTime * 2
+	if len(timeout) != 0 { // optional argument to overwrite default timeout
+		maxWaitTime = timeout[0]
+	}
 	done := make(chan struct{})
 	go func() {
 		for start := atomic.LoadInt64(&s.currentHeight); atomic.LoadInt64(&s.currentHeight) == start; {
 			time.Sleep(s.blockTime)
 		}
 		done <- struct{}{}
+		defer close(done)
 	}()
 	select {
 	case <-done:
-	case <-time.NewTimer(s.blockTime * 2).C:
-		t.Fatalf("Timeout - no block within %s", s.blockTime*2)
+	case <-time.NewTimer(maxWaitTime).C:
+		t.Fatalf("Timeout - no block within %s", maxWaitTime)
 	}
 }
 
 // ResetChain stops and clears all nodes state via 'unsafe-reset-all'
 func (s SystemUnderTest) ResetChain(t *testing.T) {
+	t.Helper()
 	t.Log("ResetChain chain")
 	s.StopChain()
 	restoreOriginalGenesis(t, s)
+	restoreOriginalKeyring(t, s)
+
 	cmd := exec.Command(locateExecutable("pkill"), "tgrade")
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
@@ -379,7 +395,7 @@ func (n Node) PeerAddr() string {
 func locateExecutable(file string) string {
 	path, err := exec.LookPath(file)
 	if err != nil {
-		panic(fmt.Sprintf("unexpected error %#v", err))
+		panic(fmt.Sprintf("unexpected error %s", err.Error()))
 	}
 	if path == "" {
 		panic(fmt.Sprintf("%q not founc", file))
@@ -475,13 +491,22 @@ func restoreOriginalGenesis(t *testing.T, s SystemUnderTest) {
 	s.SetGenesis(t, src)
 }
 
+// restoreOriginalKeyring replaces test keyring with original
+func restoreOriginalKeyring(t *testing.T, s SystemUnderTest) {
+	dest := filepath.Join(workDir, s.outputDir, "keyring-test")
+	require.NoError(t, os.RemoveAll(dest))
+
+	src := filepath.Join(workDir, s.nodePath(0), "keyring-test")
+	require.NoError(t, copyFilesInDir(src, dest))
+}
+
 // copyFile copy source file to dest file path
 func copyFile(src, dest string) (*os.File, error) {
 	in, err := os.Open(src)
 	if err != nil {
 		return nil, err
 	}
-
+	defer in.Close()
 	out, err := os.Create(dest)
 	if err != nil {
 		return nil, err
@@ -490,4 +515,25 @@ func copyFile(src, dest string) (*os.File, error) {
 
 	_, err = io.Copy(out, in)
 	return out, err
+}
+
+// copyFilesInDir copy files in src dir to dest path
+func copyFilesInDir(src, dest string) error {
+	err := os.MkdirAll(dest, 0755)
+	if err != nil {
+		return fmt.Errorf("mkdirs: %s", err)
+	}
+	fs, err := ioutil.ReadDir(src)
+	if err != nil {
+		return fmt.Errorf("read dir: %s", err)
+	}
+	for _, f := range fs {
+		if f.IsDir() {
+			continue
+		}
+		if _, err := copyFile(filepath.Join(src, f.Name()), filepath.Join(dest, f.Name())); err != nil {
+			return fmt.Errorf("copy file: %q: %s", f.Name(), err)
+		}
+	}
+	return nil
 }
