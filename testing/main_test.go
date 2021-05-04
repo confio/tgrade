@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 var sut *SystemUnderTest
@@ -23,6 +24,7 @@ func TestMain(m *testing.M) {
 	rebuild := flag.Bool("rebuild", false, "rebuild artifacts")
 	waitTime := flag.Duration("wait-time", defaultWaitTime, "time to wait for chain events")
 	nodesCount := flag.Int("nodes-count", 4, "number of nodes in the cluster")
+	blockTime := flag.Duration("block-time", 1000*time.Millisecond, "block creation time")
 	flag.BoolVar(&verbose, "verbose", false, "verbose output")
 	flag.Parse()
 
@@ -38,7 +40,7 @@ func TestMain(m *testing.M) {
 		println("Work dir: ", workDir)
 	}
 	defaultWaitTime = *waitTime
-	sut = NewSystemUnderTest(verbose, *nodesCount)
+	sut = NewSystemUnderTest(verbose, *nodesCount, *blockTime)
 	if *rebuild {
 		sut.BuildNewBinary()
 	}

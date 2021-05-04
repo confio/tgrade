@@ -41,11 +41,11 @@ type SystemUnderTest struct {
 	verbose       bool
 }
 
-func NewSystemUnderTest(verbose bool, nodesCount int) *SystemUnderTest {
+func NewSystemUnderTest(verbose bool, nodesCount int, blockTime time.Duration) *SystemUnderTest {
 	return &SystemUnderTest{
 		chainID:    "testing",
 		outputDir:  "./testnet",
-		blockTime:  1500 * time.Millisecond,
+		blockTime:  blockTime,
 		rpcAddr:    "tcp://localhost:26657",
 		nodesCount: nodesCount,
 		outBuff:    ring.New(100),
@@ -224,7 +224,7 @@ func (s SystemUnderTest) BuildNewBinary() {
 // AwaitNextBlock is a first class function that any caller can use to ensure a new block was minted
 func (s *SystemUnderTest) AwaitNextBlock(t *testing.T, timeout ...time.Duration) {
 	t.Helper()
-	var maxWaitTime = s.blockTime * 2
+	var maxWaitTime = s.blockTime * 3
 	if len(timeout) != 0 { // optional argument to overwrite default timeout
 		maxWaitTime = timeout[0]
 	}
