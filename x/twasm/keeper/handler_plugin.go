@@ -110,6 +110,7 @@ func (h TgradeHandler) handleHooks(ctx sdk.Context, contractAddr sdk.AccAddress,
 	}
 }
 
+// handle gov proposal execution
 func (h TgradeHandler) handleGovProposalExecution(ctx sdk.Context, contractAddr sdk.AccAddress, exec *contract.ExecuteGovProposal, router govtypes.Router) error {
 	contractInfo := h.keeper.GetContractInfo(ctx, contractAddr)
 	if contractInfo == nil {
@@ -127,6 +128,9 @@ func (h TgradeHandler) handleGovProposalExecution(ctx sdk.Context, contractAddr 
 	content := exec.GetProposalContent()
 	if content == nil {
 		return sdkerrors.Wrap(wasmtypes.ErrUnknownMsg, "unsupported content type")
+	}
+	if err := content.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "content")
 	}
 	if !router.HasRoute(content.ProposalRoute()) {
 		return sdkerrors.Wrap(govtypes.ErrNoProposalHandlerExists, content.ProposalRoute())

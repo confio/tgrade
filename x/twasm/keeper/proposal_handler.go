@@ -18,11 +18,11 @@ type govKeeper interface {
 // NewProposalHandler creates a new governance Handler for wasm proposals
 func NewProposalHandler(k Keeper) govtypes.Handler {
 	wasmProposalHandler := wasmkeeper.NewWasmProposalHandler(k, wasmtypes.EnableAllProposals)
-	return NewProposalHandlerX(k, wasmProposalHandler)
+	return NewProposalHandlerX(k, wasmProposalHandler, k.govRouter)
 }
 
 // NewProposalHandlerX creates a new governance Handler for wasm proposals
-func NewProposalHandlerX(k govKeeper, wasmProposalHandler govtypes.Handler) govtypes.Handler {
+func NewProposalHandlerX(k govKeeper, wasmProposalHandler govtypes.Handler, router govtypes.Router) govtypes.Handler {
 	return func(ctx sdk.Context, content govtypes.Content) error {
 		err := wasmProposalHandler(ctx, content)
 		switch {
@@ -39,6 +39,16 @@ func NewProposalHandlerX(k govKeeper, wasmProposalHandler govtypes.Handler) govt
 			return handlePromoteContractProposal(ctx, k, *c)
 		case *types.DemotePrivilegedContractProposal:
 			return handleDemoteContractProposal(ctx, k, *c)
+		case *types.StargateContentProposal:
+			nestedContent, ok := c.Content.GetCachedValue().(govtypes.Content)
+			if !ok || nestedContent == nil {
+				return sdkerrors.Wrap(wasmtypes.ErrInvalid, "not gov content type")
+			}
+			if !router.HasRoute(nestedContent.ProposalRoute()) {
+				return sdkerrors.Wrap(govtypes.ErrNoProposalHandlerExists, nestedContent.ProposalRoute())
+			}
+			govHandler := router.GetRoute(nestedContent.ProposalRoute())
+			return govHandler(ctx, content)
 		default:
 			return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized twasm srcProposal content type: %T", c)
 		}

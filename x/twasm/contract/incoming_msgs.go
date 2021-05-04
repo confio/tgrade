@@ -37,6 +37,7 @@ type ExecuteGovProposal struct {
 	Proposal    GovProposal `json:"proposal"`
 }
 
+// GetProposalContent converts message payload to gov content type. returns `nil` when unknown
 func (p ExecuteGovProposal) GetProposalContent() govtypes.Content {
 	switch {
 	case p.Proposal.Text != nil:
@@ -54,8 +55,11 @@ func (p ExecuteGovProposal) GetProposalContent() govtypes.Content {
 		p.Proposal.CancelUpgrade.Description = p.Description
 		return p.Proposal.CancelUpgrade
 	case p.Proposal.RawProtoProposal != nil:
-		panic("todo: map to a new type")
-
+		return &types.StargateContentProposal{
+			Title:       p.Title,
+			Description: p.Description,
+			Content:     p.Proposal.RawProtoProposal,
+		}
 	case p.Proposal.IbcClientUpdate != nil:
 		p.Proposal.IbcClientUpdate.Title = p.Title
 		p.Proposal.IbcClientUpdate.Description = p.Description

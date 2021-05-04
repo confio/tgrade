@@ -20,6 +20,7 @@ type Keeper struct {
 	storeKey       sdk.StoreKey
 	contractKeeper wasmtypes.ContractOpsKeeper
 	paramSpace     paramtypes.Subspace
+	govRouter      govtypes.Router
 }
 
 func NewKeeper(
@@ -46,6 +47,7 @@ func NewKeeper(
 		cdc:        cdc,
 		storeKey:   storeKey,
 		paramSpace: paramSpace,
+		govRouter:  govRouter,
 	}
 	// configure wasm keeper via options
 

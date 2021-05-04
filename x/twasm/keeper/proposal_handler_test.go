@@ -93,7 +93,7 @@ func TestGovHandler(t *testing.T) {
 				spec.setupGovKeeper(&mock)
 			}
 			// when
-			h := NewProposalHandlerX(&mock, spec.wasmHandler)
+			h := NewProposalHandlerX(&mock, spec.wasmHandler, govtypes.NewRouter())
 			gotErr := h(ctx, spec.srcProposal)
 			// then
 			require.True(t, spec.expErr.Is(gotErr), "exp %v but got #+v", spec.expErr, gotErr)

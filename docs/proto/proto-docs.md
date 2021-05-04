@@ -14,6 +14,7 @@
 - [confio/twasm/v1beta1/proposal.proto](#confio/twasm/v1beta1/proposal.proto)
     - [DemotePrivilegedContractProposal](#confio.twasm.v1beta1.DemotePrivilegedContractProposal)
     - [PromoteToPrivilegedContractProposal](#confio.twasm.v1beta1.PromoteToPrivilegedContractProposal)
+    - [StargateContentProposal](#confio.twasm.v1beta1.StargateContentProposal)
   
 - [confio/twasm/v1beta1/query.proto](#confio/twasm/v1beta1/query.proto)
     - [QueryContractsByCallbackTypeRequest](#confio.twasm.v1beta1.QueryContractsByCallbackTypeRequest)
@@ -143,6 +144,23 @@ PromoteToPrivilegedContractProposal gov proposal content type to add
 | `title` | [string](#string) |  | Title is a short summary |
 | `description` | [string](#string) |  | Description is a human readable text |
 | `contract` | [string](#string) |  | Contract is the address of the smart contract |
+
+
+
+
+
+
+<a name="confio.twasm.v1beta1.StargateContentProposal"></a>
+
+### StargateContentProposal
+StargateContentProposal is a wildcard proposal type.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `title` | [string](#string) |  | Title is a short summary |
+| `description` | [string](#string) |  | Description is a human readable text |
+| `content` | [google.protobuf.Any](#google.protobuf.Any) |  | Content implements any `govtypes.Content` type |
 
 
 

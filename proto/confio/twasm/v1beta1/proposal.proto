@@ -4,6 +4,8 @@ package confio.twasm.v1beta1;
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmwasm/wasm/v1beta1/types.proto";
+import "cosmos_proto/cosmos.proto";
+import "google/protobuf/any.proto";
 
 option go_package = "github.com/confio/tgrade/x/twasm/types";
 option (gogoproto.goproto_stringer_all) = false;
@@ -30,4 +32,15 @@ message DemotePrivilegedContractProposal {
   string description = 2 [ (gogoproto.moretags) = "yaml:\"description\"" ];
   // Contract is the address of the smart contract
   string contract = 3 [ (gogoproto.moretags) = "yaml:\"contract\"" ];
+}
+
+// StargateContentProposal is a wildcard proposal type.
+message StargateContentProposal {
+  // Title is a short summary
+  string title = 1 [ (gogoproto.moretags) = "yaml:\"title\"" ];
+  // Description is a human readable text
+  string description = 2 [ (gogoproto.moretags) = "yaml:\"description\"" ];
+  // Content implements any `govtypes.Content` type
+  google.protobuf.Any content = 3
+      [ (cosmos_proto.accepts_interface) = "Content" ];
 }

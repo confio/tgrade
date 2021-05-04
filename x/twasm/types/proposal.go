@@ -2,6 +2,8 @@ package types
 
 import (
 	"fmt"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -13,20 +15,24 @@ type ProposalType string
 const (
 	ProposalTypePromoteContract ProposalType = "PromoteToPrivilegedContract"
 	ProposalTypeDemoteContract  ProposalType = "DemotePrivilegedContract"
+	ProposalTypeStargate        ProposalType = "StargateContent"
 )
 
 // EnableAllProposals contains all twasm gov types as keys.
 var EnableAllProposals = []ProposalType{
 	ProposalTypePromoteContract,
 	ProposalTypeDemoteContract,
+	ProposalTypeStargate,
 }
 
 func init() { // register new content types with the sdk
 	govtypes.RegisterProposalType(string(ProposalTypePromoteContract))
 	govtypes.RegisterProposalType(string(ProposalTypeDemoteContract))
+	govtypes.RegisterProposalType(string(ProposalTypeStargate))
 
 	govtypes.RegisterProposalTypeCodec(&PromoteToPrivilegedContractProposal{}, "twasm/PromoteToPrivilegedContractProposal")
 	govtypes.RegisterProposalTypeCodec(&DemotePrivilegedContractProposal{}, "twasm/DemotePrivilegedContractProposal")
+	govtypes.RegisterProposalTypeCodec(&StargateContentProposal{}, "twasm/StargateContentProposal")
 }
 
 // ProposalRoute returns the routing key of a parameter change proposal.
@@ -128,4 +134,58 @@ func validateProposalCommons(title, description string) error {
 		return sdkerrors.Wrapf(govtypes.ErrInvalidProposalContent, "proposal description is longer than max length of %d", govtypes.MaxDescriptionLength)
 	}
 	return nil
+}
+
+var _ codectypes.UnpackInterfacesMessage = &StargateContentProposal{}
+
+// UnpackInterfaces implements codectypes.UnpackInterfaces
+func (m *StargateContentProposal) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+	var content govtypes.Content
+	if err := unpacker.UnpackAny(m.Content, &content); err != nil {
+		return err
+	}
+	return codectypes.UnpackInterfaces(content, unpacker)
+}
+
+// ProposalRoute returns the routing key of a parameter change proposal.
+func (p StargateContentProposal) ProposalRoute() string { return RouterKey }
+
+// GetTitle returns the title of the proposal
+func (p *StargateContentProposal) GetTitle() string { return p.Title }
+
+// GetDescription returns the human readable description of the proposal
+func (p StargateContentProposal) GetDescription() string { return p.Description }
+
+// ProposalType returns the type
+func (p StargateContentProposal) ProposalType() string {
+	return string(ProposalTypeStargate)
+}
+
+// ValidateBasic validates the proposal
+func (p StargateContentProposal) ValidateBasic() error {
+	if err := validateProposalCommons(p.Title, p.Description); err != nil {
+		return err
+	}
+	content, ok := p.Content.GetCachedValue().(govtypes.Content)
+	if !ok || content == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalid, "not gov content type")
+	}
+	if err := content.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "content")
+	}
+	return nil
+}
+
+// String implements the Stringer interface.
+func (p StargateContentProposal) String() string {
+	return fmt.Sprintf(`Store Code Proposal:
+  Title:       %s
+  Description: %s
+  Content:     %s
+`, p.Title, p.Description, p.Content)
+}
+
+// MarshalYAML pretty prints the wasm byte code
+func (p StargateContentProposal) MarshalYAML() (interface{}, error) {
+	return p, nil
 }
