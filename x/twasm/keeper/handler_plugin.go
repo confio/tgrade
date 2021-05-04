@@ -105,6 +105,10 @@ func (h TgradeHandler) handleHooks(ctx sdk.Context, contractAddr sdk.AccAddress,
 		return register(types.CallbackTypeValidatorSetUpdate)
 	case hooks.UnregisterValidatorSetUpdate != nil:
 		return unregister(types.CallbackTypeValidatorSetUpdate)
+	case hooks.RegisterGovProposalExecutor != nil:
+		return register(types.CallbackTypeGovProposalExecutor)
+	case hooks.UnregisterGovProposalExecutor != nil:
+		return unregister(types.CallbackTypeGovProposalExecutor)
 	default:
 		return wasmtypes.ErrUnknownMsg
 	}

@@ -26,6 +26,9 @@ type Hooks struct {
 	// only max 1 contract can be registered here, this is called in EndBlock (after everything else) and can change the validator set.
 	RegisterValidatorSetUpdate   *struct{} `json:"register_validator_set_update"`
 	UnregisterValidatorSetUpdate *struct{} `json:"unregister_validator_set_update"`
+
+	RegisterGovProposalExecutor   *struct{} `json:"register_gov_proposal_executor"`
+	UnregisterGovProposalExecutor *struct{} `json:"unregister_gov_proposal_executor"`
 }
 
 // ExecuteGovProposal will execute an approved proposal in the Cosmos SDK "Gov Router".
