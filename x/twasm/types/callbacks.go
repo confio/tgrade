@@ -12,12 +12,18 @@ var (
 	// CallbackTypeBeginBlock called every block before the TX are processed
 	// Multiple contracts can register for this callback
 	CallbackTypeBeginBlock = registerCallbackType(0x1, "begin_block", false)
+
 	// CallbackTypeEndBlock called every block after the TX are processed
 	// Multiple contracts can register for this callback
 	CallbackTypeEndBlock = registerCallbackType(0x2, "end_block", false)
+
 	// CallbackTypeValidatorSetUpdate end-blocker that can modify the validator set
 	// This callback is exclusive to one contract instance, only.
 	CallbackTypeValidatorSetUpdate = registerCallbackType(0x3, "validator_set_update", true)
+
+	// CallbackTypeGovProposalExecutor
+	// This is a permission to execute governance proposals.
+	CallbackTypeGovProposalExecutor = registerCallbackType(0x4, "gov_proposal_executor", false)
 )
 
 var (

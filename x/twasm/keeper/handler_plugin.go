@@ -9,6 +9,7 @@ import (
 	"github.com/confio/tgrade/x/twasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 // tgradeKeeper defines a subset of Keeper
@@ -24,12 +25,13 @@ var _ wasmkeeper.Messenger = TgradeHandler{}
 
 // TgradeHandler is a custom message handler plugin for wasmd.
 type TgradeHandler struct {
-	keeper tgradeKeeper
+	keeper    tgradeKeeper
+	govRouter govtypes.Router
 }
 
 // NewTgradeHandler constructor
-func NewTgradeHandler(keeper tgradeKeeper) *TgradeHandler {
-	return &TgradeHandler{keeper: keeper}
+func NewTgradeHandler(keeper tgradeKeeper, govRouter govtypes.Router) *TgradeHandler {
+	return &TgradeHandler{keeper: keeper, govRouter: govRouter}
 }
 
 // DispatchMsg handles wasmVM message for privileged contracts
@@ -47,7 +49,8 @@ func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress,
 	switch {
 	case tMsg.Hooks != nil:
 		return nil, nil, h.handleHooks(ctx, contractAddr, tMsg.Hooks)
-
+	case tMsg.ExecuteGovProposal != nil:
+		return nil, nil, h.handleGovProposalExecution(ctx, contractAddr, tMsg.ExecuteGovProposal, h.govRouter)
 	}
 	return nil, nil, wasmtypes.ErrUnknownMsg
 }
@@ -105,4 +108,29 @@ func (h TgradeHandler) handleHooks(ctx sdk.Context, contractAddr sdk.AccAddress,
 	default:
 		return wasmtypes.ErrUnknownMsg
 	}
+}
+
+func (h TgradeHandler) handleGovProposalExecution(ctx sdk.Context, contractAddr sdk.AccAddress, exec *contract.ExecuteGovProposal, router govtypes.Router) error {
+	contractInfo := h.keeper.GetContractInfo(ctx, contractAddr)
+	if contractInfo == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract info")
+	}
+
+	var details types.TgradeContractDetails
+	if err := contractInfo.ReadExtension(&details); err != nil {
+		return err
+	}
+	if !details.HasRegisteredContractCallback(types.CallbackTypeGovProposalExecutor) {
+		return sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "requires: %s", types.CallbackTypeGovProposalExecutor.String())
+	}
+
+	content := exec.GetProposalContent()
+	if content == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrUnknownMsg, "unsupported content type")
+	}
+	if !router.HasRoute(content.ProposalRoute()) {
+		return sdkerrors.Wrap(govtypes.ErrNoProposalHandlerExists, content.ProposalRoute())
+	}
+	govHandler := router.GetRoute(content.ProposalRoute())
+	return govHandler(ctx, content)
 }

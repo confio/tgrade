@@ -75,9 +75,10 @@ func TestPrivilegedCallbackTypeValidation(t *testing.T) {
 func TestPrivilegedCallbackTypeSingletons(t *testing.T) {
 	// sanity check with manually curated list
 	specs := map[PrivilegedCallbackType]bool{
-		CallbackTypeBeginBlock:         false,
-		CallbackTypeEndBlock:           false,
-		CallbackTypeValidatorSetUpdate: true,
+		CallbackTypeBeginBlock:          false,
+		CallbackTypeEndBlock:            false,
+		CallbackTypeValidatorSetUpdate:  true,
+		CallbackTypeGovProposalExecutor: false,
 	}
 	for c, exp := range specs {
 		t.Run(c.String(), func(t *testing.T) {

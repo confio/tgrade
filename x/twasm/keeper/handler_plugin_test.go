@@ -7,6 +7,7 @@ import (
 	"github.com/confio/tgrade/x/twasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -53,9 +54,10 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
+			govRouter := govtypes.NewRouter()
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
-			h := NewTgradeHandler(mock)
+			h := NewTgradeHandler(mock, govRouter)
 			var ctx sdk.Context
 			_, _, gotErr := h.DispatchMsg(ctx, contractAddr, "", spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -239,7 +241,8 @@ func TestTgradeHandlesHooks(t *testing.T) {
 			capturedDetails, capturedRegistrations, capturedUnRegistrations = nil, nil, nil
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
-			h := NewTgradeHandler(mock)
+			govRouter := govtypes.NewRouter()
+			h := NewTgradeHandler(mock, govRouter)
 			var ctx sdk.Context
 			gotErr := h.handleHooks(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)

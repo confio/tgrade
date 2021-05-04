@@ -59,7 +59,7 @@ func NewKeeper(
 			portSource,
 		),
 		// append our custom message handler
-		NewTgradeHandler(&result),
+		NewTgradeHandler(&result, govRouter),
 	)
 	var queryPlugins wasmkeeper.WasmVMQueryHandler = wasmkeeper.DefaultQueryPlugins(bankKeeper, stakingKeeper, distKeeper, channelKeeper, queryRouter, &result.Keeper)
 
