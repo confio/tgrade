@@ -46,7 +46,7 @@ var (
 	flagStartingIPAddress = "starting-ip-address"
 	// custom flags
 	flagCommitTimeout = "commit-timeout"
-	flagSingleMachine = "single-machine"
+	flagSingleHost    = "single-host"
 )
 
 // get cmd to initialize all files for tendermint testnet and application
@@ -85,7 +85,7 @@ Example:
 			if err != nil {
 				return err
 			}
-			singleMachine, err := cmd.Flags().GetBool(flagSingleMachine)
+			singleMachine, err := cmd.Flags().GetBool(flagSingleHost)
 			if err != nil {
 				return err
 			}
@@ -109,7 +109,7 @@ Example:
 	cmd.Flags().String(flags.FlagKeyAlgorithm, string(hd.Secp256k1Type), "Key signing algorithm to generate keys for")
 	// tgrade
 	cmd.Flags().Duration(flagCommitTimeout, 5*time.Second, "Time to wait after a block commit before starting on the new height")
-	cmd.Flags().Bool(flagSingleMachine, false, "Cluster runs on a single machine")
+	cmd.Flags().Bool(flagSingleHost, false, "Cluster runs on a single host machine with different ports")
 	return cmd
 }
 

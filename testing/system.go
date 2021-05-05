@@ -69,7 +69,7 @@ func (s SystemUnderTest) SetupChain() {
 		"--commit-timeout=" + s.blockTime.String(),
 		"--minimum-gas-prices=" + s.minGasPrice,
 		"--starting-ip-address", "", // empty to use host systems
-		"--single-machine",
+		"--single-host",
 	}
 	cmd := exec.Command(
 		locateExecutable("tgrade"),
