@@ -50,7 +50,7 @@ func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress,
 	case tMsg.Hooks != nil:
 		return nil, nil, h.handleHooks(ctx, contractAddr, tMsg.Hooks)
 	case tMsg.ExecuteGovProposal != nil:
-		return nil, nil, h.handleGovProposalExecution(ctx, contractAddr, tMsg.ExecuteGovProposal, h.govRouter)
+		return nil, nil, h.handleGovProposalExecution(ctx, contractAddr, tMsg.ExecuteGovProposal)
 	}
 	return nil, nil, wasmtypes.ErrUnknownMsg
 }
@@ -115,7 +115,7 @@ func (h TgradeHandler) handleHooks(ctx sdk.Context, contractAddr sdk.AccAddress,
 }
 
 // handle gov proposal execution
-func (h TgradeHandler) handleGovProposalExecution(ctx sdk.Context, contractAddr sdk.AccAddress, exec *contract.ExecuteGovProposal, router govtypes.Router) error {
+func (h TgradeHandler) handleGovProposalExecution(ctx sdk.Context, contractAddr sdk.AccAddress, exec *contract.ExecuteGovProposal) error {
 	contractInfo := h.keeper.GetContractInfo(ctx, contractAddr)
 	if contractInfo == nil {
 		return sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract info")
@@ -136,9 +136,9 @@ func (h TgradeHandler) handleGovProposalExecution(ctx sdk.Context, contractAddr 
 	if err := content.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "content")
 	}
-	if !router.HasRoute(content.ProposalRoute()) {
+	if !h.govRouter.HasRoute(content.ProposalRoute()) {
 		return sdkerrors.Wrap(govtypes.ErrNoProposalHandlerExists, content.ProposalRoute())
 	}
-	govHandler := router.GetRoute(content.ProposalRoute())
+	govHandler := h.govRouter.GetRoute(content.ProposalRoute())
 	return govHandler(ctx, content)
 }

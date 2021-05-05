@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/confio/tgrade/x/twasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -21,11 +22,12 @@ func TestGovHandler(t *testing.T) {
 	}
 
 	specs := map[string]struct {
-		wasmHandler      govtypes.Handler
-		setupGovKeeper   func(*MockGovKeeper)
-		srcProposal      govtypes.Content
-		expErr           *sdkerrors.Error
-		expCapturedAddrs []sdk.AccAddress
+		wasmHandler           govtypes.Handler
+		setupGovKeeper        func(*MockGovKeeper)
+		srcProposal           govtypes.Content
+		expErr                *sdkerrors.Error
+		expCapturedAddrs      []sdk.AccAddress
+		expCapturedGovContent []govtypes.Content
 	}{
 		"handled in wasm": {
 			wasmHandler: func(ctx sdk.Context, content govtypes.Content) error {
@@ -79,6 +81,18 @@ func TestGovHandler(t *testing.T) {
 			srcProposal: &types.DemotePrivilegedContractProposal{},
 			expErr:      govtypes.ErrInvalidProposalContent,
 		},
+		"stargate proposal": {
+			srcProposal:           types.StargateContentProposalFixture(),
+			wasmHandler:           notHandler,
+			expCapturedGovContent: []govtypes.Content{types.StargateContentProposalFixture()},
+		},
+		"stargate empty content rejected": {
+			srcProposal: types.StargateContentProposalFixture(func(p *types.StargateContentProposal) {
+				p.Content.ClearCachedValue()
+			}),
+			wasmHandler: notHandler,
+			expErr:      wasmtypes.ErrInvalid,
+		},
 		"nil content": {
 			wasmHandler: notHandler,
 			expErr:      sdkerrors.ErrUnknownRequest,
@@ -93,13 +107,14 @@ func TestGovHandler(t *testing.T) {
 				spec.setupGovKeeper(&mock)
 			}
 			// when
-			h := NewProposalHandlerX(&mock, spec.wasmHandler, govtypes.NewRouter())
+			router := &CapturingGovRouter{}
+			h := NewProposalHandlerX(&mock, spec.wasmHandler, router)
 			gotErr := h(ctx, spec.srcProposal)
 			// then
 			require.True(t, spec.expErr.Is(gotErr), "exp %v but got #+v", spec.expErr, gotErr)
 			assert.Equal(t, spec.expCapturedAddrs, capturedContractAddrs)
+			assert.Equal(t, spec.expCapturedGovContent, router.captured)
 		})
-
 	}
 }
 
@@ -120,4 +135,20 @@ func (m MockGovKeeper) UnsetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddr
 		panic("not expected to be called")
 	}
 	return m.UnsetPrivilegedFn(ctx, contractAddr)
+}
+
+type CapturingGovRouter struct {
+	govtypes.Router
+	captured []govtypes.Content
+}
+
+func (m CapturingGovRouter) HasRoute(r string) bool {
+	return true
+}
+
+func (m *CapturingGovRouter) GetRoute(path string) (h govtypes.Handler) {
+	return func(ctx sdk.Context, content govtypes.Content) error {
+		m.captured = append(m.captured, content)
+		return nil
+	}
 }

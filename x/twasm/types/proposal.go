@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/gogo/protobuf/proto"
 	"strings"
 )
 
@@ -138,6 +139,25 @@ func validateProposalCommons(title, description string) error {
 
 var _ codectypes.UnpackInterfacesMessage = &StargateContentProposal{}
 
+// NewStargateContentProposal constructor
+func NewStargateContentProposal(title, description string, content govtypes.Content) (*StargateContentProposal, error) {
+	msg, ok := content.(proto.Message)
+	if !ok {
+		return nil, sdkerrors.Wrapf(wasmtypes.ErrInvalid, "%T does not implement proto.Message", content)
+	}
+
+	any, err := codectypes.NewAnyWithValue(msg)
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrPackAny, err.Error())
+	}
+
+	return &StargateContentProposal{
+		Title:       title,
+		Description: description,
+		Content:     any,
+	}, nil
+}
+
 // UnpackInterfaces implements codectypes.UnpackInterfaces
 func (m *StargateContentProposal) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 	var content govtypes.Content
@@ -165,6 +185,9 @@ func (p StargateContentProposal) ProposalType() string {
 func (p StargateContentProposal) ValidateBasic() error {
 	if err := validateProposalCommons(p.Title, p.Description); err != nil {
 		return err
+	}
+	if p.Content == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrEmpty, "content")
 	}
 	content, ok := p.Content.GetCachedValue().(govtypes.Content)
 	if !ok || content == nil {

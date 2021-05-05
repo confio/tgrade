@@ -1,6 +1,7 @@
 package types
 
 import (
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,6 +49,7 @@ func TestValidatePromoteToPrivilegedContractProposal(t *testing.T) {
 		})
 	}
 }
+
 func TestValidateDemotePrivilegedContractProposal(t *testing.T) {
 	specs := map[string]struct {
 		src    *DemotePrivilegedContractProposal
@@ -87,6 +89,56 @@ func TestValidateDemotePrivilegedContractProposal(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateStargateContentProposal(t *testing.T) {
+	specs := map[string]struct {
+		src    *StargateContentProposal
+		expErr bool
+	}{
+		"all good": {
+			src: StargateContentProposalFixture(),
+		},
+		"without title": {
+			src: StargateContentProposalFixture(func(p *StargateContentProposal) {
+				p.Title = ""
+			}),
+			expErr: true,
+		},
+		"with empty content": {
+			src: StargateContentProposalFixture(func(p *StargateContentProposal) {
+				p.Content = nil
+			}),
+			expErr: true,
+		},
+		"unsupported type": {
+			src: StargateContentProposalFixture(func(p *StargateContentProposal) {
+				var err error
+				p.Content, err = codectypes.NewAnyWithValue(&TgradeContractDetails{})
+				require.NoError(t, err)
+			}),
+			expErr: true,
+		},
+		"invalid type": {
+			src: StargateContentProposalFixture(func(p *StargateContentProposal) {
+				var err error
+				p.Content, err = codectypes.NewAnyWithValue(&govtypes.TextProposal{})
+				require.NoError(t, err)
+			}),
+			expErr: true,
+		},
+	}
+	for msg, spec := range specs {
+		t.Run(msg, func(t *testing.T) {
+			err := spec.src.ValidateBasic()
+			if spec.expErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestProposalYaml(t *testing.T) {
 	specs := map[string]struct {
 		src govtypes.Content
