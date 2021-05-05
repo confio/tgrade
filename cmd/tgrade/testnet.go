@@ -46,6 +46,7 @@ var (
 	flagStartingIPAddress = "starting-ip-address"
 	// custom flags
 	flagCommitTimeout = "commit-timeout"
+	flagSingleHost    = "single-host"
 )
 
 // get cmd to initialize all files for tendermint testnet and application
@@ -84,10 +85,15 @@ Example:
 			if err != nil {
 				return err
 			}
+			singleMachine, err := cmd.Flags().GetBool(flagSingleHost)
+			if err != nil {
+				return err
+			}
 
 			return InitTestnet(
 				clientCtx, cmd, config, mbm, genBalIterator, outputDir, chainID, minGasPrices,
 				nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algo, numValidators,
+				singleMachine,
 			)
 		},
 	}
@@ -103,27 +109,21 @@ Example:
 	cmd.Flags().String(flags.FlagKeyAlgorithm, string(hd.Secp256k1Type), "Key signing algorithm to generate keys for")
 	// tgrade
 	cmd.Flags().Duration(flagCommitTimeout, 5*time.Second, "Time to wait after a block commit before starting on the new height")
+	cmd.Flags().Bool(flagSingleHost, false, "Cluster runs on a single host machine with different ports")
 	return cmd
 }
 
 const nodeDirPerm = 0755
 
-// Initialize the testnet
+// InitTestnet Initialize the testnet
 func InitTestnet(
 	clientCtx client.Context,
 	cmd *cobra.Command,
 	nodeConfig *tmconfig.Config,
 	mbm module.BasicManager,
 	genBalIterator banktypes.GenesisBalancesIterator,
-	outputDir,
-	chainID,
-	minGasPrices,
-	nodeDirPrefix,
-	nodeDaemonHome,
-	startingIPAddress,
-	keyringBackend,
-	algoStr string,
-	numValidators int,
+	outputDir, chainID, minGasPrices, nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algoStr string,
+	numValidators int, singleMachine bool,
 ) error {
 
 	if chainID == "" {
@@ -146,16 +146,32 @@ func InitTestnet(
 		genBalances []banktypes.Balance
 		genFiles    []string
 	)
+	const (
+		rpcPort  = 26657
+		apiPort  = 1317
+		grpcPort = 9090
+	)
+	p2pPortStart := 26656
 
 	inBuf := bufio.NewReader(cmd.InOrStdin())
 	// generate private keys, node IDs, and initial transactions
 	for i := 0; i < numValidators; i++ {
+		var portOffset int
+		if singleMachine {
+			portOffset = i
+			p2pPortStart = 16656 // use different start point to not conflict with rpc port
+			nodeConfig.P2P.AddrBookStrict = false
+			nodeConfig.P2P.PexReactor = false
+			nodeConfig.P2P.AllowDuplicateIP = true
+		}
+
 		nodeDirName := fmt.Sprintf("%s%d", nodeDirPrefix, i)
 		nodeDir := filepath.Join(outputDir, nodeDirName, nodeDaemonHome)
 		gentxsDir := filepath.Join(outputDir, "gentxs")
 
 		nodeConfig.SetRoot(nodeDir)
-		nodeConfig.RPC.ListenAddress = "tcp://0.0.0.0:26657"
+		appConfig.API.Address = fmt.Sprintf("tcp://0.0.0.0:%d", apiPort+portOffset)
+		appConfig.GRPC.Address = fmt.Sprintf("0.0.0.0:%d", grpcPort+portOffset)
 
 		if err := os.MkdirAll(filepath.Join(nodeDir, "config"), nodeDirPerm); err != nil {
 			_ = os.RemoveAll(outputDir)
@@ -176,7 +192,7 @@ func InitTestnet(
 			return err
 		}
 
-		memo := fmt.Sprintf("%s@%s:26656", nodeIDs[i], ip)
+		memo := fmt.Sprintf("%s@%s:%d", nodeIDs[i], ip, p2pPortStart+portOffset)
 		genFiles = append(genFiles, nodeConfig.GenesisFile())
 
 		kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, nodeDir, inBuf)
@@ -268,6 +284,7 @@ func InitTestnet(
 	err := collectGenFiles(
 		clientCtx, nodeConfig, chainID, nodeIDs, valPubKeys, numValidators,
 		outputDir, nodeDirPrefix, nodeDaemonHome, genBalIterator,
+		rpcPort, p2pPortStart, singleMachine,
 	)
 	if err != nil {
 		return err
@@ -330,16 +347,23 @@ func collectGenFiles(
 	clientCtx client.Context, nodeConfig *tmconfig.Config, chainID string,
 	nodeIDs []string, valPubKeys []cryptotypes.PubKey, numValidators int,
 	outputDir, nodeDirPrefix, nodeDaemonHome string, genBalIterator banktypes.GenesisBalancesIterator,
+	rpcPortStart, p2pPortStart int, singleMachine bool,
 ) error {
 
 	var appState json.RawMessage
 	genTime := tmtime.Now()
 
 	for i := 0; i < numValidators; i++ {
+		var portOffset int
+		if singleMachine {
+			portOffset = i
+		}
 		nodeDirName := fmt.Sprintf("%s%d", nodeDirPrefix, i)
 		nodeDir := filepath.Join(outputDir, nodeDirName, nodeDaemonHome)
 		gentxsDir := filepath.Join(outputDir, "gentxs")
 		nodeConfig.Moniker = nodeDirName
+		nodeConfig.RPC.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", rpcPortStart+portOffset)
+		nodeConfig.P2P.ListenAddress = fmt.Sprintf("tcp://0.0.0.0:%d", p2pPortStart+portOffset)
 
 		nodeConfig.SetRoot(nodeDir)
 

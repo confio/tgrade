@@ -19,7 +19,7 @@ type TgradeCli struct {
 }
 
 func NewTgradeCli(t *testing.T, sut *SystemUnderTest, verbose bool) *TgradeCli {
-	return NewTgradeCliX(t, sut.rpcAddr, sut.chainID, filepath.Join(sut.outputDir, "node0", "tgrade"), verbose)
+	return NewTgradeCliX(t, sut.rpcAddr, sut.chainID, filepath.Join(workDir, sut.outputDir), verbose)
 }
 
 func NewTgradeCliX(t *testing.T, nodeAddress string, chainID string, homeDir string, debug bool) *TgradeCli {
@@ -80,7 +80,32 @@ func (c TgradeCli) withChainFlags(args ...string) []string {
 	)
 }
 
+// Execute send MsgExecute to a contract
+func (c TgradeCli) Execute(contractAddr, msg, from string) string {
+	cmd := []string{"tx", "wasm", "execute", contractAddr, msg, "--from", from}
+	return c.run(c.withTXFlags(cmd...))
+}
+
+// AddKey add key to default keyring. Returns address
+func (c TgradeCli) AddKey(name string) string {
+	cmd := c.withKeyringFlags("keys", "add", name, "--no-backup", "--output", "json")
+	out := c.run(cmd)
+	addr := gjson.Get(out, "address").String()
+	require.NotEmpty(c.t, addr, "got %q", out)
+	return addr
+}
+
+const defaultSrcAddr = "node0"
+
+func (c TgradeCli) FundAddress(t *testing.T, destAddr, amount string) string {
+	require.NotEmpty(t, destAddr)
+	require.NotEmpty(t, amount)
+	cmd := []string{"tx", "send", defaultSrcAddr, destAddr, amount}
+	return c.run(c.withTXFlags(cmd...))
+}
+
 func RequireTxSuccess(t *testing.T, got string) {
+	t.Helper()
 	code := gjson.Get(got, "code")
 	rawLog := gjson.Get(got, "raw_log")
 	require.Equal(t, int64(0), code.Int(), rawLog)

@@ -9,8 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 	client "github.com/tendermint/tendermint/rpc/client/http"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	"github.com/tendermint/tendermint/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -40,13 +41,13 @@ type SystemUnderTest struct {
 	verbose       bool
 }
 
-func NewSystemUnderTest(verbose bool) *SystemUnderTest {
+func NewSystemUnderTest(verbose bool, nodesCount int, blockTime time.Duration) *SystemUnderTest {
 	return &SystemUnderTest{
 		chainID:    "testing",
 		outputDir:  "./testnet",
-		blockTime:  1500 * time.Millisecond,
+		blockTime:  blockTime,
 		rpcAddr:    "tcp://localhost:26657",
-		nodesCount: 1,
+		nodesCount: nodesCount,
 		outBuff:    ring.New(100),
 		errBuff:    ring.New(100),
 		out:        os.Stdout,
@@ -55,7 +56,10 @@ func NewSystemUnderTest(verbose bool) *SystemUnderTest {
 }
 
 func (s SystemUnderTest) SetupChain() {
-	s.Log("Setup chain")
+	s.Logf("Setup chain: %s\n", s.outputDir)
+	if err := os.RemoveAll(filepath.Join(workDir, s.outputDir)); err != nil {
+		panic(err.Error())
+	}
 	args := []string{
 		"testnet",
 		"--chain-id=" + s.chainID,
@@ -65,6 +69,7 @@ func (s SystemUnderTest) SetupChain() {
 		"--commit-timeout=" + s.blockTime.String(),
 		"--minimum-gas-prices=" + s.minGasPrice,
 		"--starting-ip-address", "", // empty to use host systems
+		"--single-host",
 	}
 	cmd := exec.Command(
 		locateExecutable("tgrade"),
@@ -83,10 +88,16 @@ func (s SystemUnderTest) SetupChain() {
 	if _, err := copyFile(src, dest); err != nil {
 		panic(fmt.Sprintf("copy failed :%#+v", err))
 	}
+	// backup keyring
+	src = filepath.Join(workDir, s.nodePath(0), "keyring-test")
+	dest = filepath.Join(workDir, s.outputDir, "keyring-test")
+	if err := copyFilesInDir(src, dest); err != nil {
+		panic(fmt.Sprintf("copy files from dir :%#+v", err))
+	}
 }
 
 func (s *SystemUnderTest) StartChain(t *testing.T) {
-	s.Log("Start chain")
+	s.Log("Start chain\n")
 	s.forEachNodesExecAsync(t, "start", "--trace", "--log_level=info")
 
 	s.awaitChainUp(t)
@@ -95,7 +106,7 @@ func (s *SystemUnderTest) StartChain(t *testing.T) {
 	s.blockListener = NewEventListener(t, s.rpcAddr)
 	s.cleanupFn = append(s.cleanupFn,
 		s.blockListener.Subscribe("tm.event='NewBlock'", func(e ctypes.ResultEvent) (more bool) {
-			newBlock, ok := e.Data.(types.EventDataNewBlock)
+			newBlock, ok := e.Data.(tmtypes.EventDataNewBlock)
 			require.True(t, ok, "unexpected type %T", e.Data)
 			atomic.StoreInt64(&s.currentHeight, newBlock.Block.Height)
 			return true
@@ -104,21 +115,27 @@ func (s *SystemUnderTest) StartChain(t *testing.T) {
 	s.AwaitNextBlock(t)
 }
 
-func (s *SystemUnderTest) watchLogs(cmd *exec.Cmd) {
+// watchLogs stores stdout/stderr in a file and in a ring buffer to output the last n lines on test error
+func (s *SystemUnderTest) watchLogs(node int, cmd *exec.Cmd) {
+	logfile, err := os.Create(filepath.Join(workDir, s.outputDir, fmt.Sprintf("node%d.out", node)))
+	if err != nil {
+		panic(fmt.Sprintf("open logfile error %#+v", err))
+	}
+
 	errReader, err := cmd.StderrPipe()
 	if err != nil {
-		panic(fmt.Sprintf("unexpected error %#+v", err))
+		panic(fmt.Sprintf("stderr reader error %#+v", err))
 	}
-	go appendToBuf(errReader, s.errBuff)
+	go appendToBuf(io.TeeReader(errReader, logfile), s.errBuff)
 
 	outReader, err := cmd.StdoutPipe()
 	if err != nil {
-		panic(fmt.Sprintf("unexpected error %#+v", err))
+		panic(fmt.Sprintf("stdout reader error %#+v", err))
 	}
-	go appendToBuf(outReader, s.outBuff)
+	go appendToBuf(io.TeeReader(outReader, logfile), s.outBuff)
 }
 
-func appendToBuf(r io.ReadCloser, b *ring.Ring) {
+func appendToBuf(r io.Reader, b *ring.Ring) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		b.Value = scanner.Text()
@@ -205,26 +222,35 @@ func (s SystemUnderTest) BuildNewBinary() {
 }
 
 // AwaitNextBlock is a first class function that any caller can use to ensure a new block was minted
-func (s *SystemUnderTest) AwaitNextBlock(t *testing.T) {
+func (s *SystemUnderTest) AwaitNextBlock(t *testing.T, timeout ...time.Duration) {
+	t.Helper()
+	var maxWaitTime = s.blockTime * 3
+	if len(timeout) != 0 { // optional argument to overwrite default timeout
+		maxWaitTime = timeout[0]
+	}
 	done := make(chan struct{})
 	go func() {
 		for start := atomic.LoadInt64(&s.currentHeight); atomic.LoadInt64(&s.currentHeight) == start; {
 			time.Sleep(s.blockTime)
 		}
 		done <- struct{}{}
+		defer close(done)
 	}()
 	select {
 	case <-done:
-	case <-time.NewTimer(s.blockTime * 2).C:
-		t.Fatalf("Timeout - no block within %s", s.blockTime*2)
+	case <-time.NewTimer(maxWaitTime).C:
+		t.Fatalf("Timeout - no block within %s", maxWaitTime)
 	}
 }
 
 // ResetChain stops and clears all nodes state via 'unsafe-reset-all'
 func (s SystemUnderTest) ResetChain(t *testing.T) {
+	t.Helper()
 	t.Log("ResetChain chain")
 	s.StopChain()
 	restoreOriginalGenesis(t, s)
+	restoreOriginalKeyring(t, s)
+
 	cmd := exec.Command(locateExecutable("pkill"), "tgrade")
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
@@ -267,10 +293,13 @@ func (s SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
 }
 
 // ForEachNodeExecAndWait runs the given tgrade commands for all cluster nodes synchronously
-func (s SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string) {
+// The commands output is returned for each node.
+func (s SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string) [][]string {
+	result := make([][]string, s.nodesCount)
 	s.withEachNodeHome(func(i int, home string) {
-		for _, args := range cmds {
-			args = append(args, "--home", home)
+		result[i] = make([]string, len(cmds))
+		for j, xargs := range cmds {
+			args := append(xargs, "--home", home)
 			s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
 			cmd := exec.Command(
 				locateExecutable("tgrade"),
@@ -280,22 +309,24 @@ func (s SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string) 
 			out, err := cmd.CombinedOutput()
 			require.NoError(t, err, "node %d: %s", i, string(out))
 			s.Logf("Result: %s\n", string(out))
+			result[i][j] = string(out)
 		}
 	})
+	return result
 }
 
 // forEachNodesExecAsync runs the given tgrade command for all cluster nodes and returns without waiting
-func (s SystemUnderTest) forEachNodesExecAsync(t *testing.T, args ...string) []func() error {
+func (s SystemUnderTest) forEachNodesExecAsync(t *testing.T, xargs ...string) []func() error {
 	r := make([]func() error, s.nodesCount)
 	s.withEachNodeHome(func(i int, home string) {
-		args = append(args, "--home", home)
+		args := append(xargs, "--home", home)
 		s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
 		cmd := exec.Command(
 			locateExecutable("tgrade"),
 			args...,
 		)
 		cmd.Dir = workDir
-		s.watchLogs(cmd)
+		s.watchLogs(i, cmd)
 		require.NoError(t, cmd.Start(), "node %d", i)
 		r[i] = cmd.Wait
 	})
@@ -323,11 +354,48 @@ func (s SystemUnderTest) Logf(msg string, args ...interface{}) {
 	s.Log(fmt.Sprintf(msg, args...))
 }
 
+func (s SystemUnderTest) RPCClient(t *testing.T) RPCClient {
+	return NewRPCCLient(t, s.rpcAddr)
+}
+
+func (s SystemUnderTest) AllPeers(t *testing.T) []string {
+	result := make([]string, s.nodesCount)
+	for i, n := range s.AllNodes(t) {
+		result[i] = n.PeerAddr()
+	}
+	return result
+}
+
+func (s SystemUnderTest) AllNodes(t *testing.T) []Node {
+	result := make([]Node, s.nodesCount)
+	outs := s.ForEachNodeExecAndWait(t, []string{"tendermint", "show-node-id"})
+	for i, out := range outs {
+		result[i] = Node{
+			ID:      out[0],
+			IP:      "127.0.0.1",
+			RPCPort: 25567 + i,
+			P2PPort: 15566 + i,
+		}
+	}
+	return result
+}
+
+type Node struct {
+	ID      string
+	IP      string
+	RPCPort int
+	P2PPort int
+}
+
+func (n Node) PeerAddr() string {
+	return fmt.Sprintf("%s@%s:%d", n.ID, n.IP, n.RPCPort)
+}
+
 // locateExecutable looks up the binary on the OS path.
 func locateExecutable(file string) string {
 	path, err := exec.LookPath(file)
 	if err != nil {
-		panic(fmt.Sprintf("unexpected error %#v", err))
+		panic(fmt.Sprintf("unexpected error %s", err.Error()))
 	}
 	if path == "" {
 		panic(fmt.Sprintf("%q not founc", file))
@@ -423,13 +491,22 @@ func restoreOriginalGenesis(t *testing.T, s SystemUnderTest) {
 	s.SetGenesis(t, src)
 }
 
+// restoreOriginalKeyring replaces test keyring with original
+func restoreOriginalKeyring(t *testing.T, s SystemUnderTest) {
+	dest := filepath.Join(workDir, s.outputDir, "keyring-test")
+	require.NoError(t, os.RemoveAll(dest))
+
+	src := filepath.Join(workDir, s.nodePath(0), "keyring-test")
+	require.NoError(t, copyFilesInDir(src, dest))
+}
+
 // copyFile copy source file to dest file path
 func copyFile(src, dest string) (*os.File, error) {
 	in, err := os.Open(src)
 	if err != nil {
 		return nil, err
 	}
-
+	defer in.Close()
 	out, err := os.Create(dest)
 	if err != nil {
 		return nil, err
@@ -438,4 +515,25 @@ func copyFile(src, dest string) (*os.File, error) {
 
 	_, err = io.Copy(out, in)
 	return out, err
+}
+
+// copyFilesInDir copy files in src dir to dest path
+func copyFilesInDir(src, dest string) error {
+	err := os.MkdirAll(dest, 0755)
+	if err != nil {
+		return fmt.Errorf("mkdirs: %s", err)
+	}
+	fs, err := ioutil.ReadDir(src)
+	if err != nil {
+		return fmt.Errorf("read dir: %s", err)
+	}
+	for _, f := range fs {
+		if f.IsDir() {
+			continue
+		}
+		if _, err := copyFile(filepath.Join(src, f.Name()), filepath.Join(dest, f.Name())); err != nil {
+			return fmt.Errorf("copy file: %q: %s", f.Name(), err)
+		}
+	}
+	return nil
 }
