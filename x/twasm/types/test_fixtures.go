@@ -3,7 +3,6 @@ package types
 import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/tendermint/tendermint/libs/rand"
 	"testing"
 )
@@ -27,23 +26,6 @@ func DemoteProposalFixture(mutators ...func(proposal *DemotePrivilegedContractPr
 		Title:       "Foo",
 		Description: "Bar",
 		Contract:    anyAddress,
-	}
-	for _, m := range mutators {
-		m(p)
-	}
-	return p
-}
-
-func StargateContentProposalFixture(mutators ...func(proposal *StargateContentProposal)) *StargateContentProposal {
-	anyProto, err := NewStargateContentProposal("nested", "proto", &govtypes.TextProposal{Title: "another nested", Description: "3rd level"})
-	if err != nil {
-		panic(err)
-	}
-
-	// new stargate with a protobuf type that implements govtypes.Content and has another Any
-	p, err := NewStargateContentProposal("foo", "bar", anyProto)
-	if err != nil {
-		panic(err)
 	}
 	for _, m := range mutators {
 		m(p)

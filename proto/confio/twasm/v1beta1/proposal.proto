@@ -33,14 +33,3 @@ message DemotePrivilegedContractProposal {
   // Contract is the address of the smart contract
   string contract = 3 [ (gogoproto.moretags) = "yaml:\"contract\"" ];
 }
-
-// StargateContentProposal is a wildcard proposal type.
-message StargateContentProposal {
-  // Title is a short summary
-  string title = 1 [ (gogoproto.moretags) = "yaml:\"title\"" ];
-  // Description is a human readable text
-  string description = 2 [ (gogoproto.moretags) = "yaml:\"description\"" ];
-  // Content implements any `govtypes.Content` type
-  google.protobuf.Any content = 3
-      [ (cosmos_proto.accepts_interface) = "Content" ];
-}

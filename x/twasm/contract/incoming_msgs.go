@@ -3,7 +3,6 @@ package contract
 import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/confio/tgrade/x/twasm/types"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	ibcclienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
@@ -57,12 +56,6 @@ func (p ExecuteGovProposal) GetProposalContent() govtypes.Content {
 		p.Proposal.CancelUpgrade.Title = p.Title
 		p.Proposal.CancelUpgrade.Description = p.Description
 		return p.Proposal.CancelUpgrade
-	case p.Proposal.RawProtoProposal != nil:
-		return &types.StargateContentProposal{
-			Title:       p.Title,
-			Description: p.Description,
-			Content:     p.Proposal.RawProtoProposal,
-		}
 	case p.Proposal.IbcClientUpdate != nil:
 		p.Proposal.IbcClientUpdate.Title = p.Title
 		p.Proposal.IbcClientUpdate.Description = p.Description
@@ -119,10 +112,6 @@ type GovProposal struct {
 	// Defines a proposal to change one or more parameters.
 	// See https://github.com/cosmos/cosmos-sdk/blob/v0.42.3/proto/cosmos/params/v1beta1/params.proto#L9-L27
 	ChangeParams *[]proposaltypes.ParamChange `json:"change_params"`
-
-	// Allows raw bytes (if client and wasmd are aware of something the contract is not)
-	// Like CosmosMsg::Stargate but for the governance router, not normal router
-	RawProtoProposal *codectypes.Any `json:"raw_proto_proposal"`
 
 	// Updates the matching client to set a new trusted header.
 	// This can be used by governance to restore a client that has timed out or forked or otherwise broken.

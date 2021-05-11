@@ -13,7 +13,6 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	wasmtypes.RegisterLegacyAminoCodec(cdc)
 	cdc.RegisterConcrete(&PromoteToPrivilegedContractProposal{}, "twasm/PromoteToPrivilegedContractProposal", nil)
 	cdc.RegisterConcrete(&DemotePrivilegedContractProposal{}, "twasm/DemotePrivilegedContractProposal", nil)
-	cdc.RegisterConcrete(&StargateContentProposal{}, "twasm/StargateContentProposal", nil)
 
 }
 
@@ -23,7 +22,6 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		(*govtypes.Content)(nil),
 		&PromoteToPrivilegedContractProposal{},
 		&DemotePrivilegedContractProposal{},
-		&StargateContentProposal{},
 	)
 	registry.RegisterImplementations(
 		(*wasmtypes.ContractInfoExtension)(nil),

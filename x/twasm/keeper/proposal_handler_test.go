@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/confio/tgrade/x/twasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -81,18 +80,6 @@ func TestGovHandler(t *testing.T) {
 			srcProposal: &types.DemotePrivilegedContractProposal{},
 			expErr:      govtypes.ErrInvalidProposalContent,
 		},
-		"stargate proposal": {
-			srcProposal:           types.StargateContentProposalFixture(),
-			wasmHandler:           notHandler,
-			expCapturedGovContent: []govtypes.Content{types.StargateContentProposalFixture()},
-		},
-		"stargate empty content rejected": {
-			srcProposal: types.StargateContentProposalFixture(func(p *types.StargateContentProposal) {
-				p.Content.ClearCachedValue()
-			}),
-			wasmHandler: notHandler,
-			expErr:      wasmtypes.ErrInvalid,
-		},
 		"nil content": {
 			wasmHandler: notHandler,
 			expErr:      sdkerrors.ErrUnknownRequest,
@@ -108,7 +95,7 @@ func TestGovHandler(t *testing.T) {
 			}
 			// when
 			router := &CapturingGovRouter{}
-			h := NewProposalHandlerX(&mock, spec.wasmHandler, router)
+			h := NewProposalHandlerX(&mock, spec.wasmHandler)
 			gotErr := h(ctx, spec.srcProposal)
 			// then
 			require.True(t, spec.expErr.Is(gotErr), "exp %v but got #+v", spec.expErr, gotErr)
