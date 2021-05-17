@@ -55,7 +55,8 @@ type ExecuteGovProposal struct {
 	Proposal    GovProposal `json:"proposal"`
 }
 
-// GetProposalContent converts message payload to gov content type. returns `nil` when unknown
+// GetProposalContent converts message payload to gov content type. returns `nil` when unknown.
+// The response is not guaranteed to be valid content.
 func (p ExecuteGovProposal) GetProposalContent() govtypes.Content {
 	switch {
 	case p.Proposal.Text != nil:
