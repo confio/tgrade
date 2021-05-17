@@ -1,12 +1,12 @@
 package keeper
 
 import (
-	"encoding/json"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/confio/tgrade/x/twasm/types"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -27,15 +27,16 @@ var _ wasmkeeper.Messenger = TgradeHandler{}
 type TgradeHandler struct {
 	keeper    tgradeKeeper
 	govRouter govtypes.Router
+	cdc       codec.Marshaler
 }
 
 // NewTgradeHandler constructor
-func NewTgradeHandler(keeper tgradeKeeper, govRouter govtypes.Router) *TgradeHandler {
-	return &TgradeHandler{keeper: keeper, govRouter: govRouter}
+func NewTgradeHandler(cdc codec.Marshaler, keeper tgradeKeeper, govRouter govtypes.Router) *TgradeHandler {
+	return &TgradeHandler{cdc: cdc, keeper: keeper, govRouter: govRouter}
 }
 
 // DispatchMsg handles wasmVM message for privileged contracts
-func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress, contractIBCPortID string, msg wasmvmtypes.CosmosMsg) (events []sdk.Event, data [][]byte, err error) {
+func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress, _ string, msg wasmvmtypes.CosmosMsg) (events []sdk.Event, data [][]byte, err error) {
 	if msg.Custom == nil {
 		return nil, nil, wasmtypes.ErrUnknownMsg
 	}
@@ -43,7 +44,7 @@ func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress,
 		return nil, nil, wasmtypes.ErrUnknownMsg
 	}
 	var tMsg contract.TgradeMsg
-	if err := json.Unmarshal(msg.Custom, &tMsg); err != nil {
+	if err := tMsg.UnmarshalWithAny(msg.Custom, h.cdc); err != nil {
 		return nil, nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	switch {

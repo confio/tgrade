@@ -1,0 +1,727 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TgradeMsg",
+  "description": "A number of Custom messages that can be returned by 'privileged' contracts. Returning them from any other contract will return an error and abort the transaction.",
+  "anyOf": [
+    {
+      "description": "un/register for begin or end block hooks",
+      "type": "object",
+      "required": [
+        "hooks"
+      ],
+      "properties": {
+        "hooks": {
+          "$ref": "#/definitions/HooksMsg"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "privileged contracts can mint arbitrary native tokens (extends BankMsg)",
+      "type": "object",
+      "required": [
+        "mint_tokens"
+      ],
+      "properties": {
+        "mint_tokens": {
+          "type": "object",
+          "required": [
+            "amount",
+            "denom",
+            "recipient"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "denom": {
+              "type": "string"
+            },
+            "recipient": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "as well as adjust tendermint consensus params",
+      "type": "object",
+      "required": [
+        "consensus_params"
+      ],
+      "properties": {
+        "consensus_params": {
+          "$ref": "#/definitions/ConsensusParams"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Run another contract in \"sudo\" mode (extends WasmMsg)",
+      "type": "object",
+      "required": [
+        "wasm_sudo"
+      ],
+      "properties": {
+        "wasm_sudo": {
+          "type": "object",
+          "required": [
+            "contract_addr",
+            "msg"
+          ],
+          "properties": {
+            "contract_addr": {
+              "type": "string"
+            },
+            "msg": {
+              "description": "msg is the json-encoded SudoMsg struct (as raw Binary). Note the contract may support different variants than the base TgradeSudoMsg, which defines the base chain->contract interface",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Binary"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "This will execute an approved proposal in the Cosmos SDK \"Gov Router\". That allows access to many of the system internals, like sdk params or x/upgrade, as well as privileged access to the wasm module (eg. mark module privileged)",
+      "type": "object",
+      "required": [
+        "execute_gov_proposal"
+      ],
+      "properties": {
+        "execute_gov_proposal": {
+          "type": "object",
+          "required": [
+            "description",
+            "proposal",
+            "title"
+          ],
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "proposal": {
+              "$ref": "#/definitions/GovProposal"
+            },
+            "title": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "Binary": {
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>",
+      "type": "string"
+    },
+    "BlockParams": {
+      "type": "object",
+      "properties": {
+        "max_bytes": {
+          "description": "Maximum number of bytes (over all tx) to be included in a block",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "max_gas": {
+          "description": "Maximum gas (over all tx) to be executed in one block. If set, more txs may be included in a block, but when executing, all tx after this is limit are consumed will immediately error",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        }
+      }
+    },
+    "Coin": {
+      "type": "object",
+      "required": [
+        "amount",
+        "denom"
+      ],
+      "properties": {
+        "amount": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "denom": {
+          "type": "string"
+        }
+      }
+    },
+    "ConsensusParams": {
+      "description": "See https://github.com/tendermint/tendermint/blob/v0.34.8/proto/tendermint/abci/types.proto#L282-L289 These are various Tendermint Consensus Params that can be adjusted by EndBlockers If any of them are set to Some, then the blockchain will set those as new parameter for tendermint consensus.\n\nNote: we are not including ValidatorParams, which is used to change the allowed pubkey types for validators",
+      "type": "object",
+      "properties": {
+        "block": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BlockParams"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/EvidenceParams"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "EvidenceParams": {
+      "type": "object",
+      "properties": {
+        "max_age_duration": {
+          "description": "Max age of evidence, in seconds. It should correspond with an app's \"unbonding period\"",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "max_age_num_blocks": {
+          "description": "Max age of evidence, in blocks.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "max_bytes": {
+          "description": "Maximum number of bytes of evidence to be included in a block",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        }
+      }
+    },
+    "GovProposal": {
+      "anyOf": [
+        {
+          "description": "Signaling proposal, the text and description field will be recorded",
+          "type": "object",
+          "required": [
+            "text"
+          ],
+          "properties": {
+            "text": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Register an \"live upgrade\" on the x/upgrade module See https://github.com/cosmos/cosmos-sdk/blob/v0.42.3/proto/cosmos/upgrade/v1beta1/upgrade.proto#L12-L53",
+          "type": "object",
+          "required": [
+            "register_upgrade"
+          ],
+          "properties": {
+            "register_upgrade": {
+              "type": "object",
+              "required": [
+                "height",
+                "info",
+                "name",
+                "upgraded_client_state"
+              ],
+              "properties": {
+                "height": {
+                  "description": "The height at which the upgrade must be performed. (Time-based upgrades are not supported due to instability)",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0
+                },
+                "info": {
+                  "description": "Any application specific upgrade info to be included on-chain such as a git commit that validators could automatically upgrade to",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "Sets the name for the upgrade. This name will be used by the upgraded version of the software to apply any special \"on-upgrade\" commands during the first BeginBlock method after the upgrade is applied.",
+                  "type": "string"
+                },
+                "upgraded_client_state": {
+                  "$ref": "#/definitions/ProtoAny"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "There can only be one pending upgrade at a given time. This cancels the pending upgrade, if any. See https://github.com/cosmos/cosmos-sdk/blob/v0.42.3/proto/cosmos/upgrade/v1beta1/upgrade.proto#L57-L62",
+          "type": "object",
+          "required": [
+            "cancel_upgrade"
+          ],
+          "properties": {
+            "cancel_upgrade": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Defines a proposal to change one or more parameters. See https://github.com/cosmos/cosmos-sdk/blob/v0.42.3/proto/cosmos/params/v1beta1/params.proto#L9-L27",
+          "type": "object",
+          "required": [
+            "change_params"
+          ],
+          "properties": {
+            "change_params": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ParamChange"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Allows raw bytes (if client and wasmd are aware of something the contract is not) Like CosmosMsg::Stargate but for the governance router, not normal router",
+          "type": "object",
+          "required": [
+            "raw_proto_proposal"
+          ],
+          "properties": {
+            "raw_proto_proposal": {
+              "$ref": "#/definitions/ProtoAny"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Updates the matching client to set a new trusted header. This can be used by governance to restore a client that has timed out or forked or otherwise broken. See https://github.com/cosmos/cosmos-sdk/blob/v0.42.3/proto/ibc/core/client/v1/client.proto#L36-L49",
+          "type": "object",
+          "required": [
+            "ibc_client_update"
+          ],
+          "properties": {
+            "ibc_client_update": {
+              "type": "object",
+              "required": [
+                "client_id",
+                "header"
+              ],
+              "properties": {
+                "client_id": {
+                  "type": "string"
+                },
+                "header": {
+                  "$ref": "#/definitions/ProtoAny"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "See https://github.com/confio/tgrade/blob/privileged_contracts_5/proto/confio/twasm/v1beta1/proposal.proto",
+          "type": "object",
+          "required": [
+            "promote_to_privileged_contract"
+          ],
+          "properties": {
+            "promote_to_privileged_contract": {
+              "type": "object",
+              "required": [
+                "contract"
+              ],
+              "properties": {
+                "contract": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "See https://github.com/confio/tgrade/blob/privileged_contracts_5/proto/confio/twasm/v1beta1/proposal.proto",
+          "type": "object",
+          "required": [
+            "demote_privileged_contract"
+          ],
+          "properties": {
+            "demote_privileged_contract": {
+              "type": "object",
+              "required": [
+                "contract"
+              ],
+              "properties": {
+                "contract": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L32-L54",
+          "type": "object",
+          "required": [
+            "instantiate_contract"
+          ],
+          "properties": {
+            "instantiate_contract": {
+              "type": "object",
+              "required": [
+                "admin",
+                "code_id",
+                "funds",
+                "init_msg",
+                "label",
+                "run_as"
+              ],
+              "properties": {
+                "admin": {
+                  "description": "Admin is an optional address that can execute migrations",
+                  "type": "string"
+                },
+                "code_id": {
+                  "description": "the reference to the stored WASM code",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0
+                },
+                "funds": {
+                  "description": "coins that are transferred to the contract on instantiation",
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Coin"
+                  }
+                },
+                "init_msg": {
+                  "description": "json encoded message to be passed to the contract on instantiation",
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/Binary"
+                    }
+                  ]
+                },
+                "label": {
+                  "description": "metadata to be stored with a contract instance.",
+                  "type": "string"
+                },
+                "run_as": {
+                  "description": "the address that is passed to the contract's environment as sender",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L56-L70",
+          "type": "object",
+          "required": [
+            "migrate_contract"
+          ],
+          "properties": {
+            "migrate_contract": {
+              "type": "object",
+              "required": [
+                "code_id",
+                "contract",
+                "migrate_msg",
+                "run_as"
+              ],
+              "properties": {
+                "code_id": {
+                  "description": "a reference to the new WASM code that it should be migrated to",
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0
+                },
+                "contract": {
+                  "description": "the contract address to be migrated",
+                  "type": "string"
+                },
+                "migrate_msg": {
+                  "description": "json encoded message to be passed to the new WASM code to perform the migration",
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/Binary"
+                    }
+                  ]
+                },
+                "run_as": {
+                  "description": "the address that is passed to the contract's environment as sender",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L72-L82",
+          "type": "object",
+          "required": [
+            "set_contract_admin"
+          ],
+          "properties": {
+            "set_contract_admin": {
+              "type": "object",
+              "required": [
+                "contract",
+                "new_admin"
+              ],
+              "properties": {
+                "contract": {
+                  "description": "the contract address to be updated",
+                  "type": "string"
+                },
+                "new_admin": {
+                  "description": "the account address to become admin of this contract",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L84-L93",
+          "type": "object",
+          "required": [
+            "clear_contract_admin"
+          ],
+          "properties": {
+            "clear_contract_admin": {
+              "type": "object",
+              "required": [
+                "contract"
+              ],
+              "properties": {
+                "contract": {
+                  "description": "the contract address to be cleared",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L95-L107",
+          "type": "object",
+          "required": [
+            "pin_codes"
+          ],
+          "properties": {
+            "pin_codes": {
+              "type": "object",
+              "required": [
+                "code_ids"
+              ],
+              "properties": {
+                "code_ids": {
+                  "description": "all code ideas that should be pinned in cache for high performance",
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L109-L121",
+          "type": "object",
+          "required": [
+            "unpin_codes"
+          ],
+          "properties": {
+            "unpin_codes": {
+              "type": "object",
+              "required": [
+                "code_ids"
+              ],
+              "properties": {
+                "code_ids": {
+                  "description": "all code ideas that should be removed from cache to free space",
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "uint64",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "HooksMsg": {
+      "anyOf": [
+        {
+          "description": "contracts registered here are called the beginning of each block with possible double-sign evidence",
+          "type": "object",
+          "required": [
+            "register_begin_block"
+          ],
+          "properties": {
+            "register_begin_block": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "unregister_begin_block"
+          ],
+          "properties": {
+            "unregister_begin_block": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "contracts registered here are called the end of every block",
+          "type": "object",
+          "required": [
+            "register_end_block"
+          ],
+          "properties": {
+            "register_end_block": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "unregister_end_block"
+          ],
+          "properties": {
+            "unregister_end_block": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "only max 1 contract can be registered here, this is called in EndBlock (after everything else) and can change the validator set.",
+          "type": "object",
+          "required": [
+            "register_validator_set_update"
+          ],
+          "properties": {
+            "register_validator_set_update": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "unregister_validator_set_update"
+          ],
+          "properties": {
+            "unregister_validator_set_update": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "contracts registered here are allowed to call ExecuteGovProposal{} (Any privileged contract *can* register, but this means you must explicitly request permission before sending such a message)",
+          "type": "object",
+          "required": [
+            "register_gov_proposal_executor"
+          ],
+          "properties": {
+            "register_gov_proposal_executor": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "unregister_gov_proposal_executor"
+          ],
+          "properties": {
+            "unregister_gov_proposal_executor": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ParamChange": {
+      "description": "ParamChange defines an individual parameter change, for use in ParameterChangeProposal.",
+      "type": "object",
+      "required": [
+        "key",
+        "subspace",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "subspace": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "ProtoAny": {
+      "type": "object",
+      "required": [
+        "type_url",
+        "value"
+      ],
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/definitions/Binary"
+        }
+      }
+    },
+    "Uint128": {
+      "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+      "type": "string"
+    }
+  }
+}

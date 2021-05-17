@@ -70,10 +70,11 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
+			cdc := MakeEncodingConfig(t).Marshaler
 			govRouter := &CapturingGovRouter{}
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
-			h := NewTgradeHandler(mock, govRouter)
+			h := NewTgradeHandler(cdc, mock, govRouter)
 			var ctx sdk.Context
 			_, _, gotErr := h.DispatchMsg(ctx, contractAddr, "", spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -277,7 +278,7 @@ func TestTgradeHandlesHooks(t *testing.T) {
 			capturedDetails, capturedRegistrations, capturedUnRegistrations = nil, nil, nil
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
-			h := NewTgradeHandler(mock, nil)
+			h := NewTgradeHandler(nil, mock, nil)
 			var ctx sdk.Context
 			gotErr := h.handleHooks(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -300,9 +301,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 		expCapturedGovContent []govtypes.Content
 	}{
 		"all good": {
-			src: contract.ExecuteGovProposal{Title: "foo", Description: "bar", Proposal: contract.GovProposal{
-				Text: &govtypes.TextProposal{},
-			}},
+			src: contract.ExecuteGovProposalFixture(),
 			setup: func(m *handlerTgradeKeeperMock) {
 				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
 					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
@@ -316,9 +315,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 			expCapturedGovContent: []govtypes.Content{&govtypes.TextProposal{Title: "foo", Description: "bar"}},
 		},
 		"unauthorized contract": {
-			src: contract.ExecuteGovProposal{Title: "foo", Description: "bar", Proposal: contract.GovProposal{
-				Text: &govtypes.TextProposal{},
-			}},
+			src: contract.ExecuteGovProposalFixture(),
 			setup: func(m *handlerTgradeKeeperMock) {
 				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
 					c := wasmtypes.ContractInfoFixture()
@@ -328,9 +325,11 @@ func TestHandleGovProposalExecution(t *testing.T) {
 			expErr: sdkerrors.ErrUnauthorized,
 		},
 		"invalid content": {
-			src: contract.ExecuteGovProposal{Title: "foo", Description: "bar", Proposal: contract.GovProposal{
-				RegisterUpgrade: &upgradetypes.Plan{},
-			}},
+			src: contract.ExecuteGovProposalFixture(func(p *contract.ExecuteGovProposal) {
+				p.Proposal = contract.GovProposalFixture(func(x *contract.GovProposal) {
+					x.RegisterUpgrade = &upgradetypes.Plan{}
+				})
+			}),
 			setup: func(m *handlerTgradeKeeperMock) {
 				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
 					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
@@ -358,9 +357,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 			expErr: wasmtypes.ErrUnknownMsg,
 		},
 		"unknown origin contract": {
-			src: contract.ExecuteGovProposal{Title: "foo", Description: "bar", Proposal: contract.GovProposal{
-				Text: &govtypes.TextProposal{},
-			}},
+			src: contract.ExecuteGovProposalFixture(),
 			setup: func(m *handlerTgradeKeeperMock) {
 				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
 					return nil
@@ -371,10 +368,11 @@ func TestHandleGovProposalExecution(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
+			cdc := MakeEncodingConfig(t).Marshaler
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
 			router := &CapturingGovRouter{}
-			h := NewTgradeHandler(mock, router)
+			h := NewTgradeHandler(cdc, mock, router)
 			var ctx sdk.Context
 			gotErr := h.handleGovProposalExecution(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)

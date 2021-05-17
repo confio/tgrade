@@ -1,18 +1,34 @@
 package contract
 
 import (
+	"encoding/json"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/confio/tgrade/x/twasm/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	ibcclienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"time"
 )
 
 // TgradeMsg messages coming from a contract
 type TgradeMsg struct {
 	Hooks              *Hooks              `json:"hooks"`
 	ExecuteGovProposal *ExecuteGovProposal `json:"execute_gov_proposal"`
+}
+
+// UnmarshalWithAny from json to Go objects with cosmos-sdk Any types
+func (p *TgradeMsg) UnmarshalWithAny(bz []byte, unpacker codectypes.AnyUnpacker) error {
+	if err := json.Unmarshal(bz, p); err != nil {
+		return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
+	}
+	// unpack interfaces in protobuf Any types
+	if p.ExecuteGovProposal != nil {
+		return sdkerrors.Wrap(p.ExecuteGovProposal.unpackInterfaces(unpacker), "execute_gov_proposal")
+	}
+	return nil
 }
 
 // Hooks contains method to interact with system callbacks
@@ -56,10 +72,16 @@ func (p ExecuteGovProposal) GetProposalContent() govtypes.Content {
 		p.Proposal.CancelUpgrade.Title = p.Title
 		p.Proposal.CancelUpgrade.Description = p.Description
 		return p.Proposal.CancelUpgrade
-	case p.Proposal.IbcClientUpdate != nil:
-		p.Proposal.IbcClientUpdate.Title = p.Title
-		p.Proposal.IbcClientUpdate.Description = p.Description
-		return p.Proposal.IbcClientUpdate
+	case p.Proposal.ChangeParams != nil:
+		return &proposaltypes.ParameterChangeProposal{
+			Title:       p.Title,
+			Description: p.Description,
+			Changes:     *p.Proposal.ChangeParams,
+		}
+	case p.Proposal.IBCClientUpdate != nil:
+		p.Proposal.IBCClientUpdate.Title = p.Title
+		p.Proposal.IBCClientUpdate.Description = p.Description
+		return p.Proposal.IBCClientUpdate
 	case p.Proposal.PromoteToPrivilegedContract != nil:
 		p.Proposal.PromoteToPrivilegedContract.Title = p.Title
 		p.Proposal.PromoteToPrivilegedContract.Description = p.Description
@@ -97,7 +119,98 @@ func (p ExecuteGovProposal) GetProposalContent() govtypes.Content {
 	}
 }
 
+// unpackInterfaces unpacks the Any type into the interface type in `Any.cachedValue`
+func (p *ExecuteGovProposal) unpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+	var err error
+	switch {
+	case p.Proposal.RegisterUpgrade != nil:
+		return p.Proposal.RegisterUpgrade.UnpackInterfaces(unpacker)
+	case p.Proposal.IBCClientUpdate != nil:
+		return p.Proposal.IBCClientUpdate.UnpackInterfaces(unpacker)
+	}
+	return err
+}
+
+type ProtoAny struct {
+	TypeUrl string `json:"type_url"`
+	Value   []byte `json:"value"`
+}
+
+// GovProposal bridge to unmarshal json to proposal content types
 type GovProposal struct {
+	proposalContent
+}
+
+// UnmarshalJSON is a custom unmarshaler that supports the cosmos-sdk Any types.
+func (p *GovProposal) UnmarshalJSON(b []byte) error {
+	var raws map[string]json.RawMessage
+	if err := json.Unmarshal(b, &raws); err != nil {
+		return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
+	}
+
+	// sdk protobuf Any types don't map back nicely to Go structs. So we do this manually
+	var result GovProposal
+	var customUnmarshalers = map[string]func(b []byte) error{
+		"ibc_client_update": func(b []byte) error {
+			var proxy = struct {
+				ClientId string    `json:"client_id"`
+				Header   *ProtoAny `json:"header"`
+			}{}
+			if err := json.Unmarshal(b, &proxy); err != nil {
+				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
+			}
+			result.IBCClientUpdate = &ibcclienttypes.ClientUpdateProposal{
+				ClientId: proxy.ClientId,
+				Header: &codectypes.Any{
+					TypeUrl: proxy.Header.TypeUrl,
+					Value:   proxy.Header.Value,
+				},
+			}
+			return nil
+		},
+		"register_upgrade": func(b []byte) error {
+			var proxy = struct {
+				Name                string    `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+				Time                time.Time `protobuf:"bytes,2,opt,name=time,proto3,stdtime" json:"time"`
+				Height              int64     `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
+				Info                string    `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
+				UpgradedClientState ProtoAny  `protobuf:"bytes,5,opt,name=upgraded_client_state,json=upgradedClientState,proto3" json:"upgraded_client_state,omitempty" yaml:"upgraded_client_state"`
+			}{}
+			if err := json.Unmarshal(b, &proxy); err != nil {
+				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
+			}
+			result.RegisterUpgrade = &upgradetypes.Plan{
+				Name:   proxy.Name,
+				Time:   proxy.Time.UTC(),
+				Height: proxy.Height,
+				Info:   proxy.Info,
+				UpgradedClientState: &codectypes.Any{
+					TypeUrl: proxy.UpgradedClientState.TypeUrl,
+					Value:   proxy.UpgradedClientState.Value,
+				},
+			}
+			return nil
+		},
+	}
+	for field, unmarshaler := range customUnmarshalers {
+		if bz, ok := raws[field]; ok {
+			if err := unmarshaler(bz); err != nil {
+				return sdkerrors.Wrapf(sdkerrors.ErrJSONUnmarshal, "proposal: %q: %s", field, err.Error())
+			}
+			*p = result
+			return nil
+		}
+	}
+	// default: use vanilla json unmarshaler when no custom one exists
+	if err := json.Unmarshal(b, &result.proposalContent); err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrJSONUnmarshal, err.Error())
+	}
+	*p = result
+	return nil
+}
+
+// proposalContent contains the concrete cosmos-sdk/ tgrade gov proposal types
+type proposalContent struct {
 	// Signaling proposal, the text and description field will be recorded
 	Text *govtypes.TextProposal `json:"text"`
 
@@ -116,10 +229,11 @@ type GovProposal struct {
 	// Updates the matching client to set a new trusted header.
 	// This can be used by governance to restore a client that has timed out or forked or otherwise broken.
 	// See https://github.com/cosmos/cosmos-sdk/blob/v0.42.3/proto/ibc/core/client/v1/client.proto#L36-L49
-	IbcClientUpdate *ibcclienttypes.ClientUpdateProposal `json:"ibc_client_update"`
+	IBCClientUpdate *ibcclienttypes.ClientUpdateProposal `json:"ibc_client_update"`
 
 	// See https://github.com/confio/tgrade/blob/privileged_contracts_5/proto/confio/twasm/v1beta1/proposal.proto
 	PromoteToPrivilegedContract *types.PromoteToPrivilegedContractProposal `json:"promote_to_privileged_contract"`
+
 	// See https://github.com/confio/tgrade/blob/privileged_contracts_5/proto/confio/twasm/v1beta1/proposal.proto
 	DemotePrivilegedContract *types.DemotePrivilegedContractProposal `json:"demote_privileged_contract"`
 
