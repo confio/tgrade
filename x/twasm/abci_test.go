@@ -266,7 +266,9 @@ func TestEndBlock(t *testing.T) {
 				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
 					captureSudos(&capturedSudoCalls)(ctx, contractAddress, msg)
 					bz, err := json.Marshal(&contract.EndWithValidatorUpdateResponse{
-						Diffs: []contract.ValidatorUpdate{{PubKey: []byte("my key"), Power: 1}, {PubKey: []byte("my other key"), Power: 2}},
+						Diffs: []contract.ValidatorUpdate{
+							{PubKey: contract.ValidatorPubkey{Ed25519: []byte("my key")}, Power: 1},
+							{PubKey: contract.ValidatorPubkey{Ed25519: []byte("my other key")}, Power: 2}},
 					})
 					require.NoError(t, err)
 					return &sdk.Result{Data: bz}, err

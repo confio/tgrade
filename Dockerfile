@@ -10,8 +10,8 @@ RUN apk add git
 # RUN apk add libusb-dev linux-headers
 
 # See https://github.com/CosmWasm/wasmvm/releases
-ADD https://github.com/CosmWasm/wasmvm/releases/download/v0.14.0-beta1/libwasmvm_muslc.a /lib/libwasmvm_muslc.a
-RUN sha256sum /lib/libwasmvm_muslc.a | grep b69cf9ffbdfb2f1bd1e6f730ecee1eb0d06a1473840a24709aec7a7df5907d45
+ADD https://github.com/CosmWasm/wasmvm/releases/download/v0.14.0/libwasmvm_muslc.a /lib/libwasmvm_muslc.a
+RUN sha256sum /lib/libwasmvm_muslc.a | grep 220b85158d1ae72008f099a7ddafe27f6374518816dd5873fd8be272c5418026
 
 WORKDIR /code
 # Speed up build by caching Go dependencies as a separate step

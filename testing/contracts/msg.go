@@ -58,6 +58,7 @@ type ValsetInitMsg struct {
 	MaxValidators int             `json:"max_validators"`
 	EpochLength   int             `json:"epoch_length"`
 	InitialKeys   []ValsetInitKey `json:"initial_keys"`
+	Scaling       int             `json:"scaling,omitempty"`
 }
 
 func (m ValsetInitMsg) Json(t *testing.T) string {
@@ -65,8 +66,16 @@ func (m ValsetInitMsg) Json(t *testing.T) string {
 }
 
 type ValsetInitKey struct {
-	Operator        string `json:"operator"`
-	ValidatorPubkey string `json:"validator_pubkey"`
+	Operator        string          `json:"operator"`
+	ValidatorPubkey ValidatorPubkey `json:"validator_pubkey"`
+}
+
+func NewValsetInitKey(operator, ed25519Pubkey string) ValsetInitKey {
+	return ValsetInitKey{Operator: operator, ValidatorPubkey: ValidatorPubkey{Ed25519: ed25519Pubkey}}
+}
+
+type ValidatorPubkey struct {
+	Ed25519 string `json:"ed25519,omitempty"`
 }
 
 func asJson(t *testing.T, m interface{}) string {

@@ -97,6 +97,7 @@ func (s SystemUnderTest) SetupChain() {
 }
 
 func (s *SystemUnderTest) StartChain(t *testing.T) {
+	t.Helper()
 	s.Log("Start chain\n")
 	s.forEachNodesExecAsync(t, "start", "--trace", "--log_level=info")
 
@@ -145,6 +146,7 @@ func appendToBuf(r io.Reader, b *ring.Ring) {
 
 // awaitChainUp ensures the chain is running
 func (s SystemUnderTest) awaitChainUp(t *testing.T) {
+	t.Helper()
 	t.Log("Await chain starts")
 	timeout := defaultWaitTime
 	ctx, done := context.WithTimeout(context.Background(), timeout)

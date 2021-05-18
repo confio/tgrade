@@ -61,7 +61,7 @@ func NewKeeper(
 		// append our custom message handler
 		NewTgradeHandler(&result),
 	)
-	var queryPlugins wasmkeeper.WASMVMQueryHandler = wasmkeeper.DefaultQueryPlugins(bankKeeper, stakingKeeper, distKeeper, channelKeeper, queryRouter, &result.Keeper)
+	var queryPlugins wasmkeeper.WasmVMQueryHandler = wasmkeeper.DefaultQueryPlugins(bankKeeper, stakingKeeper, distKeeper, channelKeeper, queryRouter, &result.Keeper)
 
 	opts = append([]wasm.Option{
 		wasmkeeper.WithMessageHandler(handlerChain),
