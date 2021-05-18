@@ -121,6 +121,9 @@ func EndBlocker(parentCtx sdk.Context, k Sudoer) []abci.ValidatorUpdate {
 			panic(err) // this breaks consensus
 		}
 		commit()
+		if len(result) != 0 {
+			logger.Info("update validator set", "new", result)
+		}
 		return true // stop at first contract
 	})
 	return result
@@ -153,10 +156,10 @@ func callValidatorSetUpdaterContract(contractAddr sdk.AccAddress, k Sudoer, ctx 
 	return result, nil
 }
 
-func getPubKey(key []byte) crypto.PublicKey {
+func getPubKey(key contract.ValidatorPubkey) crypto.PublicKey {
 	return crypto.PublicKey{
 		Sum: &crypto.PublicKey_Ed25519{
-			Ed25519: key,
+			Ed25519: key.Ed25519,
 		},
 	}
 }

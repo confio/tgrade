@@ -51,17 +51,14 @@ func TestProofOfAuthoritySetup(t *testing.T) {
 			Addr:   addr,
 			Weight: sut.nodesCount - i, // unique weight
 		}
-		valsetInitMsg.InitialKeys[i] = testingcontracts.ValsetInitKey{
-			Operator:        addr,
-			ValidatorPubkey: pubKey,
-		}
+		valsetInitMsg.InitialKeys[i] = testingcontracts.NewValsetInitKey(addr, pubKey)
 	})
 
 	commands := [][]string{
 		{
 			"wasm-genesis-message",
 			"store",
-			"testing/contracts/cw4_group.wasm",
+			"testing/contracts/tg4_group.wasm",
 			"--instantiate-everybody=true",
 			"--builder=foo/bar:latest",
 			fmt.Sprintf("--run-as=%s", anyAddress),
