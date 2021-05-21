@@ -39,17 +39,18 @@ func TestGetProposalContent(t *testing.T) {
 		"register upgrade": {
 			src: `{
 "execute_gov_proposal": {
-    "title": "foo", "description": "bar",
+    "title": "myTitle", "description": "myDescription",
     "proposal": {
       "register_upgrade": {
+		"name": "myUpgradeName",
         "height": 1,
         "info": "any information",
         "upgraded_client_state": {
           "type_url": "/ibc.lightclients.tendermint.v1.ClientState", "value": "EgAaACIAKgAyADoA"
         }
       }}}}`,
-			expGovProposal: &upgradetypes.SoftwareUpgradeProposal{Title: "foo", Description: "bar", Plan: upgradetypes.Plan{
-				Name:                "",
+			expGovProposal: &upgradetypes.SoftwareUpgradeProposal{Title: "myTitle", Description: "myDescription", Plan: upgradetypes.Plan{
+				Name:                "myUpgradeName",
 				Time:                time.Time{},
 				Height:              1,
 				Info:                "any information",
@@ -116,7 +117,7 @@ func TestGetProposalContent(t *testing.T) {
         "admin": "myAdminAddress",
         "code_id": 1,
         "funds": [{"denom": "ALX", "amount": "2"},{"denom": "BLX","amount": "3"}],
-        "init_msg": {},
+        "init_msg": "e30=",
         "label": "testing",
         "run_as": "myRunAsAddress"
       }}}}`,
@@ -139,7 +140,7 @@ func TestGetProposalContent(t *testing.T) {
       "migrate_contract": {
         "code_id": 1,
 		"contract": "myContractAddr",
-        "migrate_msg": {},
+        "migrate_msg": "e30=",
         "run_as": "myRunAsAddress"
       }}}}`,
 			expGovProposal: &wasmtypes.MigrateContractProposal{

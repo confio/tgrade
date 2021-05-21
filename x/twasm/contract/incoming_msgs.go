@@ -10,7 +10,6 @@ import (
 	ibcclienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"time"
 )
 
 // TgradeMsg messages coming from a contract
@@ -19,7 +18,8 @@ type TgradeMsg struct {
 	ExecuteGovProposal *ExecuteGovProposal `json:"execute_gov_proposal"`
 }
 
-// UnmarshalWithAny from json to Go objects with cosmos-sdk Any types
+// UnmarshalWithAny from json to Go objects with cosmos-sdk Any types that have their objects/ interfaces unpacked and
+// set in the `cachedValue` attribute.
 func (p *TgradeMsg) UnmarshalWithAny(bz []byte, unpacker codectypes.AnyUnpacker) error {
 	if err := json.Unmarshal(bz, p); err != nil {
 		return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
@@ -132,9 +132,18 @@ func (p *ExecuteGovProposal) unpackInterfaces(unpacker codectypes.AnyUnpacker) e
 	return err
 }
 
+// ProtoAny data type to map from json to cosmos-sdk Any type.
 type ProtoAny struct {
 	TypeUrl string `json:"type_url"`
 	Value   []byte `json:"value"`
+}
+
+// Encode convertes to a cosmos-sdk Any type.
+func (a ProtoAny) Encode() *codectypes.Any {
+	return &codectypes.Any{
+		TypeUrl: a.TypeUrl,
+		Value:   a.Value,
+	}
 }
 
 // GovProposal bridge to unmarshal json to proposal content types
@@ -162,33 +171,25 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 			}
 			result.IBCClientUpdate = &ibcclienttypes.ClientUpdateProposal{
 				ClientId: proxy.ClientId,
-				Header: &codectypes.Any{
-					TypeUrl: proxy.Header.TypeUrl,
-					Value:   proxy.Header.Value,
-				},
+				Header:   proxy.Header.Encode(),
 			}
 			return nil
 		},
 		"register_upgrade": func(b []byte) error {
 			var proxy = struct {
-				Name                string    `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-				Time                time.Time `protobuf:"bytes,2,opt,name=time,proto3,stdtime" json:"time"`
-				Height              int64     `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
-				Info                string    `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
-				UpgradedClientState ProtoAny  `protobuf:"bytes,5,opt,name=upgraded_client_state,json=upgradedClientState,proto3" json:"upgraded_client_state,omitempty" yaml:"upgraded_client_state"`
+				Name                string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+				Height              int64    `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
+				Info                string   `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
+				UpgradedClientState ProtoAny `protobuf:"bytes,5,opt,name=upgraded_client_state,json=upgradedClientState,proto3" json:"upgraded_client_state,omitempty" yaml:"upgraded_client_state"`
 			}{}
 			if err := json.Unmarshal(b, &proxy); err != nil {
 				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 			}
 			result.RegisterUpgrade = &upgradetypes.Plan{
-				Name:   proxy.Name,
-				Time:   proxy.Time.UTC(),
-				Height: proxy.Height,
-				Info:   proxy.Info,
-				UpgradedClientState: &codectypes.Any{
-					TypeUrl: proxy.UpgradedClientState.TypeUrl,
-					Value:   proxy.UpgradedClientState.Value,
-				},
+				Name:                proxy.Name,
+				Height:              proxy.Height,
+				Info:                proxy.Info,
+				UpgradedClientState: proxy.UpgradedClientState.Encode(),
 			}
 			return nil
 		},
