@@ -15,7 +15,7 @@ import (
 
 var emptyWasmOpts []wasm.Option = nil
 
-func TestWasmdExport(t *testing.T) {
+func TestTgradeExport(t *testing.T) {
 	db := db.NewMemDB()
 	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, EmptyBaseAppOptions{}, emptyWasmOpts)
 
