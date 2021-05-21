@@ -1,10 +1,9 @@
 package main
 
 import (
-	"os"
-
-	"github.com/CosmWasm/wasmd/app"
+	"github.com/confio/tgrade/app"
 	"github.com/cosmos/cosmos-sdk/server"
+	"os"
 )
 
 func main() {
