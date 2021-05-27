@@ -18,6 +18,7 @@ func NewAnteHandler(
 	paramStore paramtypes.Subspace,
 ) sdk.AnteHandler {
 	// list of ante handlers copied from https://github.com/cosmos/cosmos-sdk/blob/v0.42.5/x/auth/ante/ante.go#L17-L31
+	// only NewGlobalMinimumChainFeeDecorator was added
 	return sdk.ChainAnteDecorators(
 		ante.NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
 		ante.NewRejectExtensionOptionsDecorator(),
@@ -80,7 +81,8 @@ func (g GlobalMinimumChainFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, s
 			glDec := sdk.NewDec(int64(feeTx.GetGas()))
 			for i, gp := range minGasPrices {
 				fee := gp.Amount.Mul(glDec)
-				requiredFees[i] = sdk.NewCoin(gp.Denom, fee.Ceil().RoundInt())
+				amount := fee.Ceil().RoundInt()
+				requiredFees[i] = sdk.NewCoin(gp.Denom, amount)
 			}
 
 			if !feeTx.GetFee().IsAnyGTE(requiredFees) {

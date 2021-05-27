@@ -100,6 +100,34 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 			feeAmount: sdk.NewCoins(sdk.NewCoin("ALX", sdk.NewInt(1)), sdk.NewCoin("BLX", sdk.NewInt(2))),
 			gasLimit:  1,
 		},
+		"multiple fees one submitted": {
+			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
+				s.SetParamSet(ctx, &Params{
+					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt()), sdk.NewDecCoin("BLX", sdk.OneInt())),
+				})
+			},
+			feeAmount: sdk.NewCoins(sdk.NewCoin("ALX", sdk.NewInt(1))),
+			gasLimit:  1,
+		},
+		"multiple fees with non fee token added": {
+			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
+				s.SetParamSet(ctx, &Params{
+					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt()), sdk.NewDecCoin("BLX", sdk.OneInt())),
+				})
+			},
+			feeAmount: sdk.NewCoins(sdk.NewCoin("ALX", sdk.NewInt(1)), sdk.NewCoin("CLX", sdk.NewInt(2))),
+			gasLimit:  1,
+		},
+		"multiple fees with only non fee token": {
+			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
+				s.SetParamSet(ctx, &Params{
+					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt()), sdk.NewDecCoin("BLX", sdk.OneInt())),
+				})
+			},
+			feeAmount: sdk.NewCoins(sdk.NewCoin("CLX", sdk.NewInt(2))),
+			gasLimit:  1,
+			expErr:    sdkerrors.ErrInsufficientFee,
+		},
 		"no min gas price set": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
 				s.SetParamSet(ctx, &Params{})

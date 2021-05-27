@@ -25,8 +25,8 @@ message Params {
   // https://docs.cosmos.network/master/modules/auth/01_concepts.html
   repeated cosmos.base.v1beta1.DecCoin minimum_gas_prices = 1 [
     (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "minimum,omitempty",
-    (gogoproto.moretags) = "yaml:\"minimum_gas_pricess\"",
+    (gogoproto.jsontag) = "minimum_gas_prices,omitempty",
+    (gogoproto.moretags) = "yaml:\"minimum_gas_prices\"",
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins"
   ];
 }

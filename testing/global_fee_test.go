@@ -12,7 +12,10 @@ import (
 
 func TestGlobalFee(t *testing.T) {
 	sut.ResetChain(t)
-	sut.ModifyGenesisJson(t, SetGlobalMinFee(t, sdk.NewDecCoinFromDec("utgd", sdk.NewDecWithPrec(1, 3))))
+	sut.ModifyGenesisJson(t, SetGlobalMinFee(t,
+		sdk.NewDecCoinFromDec("utgd", sdk.NewDecWithPrec(1, 3)),
+		sdk.NewDecCoinFromDec("node0token", sdk.NewDecWithPrec(1, 4))),
+	)
 	sut.StartChain(t)
 
 	cli := NewTgradeCli(t, sut, verbose)
@@ -24,6 +27,10 @@ func TestGlobalFee(t *testing.T) {
 
 	t.Log("Any transaction with enough fees should pass")
 	txResult = cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1500000", "--fees=1500utgd")
+	RequireTxSuccess(t, txResult)
+
+	t.Log("Any transaction with enough alternative fee token amount should pass")
+	txResult = cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1500000", "--fees=150node0token")
 	RequireTxSuccess(t, txResult)
 }
 
