@@ -144,7 +144,6 @@ func TestProofOfAuthoritySetup(t *testing.T) {
 	eResult := cli.Execute(cw4ContractAddr, cw4UpdateMsg.Json(t), "cw4admin")
 	RequireTxSuccess(t, eResult)
 	t.Log("got execution result", eResult)
-	sut.AwaitNextBlock(t, 15*time.Second)
 	sut.AwaitNextBlock(t, 10*time.Second)
 
 	// then validator set is updated

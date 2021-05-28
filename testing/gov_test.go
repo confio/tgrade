@@ -41,7 +41,7 @@ func TestGovProposal(t *testing.T) {
 			"tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy",
 		},
 	}
-	sut.ModifyGenesis(t, commands...)
+	sut.ModifyGenesisCLI(t, commands...)
 	sut.StartChain(t)
 
 	qResult := cli.CustomQuery("q", "wasm", "callback-contracts", "gov_proposal_executor")

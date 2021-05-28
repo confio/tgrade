@@ -8,10 +8,11 @@ import (
 )
 
 // CW4InitMsg contract init message
-//See https://github.com/CosmWasm/cosmwasm-plus/tree/main/contracts/cw4-group
+//See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-group/schema/instantiate_msg.json
 type CW4InitMsg struct {
-	Admin   string      `json:"admin,omitempty"`
-	Members []CW4Member `json:"members"`
+	Admin    string      `json:"admin,omitempty"`
+	Members  []CW4Member `json:"members"`
+	Preauths uint64      `json:"preauths,omitempty"`
 }
 
 func (m CW4InitMsg) Json(t *testing.T) string {
@@ -48,6 +49,50 @@ func (m *CW4UpdateMembersMsg) Json(t *testing.T) string {
 		"update_members": m,
 	}
 	return asJson(t, x)
+}
+
+// CW4MixerInitMsg contract init message
+//See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-mixer/schema/instantiate_msg.json
+type CW4MixerInitMsg struct {
+	Admin      string `json:"admin,omitempty"`
+	LeftGroup  string `json:"left_group"`
+	RightGroup string `json:"right_group"`
+	Preauths   uint64 `json:"preauths,omitempty"`
+}
+
+func (m CW4MixerInitMsg) Json(t *testing.T) string {
+	return asJson(t, m)
+}
+
+type TG4StakeInitMsg struct {
+	Admin           string         `json:"admin,omitempty"`
+	Denom           Denom          `json:"denom"`
+	MinBond         string         `json:"min_bond"`
+	TokensPerWeight string         `json:"tokens_per_weight"`
+	UnbondingPeriod UnbodingPeriod `json:"unbonding_period"`
+	Preauths        uint64         `json:"preauths,omitempty"`
+}
+
+func (m TG4StakeInitMsg) Json(t *testing.T) string {
+	return asJson(t, m)
+}
+
+type Denom struct {
+	Native string `json:"native,omitempty"`
+	CW20   string `json:"cw20,omitempty"`
+}
+
+type UnbodingPeriod struct {
+	Height    uint64 `json:"height,omitempty"`
+	TimeInSec uint64 `json:"time,omitempty"`
+}
+
+type TG4StakeExecute struct {
+	Bond *struct{} `json:"bond,omitempty"`
+}
+
+func (m TG4StakeExecute) Json(t *testing.T) string {
+	return asJson(t, m)
 }
 
 // ValsetInitMsg Valset contract init message
