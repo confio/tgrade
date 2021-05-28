@@ -97,6 +97,7 @@ func (c TgradeCli) AddKey(name string) string {
 
 const defaultSrcAddr = "node0"
 
+// FundAddress sends the token amount to the destination address
 func (c TgradeCli) FundAddress(t *testing.T, destAddr, amount string) string {
 	require.NotEmpty(t, destAddr)
 	require.NotEmpty(t, amount)
@@ -104,9 +105,21 @@ func (c TgradeCli) FundAddress(t *testing.T, destAddr, amount string) string {
 	return c.run(c.withTXFlags(cmd...))
 }
 
+// RequireTxSuccess require the received response to contain the success code
 func RequireTxSuccess(t *testing.T, got string) {
 	t.Helper()
 	code := gjson.Get(got, "code")
-	rawLog := gjson.Get(got, "raw_log")
+	rawLog := gjson.Get(got, "raw_log").String()
 	require.Equal(t, int64(0), code.Int(), rawLog)
+}
+
+// RequireTxFailure require the received response to contain any failure code and the passed msgsgs
+func RequireTxFailure(t *testing.T, got string, containsMsgs ...string) {
+	t.Helper()
+	code := gjson.Get(got, "code")
+	rawLog := gjson.Get(got, "raw_log").String()
+	require.NotEqual(t, int64(0), code.Int(), rawLog)
+	for _, msg := range containsMsgs {
+		require.Contains(t, rawLog, msg)
+	}
 }

@@ -268,9 +268,23 @@ func (s SystemUnderTest) ResetChain(t *testing.T) {
 	})
 }
 
-// ModifyGenesis executes the commands to modify the genesis
-func (s SystemUnderTest) ModifyGenesis(t *testing.T, cmds ...[]string) {
+// ModifyGenesisCLI executes the CLI commands to modify the genesis
+func (s SystemUnderTest) ModifyGenesisCLI(t *testing.T, cmds ...[]string) {
 	s.ForEachNodeExecAndWait(t, cmds...)
+}
+
+type GenesisMutator func([]byte) []byte
+
+// ModifyGenesisJson executes the callbacks to update the json representation
+func (s SystemUnderTest) ModifyGenesisJson(t *testing.T, mutators ...GenesisMutator) {
+	current, err := ioutil.ReadFile(filepath.Join(workDir, s.nodePath(0), "config", "genesis.json"))
+	require.NoError(t, err)
+	for _, m := range mutators {
+		current = m(current)
+	}
+	out := storeTempFile(t, current)
+	defer os.Remove(out.Name())
+	s.SetGenesis(t, out.Name())
 }
 
 // SetGenesis copy genesis file to all nodes
@@ -538,4 +552,13 @@ func copyFilesInDir(src, dest string) error {
 		}
 	}
 	return nil
+}
+
+func storeTempFile(t *testing.T, content []byte) *os.File {
+	out, err := ioutil.TempFile(t.TempDir(), "genesis")
+	require.NoError(t, err)
+	_, err = io.Copy(out, bytes.NewReader(content))
+	require.NoError(t, err)
+	require.NoError(t, out.Close())
+	return out
 }

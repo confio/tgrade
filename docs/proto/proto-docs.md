@@ -4,6 +4,10 @@
 
 ## Table of Contents
 
+- [confio/globalfee/v1beta1/genesis.proto](#confio/globalfee/v1beta1/genesis.proto)
+    - [GenesisState](#confio.globalfee.v1beta1.GenesisState)
+    - [Params](#confio.globalfee.v1beta1.Params)
+  
 - [confio/twasm/v1beta1/contract_extension.proto](#confio/twasm/v1beta1/contract_extension.proto)
     - [RegisteredCallback](#confio.twasm.v1beta1.RegisteredCallback)
     - [TgradeContractDetails](#confio.twasm.v1beta1.TgradeContractDetails)
@@ -24,6 +28,52 @@
     - [Query](#confio.twasm.v1beta1.Query)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="confio/globalfee/v1beta1/genesis.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## confio/globalfee/v1beta1/genesis.proto
+
+
+
+<a name="confio.globalfee.v1beta1.GenesisState"></a>
+
+### GenesisState
+GenesisState - initial state of module
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `params` | [Params](#confio.globalfee.v1beta1.Params) |  | Params of this module |
+
+
+
+
+
+
+<a name="confio.globalfee.v1beta1.Params"></a>
+
+### Params
+Params defines the set of module parameters.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `minimum_gas_prices` | [cosmos.base.v1beta1.DecCoin](#cosmos.base.v1beta1.DecCoin) | repeated | Minimum stores the minimum gas price(s) for all TX on the chain. When multiple coins are defined then they are accepted alternatively. The list must be sorted by denoms asc. No duplicate denoms or zero amount values allowed. For more information see https://docs.cosmos.network/master/modules/auth/01_concepts.html |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
 
 
 

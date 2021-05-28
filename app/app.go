@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmclient "github.com/CosmWasm/wasmd/x/wasm/client"
+	"github.com/confio/tgrade/x/globalfee"
 	"github.com/confio/tgrade/x/twasm"
 	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -19,7 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	authante "github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authrest "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
@@ -144,6 +145,7 @@ var (
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
+		globalfee.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -396,6 +398,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		ibc.NewAppModule(app.ibcKeeper),
 		params.NewAppModule(app.paramsKeeper),
 		transferModule,
+		globalfee.NewAppModule(app.getSubspace(globalfee.ModuleName)),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -421,7 +424,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName, crisistypes.ModuleName,
 		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, ibctransfertypes.ModuleName,
 		// wasm after ibc transfer
-		twasm.ModuleName,
+		twasm.ModuleName, globalfee.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.crisisKeeper)
@@ -462,9 +465,9 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 
-	anteHandler := ante.NewAnteHandler(
-		app.accountKeeper, app.bankKeeper, ante.DefaultSigVerificationGasConsumer,
-		encodingConfig.TxConfig.SignModeHandler(),
+	anteHandler := globalfee.NewAnteHandler(
+		app.accountKeeper, app.bankKeeper, authante.DefaultSigVerificationGasConsumer,
+		encodingConfig.TxConfig.SignModeHandler(), app.getSubspace(globalfee.ModuleName),
 	)
 	app.SetAnteHandler(anteHandler)
 	app.SetEndBlocker(app.EndBlocker)
@@ -625,6 +628,7 @@ func initParamsKeeper(appCodec codec.BinaryMarshaler, legacyAmino *codec.LegacyA
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(twasm.ModuleName)
+	paramsKeeper.Subspace(globalfee.ModuleName)
 
 	return paramsKeeper
 }

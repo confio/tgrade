@@ -93,7 +93,7 @@ func TestProofOfAuthoritySetup(t *testing.T) {
 			valsetContractAddr,
 		},
 	}
-	sut.ModifyGenesis(t, commands...)
+	sut.ModifyGenesisCLI(t, commands...)
 	sut.StartChain(t)
 
 	// and then should be in list of privileged contracts
