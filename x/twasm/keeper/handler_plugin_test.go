@@ -7,6 +7,8 @@ import (
 	"github.com/confio/tgrade/x/twasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -15,17 +17,32 @@ import (
 func TestTgradeHandlesDispatchMsg(t *testing.T) {
 	contractAddr := RandomAddress(t)
 	specs := map[string]struct {
-		setup  func(m *handlerTgradeKeeperMock)
-		src    wasmvmtypes.CosmosMsg
-		expErr *sdkerrors.Error
+		setup                 func(m *handlerTgradeKeeperMock)
+		src                   wasmvmtypes.CosmosMsg
+		expErr                *sdkerrors.Error
+		expCapturedGovContent []govtypes.Content
 	}{
 		"handle hook msg": {
 			src: wasmvmtypes.CosmosMsg{
 				Custom: []byte(`{"hooks":{"register_begin_block":{}}}`),
 			},
-			setup: func(m *handlerTgradeKeeperMock) { // noopRegisterHook
+			setup: func(m *handlerTgradeKeeperMock) {
 				noopRegisterHook(m)
 			},
+		},
+		"handle execute gov proposal msg": {
+			src: wasmvmtypes.CosmosMsg{
+				Custom: []byte(`{"execute_gov_proposal":{"title":"foo", "description":"bar", "proposal":{"text":{}}}}`),
+			},
+			setup: func(m *handlerTgradeKeeperMock) {
+				noopRegisterHook(m, func(info *wasmtypes.ContractInfo) {
+					var details types.TgradeContractDetails
+					require.NoError(t, info.ReadExtension(&details))
+					details.AddRegisteredCallback(types.CallbackTypeGovProposalExecutor, 1)
+					require.NoError(t, info.SetExtension(&details))
+				})
+			},
+			expCapturedGovContent: []govtypes.Content{&govtypes.TextProposal{Title: "foo", Description: "bar"}},
 		},
 		"non custom msg rejected": {
 			src:    wasmvmtypes.CosmosMsg{},
@@ -53,12 +70,15 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
+			cdc := MakeEncodingConfig(t).Marshaler
+			govRouter := &CapturingGovRouter{}
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
-			h := NewTgradeHandler(mock)
+			h := NewTgradeHandler(cdc, mock, govRouter)
 			var ctx sdk.Context
 			_, _, gotErr := h.DispatchMsg(ctx, contractAddr, "", spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
+			assert.Equal(t, spec.expCapturedGovContent, govRouter.captured)
 		})
 	}
 }
@@ -122,6 +142,17 @@ func TestTgradeHandlesHooks(t *testing.T) {
 			},
 			expRegistrations: []registration{{cb: types.CallbackTypeBeginBlock, addr: myContractAddr}},
 		},
+		"unregister begin block": {
+			src: contract.Hooks{UnregisterBeginBlock: &struct{}{}},
+			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
+				ext := &types.TgradeContractDetails{
+					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "begin_block"}},
+				}
+				info.SetExtension(ext)
+			}),
+			expDetails:         &types.TgradeContractDetails{RegisteredCallbacks: []*types.RegisteredCallback{}},
+			expUnRegistrations: []unregistration{{cb: types.CallbackTypeBeginBlock, pos: 1, addr: myContractAddr}},
+		},
 		"register end block": {
 			src:   contract.Hooks{RegisterEndBlock: &struct{}{}},
 			setup: captureWithMock(),
@@ -130,6 +161,17 @@ func TestTgradeHandlesHooks(t *testing.T) {
 			},
 			expRegistrations: []registration{{cb: types.CallbackTypeEndBlock, addr: myContractAddr}},
 		},
+		"unregister end block": {
+			src: contract.Hooks{UnregisterEndBlock: &struct{}{}},
+			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
+				ext := &types.TgradeContractDetails{
+					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "end_block"}},
+				}
+				info.SetExtension(ext)
+			}),
+			expDetails:         &types.TgradeContractDetails{RegisteredCallbacks: []*types.RegisteredCallback{}},
+			expUnRegistrations: []unregistration{{cb: types.CallbackTypeEndBlock, pos: 1, addr: myContractAddr}},
+		},
 		"register validator set update block": {
 			src:   contract.Hooks{RegisterValidatorSetUpdate: &struct{}{}},
 			setup: captureWithMock(),
@@ -137,6 +179,36 @@ func TestTgradeHandlesHooks(t *testing.T) {
 				RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "validator_set_update"}},
 			},
 			expRegistrations: []registration{{cb: types.CallbackTypeValidatorSetUpdate, addr: myContractAddr}},
+		},
+		"unregister validator set update block": {
+			src: contract.Hooks{UnregisterValidatorSetUpdate: &struct{}{}},
+			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
+				ext := &types.TgradeContractDetails{
+					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "validator_set_update"}},
+				}
+				info.SetExtension(ext)
+			}),
+			expDetails:         &types.TgradeContractDetails{RegisteredCallbacks: []*types.RegisteredCallback{}},
+			expUnRegistrations: []unregistration{{cb: types.CallbackTypeValidatorSetUpdate, pos: 1, addr: myContractAddr}},
+		},
+		"register gov proposal executor": {
+			src:   contract.Hooks{RegisterGovProposalExecutor: &struct{}{}},
+			setup: captureWithMock(),
+			expDetails: &types.TgradeContractDetails{
+				RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "gov_proposal_executor"}},
+			},
+			expRegistrations: []registration{{cb: types.CallbackTypeGovProposalExecutor, addr: myContractAddr}},
+		},
+		"unregister gov proposal executor": {
+			src: contract.Hooks{UnregisterGovProposalExecutor: &struct{}{}},
+			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
+				ext := &types.TgradeContractDetails{
+					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "gov_proposal_executor"}},
+				}
+				info.SetExtension(ext)
+			}),
+			expDetails:         &types.TgradeContractDetails{RegisteredCallbacks: []*types.RegisteredCallback{}},
+			expUnRegistrations: []unregistration{{cb: types.CallbackTypeGovProposalExecutor, pos: 1, addr: myContractAddr}},
 		},
 		"register hook fails": {
 			src: contract.Hooks{RegisterValidatorSetUpdate: &struct{}{}},
@@ -150,39 +222,6 @@ func TestTgradeHandlesHooks(t *testing.T) {
 				}
 			},
 			expErr: wasmtypes.ErrDuplicate,
-		},
-		"unregister begin block": {
-			src: contract.Hooks{UnregisterBeginBlock: &struct{}{}},
-			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
-				ext := &types.TgradeContractDetails{
-					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "begin_block"}},
-				}
-				info.SetExtension(ext)
-			}),
-			expDetails:         &types.TgradeContractDetails{RegisteredCallbacks: []*types.RegisteredCallback{}},
-			expUnRegistrations: []unregistration{{cb: types.CallbackTypeBeginBlock, pos: 1, addr: myContractAddr}},
-		},
-		"unregister end block": {
-			src: contract.Hooks{UnregisterEndBlock: &struct{}{}},
-			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
-				ext := &types.TgradeContractDetails{
-					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "end_block"}},
-				}
-				info.SetExtension(ext)
-			}),
-			expDetails:         &types.TgradeContractDetails{RegisteredCallbacks: []*types.RegisteredCallback{}},
-			expUnRegistrations: []unregistration{{cb: types.CallbackTypeEndBlock, pos: 1, addr: myContractAddr}},
-		},
-		"unregister validator set update block": {
-			src: contract.Hooks{UnregisterValidatorSetUpdate: &struct{}{}},
-			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
-				ext := &types.TgradeContractDetails{
-					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "validator_set_update"}},
-				}
-				info.SetExtension(ext)
-			}),
-			expDetails:         &types.TgradeContractDetails{RegisteredCallbacks: []*types.RegisteredCallback{}},
-			expUnRegistrations: []unregistration{{cb: types.CallbackTypeValidatorSetUpdate, pos: 1, addr: myContractAddr}},
 		},
 		"register begin block with existing registration": {
 			src: contract.Hooks{RegisterBeginBlock: &struct{}{}},
@@ -239,7 +278,7 @@ func TestTgradeHandlesHooks(t *testing.T) {
 			capturedDetails, capturedRegistrations, capturedUnRegistrations = nil, nil, nil
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
-			h := NewTgradeHandler(mock)
+			h := NewTgradeHandler(nil, mock, nil)
 			var ctx sdk.Context
 			gotErr := h.handleHooks(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -253,15 +292,105 @@ func TestTgradeHandlesHooks(t *testing.T) {
 	}
 }
 
+func TestHandleGovProposalExecution(t *testing.T) {
+	myContractAddr := RandomAddress(t)
+	specs := map[string]struct {
+		src                   contract.ExecuteGovProposal
+		setup                 func(m *handlerTgradeKeeperMock)
+		expErr                *sdkerrors.Error
+		expCapturedGovContent []govtypes.Content
+	}{
+		"all good": {
+			src: contract.ExecuteGovProposalFixture(),
+			setup: func(m *handlerTgradeKeeperMock) {
+				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "gov_proposal_executor"}},
+						})
+					})
+					return &c
+				}
+			},
+			expCapturedGovContent: []govtypes.Content{&govtypes.TextProposal{Title: "foo", Description: "bar"}},
+		},
+		"unauthorized contract": {
+			src: contract.ExecuteGovProposalFixture(),
+			setup: func(m *handlerTgradeKeeperMock) {
+				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture()
+					return &c
+				}
+			},
+			expErr: sdkerrors.ErrUnauthorized,
+		},
+		"invalid content": {
+			src: contract.ExecuteGovProposalFixture(func(p *contract.ExecuteGovProposal) {
+				p.Proposal = contract.GovProposalFixture(func(x *contract.GovProposal) {
+					x.RegisterUpgrade = &upgradetypes.Plan{}
+				})
+			}),
+			setup: func(m *handlerTgradeKeeperMock) {
+				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "gov_proposal_executor"}},
+						})
+					})
+					return &c
+				}
+			},
+			expErr: sdkerrors.ErrInvalidRequest,
+		},
+		"no content": {
+			src: contract.ExecuteGovProposal{Title: "foo", Description: "bar"},
+			setup: func(m *handlerTgradeKeeperMock) {
+				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "gov_proposal_executor"}},
+						})
+					})
+					return &c
+				}
+			},
+			expErr: wasmtypes.ErrUnknownMsg,
+		},
+		"unknown origin contract": {
+			src: contract.ExecuteGovProposalFixture(),
+			setup: func(m *handlerTgradeKeeperMock) {
+				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					return nil
+				}
+			},
+			expErr: wasmtypes.ErrNotFound,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			cdc := MakeEncodingConfig(t).Marshaler
+			mock := handlerTgradeKeeperMock{}
+			spec.setup(&mock)
+			router := &CapturingGovRouter{}
+			h := NewTgradeHandler(cdc, mock, router)
+			var ctx sdk.Context
+			gotErr := h.handleGovProposalExecution(ctx, myContractAddr, &spec.src)
+			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
+			assert.Equal(t, spec.expCapturedGovContent, router.captured)
+		})
+	}
+
+}
+
 // noopRegisterHook does nothing and but all methods for registration
-func noopRegisterHook(m *handlerTgradeKeeperMock) {
+func noopRegisterHook(m *handlerTgradeKeeperMock, mutators ...func(*wasmtypes.ContractInfo)) {
 	m.IsPrivilegedFn = func(ctx sdk.Context, contract sdk.AccAddress) bool {
 		return true
 	}
 	m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
-		v := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+		v := wasmtypes.ContractInfoFixture(append([]func(*wasmtypes.ContractInfo){func(info *wasmtypes.ContractInfo) {
 			info.SetExtension(&types.TgradeContractDetails{})
-		})
+		}}, mutators...)...)
 		return &v
 	}
 	m.appendToPrivilegedContractCallbacksFn = func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) (uint8, error) {

@@ -48,6 +48,7 @@ func TestValidatePromoteToPrivilegedContractProposal(t *testing.T) {
 		})
 	}
 }
+
 func TestValidateDemotePrivilegedContractProposal(t *testing.T) {
 	specs := map[string]struct {
 		src    *DemotePrivilegedContractProposal
@@ -87,6 +88,7 @@ func TestValidateDemotePrivilegedContractProposal(t *testing.T) {
 		})
 	}
 }
+
 func TestProposalYaml(t *testing.T) {
 	specs := map[string]struct {
 		src govtypes.Content

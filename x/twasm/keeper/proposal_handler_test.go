@@ -21,11 +21,12 @@ func TestGovHandler(t *testing.T) {
 	}
 
 	specs := map[string]struct {
-		wasmHandler      govtypes.Handler
-		setupGovKeeper   func(*MockGovKeeper)
-		srcProposal      govtypes.Content
-		expErr           *sdkerrors.Error
-		expCapturedAddrs []sdk.AccAddress
+		wasmHandler           govtypes.Handler
+		setupGovKeeper        func(*MockGovKeeper)
+		srcProposal           govtypes.Content
+		expErr                *sdkerrors.Error
+		expCapturedAddrs      []sdk.AccAddress
+		expCapturedGovContent []govtypes.Content
 	}{
 		"handled in wasm": {
 			wasmHandler: func(ctx sdk.Context, content govtypes.Content) error {
@@ -93,13 +94,14 @@ func TestGovHandler(t *testing.T) {
 				spec.setupGovKeeper(&mock)
 			}
 			// when
+			router := &CapturingGovRouter{}
 			h := NewProposalHandlerX(&mock, spec.wasmHandler)
 			gotErr := h(ctx, spec.srcProposal)
 			// then
 			require.True(t, spec.expErr.Is(gotErr), "exp %v but got #+v", spec.expErr, gotErr)
 			assert.Equal(t, spec.expCapturedAddrs, capturedContractAddrs)
+			assert.Equal(t, spec.expCapturedGovContent, router.captured)
 		})
-
 	}
 }
 
@@ -120,4 +122,20 @@ func (m MockGovKeeper) UnsetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddr
 		panic("not expected to be called")
 	}
 	return m.UnsetPrivilegedFn(ctx, contractAddr)
+}
+
+type CapturingGovRouter struct {
+	govtypes.Router
+	captured []govtypes.Content
+}
+
+func (m CapturingGovRouter) HasRoute(r string) bool {
+	return true
+}
+
+func (m *CapturingGovRouter) GetRoute(path string) (h govtypes.Handler) {
+	return func(ctx sdk.Context, content govtypes.Content) error {
+		m.captured = append(m.captured, content)
+		return nil
+	}
 }

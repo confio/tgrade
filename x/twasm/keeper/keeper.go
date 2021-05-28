@@ -20,6 +20,7 @@ type Keeper struct {
 	storeKey       sdk.StoreKey
 	contractKeeper wasmtypes.ContractOpsKeeper
 	paramSpace     paramtypes.Subspace
+	govRouter      govtypes.Router
 }
 
 func NewKeeper(
@@ -46,6 +47,7 @@ func NewKeeper(
 		cdc:        cdc,
 		storeKey:   storeKey,
 		paramSpace: paramSpace,
+		govRouter:  govRouter,
 	}
 	// configure wasm keeper via options
 
@@ -59,7 +61,7 @@ func NewKeeper(
 			portSource,
 		),
 		// append our custom message handler
-		NewTgradeHandler(&result),
+		NewTgradeHandler(cdc, &result, govRouter),
 	)
 	var queryPlugins wasmkeeper.WasmVMQueryHandler = wasmkeeper.DefaultQueryPlugins(bankKeeper, stakingKeeper, distKeeper, channelKeeper, queryRouter, &result.Keeper)
 

@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ValidatorDiff",
+  "description": "See https://github.com/tendermint/tendermint/blob/v0.34.8/proto/tendermint/abci/types.proto#L229-L235 A `EndWithValidatorUpdate{}` call may return a JSON-encoded ValidatorDiff in Response.data if it wishes to change the validator set.",
+  "type": "object",
+  "required": [
+    "diffs"
+  ],
+  "properties": {
+    "diffs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ValidatorUpdate"
+      }
+    }
+  },
+  "definitions": {
+    "Binary": {
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>",
+      "type": "string"
+    },
+    "Pubkey": {
+      "description": "A Tendermint validator pubkey.\n\nSee https://github.com/tendermint/tendermint/blob/master/proto/tendermint/crypto/keys.proto for a list of available types. Sr25519 is added here as it is likely to join the party.\n\nThis type is optimized for the JSON interface. No data validation on the enum cases is performed. If you don't trust the data source, you can create a `ValidatedPubkey` enum that mirrors this type and uses fixed sized data fields.",
+      "anyOf": [
+        {
+          "description": "32 bytes Ed25519 pubkey",
+          "type": "object",
+          "required": [
+            "ed25519"
+          ],
+          "properties": {
+            "ed25519": {
+              "$ref": "#/definitions/Binary"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Must use 33 bytes 0x02/0x03 prefixed compressed pubkey format",
+          "type": "object",
+          "required": [
+            "secp256k1"
+          ],
+          "properties": {
+            "secp256k1": {
+              "$ref": "#/definitions/Binary"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "32 bytes Sr25519 pubkey",
+          "type": "object",
+          "required": [
+            "sr25519"
+          ],
+          "properties": {
+            "sr25519": {
+              "$ref": "#/definitions/Binary"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ValidatorUpdate": {
+      "description": "This is used to update the validator set See https://github.com/tendermint/tendermint/blob/v0.34.8/proto/tendermint/abci/types.proto#L343-L346",
+      "type": "object",
+      "required": [
+        "power",
+        "pubkey"
+      ],
+      "properties": {
+        "power": {
+          "description": "This is the voting power in the consensus rounds",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "pubkey": {
+          "description": "This is the pubkey used in Tendermint consensus",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Pubkey"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

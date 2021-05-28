@@ -1,0 +1,168 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TgradeSudoMsg",
+  "anyOf": [
+    {
+      "description": "This will be delivered every block if the contract is currently registered for Begin Block types based on subset of https://github.com/tendermint/tendermint/blob/v0.34.8/proto/tendermint/abci/types.proto#L81",
+      "type": "object",
+      "required": [
+        "begin_block"
+      ],
+      "properties": {
+        "begin_block": {
+          "type": "object",
+          "required": [
+            "evidence"
+          ],
+          "properties": {
+            "evidence": {
+              "description": "This is proven evidence of malice and the basis for slashing validators",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Evidence"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "This will be delivered every block if the contract is currently registered for End Block Block height and time is already in Env.",
+      "type": "object",
+      "required": [
+        "end_block"
+      ],
+      "properties": {
+        "end_block": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "This will be delivered after all end blockers if this is registered for ValidatorUpdates. If it sets Response.data, it must be a JSON-encoded ValidatorDiff, which will be used to change the validator set.",
+      "type": "object",
+      "required": [
+        "end_with_validator_update"
+      ],
+      "properties": {
+        "end_with_validator_update": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "privilege_change"
+      ],
+      "properties": {
+        "privilege_change": {
+          "$ref": "#/definitions/PrivilegeChangeMsg"
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "Binary": {
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>",
+      "type": "string"
+    },
+    "Evidence": {
+      "description": "See https://github.com/tendermint/tendermint/blob/v0.34.8/proto/tendermint/abci/types.proto#L354-L375",
+      "type": "object",
+      "required": [
+        "evidence_type",
+        "height",
+        "time",
+        "total_voting_power",
+        "validator"
+      ],
+      "properties": {
+        "evidence_type": {
+          "$ref": "#/definitions/EvidenceType"
+        },
+        "height": {
+          "description": "the block height the offense occurred",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "time": {
+          "description": "the time when the offense occurred (in seconds UNIX time, like env.block.time)",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "total_voting_power": {
+          "description": "the total voting power of the validator set at the time the offense occurred",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "validator": {
+          "$ref": "#/definitions/Validator"
+        }
+      }
+    },
+    "EvidenceType": {
+      "type": "string",
+      "enum": [
+        "duplicate_vote",
+        "light_client_attack"
+      ]
+    },
+    "PrivilegeChangeMsg": {
+      "description": "These are called on a contract when it is made privileged or demoted",
+      "anyOf": [
+        {
+          "description": "This is called when a contract gets \"privileged status\". It is a proper place to call `RegisterXXX` methods that require this status. Contracts that require this should be in a \"frozen\" state until they get this callback.",
+          "type": "object",
+          "required": [
+            "promoted"
+          ],
+          "properties": {
+            "promoted": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "This is called when a contract looses \"privileged status\"",
+          "type": "object",
+          "required": [
+            "demoted"
+          ],
+          "properties": {
+            "demoted": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Validator": {
+      "description": "This is returned by most queries from Tendermint See https://github.com/tendermint/tendermint/blob/v0.34.8/proto/tendermint/abci/types.proto#L336-L340",
+      "type": "object",
+      "required": [
+        "address",
+        "power"
+      ],
+      "properties": {
+        "address": {
+          "$ref": "#/definitions/Binary"
+        },
+        "power": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    }
+  }
+}
