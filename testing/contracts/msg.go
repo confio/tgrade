@@ -7,41 +7,42 @@ import (
 	"testing"
 )
 
-// CW4InitMsg contract init message
+// TG4GroupInitMsg contract init message
 //See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-group/schema/instantiate_msg.json
-type CW4InitMsg struct {
+type TG4GroupInitMsg struct {
 	Admin    string      `json:"admin,omitempty"`
-	Members  []CW4Member `json:"members"`
+	Members  []TG4Member `json:"members"`
 	Preauths uint64      `json:"preauths,omitempty"`
 }
 
-func (m CW4InitMsg) Json(t *testing.T) string {
+func (m TG4GroupInitMsg) Json(t *testing.T) string {
 	return asJson(t, m)
 }
 
-type CW4Member struct {
+type TG4Member struct {
 	Addr   string `json:"addr"`
 	Weight int    `json:"weight"`
 }
 
-func SortByWeight(s []CW4Member) []CW4Member {
+func SortByWeight(s []TG4Member) []TG4Member {
 	sort.Slice(s, func(i, j int) bool {
 		return s[i].Weight > s[j].Weight || s[i].Weight == s[j].Weight && s[i].Addr > s[j].Addr
 	})
 	return s
 }
 
-// CW4UpdateMembersMsg contract execute message to update members
-//See https://github.com/CosmWasm/cosmwasm-plus/tree/main/contracts/cw4-group
-type CW4UpdateMembersMsg struct {
-	Add    []CW4Member `json:"add"`
+// TG4UpdateMembersMsg contract execute message to update members
+// See https://github.com/CosmWasm/cosmwasm-plus/tree/main/contracts/cw4-group
+// https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-group/schema/execute_msg.json
+type TG4UpdateMembersMsg struct {
+	Add    []TG4Member `json:"add"`
 	Remove []string    `json:"remove"`
 }
 
-func (m *CW4UpdateMembersMsg) Json(t *testing.T) string {
+func (m *TG4UpdateMembersMsg) Json(t *testing.T) string {
 	switch {
 	case m.Add == nil:
-		m.Add = make([]CW4Member, 0)
+		m.Add = make([]TG4Member, 0)
 	case m.Remove == nil:
 		m.Remove = make([]string, 0)
 	}
@@ -51,16 +52,16 @@ func (m *CW4UpdateMembersMsg) Json(t *testing.T) string {
 	return asJson(t, x)
 }
 
-// CW4MixerInitMsg contract init message
+// TG4MixerInitMsg contract init message
 //See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-mixer/schema/instantiate_msg.json
-type CW4MixerInitMsg struct {
+type TG4MixerInitMsg struct {
 	Admin      string `json:"admin,omitempty"`
 	LeftGroup  string `json:"left_group"`
 	RightGroup string `json:"right_group"`
 	Preauths   uint64 `json:"preauths,omitempty"`
 }
 
-func (m CW4MixerInitMsg) Json(t *testing.T) string {
+func (m TG4MixerInitMsg) Json(t *testing.T) string {
 	return asJson(t, m)
 }
 

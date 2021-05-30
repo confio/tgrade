@@ -28,16 +28,16 @@ func TestProofOfEngagementSetup(t *testing.T) {
 		mixerAddr           = ContractBech32Address(3, 3)
 		valsetAddr          = ContractBech32Address(4, 4)
 		anyAddress          = "tgrade12qey0qvmkvdu5yl3x329lhrvqfgzs5vne225q7"
-		cw4AdminAddr        = cli.AddKey("cw4admin")
+		tg4AdminAddr        = cli.AddKey("tg4admin")
 	)
 	// prepare contract init messages with chain validator data
-	tg4EngagementInitMsg := testingcontracts.CW4InitMsg{
-		Admin:    cw4AdminAddr,
-		Members:  make([]testingcontracts.CW4Member, sut.nodesCount),
+	tg4EngagementInitMsg := testingcontracts.TG4GroupInitMsg{
+		Admin:    tg4AdminAddr,
+		Members:  make([]testingcontracts.TG4Member, sut.nodesCount),
 		Preauths: 1,
 	}
 	tg4StakerInitMsg := testingcontracts.TG4StakeInitMsg{
-		Admin:           cw4AdminAddr,
+		Admin:           tg4AdminAddr,
 		Denom:           testingcontracts.Denom{Native: "utgd"},
 		MinBond:         "1",
 		TokensPerWeight: "1",
@@ -46,7 +46,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 		},
 		Preauths: 1,
 	}
-	tg4MixerInitMsg := testingcontracts.CW4MixerInitMsg{
+	tg4MixerInitMsg := testingcontracts.TG4MixerInitMsg{
 		LeftGroup:  engagementGroupAddr,
 		RightGroup: stakerGroupAddr,
 	}
@@ -58,16 +58,20 @@ func TestProofOfEngagementSetup(t *testing.T) {
 		InitialKeys:   make([]testingcontracts.ValsetInitKey, sut.nodesCount),
 	}
 	stakers := make(map[string]sdk.Coin, sut.nodesCount)
+	stakedAmounts := make([]int, sut.nodesCount)
 	sut.withEachNodeHome(func(i int, home string) {
 		k := readPubkey(t, filepath.Join(workDir, home, "config", "priv_validator_key.json"))
 		pubKey := base64.StdEncoding.EncodeToString(k.Bytes())
-		addr := randomBech32Addr()
-		tg4EngagementInitMsg.Members[i] = testingcontracts.CW4Member{
+		addr := cli.AddKey(fmt.Sprintf("node%d-owner", i))
+		tg4EngagementInitMsg.Members[i] = testingcontracts.TG4Member{
 			Addr:   addr,
 			Weight: sut.nodesCount - i, // unique weight
 		}
 		valsetInitMsg.InitialKeys[i] = testingcontracts.NewValsetInitKey(addr, pubKey)
-		stakers[addr] = sdk.NewCoin("utgd", sdk.OneInt())
+		const initialStakedTokenAmount = 10
+		stakers[addr] = sdk.NewCoin("utgd", sdk.NewInt(initialStakedTokenAmount))
+		stakedAmounts[i] = int(initialStakedTokenAmount)
+
 	})
 
 	commands := [][]string{
@@ -133,7 +137,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 			"instantiate-contract",
 			"4",
 			valsetInitMsg.Json(t),
-			"--label=testing",
+			"--label=valset",
 			fmt.Sprintf("--run-as=%s", anyAddress),
 		},
 		// and set privilege
@@ -162,24 +166,62 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	}
 	sut.ModifyGenesisCLI(t, commands...)
 	sut.StartChain(t)
+	cli.FundAddress(t, tg4AdminAddr, "1000utgd")
+	sut.AwaitNextBlock(t)
 
-	// and smart query internals
+	// and smart query internal list of validators
 	qResult := cli.CustomQuery("q", "wasm", "contract-state", "smart", valsetAddr, `{"list_active_validators":{}}`)
 	validators := gjson.Get(qResult, "data.validators").Array()
 	require.Len(t, validators, sut.nodesCount, qResult)
 	t.Log("got query result", qResult)
 
-	// and ensure validator count via rpc call
-	sut.AwaitNextBlock(t)
-	v := sut.RPCClient(t).Validators()
-	require.Len(t, v, sut.nodesCount, "got %#v", v)
 	sortedMember := testingcontracts.SortByWeight(tg4EngagementInitMsg.Members)
-	for i := 0; i < sut.nodesCount; i++ {
+	assertValidatorsUpdated(t, sortedMember, stakedAmounts, sut.nodesCount)
+
+	// And when **stake** increased for owner with lowest engagement points
+	stakeUpdateMsg := testingcontracts.TG4StakeExecute{Bond: &struct{}{}}
+	const additionalStakedAmount = 100
+	stakedAmounts[sut.nodesCount-1] += additionalStakedAmount
+	eResult := cli.Execute(stakerGroupAddr, stakeUpdateMsg.Json(t), fmt.Sprintf("node%d-owner", sut.nodesCount-1), sdk.NewCoin("utgd", sdk.NewInt(additionalStakedAmount)))
+	RequireTxSuccess(t, eResult)
+	t.Log("got execution result", eResult)
+	// wait for msg execution
+	sut.AwaitNextBlock(t, sut.blockTime*5)
+	// wait for update manifests in valset (epoch has completed)
+	sut.AwaitNextBlock(t)
+
+	// then validator set is updated
+	// with lowest engaged member became the validator with highest power
+	sortedMember = append([]testingcontracts.TG4Member{sortedMember[sut.nodesCount-1]}, sortedMember[0:sut.nodesCount-1]...)
+	stakedAmounts = append([]int{stakedAmounts[sut.nodesCount-1]}, stakedAmounts[0:sut.nodesCount-1]...)
+	assertValidatorsUpdated(t, sortedMember, stakedAmounts, sut.nodesCount)
+
+	// And when removed from **engagement** group
+	engagementUpdateMsg := testingcontracts.TG4UpdateMembersMsg{
+		Remove: []string{sortedMember[0].Addr},
+	}
+	eResult = cli.Execute(engagementGroupAddr, engagementUpdateMsg.Json(t), tg4AdminAddr)
+	RequireTxSuccess(t, eResult)
+	t.Log("got execution result", eResult)
+	// wait for msg execution
+	sut.AwaitNextBlock(t, sut.blockTime*5)
+	// wait for update manifests in valset (epoch has completed)
+	sut.AwaitNextBlock(t)
+
+	// then validator set is updated
+	// with unengaged validator removed
+	sortedMember = sortedMember[1:sut.nodesCount]
+	stakedAmounts = stakedAmounts[1:sut.nodesCount]
+	assertValidatorsUpdated(t, sortedMember, stakedAmounts, sut.nodesCount-1)
+}
+
+func assertValidatorsUpdated(t *testing.T, sortedMember []testingcontracts.TG4Member, stakedAmounts []int, expValidators int) {
+	t.Helper()
+	v := sut.RPCClient(t).Validators()
+	require.Len(t, v, expValidators, "got %#v", v)
+	for i := 0; i < expValidators; i++ {
 		// ordered by power desc
-		expWeight := int64(math.Sqrt(float64(sortedMember[i].Weight * 1))) // function implemented in mixer
+		expWeight := int64(math.Sqrt(float64(sortedMember[i].Weight * stakedAmounts[i]))) // function implemented in mixer
 		assert.Equal(t, expWeight, v[i].VotingPower, "address: %s", encodeBech32Addr(v[i].Address.Bytes()))
 	}
-
-	// And when weight updated
-	// todo...
 }

@@ -1,6 +1,7 @@
 package testing
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 	"os/exec"
@@ -81,8 +82,11 @@ func (c TgradeCli) withChainFlags(args ...string) []string {
 }
 
 // Execute send MsgExecute to a contract
-func (c TgradeCli) Execute(contractAddr, msg, from string) string {
+func (c TgradeCli) Execute(contractAddr, msg, from string, amount ...sdk.Coin) string {
 	cmd := []string{"tx", "wasm", "execute", contractAddr, msg, "--from", from}
+	if len(amount) != 0 {
+		cmd = append(cmd, "--amount", sdk.NewCoins(amount...).String())
+	}
 	return c.run(c.withTXFlags(cmd...))
 }
 

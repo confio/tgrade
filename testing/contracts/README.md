@@ -5,9 +5,9 @@ Tgrade smart contracts
 ## Download new artifacts
 **Requires a github access token**
 
-Example to download contract for tag `v0.1.2`
+Example to download contract for tag `v0.1.3`
 ```sh
-./download_releases.sh v0.1.2
+./download_releases.sh v0.1.3
 ```
 
 ### OSX
