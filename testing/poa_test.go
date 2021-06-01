@@ -17,26 +17,26 @@ import (
 )
 
 // TestProofOfAuthoritySetup instantiates the tgrade valset contract and setup cluster to run n validators.
-// Then the validator powers are modified via an cw4 contract member update.
+// Then the validator powers are modified via an tg4 contract member update.
 func TestProofOfAuthoritySetup(t *testing.T) {
 	sut.ResetChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 
 	// contract addresses are deterministic. You can get a list of all contracts in genesis via
 	// `tgrade wasm-genesis-message list-contracts --home ./testnet/node0/tgrade`
-	const (
-		cw4ContractAddr    = "tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy"
-		valsetContractAddr = "tgrade10pyejy66429refv3g35g2t7am0was7yanjs539"
+	var (
+		tg4ContractAddr    = ContractBech32Address(1, 1)
+		valsetContractAddr = ContractBech32Address(2, 2)
 		anyAddress         = "tgrade12qey0qvmkvdu5yl3x329lhrvqfgzs5vne225q7"
+		tg4AdminAddr       = cli.AddKey("tg4admin")
 	)
 	// prepare contract init messages with chain validator data
-	cw4AdminAddr := cli.AddKey("cw4admin")
-	cw4initMsg := testingcontracts.CW4InitMsg{
-		Admin:   cw4AdminAddr,
-		Members: make([]testingcontracts.CW4Member, sut.nodesCount),
+	tg4initMsg := testingcontracts.TG4GroupInitMsg{
+		Admin:   tg4AdminAddr,
+		Members: make([]testingcontracts.TG4Member, sut.nodesCount),
 	}
 	valsetInitMsg := testingcontracts.ValsetInitMsg{
-		Membership:    cw4ContractAddr,
+		Membership:    tg4ContractAddr,
 		MinWeight:     1,
 		MaxValidators: 100,
 		EpochLength:   1,
@@ -47,7 +47,7 @@ func TestProofOfAuthoritySetup(t *testing.T) {
 		k := readPubkey(t, filepath.Join(workDir, home, "config", "priv_validator_key.json"))
 		pubKey := base64.StdEncoding.EncodeToString(k.Bytes())
 		addr := randomBech32Addr()
-		cw4initMsg.Members[i] = testingcontracts.CW4Member{
+		tg4initMsg.Members[i] = testingcontracts.TG4Member{
 			Addr:   addr,
 			Weight: sut.nodesCount - i, // unique weight
 		}
@@ -75,7 +75,7 @@ func TestProofOfAuthoritySetup(t *testing.T) {
 			"wasm-genesis-message",
 			"instantiate-contract",
 			"1",
-			cw4initMsg.Json(t),
+			tg4initMsg.Json(t),
 			"--label=testing",
 			fmt.Sprintf("--run-as=%s", anyAddress),
 		},
@@ -122,7 +122,7 @@ func TestProofOfAuthoritySetup(t *testing.T) {
 	sut.AwaitNextBlock(t)
 	v := sut.RPCClient(t).Validators()
 	require.Len(t, v, sut.nodesCount, "got %#v", v)
-	sortedMember := testingcontracts.SortByWeight(cw4initMsg.Members)
+	sortedMember := testingcontracts.SortByWeight(tg4initMsg.Members)
 	for i := 0; i < sut.nodesCount; i++ {
 		// ordered by power desc
 		exp := sortedMember[i]
@@ -130,27 +130,30 @@ func TestProofOfAuthoritySetup(t *testing.T) {
 	}
 
 	// And when weight updated
-	cli.FundAddress(t, cw4AdminAddr, "1000utgd")
-	cw4UpdateMsg := testingcontracts.CW4UpdateMembersMsg{
-		Add: make([]testingcontracts.CW4Member, len(cw4initMsg.Members)),
+	cli.FundAddress(t, tg4AdminAddr, "1000utgd")
+	tg4UpdateMsg := testingcontracts.TG4UpdateMembersMsg{
+		Add: make([]testingcontracts.TG4Member, len(tg4initMsg.Members)),
 	}
 	// update weights for all members
-	for i, v := range cw4initMsg.Members {
-		cw4UpdateMsg.Add[i] = testingcontracts.CW4Member{
+	for i, v := range tg4initMsg.Members {
+		tg4UpdateMsg.Add[i] = testingcontracts.TG4Member{
 			Addr:   v.Addr,
 			Weight: 10 + i,
 		}
 	}
-	eResult := cli.Execute(cw4ContractAddr, cw4UpdateMsg.Json(t), "cw4admin")
+	eResult := cli.Execute(tg4ContractAddr, tg4UpdateMsg.Json(t), "tg4admin")
 	RequireTxSuccess(t, eResult)
 	t.Log("got execution result", eResult)
-	sut.AwaitNextBlock(t, 15*time.Second)
-	sut.AwaitNextBlock(t, 10*time.Second)
+	// wait for msg execution
+	sut.AwaitNextBlock(t)
+	// wait for update manifests in valset (epoch has completed)
+	time.Sleep(1 * time.Second)
+	sut.AwaitNextBlock(t)
 
 	// then validator set is updated
 	v = sut.RPCClient(t).Validators()
 	require.Len(t, v, sut.nodesCount, "got %#v", v)
-	sortedMember = testingcontracts.SortByWeight(cw4UpdateMsg.Add)
+	sortedMember = testingcontracts.SortByWeight(tg4UpdateMsg.Add)
 	for i := 0; i < sut.nodesCount; i++ {
 		// ordered by power desc
 		exp := sortedMember[i]

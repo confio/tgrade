@@ -26,7 +26,7 @@ var workDir string
 
 // SystemUnderTest blockchain provisioning
 type SystemUnderTest struct {
-	blockListener EventListener
+	blockListener *EventListener
 	currentHeight int64
 	chainID       string
 	outputDir     string
@@ -55,7 +55,7 @@ func NewSystemUnderTest(verbose bool, nodesCount int, blockTime time.Duration) *
 	}
 }
 
-func (s SystemUnderTest) SetupChain() {
+func (s *SystemUnderTest) SetupChain() {
 	s.Logf("Setup chain: %s\n", s.outputDir)
 	if err := os.RemoveAll(filepath.Join(workDir, s.outputDir)); err != nil {
 		panic(err.Error())
@@ -127,25 +127,35 @@ func (s *SystemUnderTest) watchLogs(node int, cmd *exec.Cmd) {
 	if err != nil {
 		panic(fmt.Sprintf("stderr reader error %#+v", err))
 	}
-	go appendToBuf(io.TeeReader(errReader, logfile), s.errBuff)
+	stopRingBuffer := make(chan struct{})
+	go appendToBuf(io.TeeReader(errReader, logfile), s.errBuff, stopRingBuffer)
 
 	outReader, err := cmd.StdoutPipe()
 	if err != nil {
 		panic(fmt.Sprintf("stdout reader error %#+v", err))
 	}
-	go appendToBuf(io.TeeReader(outReader, logfile), s.outBuff)
+	go appendToBuf(io.TeeReader(outReader, logfile), s.outBuff, stopRingBuffer)
+	s.cleanupFn = append(s.cleanupFn, func() {
+		close(stopRingBuffer)
+		logfile.Close()
+	})
 }
 
-func appendToBuf(r io.Reader, b *ring.Ring) {
+func appendToBuf(r io.Reader, b *ring.Ring, stop <-chan struct{}) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
+		select {
+		case _, _ = <-stop:
+			return
+		default:
+		}
 		b.Value = scanner.Text()
 		b = b.Next()
 	}
 }
 
 // awaitChainUp ensures the chain is running
-func (s SystemUnderTest) awaitChainUp(t *testing.T) {
+func (s *SystemUnderTest) awaitChainUp(t *testing.T) {
 	t.Helper()
 	t.Log("Await chain starts")
 	timeout := defaultWaitTime
@@ -181,7 +191,7 @@ func (s SystemUnderTest) awaitChainUp(t *testing.T) {
 }
 
 // StopChain stops the system under test and executes all registered cleanup callbacks
-func (s SystemUnderTest) StopChain() {
+func (s *SystemUnderTest) StopChain() {
 	s.Log("Stop chain")
 	for _, c := range s.cleanupFn {
 		c()
@@ -223,35 +233,39 @@ func (s SystemUnderTest) BuildNewBinary() {
 	}
 }
 
-// AwaitNextBlock is a first class function that any caller can use to ensure a new block was minted
-func (s *SystemUnderTest) AwaitNextBlock(t *testing.T, timeout ...time.Duration) {
+// AwaitNextBlock is a first class function that any caller can use to ensure a new block was minted.
+// Returns the new height
+func (s *SystemUnderTest) AwaitNextBlock(t *testing.T, timeout ...time.Duration) int64 {
 	t.Helper()
 	var maxWaitTime = s.blockTime * 3
 	if len(timeout) != 0 { // optional argument to overwrite default timeout
 		maxWaitTime = timeout[0]
 	}
-	done := make(chan struct{})
+	done := make(chan int64)
 	go func() {
-		for start := atomic.LoadInt64(&s.currentHeight); atomic.LoadInt64(&s.currentHeight) == start; {
+		for start, current := atomic.LoadInt64(&s.currentHeight), atomic.LoadInt64(&s.currentHeight); current == start; current = atomic.LoadInt64(&s.currentHeight) {
 			time.Sleep(s.blockTime)
 		}
-		done <- struct{}{}
-		defer close(done)
+		done <- atomic.LoadInt64(&s.currentHeight)
+		close(done)
 	}()
 	select {
-	case <-done:
+	case v := <-done:
+		return v
 	case <-time.NewTimer(maxWaitTime).C:
 		t.Fatalf("Timeout - no block within %s", maxWaitTime)
+		return -1
 	}
 }
 
 // ResetChain stops and clears all nodes state via 'unsafe-reset-all'
-func (s SystemUnderTest) ResetChain(t *testing.T) {
+func (s *SystemUnderTest) ResetChain(t *testing.T) {
 	t.Helper()
 	t.Log("ResetChain chain")
 	s.StopChain()
-	restoreOriginalGenesis(t, s)
-	restoreOriginalKeyring(t, s)
+	restoreOriginalGenesis(t, *s)
+	restoreOriginalKeyring(t, *s)
+	s.resetBuffers()
 
 	cmd := exec.Command(locateExecutable("pkill"), "tgrade")
 	cmd.Dir = workDir
@@ -269,14 +283,14 @@ func (s SystemUnderTest) ResetChain(t *testing.T) {
 }
 
 // ModifyGenesisCLI executes the CLI commands to modify the genesis
-func (s SystemUnderTest) ModifyGenesisCLI(t *testing.T, cmds ...[]string) {
+func (s *SystemUnderTest) ModifyGenesisCLI(t *testing.T, cmds ...[]string) {
 	s.ForEachNodeExecAndWait(t, cmds...)
 }
 
 type GenesisMutator func([]byte) []byte
 
 // ModifyGenesisJson executes the callbacks to update the json representation
-func (s SystemUnderTest) ModifyGenesisJson(t *testing.T, mutators ...GenesisMutator) {
+func (s *SystemUnderTest) ModifyGenesisJson(t *testing.T, mutators ...GenesisMutator) {
 	current, err := ioutil.ReadFile(filepath.Join(workDir, s.nodePath(0), "config", "genesis.json"))
 	require.NoError(t, err)
 	for _, m := range mutators {
@@ -288,7 +302,7 @@ func (s SystemUnderTest) ModifyGenesisJson(t *testing.T, mutators ...GenesisMuta
 }
 
 // SetGenesis copy genesis file to all nodes
-func (s SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
+func (s *SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
 	in, err := os.Open(srcPath)
 	require.NoError(t, err)
 	defer in.Close()
@@ -310,7 +324,7 @@ func (s SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
 
 // ForEachNodeExecAndWait runs the given tgrade commands for all cluster nodes synchronously
 // The commands output is returned for each node.
-func (s SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string) [][]string {
+func (s *SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string) [][]string {
 	result := make([][]string, s.nodesCount)
 	s.withEachNodeHome(func(i int, home string) {
 		result[i] = make([]string, len(cmds))
@@ -332,7 +346,7 @@ func (s SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string) 
 }
 
 // forEachNodesExecAsync runs the given tgrade command for all cluster nodes and returns without waiting
-func (s SystemUnderTest) forEachNodesExecAsync(t *testing.T, xargs ...string) []func() error {
+func (s *SystemUnderTest) forEachNodesExecAsync(t *testing.T, xargs ...string) []func() error {
 	r := make([]func() error, s.nodesCount)
 	s.withEachNodeHome(func(i int, home string) {
 		args := append(xargs, "--home", home)
@@ -396,6 +410,11 @@ func (s SystemUnderTest) AllNodes(t *testing.T) []Node {
 	return result
 }
 
+func (s *SystemUnderTest) resetBuffers() {
+	s.outBuff = ring.New(100)
+	s.errBuff = ring.New(100)
+}
+
 type Node struct {
 	ID      string
 	IP      string
@@ -426,11 +445,11 @@ type EventListener struct {
 }
 
 // NewEventListener event listener
-func NewEventListener(t *testing.T, rpcAddr string) EventListener {
+func NewEventListener(t *testing.T, rpcAddr string) *EventListener {
 	httpClient, err := client.New(rpcAddr, "/websocket")
 	require.NoError(t, err)
 	require.NoError(t, httpClient.Start())
-	return EventListener{client: httpClient, t: t}
+	return &EventListener{client: httpClient, t: t}
 }
 
 var defaultWaitTime = 30 * time.Second
@@ -442,7 +461,7 @@ type (
 
 // Subscribe to receive events for a topic.
 // For query syntax See https://docs.cosmos.network/master/core/events.html#subscribing-to-events
-func (l EventListener) Subscribe(query string, cb EventConsumer) func() {
+func (l *EventListener) Subscribe(query string, cb EventConsumer) func() {
 	ctx, done := context.WithCancel(context.Background())
 	eventsChan, err := l.client.WSEvents.Subscribe(ctx, "testing", query)
 	require.NoError(l.t, err)
@@ -465,7 +484,7 @@ func (l EventListener) Subscribe(query string, cb EventConsumer) func() {
 }
 
 // AwaitQuery waits for single result or timeout
-func (l EventListener) AwaitQuery(query string) *ctypes.ResultEvent {
+func (l *EventListener) AwaitQuery(query string) *ctypes.ResultEvent {
 	c, result := CapturingEventConsumer()
 	l.Subscribe(query, TimeoutConsumer(l.t, defaultWaitTime, c))
 	return result
