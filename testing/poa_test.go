@@ -13,6 +13,7 @@ import (
 	"github.com/tidwall/gjson"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // TestProofOfAuthoritySetup instantiates the tgrade valset contract and setup cluster to run n validators.
@@ -144,8 +145,9 @@ func TestProofOfAuthoritySetup(t *testing.T) {
 	RequireTxSuccess(t, eResult)
 	t.Log("got execution result", eResult)
 	// wait for msg execution
-	sut.AwaitNextBlock(t, sut.blockTime*5)
+	sut.AwaitNextBlock(t)
 	// wait for update manifests in valset (epoch has completed)
+	time.Sleep(1 * time.Second)
 	sut.AwaitNextBlock(t)
 
 	// then validator set is updated

@@ -186,8 +186,9 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	RequireTxSuccess(t, eResult)
 	t.Log("got execution result", eResult)
 	// wait for msg execution
-	sut.AwaitNextBlock(t, sut.blockTime*5)
+	sut.AwaitNextBlock(t)
 	// wait for update manifests in valset (epoch has completed)
+	time.Sleep(1 * time.Second)
 	sut.AwaitNextBlock(t)
 
 	// then validator set is updated
