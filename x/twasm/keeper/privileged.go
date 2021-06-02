@@ -251,6 +251,16 @@ func (k Keeper) IterateContractCallbacksByType(ctx sdk.Context, callbackType typ
 	}
 }
 
+// HasPrivilegedContractCallback returns if the contract has the given callback type registered.
+// Returns error for unknown contract addresses.
+func (k Keeper) HasPrivilegedContractCallback(ctx sdk.Context, contractAddr sdk.AccAddress, callbackType types.PrivilegedCallbackType) (bool, error) {
+	d, err := k.getContractDetails(ctx, contractAddr)
+	if err != nil {
+		return false, err
+	}
+	return d.HasRegisteredContractCallback(callbackType), nil
+}
+
 func privilegedContractsSecondaryIndexKey(contractAddr sdk.AccAddress) []byte {
 	return append(privilegedContractsSecondaryIndexPrefix, contractAddr...)
 }

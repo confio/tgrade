@@ -8,6 +8,10 @@
     - [GenesisState](#confio.globalfee.v1beta1.GenesisState)
     - [Params](#confio.globalfee.v1beta1.Params)
   
+- [confio/poe/v1beta1/genesis.proto](#confio/poe/v1beta1/genesis.proto)
+    - [GenesisState](#confio.poe.v1beta1.GenesisState)
+    - [TG4Members](#confio.poe.v1beta1.TG4Members)
+  
 - [confio/twasm/v1beta1/contract_extension.proto](#confio/twasm/v1beta1/contract_extension.proto)
     - [RegisteredCallback](#confio.twasm.v1beta1.RegisteredCallback)
     - [TgradeContractDetails](#confio.twasm.v1beta1.TgradeContractDetails)
@@ -62,6 +66,59 @@ Params defines the set of module parameters.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `minimum_gas_prices` | [cosmos.base.v1beta1.DecCoin](#cosmos.base.v1beta1.DecCoin) | repeated | Minimum stores the minimum gas price(s) for all TX on the chain. When multiple coins are defined then they are accepted alternatively. The list must be sorted by denoms asc. No duplicate denoms or zero amount values allowed. For more information see https://docs.cosmos.network/master/modules/auth/01_concepts.html |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="confio/poe/v1beta1/genesis.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## confio/poe/v1beta1/genesis.proto
+
+
+
+<a name="confio.poe.v1beta1.GenesisState"></a>
+
+### GenesisState
+GenesisState - initial state of module
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `gen_txs` | [bytes](#bytes) | repeated | gen_txs defines the genesis transactions. |
+| `system_admin_addr` | [string](#string) |  |  |
+| `staking_contract_addr` | [string](#string) |  |  |
+| `valset_contract_addr` | [string](#string) |  |  |
+| `engagement_contract_addr` | [string](#string) |  |  |
+| `mixer_contract_addr` | [string](#string) |  |  |
+| `engagement` | [TG4Members](#confio.poe.v1beta1.TG4Members) | repeated |  |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.TG4Members"></a>
+
+### TG4Members
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `address` | [string](#string) |  |  |
+| `weight` | [uint64](#uint64) |  |  |
 
 
 

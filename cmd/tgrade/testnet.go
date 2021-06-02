@@ -6,19 +6,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"net"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-
-	"github.com/spf13/cobra"
-	tmconfig "github.com/tendermint/tendermint/config"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
-
+	"github.com/confio/tgrade/x/poe"
+	poeclient "github.com/confio/tgrade/x/poe/client"
+	"github.com/confio/tgrade/x/poe/client/cli"
+	poetypes "github.com/confio/tgrade/x/poe/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -28,12 +19,24 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
+	"github.com/spf13/cobra"
+	tmconfig "github.com/tendermint/tendermint/config"
+	tmos "github.com/tendermint/tendermint/libs/os"
+	tmrand "github.com/tendermint/tendermint/libs/rand"
+	"github.com/tendermint/tendermint/types"
+	tmtime "github.com/tendermint/tendermint/types/time"
+	"net"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 )
 
 const stakingToken = "utgd"
@@ -154,6 +157,7 @@ func InitTestnet(
 	p2pPortStart := 26656
 
 	inBuf := bufio.NewReader(cmd.InOrStdin())
+	var adminAddr sdk.AccAddress
 	// generate private keys, node IDs, and initial transactions
 	for i := 0; i < numValidators; i++ {
 		var portOffset int
@@ -211,6 +215,16 @@ func InitTestnet(
 			_ = os.RemoveAll(outputDir)
 			return err
 		}
+		if i == 0 { // generate one key in node0 keychain. This is used by system tests
+			adminAddr, _, err = server.GenerateSaveCoinKey(kb, "systemadmin", true, algo)
+			if err != nil {
+				_ = os.RemoveAll(outputDir)
+				return err
+			}
+			coins := sdk.Coins{sdk.NewCoin(stakingToken, sdk.NewInt(1000000))}
+			genBalances = append(genBalances, banktypes.Balance{Address: adminAddr.String(), Coins: coins.Sort()})
+			genAccounts = append(genAccounts, authtypes.NewBaseAccount(adminAddr, nil, 0, 0))
+		}
 
 		info := map[string]string{"secret": secret}
 
@@ -234,24 +248,26 @@ func InitTestnet(
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: coins.Sort()})
 		genAccounts = append(genAccounts, authtypes.NewBaseAccount(addr, nil, 0, 0))
 
-		valTokens := sdk.TokensFromConsensusPower(100)
-		createValMsg, err := stakingtypes.NewMsgCreateValidator(
-			sdk.ValAddress(addr),
-			valPubKeys[i],
-			sdk.NewCoin(stakingToken, valTokens),
-			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
-			stakingtypes.NewCommissionRates(sdk.OneDec(), sdk.OneDec(), sdk.OneDec()),
-			sdk.OneInt(),
-		)
+		valTokens := sdk.TokensFromConsensusPower(100) // todo (Alex): should we make this an argument
+		createValCfg := stakingcli.TxCreateValidatorConfig{
+			Amount: sdk.NewCoin(stakingToken, valTokens).String(),
+			PubKey: sdk.MustBech32ifyPubKey(sdk.Bech32PubKeyTypeConsPub, valPubKeys[i]),
+		}
+		defaultPoEGenesis := poe.DefaultGenesisState()
+		_, registerMsg, err := cli.BuildRegisterValidatorMsg(clientCtx.WithFromAddress(addr), createValCfg, tx.Factory{}, defaultPoEGenesis.ValsetContractAddr, false)
 		if err != nil {
-			return err
+			return sdkerrors.Wrap(err, "failed to build create-validator message")
+		}
+
+		_, stakeMsg, err := cli.BuildStakeValidatorMsg(clientCtx.WithFromAddress(addr), createValCfg, tx.Factory{}, defaultPoEGenesis.StakingContractAddr, false)
+		if err != nil {
+			return sdkerrors.Wrap(err, "failed to build stake validator message")
 		}
 
 		txBuilder := clientCtx.TxConfig.NewTxBuilder()
-		if err := txBuilder.SetMsgs(createValMsg); err != nil {
+		if err := txBuilder.SetMsgs(registerMsg, stakeMsg); err != nil {
 			return err
 		}
-
 		txBuilder.SetMemo(memo)
 
 		txFactory := tx.Factory{}
@@ -276,8 +292,7 @@ func InitTestnet(
 
 		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appConfig)
 	}
-
-	if err := initGenFiles(clientCtx, mbm, chainID, genAccounts, genBalances, genFiles, numValidators); err != nil {
+	if err := initGenFiles(clientCtx, mbm, chainID, genAccounts, genBalances, genFiles, numValidators, adminAddr); err != nil {
 		return err
 	}
 
@@ -295,11 +310,15 @@ func InitTestnet(
 }
 
 func initGenFiles(
-	clientCtx client.Context, mbm module.BasicManager, chainID string,
-	genAccounts []authtypes.GenesisAccount, genBalances []banktypes.Balance,
-	genFiles []string, numValidators int,
+	clientCtx client.Context,
+	mbm module.BasicManager,
+	chainID string,
+	genAccounts []authtypes.GenesisAccount,
+	genBalances []banktypes.Balance,
+	genFiles []string,
+	numValidators int,
+	admin sdk.AccAddress,
 ) error {
-
 	appGenState := mbm.DefaultGenesis(clientCtx.JSONMarshaler)
 
 	// set the accounts in the genesis state
@@ -320,6 +339,15 @@ func initGenFiles(
 
 	bankGenState.Balances = genBalances
 	appGenState[banktypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&bankGenState)
+	poeGenesisState := poeclient.GetGenesisStateFromAppState(clientCtx.JSONMarshaler, appGenState)
+	for i, addr := range genAccounts {
+		poeGenesisState.Engagement = append(poeGenesisState.Engagement, poetypes.TG4Members{
+			Address: addr.GetAddress().String(),
+			Weight:  uint64(len(genAccounts) - i), // unique weight
+		})
+	}
+	poeGenesisState.SystemAdminAddr = admin.String()
+	poeclient.SetGenesisStateInAppState(clientCtx.JSONMarshaler, appGenState, poeGenesisState)
 
 	appGenStateJSON, err := json.MarshalIndent(appGenState, "", "  ")
 	if err != nil {
@@ -344,15 +372,20 @@ func initGenFiles(
 }
 
 func collectGenFiles(
-	clientCtx client.Context, nodeConfig *tmconfig.Config, chainID string,
-	nodeIDs []string, valPubKeys []cryptotypes.PubKey, numValidators int,
-	outputDir, nodeDirPrefix, nodeDaemonHome string, genBalIterator banktypes.GenesisBalancesIterator,
-	rpcPortStart, p2pPortStart int, singleMachine bool,
+	clientCtx client.Context,
+	nodeConfig *tmconfig.Config,
+	chainID string,
+	nodeIDs []string,
+	valPubKeys []cryptotypes.PubKey,
+	numValidators int,
+	outputDir, nodeDirPrefix, nodeDaemonHome string,
+	genBalIterator banktypes.GenesisBalancesIterator,
+	rpcPortStart, p2pPortStart int,
+	singleMachine bool,
 ) error {
 
 	var appState json.RawMessage
 	genTime := tmtime.Now()
-
 	for i := 0; i < numValidators; i++ {
 		var portOffset int
 		if singleMachine {
@@ -375,7 +408,7 @@ func collectGenFiles(
 			return err
 		}
 
-		nodeAppState, err := genutil.GenAppStateFromConfig(clientCtx.JSONMarshaler, clientCtx.TxConfig, nodeConfig, initCfg, *genDoc, genBalIterator)
+		nodeAppState, err := poeclient.GenAppStateFromConfig(clientCtx.JSONMarshaler, clientCtx.TxConfig, nodeConfig, initCfg, *genDoc, genBalIterator)
 		if err != nil {
 			return err
 		}

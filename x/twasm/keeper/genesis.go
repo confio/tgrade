@@ -12,7 +12,13 @@ import (
 // InitGenesis sets supply information for genesis.
 //
 // CONTRACT: all types of accounts must have been already initialized/created
-func InitGenesis(ctx sdk.Context, keeper *Keeper, data types.GenesisState, stakingKeeper wasmkeeper.ValidatorSetSource, msgHandler sdk.Handler) ([]abci.ValidatorUpdate, error) {
+func InitGenesis(
+	ctx sdk.Context,
+	keeper *Keeper,
+	data types.GenesisState,
+	stakingKeeper wasmkeeper.ValidatorSetSource,
+	msgHandler sdk.Handler,
+) ([]abci.ValidatorUpdate, error) {
 	result, err := wasmkeeper.InitGenesis(ctx, &keeper.Keeper, data.Wasm, stakingKeeper, msgHandler)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "wasm")

@@ -1,10 +1,17 @@
-package contracts
+package contract
 
 import (
 	"encoding/json"
+	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/stretchr/testify/require"
 	"sort"
 	"testing"
+)
+
+type (
+	ValidatorPubkey                = contract.ValidatorPubkey
+	TgradeSudoMsg                  = contract.TgradeSudoMsg
+	EndWithValidatorUpdateResponse = contract.EndWithValidatorUpdateResponse
 )
 
 // TG4GroupInitMsg contract init message
@@ -21,7 +28,7 @@ func (m TG4GroupInitMsg) Json(t *testing.T) string {
 
 type TG4Member struct {
 	Addr   string `json:"addr"`
-	Weight int    `json:"weight"`
+	Weight uint64 `json:"weight"`
 }
 
 func SortByWeight(s []TG4Member) []TG4Member {
@@ -116,17 +123,19 @@ type ValsetInitKey struct {
 	ValidatorPubkey ValidatorPubkey `json:"validator_pubkey"`
 }
 
-func NewValsetInitKey(operator, ed25519Pubkey string) ValsetInitKey {
-	return ValsetInitKey{Operator: operator, ValidatorPubkey: ValidatorPubkey{Ed25519: ed25519Pubkey}}
-}
-
-type ValidatorPubkey struct {
-	Ed25519 string `json:"ed25519,omitempty"`
-}
-
 func asJson(t *testing.T, m interface{}) string {
 	t.Helper()
 	r, err := json.Marshal(&m)
 	require.NoError(t, err)
 	return string(r)
+}
+
+// TG4ValsetExecute Valset contract validator key registration
+// See https://github.com/confio/tgrade-contracts/blob/main/contracts/tgrade-valset/schema/execute_msg.json
+type TG4ValsetExecute struct {
+	RegisterValidatorKey RegisterValidatorKey `json:"register_validator_key"`
+}
+
+type RegisterValidatorKey struct {
+	PubKey ValidatorPubkey `json:"pubkey"`
 }
