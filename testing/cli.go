@@ -99,6 +99,15 @@ func (c TgradeCli) AddKey(name string) string {
 	return addr
 }
 
+// GetKeyAddr returns address
+func (c TgradeCli) GetKeyAddr(name string) string {
+	cmd := c.withKeyringFlags("keys", "show", name, "-a")
+	out := c.run(cmd)
+	addr := strings.Trim(out, "\n")
+	require.NotEmpty(c.t, addr, "got %q", out)
+	return addr
+}
+
 const defaultSrcAddr = "node0"
 
 // FundAddress sends the token amount to the destination address

@@ -33,14 +33,17 @@ func TestSmokeTest(t *testing.T) {
 	t.Log("Query wasm code list")
 	qResult := cli.CustomQuery("q", "wasm", "list-code")
 	codes := gjson.Get(qResult, "code_infos.#.code_id").Array()
-	require.Len(t, codes, 1, qResult)
-	require.Equal(t, int64(1), codes[0].Int())
-	codeID := strconv.Itoa(1)
+	const poeContractCount = 4
+	require.Len(t, codes, poeContractCount+1, qResult)
+	require.Equal(t, int64(poeContractCount+1), codes[poeContractCount].Int(), "sequential ids")
+	codeID := strconv.Itoa(poeContractCount + 1)
+
 	t.Log("got query result", qResult)
 
 	l := sut.NewEventListener(t)
 	c, done := CaptureAllEventsConsumer(t)
-	query := fmt.Sprintf(`tm.event='Tx' AND wasm.contract_address='%s'`, ContractBech32Address(1, 1))
+	contractAddr := ContractBech32Address(poeContractCount+1, poeContractCount+1)
+	query := fmt.Sprintf(`tm.event='Tx' AND wasm.contract_address='%s'`, contractAddr)
 	t.Logf("Subscribe to events: %s", query)
 
 	cleanupFn := l.Subscribe(query, c)
@@ -51,5 +54,5 @@ func TestSmokeTest(t *testing.T) {
 	txResult = cli.CustomCommand("tx", "wasm", "instantiate", codeID, initMsg, "--label=testing", "--from=node0", "--gas=1500000")
 	RequireTxSuccess(t, txResult)
 	assert.Len(t, done(), 1)
-	assert.Contains(t, txResult, ContractBech32Address(1, 1))
+	assert.Contains(t, txResult, contractAddr)
 }

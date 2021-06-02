@@ -34,7 +34,8 @@ var (
 )
 
 // AppModuleBasic defines the basic application module used by the wasm module.
-type AppModuleBasic struct{}
+type AppModuleBasic struct {
+}
 
 func (b AppModuleBasic) RegisterLegacyAminoCodec(amino *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(amino)
@@ -52,10 +53,12 @@ func (AppModuleBasic) Name() string {
 
 // DefaultGenesis returns default genesis state as raw bytes for the wasm
 // module.
-func (AppModuleBasic) DefaultGenesis(cdc codec.JSONMarshaler) json.RawMessage {
-	return cdc.MustMarshalJSON(&types.GenesisState{Wasm: wasmtypes.GenesisState{
-		Params: wasmtypes.DefaultParams(),
-	}})
+func (b AppModuleBasic) DefaultGenesis(cdc codec.JSONMarshaler) json.RawMessage {
+	return cdc.MustMarshalJSON(&types.GenesisState{
+		Wasm: wasmtypes.GenesisState{
+			Params: wasmtypes.DefaultParams(),
+		},
+	})
 }
 
 // ValidateGenesis performs genesis state validation for the wasm module.
@@ -65,7 +68,7 @@ func (b AppModuleBasic) ValidateGenesis(marshaler codec.JSONMarshaler, config cl
 	if err != nil {
 		return err
 	}
-	return data.ValidateBasic()
+	return nil
 }
 
 // RegisterRESTRoutes registers the REST routes for the wasm module.

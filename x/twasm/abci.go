@@ -6,9 +6,7 @@ import (
 	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/confio/tgrade/x/twasm/keeper"
 	"github.com/confio/tgrade/x/twasm/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/proto/tendermint/crypto"
 	"runtime/debug"
 	"time"
 
@@ -17,13 +15,12 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 )
 
-// Sudoer used in abci
-type Sudoer interface {
+type abciKeeper interface {
 	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
 	IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 
-func BeginBlocker(parentCtx sdk.Context, k Sudoer, b abci.RequestBeginBlock) {
+func BeginBlocker(parentCtx sdk.Context, k abciKeeper, b abci.RequestBeginBlock) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 	evidence := make([]contract.Evidence, len(b.ByzantineValidators))
 	for i, e := range b.ByzantineValidators {
@@ -75,9 +72,8 @@ func BeginBlocker(parentCtx sdk.Context, k Sudoer, b abci.RequestBeginBlock) {
 	})
 }
 
-func EndBlocker(parentCtx sdk.Context, k Sudoer) []abci.ValidatorUpdate {
+func EndBlocker(parentCtx sdk.Context, k abciKeeper) []abci.ValidatorUpdate {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
-
 	sudoMsg := contract.TgradeSudoMsg{EndBlock: &struct{}{}}
 	msgBz, err := json.Marshal(sudoMsg)
 	if err != nil {
@@ -100,68 +96,7 @@ func EndBlocker(parentCtx sdk.Context, k Sudoer) []abci.ValidatorUpdate {
 		commit()
 		return false
 	})
-
-	sudoMsg = contract.TgradeSudoMsg{EndWithValidatorUpdate: &struct{}{}}
-	msgBz, err = json.Marshal(sudoMsg)
-	if err != nil {
-		panic(err) // this will break consensus
-	}
-
-	var result []abci.ValidatorUpdate
-	// allow validator set updates for this group only
-	k.IterateContractCallbacksByType(parentCtx, types.CallbackTypeValidatorSetUpdate, func(pos uint8, contractAddr sdk.AccAddress) bool {
-		logger.Info("privileged contract callback", "type", "validator-set-update", "msg", string(msgBz))
-		ctx, commit := parentCtx.CacheContext()
-
-		result, err = callValidatorSetUpdaterContract(contractAddr, k, ctx, msgBz, logger)
-		if err != nil {
-			logger.Error("validator set update failed",
-				"cause", err, "contract-address", contractAddr, "position", pos,
-			)
-			panic(err) // this breaks consensus
-		}
-		commit()
-		if len(result) != 0 {
-			logger.Info("update validator set", "new", result)
-		}
-		return true // stop at first contract
-	})
-	return result
-}
-
-func callValidatorSetUpdaterContract(contractAddr sdk.AccAddress, k Sudoer, ctx sdk.Context, msgBz []byte, logger log.Logger) ([]abci.ValidatorUpdate, error) {
-	resp, err := k.Sudo(ctx, contractAddr, msgBz)
-	if err != nil {
-		return nil, sdkerrors.Wrap(err, "sudo")
-	}
-	if len(resp.Data) == 0 {
-		return nil, nil
-	}
-	var contractResult contract.EndWithValidatorUpdateResponse
-	if err := json.Unmarshal(resp.Data, &contractResult); err != nil {
-		return nil, sdkerrors.Wrap(err, "contract response")
-	}
-	if len(contractResult.Diffs) == 0 {
-		return nil, nil
-	}
-
-	result := make([]abci.ValidatorUpdate, len(contractResult.Diffs))
-	for i, v := range contractResult.Diffs {
-		result[i] = abci.ValidatorUpdate{
-			PubKey: getPubKey(v.PubKey),
-			Power:  int64(v.Power),
-		}
-	}
-	logger.Info("privileged contract callback", "type", "validator-set-update", "result", result)
-	return result, nil
-}
-
-func getPubKey(key contract.ValidatorPubkey) crypto.PublicKey {
-	return crypto.PublicKey{
-		Sum: &crypto.PublicKey_Ed25519{
-			Ed25519: key.Ed25519,
-		},
-	}
+	return nil
 }
 
 func recoverToLog(logger log.Logger, contractAddr sdk.AccAddress) func() {
