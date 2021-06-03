@@ -20,7 +20,7 @@ func TestGlobalFee(t *testing.T) {
 
 	cli := NewTgradeCli(t, sut, verbose)
 
-	const anyContract = "testing/contracts/tg4_group.wasm"
+	const anyContract = "x/poe/contract/tg4_group.wasm"
 	t.Log("Any transaction without enough fees should fail")
 	txResult := cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1500000", "--fees=1utg")
 	RequireTxFailure(t, txResult, "insufficient fee")
