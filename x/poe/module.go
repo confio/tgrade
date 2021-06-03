@@ -5,6 +5,7 @@ import (
 	"fmt"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 	twasmtypes "github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -18,15 +19,12 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
-const ModuleName = genutiltypes.ModuleName // todo (Alex): rename to POE
-
 var (
-	_ module.AppModuleGenesis = AppModule{}
-	_ module.AppModuleBasic   = AppModuleBasic{}
+	_ module.AppModule      = AppModule{}
+	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
 // AppModuleBasic defines the basic application module used by the genutil module.
@@ -35,14 +33,18 @@ type AppModuleBasic struct {
 
 // Name returns the genutil module's name.
 func (AppModuleBasic) Name() string {
-	return ModuleName
+	return types.ModuleName
 }
 
 // RegisterLegacyAminoCodec registers the genutil module's types on the given LegacyAmino codec.
-func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
+func (AppModuleBasic) RegisterLegacyAminoCodec(amino *codec.LegacyAmino) {
+	types.RegisterLegacyAminoCodec(amino)
+}
 
 // RegisterInterfaces registers the module's interface types
-func (b AppModuleBasic) RegisterInterfaces(_ cdctypes.InterfaceRegistry) {}
+func (b AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
+	types.RegisterInterfaces(registry)
+}
 
 // DefaultGenesis returns default genesis state as raw bytes for the genutil
 // module.
@@ -55,7 +57,7 @@ func (b AppModuleBasic) DefaultGenesis(cdc codec.JSONMarshaler) json.RawMessage 
 func (b AppModuleBasic) ValidateGenesis(cdc codec.JSONMarshaler, txEncodingConfig client.TxEncodingConfig, bz json.RawMessage) error {
 	var data types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
-		return fmt.Errorf("failed to unmarshal %s genesis state: %w", ModuleName, err)
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
 	// todo: add PoE validation
 
@@ -88,6 +90,7 @@ type AppModule struct {
 	txEncodingConfig client.TxEncodingConfig
 	twasmKeeper      twasmKeeper
 	contractKeeper   wasmtypes.ContractOpsKeeper
+	poeKeeper        keeper.Keeper
 }
 
 // twasmKeeper subset of keeper to decouple from twasm module
@@ -100,22 +103,50 @@ type twasmKeeper interface {
 
 // NewAppModule creates a new AppModule object
 func NewAppModule(
+	poeKeeper keeper.Keeper,
 	accountKeeper genutiltypes.AccountKeeper,
 	stakingKeeper genutiltypes.StakingKeeper,
 	twasmKeeper twasmKeeper,
 	deliverTx deliverTxfn,
 	txEncodingConfig client.TxEncodingConfig,
 	contractKeeper wasmtypes.ContractOpsKeeper,
-) module.AppModule {
-	return module.NewGenesisOnlyAppModule(AppModule{
+) AppModule {
+	return AppModule{
 		AppModuleBasic:   AppModuleBasic{},
 		accountKeeper:    accountKeeper,
 		twasmKeeper:      twasmKeeper,
 		contractKeeper:   contractKeeper,
+		poeKeeper:        poeKeeper,
 		stakingKeeper:    stakingKeeper,
 		deliverTx:        deliverTx,
 		txEncodingConfig: txEncodingConfig,
-	})
+	}
+}
+
+func (am AppModule) RegisterInvariants(registry sdk.InvariantRegistry) {
+}
+
+func (am AppModule) Route() sdk.Route {
+	return sdk.NewRoute(types.RouterKey, NewHandler(am.poeKeeper, am.contractKeeper))
+}
+
+func (am AppModule) QuerierRoute() string {
+	return types.QuerierRoute
+}
+
+func (am AppModule) LegacyQuerierHandler(amino *codec.LegacyAmino) sdk.Querier {
+	return nil
+}
+
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.poeKeeper, am.contractKeeper))
+}
+
+func (am AppModule) BeginBlock(context sdk.Context, block abci.RequestBeginBlock) {
+}
+
+func (am AppModule) EndBlock(context sdk.Context, block abci.RequestEndBlock) []abci.ValidatorUpdate {
+	return nil
 }
 
 // InitGenesis performs genesis initialization for the genutil module. It returns
@@ -124,7 +155,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data j
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 
-	if err := bootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, genesisState); err != nil {
+	if err := bootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, genesisState); err != nil {
 		panic(fmt.Sprintf("bootstrap: %s", err))
 	}
 
@@ -132,15 +163,15 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data j
 	if err != nil {
 		panic(err)
 	}
-	addr, err := sdk.AccAddressFromBech32(genesisState.ValsetContractAddr)
+	addr, err := am.poeKeeper.GetPoeContractAddress(ctx, types.PoEContractTypes_VALSET)
 	if err != nil {
-		panic(fmt.Sprintf("invalid valset addr: %s", err))
+		panic(fmt.Sprintf("valset addr: %s", err))
 	}
 	switch ok, err := am.twasmKeeper.HasPrivilegedContractCallback(ctx, addr, twasmtypes.CallbackTypeValidatorSetUpdate); {
 	case err != nil:
 		panic(fmt.Sprintf("valset contract: %s", err))
 	case !ok:
-		panic(fmt.Sprintf("valset contract not registered for valdator updates: %s", genesisState.ValsetContractAddr))
+		panic(fmt.Sprintf("valset contract not registered for valdator updates: %s", addr.String()))
 	}
 
 	diff, err := callValidatorSetUpdaterContract(ctx, addr, am.twasmKeeper)
@@ -189,7 +220,7 @@ func callValidatorSetUpdaterContract(ctx sdk.Context, contractAddr sdk.AccAddres
 			Power:  int64(v.Power),
 		}
 	}
-	ModuleLogger(ctx).Info("privileged contract callback", "type", "validator-set-update", "result", result)
+	keeper.ModuleLogger(ctx).Info("privileged contract callback", "type", "validator-set-update", "result", result)
 	return result, nil
 }
 
@@ -198,8 +229,4 @@ func callValidatorSetUpdaterContract(ctx sdk.Context, contractAddr sdk.AccAddres
 func (am AppModule) ExportGenesis(_ sdk.Context, cdc codec.JSONMarshaler) json.RawMessage {
 	var gs types.GenesisState
 	return cdc.MustMarshalJSON(&gs)
-}
-
-func ModuleLogger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", fmt.Sprintf("x/%s", ModuleName))
 }

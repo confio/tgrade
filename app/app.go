@@ -202,7 +202,7 @@ type TgradeApp struct {
 	evidenceKeeper   evidencekeeper.Keeper
 	transferKeeper   ibctransferkeeper.Keeper
 	twasmKeeper      twasmkeeper.Keeper
-	poeKeeper        poekeeper.StakingAdapter
+	poeKeeper        poekeeper.Keeper
 
 	scopedIBCKeeper      capabilitykeeper.ScopedKeeper
 	scopedTransferKeeper capabilitykeeper.ScopedKeeper
@@ -232,7 +232,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
-		wasm.StoreKey,
+		wasm.StoreKey, poe.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -335,15 +335,15 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	// if we want to allow any custom callbacks
 	supportedFeatures := "staking,stargate"
 
-	app.poeKeeper = poekeeper.NewStakingAdapter(&app.twasmKeeper)
+	stakingAdapter := poekeeper.NewStakingAdapter(app.poeKeeper, app.twasmKeeper.GetContractKeeper())
 	app.twasmKeeper = twasmkeeper.NewKeeper(
 		appCodec,
 		keys[twasm.StoreKey],
 		app.getSubspace(twasm.ModuleName),
 		app.accountKeeper,
 		app.bankKeeper,
-		app.poeKeeper,
-		app.poeKeeper,
+		stakingAdapter,
+		stakingAdapter,
 		app.ibcKeeper.ChannelKeeper,
 		&app.ibcKeeper.PortKeeper,
 		scopedWasmKeeper,
@@ -373,6 +373,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		govRouter,
 	)
 
+	app.poeKeeper = poekeeper.NewKeeper(appCodec, keys[poe.StoreKey])
 	/****  Module Options ****/
 
 	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment
@@ -382,7 +383,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.mm = module.NewManager(
-		poe.NewAppModule(app.accountKeeper, app.stakingKeeper, &app.twasmKeeper, app.BaseApp.DeliverTx, encodingConfig.TxConfig, app.twasmKeeper.GetContractKeeper()),
+		poe.NewAppModule(app.poeKeeper, app.accountKeeper, app.stakingKeeper, &app.twasmKeeper, app.BaseApp.DeliverTx, encodingConfig.TxConfig, app.twasmKeeper.GetContractKeeper()),
 		auth.NewAppModule(appCodec, app.accountKeeper, authsims.RandomGenesisAccounts),
 		vesting.NewAppModule(app.accountKeeper, app.bankKeeper),
 		bank.NewAppModule(appCodec, app.bankKeeper, app.accountKeeper),

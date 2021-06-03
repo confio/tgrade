@@ -6,9 +6,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/confio/tgrade/x/poe"
 	poeclient "github.com/confio/tgrade/x/poe/client"
-	"github.com/confio/tgrade/x/poe/client/cli"
 	poetypes "github.com/confio/tgrade/x/poe/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -19,13 +17,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/spf13/cobra"
 	tmconfig "github.com/tendermint/tendermint/config"
 	tmos "github.com/tendermint/tendermint/libs/os"
@@ -248,26 +245,24 @@ func InitTestnet(
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: coins.Sort()})
 		genAccounts = append(genAccounts, authtypes.NewBaseAccount(addr, nil, 0, 0))
 
-		valTokens := sdk.TokensFromConsensusPower(100) // todo (Alex): should we make this an argument
-		createValCfg := stakingcli.TxCreateValidatorConfig{
-			Amount: sdk.NewCoin(stakingToken, valTokens).String(),
-			PubKey: sdk.MustBech32ifyPubKey(sdk.Bech32PubKeyTypeConsPub, valPubKeys[i]),
-		}
-		defaultPoEGenesis := poe.DefaultGenesisState()
-		_, registerMsg, err := cli.BuildRegisterValidatorMsg(clientCtx.WithFromAddress(addr), createValCfg, tx.Factory{}, defaultPoEGenesis.ValsetContractAddr, false)
+		valTokens := sdk.TokensFromConsensusPower(100)
+		createValMsg, err := poetypes.NewMsgCreateValidator(
+			sdk.ValAddress(addr),
+			valPubKeys[i],
+			sdk.NewCoin(stakingToken, valTokens),
+			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
+			stakingtypes.NewCommissionRates(sdk.OneDec(), sdk.OneDec(), sdk.OneDec()),
+			sdk.OneInt(),
+		)
 		if err != nil {
-			return sdkerrors.Wrap(err, "failed to build create-validator message")
-		}
-
-		_, stakeMsg, err := cli.BuildStakeValidatorMsg(clientCtx.WithFromAddress(addr), createValCfg, tx.Factory{}, defaultPoEGenesis.StakingContractAddr, false)
-		if err != nil {
-			return sdkerrors.Wrap(err, "failed to build stake validator message")
+			return err
 		}
 
 		txBuilder := clientCtx.TxConfig.NewTxBuilder()
-		if err := txBuilder.SetMsgs(registerMsg, stakeMsg); err != nil {
+		if err := txBuilder.SetMsgs(createValMsg); err != nil {
 			return err
 		}
+
 		txBuilder.SetMemo(memo)
 
 		txFactory := tx.Factory{}
@@ -346,7 +341,7 @@ func initGenFiles(
 			Weight:  uint64(len(genAccounts) - i), // unique weight
 		})
 	}
-	poeGenesisState.SystemAdminAddr = admin.String()
+	poeGenesisState.SystemAdminAddress = admin.String()
 	poeclient.SetGenesisStateInAppState(clientCtx.JSONMarshaler, appGenState, poeGenesisState)
 
 	appGenStateJSON, err := json.MarshalIndent(appGenState, "", "  ")

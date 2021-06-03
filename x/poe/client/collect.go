@@ -6,23 +6,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/confio/tgrade/x/poe/types"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	bankexported "github.com/cosmos/cosmos-sdk/x/bank/exported"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	cfg "github.com/tendermint/tendermint/config"
+	tmtypes "github.com/tendermint/tendermint/types"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
-
-	cfg "github.com/tendermint/tendermint/config"
-	tmtypes "github.com/tendermint/tendermint/types"
-
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	bankexported "github.com/cosmos/cosmos-sdk/x/bank/exported"
-	"github.com/cosmos/cosmos-sdk/x/genutil/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // GenAppStateFromConfig gets the genesis app state from the config
@@ -30,9 +27,9 @@ func GenAppStateFromConfig(
 	cdc codec.JSONMarshaler,
 	txEncodingConfig client.TxEncodingConfig,
 	config *cfg.Config,
-	initCfg types.InitConfig,
+	initCfg genutiltypes.InitConfig,
 	genDoc tmtypes.GenesisDoc,
-	genBalIterator types.GenesisBalancesIterator,
+	genBalIterator genutiltypes.GenesisBalancesIterator,
 ) (json.RawMessage, error) {
 
 	// process genesis transactions, else create default genesis.json
@@ -52,7 +49,7 @@ func GenAppStateFromConfig(
 	}
 
 	// create the app state
-	appGenesisState, err := types.GenesisStateFromGenDoc(genDoc)
+	appGenesisState, err := genutiltypes.GenesisStateFromGenDoc(genDoc)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +82,9 @@ func ExportGenesisFile(genDoc *tmtypes.GenesisDoc, genFile string) error {
 
 // CollectTxs processes and validates application's genesis Txs and returns
 // the list of appGenTxs, and persistent peers required to generate genesis.json.
-func CollectTxs(cdc codec.JSONMarshaler, txJSONDecoder sdk.TxDecoder, moniker, genTxsDir string, genDoc tmtypes.GenesisDoc, genBalIterator types.GenesisBalancesIterator) (appGenTxs []sdk.Tx, persistentPeers string, err error) {
+func CollectTxs(cdc codec.JSONMarshaler, txJSONDecoder sdk.TxDecoder, moniker, genTxsDir string,
+	genDoc tmtypes.GenesisDoc, genBalIterator genutiltypes.GenesisBalancesIterator,
+) (appGenTxs []sdk.Tx, persistentPeers string, err error) {
 	// prepare a map of all balances in genesis state to then validate
 	// against the validators addresses
 	var appState map[string]json.RawMessage
@@ -148,59 +147,54 @@ func CollectTxs(cdc codec.JSONMarshaler, txJSONDecoder sdk.TxDecoder, moniker, g
 
 		// genesis transactions must be single-message
 		msgs := genTx.GetMsgs()
-		if len(msgs) != 2 {
+		if len(msgs) != 1 {
 			return appGenTxs, persistentPeers, errors.New("each genesis transaction must provide a single genesis message")
 		}
 
-		msg := msgs[0].(*wasmtypes.MsgExecuteContract)
-		_ = msg.Sender // todo: check for duplicates
+		// TODO abstract out staking message validation back to staking
+		msg := msgs[0].(*types.MsgCreateValidator)
 
-		if false { // todo (alex): implement proper validation, old deactivated by this
-
-			// TODO abstract out staking message validation back to staking
-			msg := msgs[0].(*stakingtypes.MsgCreateValidator)
-
-			// validate delegator and validator addresses and funds against the accounts in the state
-			delAddr := msg.DelegatorAddress
-			valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
-			if err != nil {
-				return appGenTxs, persistentPeers, err
-			}
-
-			delBal, delOk := balancesMap[delAddr]
-			if !delOk {
-				_, file, no, ok := runtime.Caller(1)
-				if ok {
-					fmt.Printf("CollectTxs-1, called from %s#%d\n", file, no)
-				}
-
-				return appGenTxs, persistentPeers, fmt.Errorf("account %s balance not in genesis state: %+v", delAddr, balancesMap)
-			}
-
-			_, valOk := balancesMap[sdk.AccAddress(valAddr).String()]
-			if !valOk {
-				_, file, no, ok := runtime.Caller(1)
-				if ok {
-					fmt.Printf("CollectTxs-2, called from %s#%d - %s\n", file, no, sdk.AccAddress(msg.ValidatorAddress).String())
-				}
-				return appGenTxs, persistentPeers, fmt.Errorf("account %s balance not in genesis state: %+v", valAddr, balancesMap)
-			}
-
-			if delBal.GetCoins().AmountOf(msg.Value.Denom).LT(msg.Value.Amount) {
-				return appGenTxs, persistentPeers, fmt.Errorf(
-					"insufficient fund for delegation %v: %v < %v",
-					delBal.GetAddress().String(), delBal.GetCoins().AmountOf(msg.Value.Denom), msg.Value.Amount,
-				)
-			}
+		// validate delegator and validator addresses and funds against the accounts in the state
+		delAddr := msg.DelegatorAddress
+		valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
+		if err != nil {
+			return appGenTxs, persistentPeers, err
 		}
-		// todo (Alex): how can we identify the moniker?
+
+		delBal, delOk := balancesMap[delAddr]
+		if !delOk {
+			_, file, no, ok := runtime.Caller(1)
+			if ok {
+				fmt.Printf("CollectTxs-1, called from %s#%d\n", file, no)
+			}
+
+			return appGenTxs, persistentPeers, fmt.Errorf("account %s balance not in genesis state: %+v", delAddr, balancesMap)
+		}
+
+		_, valOk := balancesMap[sdk.AccAddress(valAddr).String()]
+		if !valOk {
+			_, file, no, ok := runtime.Caller(1)
+			if ok {
+				fmt.Printf("CollectTxs-2, called from %s#%d - %s\n", file, no, sdk.AccAddress(msg.ValidatorAddress).String())
+			}
+			return appGenTxs, persistentPeers, fmt.Errorf("account %s balance not in genesis state: %+v", valAddr, balancesMap)
+		}
+
+		if delBal.GetCoins().AmountOf(msg.Value.Denom).LT(msg.Value.Amount) {
+			return appGenTxs, persistentPeers, fmt.Errorf(
+				"insufficient fund for delegation %v: %v < %v",
+				delBal.GetAddress().String(), delBal.GetCoins().AmountOf(msg.Value.Denom), msg.Value.Amount,
+			)
+		}
+
 		// exclude itself from persistent peers
-		//if msg.Description.Moniker != moniker {
-		addressesIPs = append(addressesIPs, nodeAddrIP)
-		//}
+		if msg.Description.Moniker != moniker {
+			addressesIPs = append(addressesIPs, nodeAddrIP)
+		}
 	}
 
 	sort.Strings(addressesIPs)
 	persistentPeers = strings.Join(addressesIPs, ",")
+
 	return appGenTxs, persistentPeers, nil
 }

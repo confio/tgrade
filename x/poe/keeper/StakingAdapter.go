@@ -13,15 +13,14 @@ import (
 var _ wasmtypes.StakingKeeper = &StakingAdapter{}
 var _ wasmtypes.DistributionKeeper = &StakingAdapter{}
 
-type TWasmKeeper interface {
-}
-
 type StakingAdapter struct {
-	twasmKeeper TWasmKeeper
+	k              Keeper
+	contractKeeper wasmtypes.ContractOpsKeeper
 }
 
-func NewStakingAdapter(twasmKeeper TWasmKeeper) StakingAdapter {
-	return StakingAdapter{twasmKeeper: twasmKeeper}
+func NewStakingAdapter(k Keeper, contractKeeper wasmtypes.ContractOpsKeeper) StakingAdapter {
+	return StakingAdapter{k: k, contractKeeper: contractKeeper}
+
 }
 
 func (s StakingAdapter) BondDenom(ctx sdk.Context) (res string) {

@@ -5,16 +5,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	poeclient "github.com/confio/tgrade/x/poe/client"
-	poecontract "github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/twasm/contract"
-	"github.com/cosmos/cosmos-sdk/types/errors"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -30,13 +26,12 @@ import (
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	"github.com/cosmos/cosmos-sdk/x/genutil/types"
-	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
 )
 
 // GenTxCmd builds the application's gentx command.
 func GenTxCmd(mbm module.BasicManager, txEncCfg client.TxEncodingConfig, genBalIterator types.GenesisBalancesIterator, defaultNodeHome string) *cobra.Command {
 	ipDefault, _ := server.ExternalIP()
-	fsCreateValidator, defaultsDesc := stakingcli.CreateValidatorMsgFlagSet(ipDefault)
+	fsCreateValidator, defaultsDesc := CreateValidatorMsgFlagSet(ipDefault)
 
 	cmd := &cobra.Command{
 		Use:   "gentx [key_name] [amount]",
@@ -76,12 +71,12 @@ $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=o
 			}
 
 			// read --nodeID, if empty take it from priv_validator.json
-			if nodeIDString, _ := cmd.Flags().GetString(stakingcli.FlagNodeID); nodeIDString != "" {
+			if nodeIDString, _ := cmd.Flags().GetString(FlagNodeID); nodeIDString != "" {
 				nodeID = nodeIDString
 			}
 
 			// read --pubkey, if empty take it from priv_validator.json
-			if valPubKeyString, _ := cmd.Flags().GetString(stakingcli.FlagPubKey); valPubKeyString != "" {
+			if valPubKeyString, _ := cmd.Flags().GetString(FlagPubKey); valPubKeyString != "" {
 				valPubKey, err = sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeConsPub, valPubKeyString)
 				if err != nil {
 					return errors.Wrap(err, "failed to get consensus node public key")
@@ -97,7 +92,7 @@ $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=o
 			if err = json.Unmarshal(genDoc.AppState, &genesisState); err != nil {
 				return errors.Wrap(err, "failed to unmarshal genesis state")
 			}
-			poeGenesisState := poeclient.GetGenesisStateFromAppState(cdc, genesisState)
+
 			if err = mbm.ValidateGenesis(cdc, txEncCfg, genesisState); err != nil {
 				return errors.Wrap(err, "failed to validate genesis state")
 			}
@@ -111,12 +106,12 @@ $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=o
 			}
 
 			moniker := config.Moniker
-			if m, _ := cmd.Flags().GetString(stakingcli.FlagMoniker); m != "" {
+			if m, _ := cmd.Flags().GetString(FlagMoniker); m != "" {
 				moniker = m
 			}
 
 			// set flags for creating a gentx
-			createValCfg, err := stakingcli.PrepareConfigForTxCreateValidator(cmd.Flags(), moniker, nodeID, genDoc.ChainID, valPubKey)
+			createValCfg, err := PrepareConfigForTxCreateValidator(cmd.Flags(), moniker, nodeID, genDoc.ChainID, valPubKey)
 			if err != nil {
 				return errors.Wrap(err, "error creating configuration to create validator msg")
 			}
@@ -151,27 +146,23 @@ $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=o
 			// config file instead of so many flags.
 			// ref: https://github.com/cosmos/cosmos-sdk/issues/8177
 			createValCfg.Amount = amount
-			//const engagementContractAddr = "tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy" // todo: this is the 2nd contract. better read address from genesis.
+
 			// create a 'create-validator' message
-			txBldr, registerMsg, err := BuildRegisterValidatorMsg(clientCtx, createValCfg, txFactory, poeGenesisState.ValsetContractAddr, true)
+			txBldr, msg, err := BuildCreateValidatorMsg(clientCtx, createValCfg, txFactory, true)
 			if err != nil {
 				return errors.Wrap(err, "failed to build create-validator message")
-			}
-			txBldr, stakeMsg, err := BuildStakeValidatorMsg(clientCtx, createValCfg, txBldr, poeGenesisState.StakingContractAddr, true)
-			if err != nil {
-				return errors.Wrap(err, "failed to build stake validator message")
 			}
 
 			if key.GetType() == keyring.TypeOffline || key.GetType() == keyring.TypeMulti {
 				cmd.PrintErrln("Offline key passed in. Use `tx sign` command to sign.")
-				return authclient.PrintUnsignedStdTx(txBldr, clientCtx, []sdk.Msg{registerMsg, stakeMsg})
+				return authclient.PrintUnsignedStdTx(txBldr, clientCtx, []sdk.Msg{msg})
 			}
 
 			// write the unsigned transaction to the buffer
 			w := bytes.NewBuffer([]byte{})
 			clientCtx = clientCtx.WithOutput(w)
 
-			if err = authclient.PrintUnsignedStdTx(txBldr, clientCtx, []sdk.Msg{registerMsg, stakeMsg}); err != nil {
+			if err = authclient.PrintUnsignedStdTx(txBldr, clientCtx, []sdk.Msg{msg}); err != nil {
 				return errors.Wrap(err, "failed to print unsigned std tx")
 			}
 
@@ -216,89 +207,6 @@ $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=o
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
-}
-
-func BuildRegisterValidatorMsg(clientCtx client.Context, config stakingcli.TxCreateValidatorConfig, txBldr tx.Factory, contractAddr string, generateOnly bool) (tx.Factory, sdk.Msg, error) {
-	valAddr := clientCtx.GetFromAddress()
-	pkStr := config.PubKey
-
-	pk, err := sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeConsPub, pkStr)
-	if err != nil {
-		return txBldr, nil, err
-	}
-
-	if pk.Type() != "ed25519" { // todo (Alex): revisit
-		return txBldr, nil, errors.Wrap(wasmtypes.ErrInvalid, "only ed25519 supported currently")
-	}
-	stakeExecute := poecontract.TG4ValsetExecute{
-		RegisterValidatorKey: poecontract.RegisterValidatorKey{
-			PubKey: contract.ValidatorPubkey{
-				Ed25519: pk.Bytes(),
-			},
-		},
-	}
-	if err != nil {
-		return txBldr, nil, errors.Wrap(err, "serialize payload msg")
-	}
-	payloadBz, err := json.Marshal(&stakeExecute)
-	msg := &wasmtypes.MsgExecuteContract{
-		Sender:   valAddr.String(),
-		Contract: contractAddr,
-		Msg:      payloadBz,
-	}
-
-	if err != nil {
-		return txBldr, msg, err
-	}
-	if generateOnly {
-		ip := config.IP
-		nodeID := config.NodeID
-
-		if nodeID != "" && ip != "" {
-			txBldr = txBldr.WithMemo(fmt.Sprintf("%s@%s:26656", nodeID, ip))
-		}
-	}
-
-	return txBldr, msg, nil
-}
-
-func BuildStakeValidatorMsg(clientCtx client.Context, config stakingcli.TxCreateValidatorConfig, txBldr tx.Factory, stakingContractAddr string, generateOnly bool) (tx.Factory, sdk.Msg, error) {
-	amounstStr := config.Amount
-	amount, err := sdk.ParseCoinNormalized(amounstStr)
-
-	if err != nil {
-		return txBldr, nil, err
-	}
-
-	valAddr := clientCtx.GetFromAddress()
-
-	stakeExecute := poecontract.TG4StakeExecute{
-		Bond: &struct{}{},
-	}
-	if err != nil {
-		return txBldr, nil, errors.Wrap(err, "serialize payload msg")
-	}
-	payloadBz, err := json.Marshal(&stakeExecute)
-	msg := &wasmtypes.MsgExecuteContract{
-		Sender:   valAddr.String(),
-		Contract: stakingContractAddr,
-		Funds:    sdk.NewCoins(amount),
-		Msg:      payloadBz,
-	}
-
-	if err != nil {
-		return txBldr, msg, err
-	}
-	if generateOnly {
-		ip := config.IP
-		nodeID := config.NodeID
-
-		if nodeID != "" && ip != "" {
-			txBldr = txBldr.WithMemo(fmt.Sprintf("%s@%s:26656", nodeID, ip))
-		}
-	}
-
-	return txBldr, msg, nil
 }
 
 func makeOutputFilepath(rootDir, nodeID string) (string, error) {

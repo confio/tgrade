@@ -6,6 +6,7 @@ import (
 	"fmt"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -21,13 +22,18 @@ var (
 	tg4Mixer []byte
 	//go:embed contract/tgrade_valset.wasm
 	tgValset []byte
+	//go:embed contract/version.txt
+	contractVersion []byte
 )
 
 // bootstrapPoEContracts set up all PoE contracts:
 //
-func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, gs types.GenesisState) error {
+func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper keeper.Keeper, gs types.GenesisState) error {
+	if !gs.SeedContracts {
+		return nil
+	}
 	tg4EngagementInitMsg := contract.TG4GroupInitMsg{
-		Admin:    gs.SystemAdminAddr,
+		Admin:    gs.SystemAdminAddress,
 		Members:  make([]contract.TG4Member, len(gs.Engagement)),
 		Preauths: 1,
 	}
@@ -37,7 +43,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 			Weight: v.Weight,
 		}
 	}
-	systemAdmin, err := sdk.AccAddressFromBech32(gs.SystemAdminAddr)
+	systemAdmin, err := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	if err != nil {
 		panic(fmt.Sprintf("admin: %s", err))
 	}
@@ -50,15 +56,13 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 group")
 	}
-	if gs.EngagementContractAddr != engagementContractAddr.String() { // ensure we got the right address
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "engagement contract addr should be %s but was %s on", gs.EngagementContractAddr, engagementContractAddr)
-	}
+	poeKeeper.SetPoeContractAddress(ctx, types.PoEContractTypes_ENGAGEMENT, engagementContractAddr)
 	if err := k.PinCode(ctx, codeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tg4 group contract")
 	}
 
 	tg4StakerInitMsg := contract.TG4StakeInitMsg{
-		Admin:           gs.SystemAdminAddr,
+		Admin:           gs.SystemAdminAddress,
 		Denom:           contract.Denom{Native: "utgd"},
 		MinBond:         "1",
 		TokensPerWeight: "1",
@@ -75,9 +79,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 stake")
 	}
-	if gs.StakingContractAddr != stakersContractAddr.String() { // ensure we got the right address
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "stakers contract addr should be %s but was %s on", gs.StakingContractAddr, stakersContractAddr)
-	}
+	poeKeeper.SetPoeContractAddress(ctx, types.PoEContractTypes_STAKING, stakersContractAddr)
 	if err := k.PinCode(ctx, codeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tg4 stake contract")
 	}
@@ -94,9 +96,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 mixer")
 	}
-	if gs.MixerContractAddr != mixerContractAddr.String() {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "mixer contract addr should be %s but was %s on", gs.MixerContractAddr, mixerContractAddr)
-	}
+	poeKeeper.SetPoeContractAddress(ctx, types.PoEContractTypes_MIXER, mixerContractAddr)
 
 	if err := k.PinCode(ctx, codeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tg4 mixer contract")
@@ -117,10 +117,8 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate valset")
 	}
+	poeKeeper.SetPoeContractAddress(ctx, types.PoEContractTypes_VALSET, valsetContractAddr)
 
-	if gs.ValsetContractAddr != valsetContractAddr.String() { // ensure we got the right address
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "valset contract addr should be %s but was %s on", gs.ValsetContractAddr, stakersContractAddr)
-	}
 	if err := tk.SetPrivileged(ctx, valsetContractAddr); err != nil {
 		return sdkerrors.Wrap(err, "grant privileges to valset contract")
 	}

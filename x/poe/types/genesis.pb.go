@@ -26,16 +26,50 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+type PoEContractTypes int32
+
+const (
+	PoEContractTypes_UNDEFINED  PoEContractTypes = 0
+	PoEContractTypes_STAKING    PoEContractTypes = 1
+	PoEContractTypes_VALSET     PoEContractTypes = 2
+	PoEContractTypes_ENGAGEMENT PoEContractTypes = 3
+	PoEContractTypes_MIXER      PoEContractTypes = 4
+)
+
+var PoEContractTypes_name = map[int32]string{
+	0: "UNDEFINED",
+	1: "STAKING",
+	2: "VALSET",
+	3: "ENGAGEMENT",
+	4: "MIXER",
+}
+
+var PoEContractTypes_value = map[string]int32{
+	"UNDEFINED":  0,
+	"STAKING":    1,
+	"VALSET":     2,
+	"ENGAGEMENT": 3,
+	"MIXER":      4,
+}
+
+func (x PoEContractTypes) String() string {
+	return proto.EnumName(PoEContractTypes_name, int32(x))
+}
+
+func (PoEContractTypes) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_a165193bab811d9d, []int{0}
+}
+
 // GenesisState - initial state of module
 type GenesisState struct {
+	// SeedContracts when enabled stores and instantiates the Proof of Engagement
+	// contracts on the chain.
+	SeedContracts bool `protobuf:"varint,1,opt,name=seed_contracts,json=seedContracts,proto3" json:"seed_contracts,omitempty"`
 	// gen_txs defines the genesis transactions.
-	GenTxs                 []encoding_json.RawMessage `protobuf:"bytes,1,rep,name=gen_txs,json=genTxs,proto3,casttype=encoding/json.RawMessage" json:"gentxs" yaml:"gentxs"`
-	SystemAdminAddr        string                     `protobuf:"bytes,2,opt,name=system_admin_addr,json=systemAdminAddr,proto3" json:"system_admin_addr,omitempty"`
-	StakingContractAddr    string                     `protobuf:"bytes,3,opt,name=staking_contract_addr,json=stakingContractAddr,proto3" json:"staking_contract_addr,omitempty"`
-	ValsetContractAddr     string                     `protobuf:"bytes,4,opt,name=valset_contract_addr,json=valsetContractAddr,proto3" json:"valset_contract_addr,omitempty"`
-	EngagementContractAddr string                     `protobuf:"bytes,5,opt,name=engagement_contract_addr,json=engagementContractAddr,proto3" json:"engagement_contract_addr,omitempty"`
-	MixerContractAddr      string                     `protobuf:"bytes,6,opt,name=mixer_contract_addr,json=mixerContractAddr,proto3" json:"mixer_contract_addr,omitempty"`
-	Engagement             []TG4Members               `protobuf:"bytes,7,rep,name=engagement,proto3" json:"engagement,omitempty"`
+	GenTxs             []encoding_json.RawMessage `protobuf:"bytes,2,rep,name=gen_txs,json=genTxs,proto3,casttype=encoding/json.RawMessage" json:"gentxs" yaml:"gentxs"`
+	SystemAdminAddress string                     `protobuf:"bytes,3,opt,name=system_admin_address,json=systemAdminAddress,proto3" json:"system_admin_address,omitempty"`
+	Contracts          []*PoEContract             `protobuf:"bytes,4,rep,name=contracts,proto3" json:"contracts,omitempty"`
+	Engagement         []TG4Members               `protobuf:"bytes,5,rep,name=engagement,proto3" json:"engagement,omitempty"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
@@ -71,6 +105,13 @@ func (m *GenesisState) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GenesisState proto.InternalMessageInfo
 
+func (m *GenesisState) GetSeedContracts() bool {
+	if m != nil {
+		return m.SeedContracts
+	}
+	return false
+}
+
 func (m *GenesisState) GetGenTxs() []encoding_json.RawMessage {
 	if m != nil {
 		return m.GenTxs
@@ -78,39 +119,18 @@ func (m *GenesisState) GetGenTxs() []encoding_json.RawMessage {
 	return nil
 }
 
-func (m *GenesisState) GetSystemAdminAddr() string {
+func (m *GenesisState) GetSystemAdminAddress() string {
 	if m != nil {
-		return m.SystemAdminAddr
+		return m.SystemAdminAddress
 	}
 	return ""
 }
 
-func (m *GenesisState) GetStakingContractAddr() string {
+func (m *GenesisState) GetContracts() []*PoEContract {
 	if m != nil {
-		return m.StakingContractAddr
+		return m.Contracts
 	}
-	return ""
-}
-
-func (m *GenesisState) GetValsetContractAddr() string {
-	if m != nil {
-		return m.ValsetContractAddr
-	}
-	return ""
-}
-
-func (m *GenesisState) GetEngagementContractAddr() string {
-	if m != nil {
-		return m.EngagementContractAddr
-	}
-	return ""
-}
-
-func (m *GenesisState) GetMixerContractAddr() string {
-	if m != nil {
-		return m.MixerContractAddr
-	}
-	return ""
+	return nil
 }
 
 func (m *GenesisState) GetEngagement() []TG4Members {
@@ -118,6 +138,59 @@ func (m *GenesisState) GetEngagement() []TG4Members {
 		return m.Engagement
 	}
 	return nil
+}
+
+type PoEContract struct {
+	ContractType *PoEContract `protobuf:"bytes,1,opt,name=contract_type,json=contractType,proto3" json:"contract_type,omitempty"`
+	// Address is the bech32 address string
+	Address string `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
+}
+
+func (m *PoEContract) Reset()         { *m = PoEContract{} }
+func (m *PoEContract) String() string { return proto.CompactTextString(m) }
+func (*PoEContract) ProtoMessage()    {}
+func (*PoEContract) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a165193bab811d9d, []int{1}
+}
+func (m *PoEContract) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PoEContract) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PoEContract.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *PoEContract) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PoEContract.Merge(m, src)
+}
+func (m *PoEContract) XXX_Size() int {
+	return m.Size()
+}
+func (m *PoEContract) XXX_DiscardUnknown() {
+	xxx_messageInfo_PoEContract.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PoEContract proto.InternalMessageInfo
+
+func (m *PoEContract) GetContractType() *PoEContract {
+	if m != nil {
+		return m.ContractType
+	}
+	return nil
+}
+
+func (m *PoEContract) GetAddress() string {
+	if m != nil {
+		return m.Address
+	}
+	return ""
 }
 
 type TG4Members struct {
@@ -129,7 +202,7 @@ func (m *TG4Members) Reset()         { *m = TG4Members{} }
 func (m *TG4Members) String() string { return proto.CompactTextString(m) }
 func (*TG4Members) ProtoMessage()    {}
 func (*TG4Members) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a165193bab811d9d, []int{1}
+	return fileDescriptor_a165193bab811d9d, []int{2}
 }
 func (m *TG4Members) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -173,44 +246,51 @@ func (m *TG4Members) GetWeight() uint64 {
 }
 
 func init() {
+	proto.RegisterEnum("confio.poe.v1beta1.PoEContractTypes", PoEContractTypes_name, PoEContractTypes_value)
 	proto.RegisterType((*GenesisState)(nil), "confio.poe.v1beta1.GenesisState")
+	proto.RegisterType((*PoEContract)(nil), "confio.poe.v1beta1.PoEContract")
 	proto.RegisterType((*TG4Members)(nil), "confio.poe.v1beta1.TG4Members")
 }
 
 func init() { proto.RegisterFile("confio/poe/v1beta1/genesis.proto", fileDescriptor_a165193bab811d9d) }
 
 var fileDescriptor_a165193bab811d9d = []byte{
-	// 470 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x92, 0x4f, 0x6b, 0xd4, 0x40,
-	0x18, 0xc6, 0x37, 0x6e, 0xdd, 0xb5, 0x63, 0x45, 0x9a, 0xae, 0x12, 0x8a, 0x24, 0x4b, 0xf4, 0xb0,
-	0x88, 0x24, 0xb6, 0x0a, 0x8a, 0x07, 0xa1, 0xf1, 0xd0, 0x53, 0x41, 0xe2, 0x9e, 0x44, 0x58, 0x26,
-	0xc9, 0xeb, 0x74, 0xb4, 0x33, 0x13, 0xf2, 0x8e, 0xdd, 0xec, 0xb7, 0xf0, 0xf3, 0xf8, 0x09, 0x7a,
-	0xec, 0xd1, 0x53, 0x90, 0xdd, 0xdb, 0x1e, 0x3d, 0x7a, 0x92, 0x4c, 0x22, 0x71, 0x57, 0x2f, 0xf9,
-	0x33, 0xbf, 0xe7, 0xf7, 0x26, 0xf0, 0xbc, 0x64, 0x9c, 0x2a, 0xf9, 0x91, 0xab, 0x30, 0x57, 0x10,
-	0x5e, 0x1e, 0x25, 0xa0, 0xe9, 0x51, 0xc8, 0x40, 0x02, 0x72, 0x0c, 0xf2, 0x42, 0x69, 0x65, 0xdb,
-	0x4d, 0x22, 0xc8, 0x15, 0x04, 0x6d, 0xe2, 0x70, 0xc4, 0x14, 0x53, 0x06, 0x87, 0xf5, 0x53, 0x93,
-	0x3c, 0x74, 0x53, 0x85, 0x42, 0x61, 0x98, 0x50, 0xec, 0x86, 0xa5, 0x8a, 0xcb, 0x96, 0x3f, 0xac,
-	0xf9, 0x9c, 0xa2, 0x08, 0xcd, 0xe5, 0xbf, 0x9f, 0xf3, 0xbf, 0xf5, 0xc9, 0xde, 0x69, 0x73, 0xf2,
-	0x4e, 0x53, 0x0d, 0xf6, 0x5b, 0x32, 0x64, 0x20, 0x67, 0xba, 0x44, 0xc7, 0x1a, 0xf7, 0x27, 0x7b,
-	0xd1, 0x8b, 0x75, 0xe5, 0x0d, 0x18, 0x48, 0x5d, 0xe2, 0xcf, 0xca, 0xbb, 0xb3, 0xa0, 0xe2, 0xe2,
-	0x95, 0xdf, 0xbc, 0xfb, 0xbf, 0x2a, 0xcf, 0x01, 0x99, 0xaa, 0x8c, 0x4b, 0x16, 0x7e, 0x42, 0x25,
-	0x83, 0x98, 0xce, 0xcf, 0x00, 0x91, 0x32, 0x88, 0x6b, 0x69, 0x5a, 0xa2, 0xfd, 0x98, 0xec, 0xe3,
-	0x02, 0x35, 0x88, 0x19, 0xcd, 0x04, 0x97, 0x33, 0x9a, 0x65, 0x85, 0x73, 0x63, 0x6c, 0x4d, 0x76,
-	0xe3, 0xbb, 0x0d, 0x38, 0xa9, 0xcf, 0x4f, 0xb2, 0xac, 0xb0, 0x8f, 0xc9, 0x3d, 0xd4, 0xf4, 0x33,
-	0x97, 0x6c, 0x96, 0x2a, 0xa9, 0x0b, 0x9a, 0xea, 0x26, 0xdf, 0x37, 0xf9, 0x83, 0x16, 0xbe, 0x69,
-	0x99, 0x71, 0x9e, 0x92, 0xd1, 0x25, 0xbd, 0x40, 0xd0, 0x5b, 0xca, 0x8e, 0x51, 0xec, 0x86, 0x6d,
-	0x18, 0x2f, 0x89, 0x03, 0x92, 0x51, 0x06, 0x02, 0xe4, 0xb6, 0x75, 0xd3, 0x58, 0xf7, 0x3b, 0xbe,
-	0x61, 0x06, 0xe4, 0x40, 0xf0, 0x12, 0x8a, 0x2d, 0x69, 0x60, 0xa4, 0x7d, 0x83, 0x36, 0xf2, 0x1f,
-	0x08, 0xe9, 0x26, 0x39, 0xc3, 0x71, 0x7f, 0x72, 0xfb, 0xd8, 0x0d, 0xfe, 0xad, 0x38, 0x98, 0x9e,
-	0x3e, 0x3f, 0x03, 0x91, 0x40, 0x81, 0xd1, 0x83, 0xab, 0xca, 0xeb, 0xad, 0x2b, 0x6f, 0xd4, 0x99,
-	0x4f, 0x94, 0xe0, 0x1a, 0x44, 0xae, 0x17, 0xf1, 0x5f, 0xf3, 0xfc, 0x29, 0x21, 0x9d, 0x67, 0xfb,
-	0x64, 0x58, 0xff, 0x0c, 0x60, 0xdd, 0x9c, 0x35, 0xd9, 0x8d, 0x6e, 0xad, 0x2b, 0x6f, 0xa7, 0x6e,
-	0x25, 0xfe, 0x03, 0x6c, 0x9f, 0x0c, 0xe6, 0xc0, 0xd9, 0xb9, 0x36, 0x05, 0xec, 0x44, 0xa4, 0x2e,
-	0xb7, 0x39, 0x89, 0xdb, 0x7b, 0xf4, 0xfa, 0x6a, 0xe9, 0x5a, 0xd7, 0x4b, 0xd7, 0xfa, 0xb1, 0x74,
-	0xad, 0xaf, 0x2b, 0xb7, 0x77, 0xbd, 0x72, 0x7b, 0xdf, 0x57, 0x6e, 0xef, 0xfd, 0x23, 0xc6, 0xf5,
-	0xf9, 0x97, 0x24, 0x48, 0x95, 0x08, 0xdb, 0x45, 0xd6, 0xac, 0xa0, 0x19, 0x84, 0xa5, 0xd9, 0x68,
-	0xbd, 0xc8, 0x01, 0x93, 0x81, 0xd9, 0xac, 0x67, 0xbf, 0x03, 0x00, 0x00, 0xff, 0xff, 0xfb, 0xcc,
-	0x6b, 0xbf, 0xec, 0x02, 0x00, 0x00,
+	// 546 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0xc1, 0x8b, 0xd3, 0x4e,
+	0x14, 0x6e, 0xda, 0x6e, 0x77, 0x3b, 0xbb, 0x5d, 0xc2, 0xb0, 0x87, 0xb0, 0xfc, 0x48, 0x4a, 0x7e,
+	0x0a, 0x45, 0x24, 0x71, 0x55, 0x10, 0x04, 0x85, 0xd6, 0x8d, 0xa5, 0x68, 0xcb, 0x92, 0x66, 0x45,
+	0x44, 0x28, 0xd3, 0xe4, 0x39, 0x1b, 0x31, 0x33, 0xa1, 0x33, 0xda, 0xf6, 0xbf, 0xf0, 0xcf, 0xda,
+	0xe3, 0x9e, 0xc4, 0x53, 0x90, 0xf6, 0xd6, 0xa3, 0x47, 0x4f, 0x92, 0xa4, 0x31, 0x05, 0xf7, 0xe0,
+	0x25, 0xc9, 0xbc, 0xef, 0x7d, 0xef, 0xfb, 0xf8, 0x32, 0x0f, 0xb5, 0x7d, 0xce, 0x3e, 0x84, 0xdc,
+	0x8e, 0x39, 0xd8, 0x5f, 0xce, 0xa6, 0x20, 0xc9, 0x99, 0x4d, 0x81, 0x81, 0x08, 0x85, 0x15, 0xcf,
+	0xb8, 0xe4, 0x18, 0xe7, 0x1d, 0x56, 0xcc, 0xc1, 0xda, 0x76, 0x9c, 0x9e, 0x50, 0x4e, 0x79, 0x06,
+	0xdb, 0xe9, 0x57, 0xde, 0x79, 0xaa, 0xfb, 0x5c, 0x44, 0x5c, 0xd8, 0x53, 0x22, 0xca, 0x61, 0x3e,
+	0x0f, 0xd9, 0x16, 0xff, 0x3f, 0xc5, 0xe7, 0x44, 0x44, 0x76, 0xf6, 0xb8, 0x55, 0xce, 0xfc, 0x56,
+	0x45, 0x47, 0xfd, 0xbc, 0x32, 0x96, 0x44, 0x02, 0xbe, 0x8b, 0x8e, 0x05, 0x40, 0x30, 0xf1, 0x39,
+	0x93, 0x33, 0xe2, 0x4b, 0xa1, 0x29, 0x6d, 0xa5, 0x73, 0xe0, 0xb6, 0xd2, 0xea, 0x8b, 0xa2, 0x88,
+	0x2f, 0xd0, 0x3e, 0x05, 0x36, 0x91, 0x0b, 0xa1, 0x55, 0xdb, 0xb5, 0xce, 0x51, 0xef, 0xc9, 0x26,
+	0x31, 0x1a, 0x14, 0x98, 0x5c, 0x88, 0x9f, 0x89, 0xd1, 0x5a, 0x92, 0xe8, 0xd3, 0x53, 0x33, 0x3f,
+	0x9b, 0xbf, 0x12, 0x43, 0x03, 0xe6, 0xf3, 0x20, 0x64, 0xd4, 0xfe, 0x28, 0x38, 0xb3, 0x5c, 0x32,
+	0x1f, 0x82, 0x10, 0x84, 0x82, 0x9b, 0x92, 0xbc, 0x85, 0xc0, 0x0f, 0xd0, 0x89, 0x58, 0x0a, 0x09,
+	0xd1, 0x84, 0x04, 0x51, 0xc8, 0x26, 0x24, 0x08, 0x66, 0x20, 0x84, 0x56, 0x6b, 0x2b, 0x9d, 0xa6,
+	0x8b, 0x73, 0xac, 0x9b, 0x42, 0xdd, 0x1c, 0xc1, 0xcf, 0x50, 0xb3, 0x74, 0x59, 0x6f, 0xd7, 0x3a,
+	0x87, 0x0f, 0x0d, 0xeb, 0xef, 0xf8, 0xac, 0x0b, 0xee, 0x14, 0xc6, 0xdd, 0x92, 0x81, 0xdf, 0x23,
+	0x04, 0x8c, 0x12, 0x0a, 0x11, 0x30, 0xa9, 0xed, 0x65, 0x7c, 0xfd, 0x36, 0xbe, 0xd7, 0x7f, 0x3c,
+	0x84, 0x68, 0x0a, 0x33, 0xd1, 0xfb, 0xef, 0x3a, 0x31, 0x2a, 0x9b, 0xc4, 0x38, 0x29, 0x99, 0xf7,
+	0x79, 0x14, 0x4a, 0x88, 0x62, 0xb9, 0x74, 0x77, 0xe6, 0x99, 0x11, 0x3a, 0xdc, 0xd1, 0xc5, 0xe7,
+	0xa8, 0x55, 0x28, 0x4f, 0xe4, 0x32, 0x86, 0x2c, 0xd5, 0x7f, 0xf0, 0x7b, 0x54, 0xb0, 0xbc, 0x65,
+	0x0c, 0x58, 0x43, 0xfb, 0x45, 0x2c, 0xd5, 0x2c, 0x96, 0xe2, 0x68, 0x7a, 0x08, 0x95, 0x36, 0xb1,
+	0x59, 0xf6, 0xa5, 0x3a, 0xcd, 0xde, 0xc1, 0x26, 0x31, 0xea, 0x69, 0xf2, 0x7f, 0x18, 0xd8, 0x44,
+	0x8d, 0x39, 0x84, 0xf4, 0x4a, 0x66, 0xa3, 0xea, 0x3d, 0x94, 0xfe, 0xc0, 0xbc, 0xe2, 0x6e, 0xdf,
+	0xf7, 0x2e, 0x91, 0xba, 0x63, 0x26, 0xb5, 0x20, 0x70, 0x0b, 0x35, 0x2f, 0x47, 0xe7, 0xce, 0xcb,
+	0xc1, 0xc8, 0x39, 0x57, 0x2b, 0xf8, 0x10, 0xed, 0x8f, 0xbd, 0xee, 0xab, 0xc1, 0xa8, 0xaf, 0x2a,
+	0x18, 0xa1, 0xc6, 0x9b, 0xee, 0xeb, 0xb1, 0xe3, 0xa9, 0x55, 0x7c, 0x8c, 0x90, 0x33, 0xea, 0x77,
+	0xfb, 0xce, 0xd0, 0x19, 0x79, 0x6a, 0x0d, 0x37, 0xd1, 0xde, 0x70, 0xf0, 0xd6, 0x71, 0xd5, 0x7a,
+	0xef, 0xf9, 0xf5, 0x4a, 0x57, 0x6e, 0x56, 0xba, 0xf2, 0x63, 0xa5, 0x2b, 0x5f, 0xd7, 0x7a, 0xe5,
+	0x66, 0xad, 0x57, 0xbe, 0xaf, 0xf5, 0xca, 0xbb, 0x3b, 0x34, 0x94, 0x57, 0x9f, 0xa7, 0x96, 0xcf,
+	0x23, 0x7b, 0xbb, 0x2a, 0x92, 0xce, 0x48, 0x00, 0xf6, 0x22, 0xdb, 0x99, 0x34, 0x3a, 0x31, 0x6d,
+	0x64, 0x77, 0xf7, 0xd1, 0xef, 0x00, 0x00, 0x00, 0xff, 0xff, 0xaf, 0x97, 0x9c, 0x93, 0x4e, 0x03,
+	0x00, 0x00,
 }
 
 func (m *GenesisState) Marshal() (dAtA []byte, err error) {
@@ -244,43 +324,29 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintGenesis(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x3a
+			dAtA[i] = 0x2a
 		}
 	}
-	if len(m.MixerContractAddr) > 0 {
-		i -= len(m.MixerContractAddr)
-		copy(dAtA[i:], m.MixerContractAddr)
-		i = encodeVarintGenesis(dAtA, i, uint64(len(m.MixerContractAddr)))
-		i--
-		dAtA[i] = 0x32
+	if len(m.Contracts) > 0 {
+		for iNdEx := len(m.Contracts) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Contracts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
 	}
-	if len(m.EngagementContractAddr) > 0 {
-		i -= len(m.EngagementContractAddr)
-		copy(dAtA[i:], m.EngagementContractAddr)
-		i = encodeVarintGenesis(dAtA, i, uint64(len(m.EngagementContractAddr)))
-		i--
-		dAtA[i] = 0x2a
-	}
-	if len(m.ValsetContractAddr) > 0 {
-		i -= len(m.ValsetContractAddr)
-		copy(dAtA[i:], m.ValsetContractAddr)
-		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ValsetContractAddr)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if len(m.StakingContractAddr) > 0 {
-		i -= len(m.StakingContractAddr)
-		copy(dAtA[i:], m.StakingContractAddr)
-		i = encodeVarintGenesis(dAtA, i, uint64(len(m.StakingContractAddr)))
+	if len(m.SystemAdminAddress) > 0 {
+		i -= len(m.SystemAdminAddress)
+		copy(dAtA[i:], m.SystemAdminAddress)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.SystemAdminAddress)))
 		i--
 		dAtA[i] = 0x1a
-	}
-	if len(m.SystemAdminAddr) > 0 {
-		i -= len(m.SystemAdminAddr)
-		copy(dAtA[i:], m.SystemAdminAddr)
-		i = encodeVarintGenesis(dAtA, i, uint64(len(m.SystemAdminAddr)))
-		i--
-		dAtA[i] = 0x12
 	}
 	if len(m.GenTxs) > 0 {
 		for iNdEx := len(m.GenTxs) - 1; iNdEx >= 0; iNdEx-- {
@@ -288,8 +354,60 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			copy(dAtA[i:], m.GenTxs[iNdEx])
 			i = encodeVarintGenesis(dAtA, i, uint64(len(m.GenTxs[iNdEx])))
 			i--
-			dAtA[i] = 0xa
+			dAtA[i] = 0x12
 		}
+	}
+	if m.SeedContracts {
+		i--
+		if m.SeedContracts {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *PoEContract) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PoEContract) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *PoEContract) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Address) > 0 {
+		i -= len(m.Address)
+		copy(dAtA[i:], m.Address)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.Address)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ContractType != nil {
+		{
+			size, err := m.ContractType.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenesis(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -346,37 +464,47 @@ func (m *GenesisState) Size() (n int) {
 	}
 	var l int
 	_ = l
+	if m.SeedContracts {
+		n += 2
+	}
 	if len(m.GenTxs) > 0 {
 		for _, b := range m.GenTxs {
 			l = len(b)
 			n += 1 + l + sovGenesis(uint64(l))
 		}
 	}
-	l = len(m.SystemAdminAddr)
+	l = len(m.SystemAdminAddress)
 	if l > 0 {
 		n += 1 + l + sovGenesis(uint64(l))
 	}
-	l = len(m.StakingContractAddr)
-	if l > 0 {
-		n += 1 + l + sovGenesis(uint64(l))
-	}
-	l = len(m.ValsetContractAddr)
-	if l > 0 {
-		n += 1 + l + sovGenesis(uint64(l))
-	}
-	l = len(m.EngagementContractAddr)
-	if l > 0 {
-		n += 1 + l + sovGenesis(uint64(l))
-	}
-	l = len(m.MixerContractAddr)
-	if l > 0 {
-		n += 1 + l + sovGenesis(uint64(l))
+	if len(m.Contracts) > 0 {
+		for _, e := range m.Contracts {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
 	}
 	if len(m.Engagement) > 0 {
 		for _, e := range m.Engagement {
 			l = e.Size()
 			n += 1 + l + sovGenesis(uint64(l))
 		}
+	}
+	return n
+}
+
+func (m *PoEContract) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ContractType != nil {
+		l = m.ContractType.Size()
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = len(m.Address)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
 	}
 	return n
 }
@@ -433,6 +561,26 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SeedContracts", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.SeedContracts = bool(v != 0)
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field GenTxs", wireType)
 			}
@@ -464,41 +612,9 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			m.GenTxs = append(m.GenTxs, make([]byte, postIndex-iNdEx))
 			copy(m.GenTxs[len(m.GenTxs)-1], dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SystemAdminAddr", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenesis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenesis
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenesis
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.SystemAdminAddr = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StakingContractAddr", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SystemAdminAddress", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -526,13 +642,13 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.StakingContractAddr = string(dAtA[iNdEx:postIndex])
+			m.SystemAdminAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ValsetContractAddr", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Contracts", wireType)
 			}
-			var stringLen uint64
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowGenesis
@@ -542,89 +658,27 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthGenesis
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthGenesis
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ValsetContractAddr = string(dAtA[iNdEx:postIndex])
+			m.Contracts = append(m.Contracts, &PoEContract{})
+			if err := m.Contracts[len(m.Contracts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EngagementContractAddr", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenesis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenesis
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenesis
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.EngagementContractAddr = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MixerContractAddr", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenesis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenesis
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenesis
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.MixerContractAddr = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 7:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Engagement", wireType)
 			}
@@ -657,6 +711,124 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			if err := m.Engagement[len(m.Engagement)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PoEContract) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PoEContract: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PoEContract: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ContractType", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ContractType == nil {
+				m.ContractType = &PoEContract{}
+			}
+			if err := m.ContractType.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Address = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

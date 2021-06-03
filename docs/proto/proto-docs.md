@@ -10,7 +10,16 @@
   
 - [confio/poe/v1beta1/genesis.proto](#confio/poe/v1beta1/genesis.proto)
     - [GenesisState](#confio.poe.v1beta1.GenesisState)
+    - [PoEContract](#confio.poe.v1beta1.PoEContract)
     - [TG4Members](#confio.poe.v1beta1.TG4Members)
+  
+    - [PoEContractTypes](#confio.poe.v1beta1.PoEContractTypes)
+  
+- [confio/poe/v1beta1/tx.proto](#confio/poe/v1beta1/tx.proto)
+    - [MsgCreateValidator](#confio.poe.v1beta1.MsgCreateValidator)
+    - [MsgCreateValidatorResponse](#confio.poe.v1beta1.MsgCreateValidatorResponse)
+  
+    - [Msg](#confio.poe.v1beta1.Msg)
   
 - [confio/twasm/v1beta1/contract_extension.proto](#confio/twasm/v1beta1/contract_extension.proto)
     - [RegisteredCallback](#confio.twasm.v1beta1.RegisteredCallback)
@@ -96,13 +105,27 @@ GenesisState - initial state of module
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| `seed_contracts` | [bool](#bool) |  | SeedContracts when enabled stores and instantiates the Proof of Engagement contracts on the chain. |
 | `gen_txs` | [bytes](#bytes) | repeated | gen_txs defines the genesis transactions. |
-| `system_admin_addr` | [string](#string) |  |  |
-| `staking_contract_addr` | [string](#string) |  |  |
-| `valset_contract_addr` | [string](#string) |  |  |
-| `engagement_contract_addr` | [string](#string) |  |  |
-| `mixer_contract_addr` | [string](#string) |  |  |
+| `system_admin_address` | [string](#string) |  |  |
+| `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated |  |
 | `engagement` | [TG4Members](#confio.poe.v1beta1.TG4Members) | repeated |  |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.PoEContract"></a>
+
+### PoEContract
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `contract_type` | [PoEContract](#confio.poe.v1beta1.PoEContract) |  |  |
+| `address` | [string](#string) |  | Address is the bech32 address string |
 
 
 
@@ -126,9 +149,82 @@ GenesisState - initial state of module
 
  <!-- end messages -->
 
+
+<a name="confio.poe.v1beta1.PoEContractTypes"></a>
+
+### PoEContractTypes
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| UNDEFINED | 0 |  |
+| STAKING | 1 |  |
+| VALSET | 2 |  |
+| ENGAGEMENT | 3 |  |
+| MIXER | 4 |  |
+
+
  <!-- end enums -->
 
  <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="confio/poe/v1beta1/tx.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## confio/poe/v1beta1/tx.proto
+
+
+
+<a name="confio.poe.v1beta1.MsgCreateValidator"></a>
+
+### MsgCreateValidator
+MsgCreateValidator defines a PoE message for creating a new validator.
+Based on the SDK staking.MsgCreateValidator
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  |  |
+| `commission` | [cosmos.staking.v1beta1.CommissionRates](#cosmos.staking.v1beta1.CommissionRates) |  |  |
+| `min_self_delegation` | [string](#string) |  |  |
+| `delegator_address` | [string](#string) |  |  |
+| `validator_address` | [string](#string) |  |  |
+| `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  |  |
+| `value` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.MsgCreateValidatorResponse"></a>
+
+### MsgCreateValidatorResponse
+MsgCreateValidatorResponse defines the Msg/CreateValidator response type.
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+
+<a name="confio.poe.v1beta1.Msg"></a>
+
+### Msg
+Msg defines the staking Msg service.
+
+| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
+| ----------- | ------------ | ------------- | ------------| ------- | -------- |
+| `CreateValidator` | [MsgCreateValidator](#confio.poe.v1beta1.MsgCreateValidator) | [MsgCreateValidatorResponse](#confio.poe.v1beta1.MsgCreateValidatorResponse) | CreateValidator defines a method for creating a new validator. | |
 
  <!-- end services -->
 

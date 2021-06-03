@@ -9,27 +9,39 @@ option go_package = "github.com/confio/tgrade/x/poe/types";
 
 // GenesisState - initial state of module
 message GenesisState {
+  // SeedContracts when enabled stores and instantiates the Proof of Engagement
+  // contracts on the chain.
+  bool seed_contracts = 1;
   // gen_txs defines the genesis transactions.
-  repeated bytes gen_txs = 1 [
+  repeated bytes gen_txs = 2 [
     (gogoproto.casttype) = "encoding/json.RawMessage",
     (gogoproto.jsontag) = "gentxs",
     (gogoproto.moretags) = "yaml:\"gentxs\""
   ];
 
-  string system_admin_addr = 2;
+  string system_admin_address =3;
+  repeated PoEContract contracts = 4;
 
-  string staking_contract_addr = 3;
-  string valset_contract_addr = 4;
-  string engagement_contract_addr = 5;
-  string mixer_contract_addr = 6;
-
-  repeated TG4Members engagement = 7 [
+  repeated TG4Members engagement = 5 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "engagement,omitempty"
   ];
 }
 
+message PoEContract {
+  PoEContract contract_type = 1;
+  // Address is the bech32 address string
+  string address = 2;
+}
+enum PoEContractTypes {
+  UNDEFINED = 0;
+  STAKING = 1;
+  VALSET = 2;
+  ENGAGEMENT = 3;
+  MIXER = 4;
+}
+
 message TG4Members {
-  string address = 1 [(gogoproto.jsontag) = "json"];
-  uint64 weight = 2 [(gogoproto.jsontag) = "weight"];
+  string address = 1 [ (gogoproto.jsontag) = "json" ];
+  uint64 weight = 2 [ (gogoproto.jsontag) = "weight" ];
 }
