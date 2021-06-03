@@ -11,7 +11,7 @@
 - [confio/poe/v1beta1/genesis.proto](#confio/poe/v1beta1/genesis.proto)
     - [GenesisState](#confio.poe.v1beta1.GenesisState)
     - [PoEContract](#confio.poe.v1beta1.PoEContract)
-    - [TG4Members](#confio.poe.v1beta1.TG4Members)
+    - [TG4Member](#confio.poe.v1beta1.TG4Member)
   
     - [PoEContractTypes](#confio.poe.v1beta1.PoEContractTypes)
   
@@ -109,7 +109,7 @@ GenesisState - initial state of module
 | `gen_txs` | [bytes](#bytes) | repeated | gen_txs defines the genesis transactions. |
 | `system_admin_address` | [string](#string) |  |  |
 | `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated |  |
-| `engagement` | [TG4Members](#confio.poe.v1beta1.TG4Members) | repeated |  |
+| `engagement` | [TG4Member](#confio.poe.v1beta1.TG4Member) | repeated |  |
 
 
 
@@ -124,7 +124,7 @@ GenesisState - initial state of module
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `contract_type` | [PoEContract](#confio.poe.v1beta1.PoEContract) |  |  |
+| `contract_type` | [PoEContractTypes](#confio.poe.v1beta1.PoEContractTypes) |  |  |
 | `address` | [string](#string) |  | Address is the bech32 address string |
 
 
@@ -132,9 +132,9 @@ GenesisState - initial state of module
 
 
 
-<a name="confio.poe.v1beta1.TG4Members"></a>
+<a name="confio.poe.v1beta1.TG4Member"></a>
 
-### TG4Members
+### TG4Member
 
 
 

@@ -1,10 +1,8 @@
 package types
 
-import genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-
 const (
 	// ModuleName is the name of the gentx module
-	ModuleName = genutiltypes.ModuleName // todo (Alex): rename to POE
+	ModuleName = "poe"
 
 	// StoreKey is the string store representation
 	StoreKey = ModuleName
@@ -18,5 +16,6 @@ const (
 
 // nolint
 var (
-	PoEContractPrefix = []byte{0x01}
+	SystemAdminPrefix = []byte{0x01}
+	ContractPrefix    = []byte{0x02}
 )

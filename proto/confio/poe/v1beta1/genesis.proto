@@ -20,16 +20,19 @@ message GenesisState {
   ];
 
   string system_admin_address =3;
-  repeated PoEContract contracts = 4;
+  repeated PoEContract contracts = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "contracts,omitempty"
+  ];
 
-  repeated TG4Members engagement = 5 [
+  repeated TG4Member engagement = 5 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "engagement,omitempty"
   ];
 }
 
 message PoEContract {
-  PoEContract contract_type = 1;
+  PoEContractTypes contract_type = 1;
   // Address is the bech32 address string
   string address = 2;
 }
@@ -41,7 +44,7 @@ enum PoEContractTypes {
   MIXER = 4;
 }
 
-message TG4Members {
+message TG4Member {
   string address = 1 [ (gogoproto.jsontag) = "json" ];
   uint64 weight = 2 [ (gogoproto.jsontag) = "weight" ];
 }

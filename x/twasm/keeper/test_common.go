@@ -114,7 +114,7 @@ func CreateDefaultTestInput(t *testing.T, opts ...wasmkeeper.Option) (sdk.Contex
 	return CreateTestInput(t, false, "staking", opts...)
 }
 
-// encoders can be nil to accept the defaults, or set it to override some of the message handlers (like default)
+// CreateTestInput encoders can be nil to accept the defaults, or set it to override some of the message handlers (like default)
 func CreateTestInput(t *testing.T, isCheckTx bool, supportedFeatures string, opts ...wasmkeeper.Option) (sdk.Context, TestKeepers) {
 	// Load default wasm config
 	return createTestInput(t, isCheckTx, supportedFeatures, types.DefaultTWasmConfig(), dbm.NewMemDB(), opts...)

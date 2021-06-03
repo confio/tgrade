@@ -16,8 +16,6 @@ import (
 // 			 trigger gov proposal to unset privileges
 //			 then verify that callback permission was removed
 func TestGovProposal(t *testing.T) {
-	t.Skip("Alex: todo, handle non 0 offsets for POE contracts in gentx")
-
 	sut.ResetChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 	myKey := strings.Trim(cli.Keys("keys", "show", "-a", "node0"), "\n ")

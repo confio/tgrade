@@ -49,7 +49,7 @@ func (b AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) 
 // DefaultGenesis returns default genesis state as raw bytes for the genutil
 // module.
 func (b AppModuleBasic) DefaultGenesis(cdc codec.JSONMarshaler) json.RawMessage {
-	gs := DefaultGenesisState()
+	gs := types.DefaultGenesisState()
 	return cdc.MustMarshalJSON(&gs)
 }
 
@@ -61,8 +61,7 @@ func (b AppModuleBasic) ValidateGenesis(cdc codec.JSONMarshaler, txEncodingConfi
 	}
 	// todo: add PoE validation
 
-	//return types.ValidateGenesis(&data, txEncodingConfig.TxJSONDecoder())
-	return nil
+	return types.ValidateGenesis(data, txEncodingConfig.TxJSONDecoder())
 }
 
 // RegisterRESTRoutes registers the REST routes for the genutil module.
@@ -86,7 +85,7 @@ type AppModule struct {
 
 	accountKeeper    genutiltypes.AccountKeeper
 	stakingKeeper    genutiltypes.StakingKeeper
-	deliverTx        deliverTxfn
+	deliverTx        DeliverTxfn
 	txEncodingConfig client.TxEncodingConfig
 	twasmKeeper      twasmKeeper
 	contractKeeper   wasmtypes.ContractOpsKeeper
@@ -107,7 +106,7 @@ func NewAppModule(
 	accountKeeper genutiltypes.AccountKeeper,
 	stakingKeeper genutiltypes.StakingKeeper,
 	twasmKeeper twasmKeeper,
-	deliverTx deliverTxfn,
+	deliverTx DeliverTxfn,
 	txEncodingConfig client.TxEncodingConfig,
 	contractKeeper wasmtypes.ContractOpsKeeper,
 ) AppModule {
@@ -159,11 +158,11 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data j
 		panic(fmt.Sprintf("bootstrap: %s", err))
 	}
 
-	_, err := InitGenesis(ctx, am.stakingKeeper, am.deliverTx, genesisState, am.txEncodingConfig)
-	if err != nil {
+	if err := keeper.InitGenesis(ctx, am.poeKeeper, am.deliverTx, genesisState, am.txEncodingConfig); err != nil {
 		panic(err)
 	}
-	addr, err := am.poeKeeper.GetPoeContractAddress(ctx, types.PoEContractTypes_VALSET)
+	// verify PoE setup
+	addr, err := am.poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypes_VALSET)
 	if err != nil {
 		panic(fmt.Sprintf("valset addr: %s", err))
 	}
@@ -174,17 +173,19 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data j
 		panic(fmt.Sprintf("valset contract not registered for valdator updates: %s", addr.String()))
 	}
 
-	diff, err := callValidatorSetUpdaterContract(ctx, addr, am.twasmKeeper)
-	if err != nil {
+	// query validators from PoE for initial abci set
+	switch diff, err := callValidatorSetUpdaterContract(ctx, addr, am.twasmKeeper); {
+	case err != nil:
 		panic(fmt.Sprintf("poe sudo call: %s", err))
-	}
-	if len(diff) == 0 {
+	case len(diff) == 0:
 		panic("initial valset must not be empty")
+	default:
+		return diff
 	}
-	return diff
 }
 
 func getPubKey(key contract.ValidatorPubkey) crypto.PublicKey {
+	// todo (alex): same as in twasm: support other algorithms?
 	return crypto.PublicKey{
 		Sum: &crypto.PublicKey_Ed25519{
 			Ed25519: key.Ed25519,
@@ -226,7 +227,7 @@ func callValidatorSetUpdaterContract(ctx sdk.Context, contractAddr sdk.AccAddres
 
 // ExportGenesis returns the exported genesis state as raw bytes for the genutil
 // module.
-func (am AppModule) ExportGenesis(_ sdk.Context, cdc codec.JSONMarshaler) json.RawMessage {
-	var gs types.GenesisState
-	return cdc.MustMarshalJSON(&gs)
+func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONMarshaler) json.RawMessage {
+	gs := keeper.ExportGenesis(ctx, am.poeKeeper)
+	return cdc.MustMarshalJSON(gs)
 }

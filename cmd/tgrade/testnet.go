@@ -336,7 +336,7 @@ func initGenFiles(
 	appGenState[banktypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&bankGenState)
 	poeGenesisState := poeclient.GetGenesisStateFromAppState(clientCtx.JSONMarshaler, appGenState)
 	for i, addr := range genAccounts {
-		poeGenesisState.Engagement = append(poeGenesisState.Engagement, poetypes.TG4Members{
+		poeGenesisState.Engagement = append(poeGenesisState.Engagement, poetypes.TG4Member{
 			Address: addr.GetAddress().String(),
 			Weight:  uint64(len(genAccounts) - i), // unique weight
 		})

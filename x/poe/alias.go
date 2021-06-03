@@ -9,6 +9,7 @@
 package poe
 
 import (
+	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 )
 
@@ -17,3 +18,5 @@ const (
 	StoreKey   = types.StoreKey
 	RouterKey  = types.RouterKey
 )
+
+type DeliverTxfn = keeper.DeliverTxFn
