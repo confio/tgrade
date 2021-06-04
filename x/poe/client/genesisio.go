@@ -8,6 +8,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// GetGenesisStateFromAppState gets the genesis state from the expected app state
+func GetGenesisStateFromAppState(cdc codec.JSONMarshaler, appState map[string]json.RawMessage) *types.GenesisState {
+	var genesisState types.GenesisState
+	if appState[poe.ModuleName] != nil {
+		cdc.MustUnmarshalJSON(appState[poe.ModuleName], &genesisState)
+	}
+	return &genesisState
+}
+
 // SetGenTxsInAppGenesisState - sets the genesis transactions in the app genesis state
 func SetGenTxsInAppGenesisState(
 	cdc codec.JSONMarshaler, txJSONEncoder sdk.TxEncoder, appGenesisState map[string]json.RawMessage, genTxs []sdk.Tx,
@@ -29,16 +38,7 @@ func SetGenTxsInAppGenesisState(
 	return SetGenesisStateInAppState(cdc, appGenesisState, genesisState), nil
 }
 
-// GetGenesisStateFromAppState gets the genutil genesis state from the expected app state
-func GetGenesisStateFromAppState(cdc codec.JSONMarshaler, appState map[string]json.RawMessage) *types.GenesisState {
-	var genesisState types.GenesisState
-	if appState[poe.ModuleName] != nil {
-		cdc.MustUnmarshalJSON(appState[poe.ModuleName], &genesisState)
-	}
-	return &genesisState
-}
-
-// SetGenesisStateInAppState sets the genutil genesis state within the expected app state
+// SetGenesisStateInAppState sets the genesis state within the expected app state
 func SetGenesisStateInAppState(
 	cdc codec.JSONMarshaler, appState map[string]json.RawMessage, genesisState *types.GenesisState,
 ) map[string]json.RawMessage {

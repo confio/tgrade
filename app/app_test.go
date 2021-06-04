@@ -2,7 +2,7 @@ package app
 
 import (
 	"encoding/json"
-	"github.com/confio/tgrade/x/poe"
+	poeclient "github.com/confio/tgrade/x/poe/client"
 	poetypes "github.com/confio/tgrade/x/poe/types"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
@@ -84,13 +84,11 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	genesisState[banktypes.ModuleName] = marshaler.MustMarshalJSON(&bankGenState)
 
 	// add system admin to not fail poe on validation
-	var poeGS poetypes.GenesisState
-	err = marshaler.UnmarshalJSON(genesisState[poe.ModuleName], &poeGS)
-	require.NoError(t, err)
+	poeGS := poeclient.GetGenesisStateFromAppState(marshaler, genesisState)
 	poeGS.SystemAdminAddress = sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String()
 	poeGS.GenTxs = []json.RawMessage{myGenTx}
 	poeGS.Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Weight: 10}}
-	genesisState[poe.ModuleName], err = marshaler.MarshalJSON(&poeGS)
+	genesisState = poeclient.SetGenesisStateInAppState(marshaler, genesisState, poeGS)
 }
 
 // ensure that blocked addresses are properly set in bank keeper

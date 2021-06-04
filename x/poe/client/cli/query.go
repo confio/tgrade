@@ -30,7 +30,7 @@ func GetCmdShowPoEContract() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "contract-address <contract_type>",
 		Short:   "Show contract addresses for given contract type type",
-		Long:    fmt.Sprintf("Show contract address for PoE type [%s]", allPoEContractTypes),
+		Long:    fmt.Sprintf("Show contract address for PoE type [%s]", allPoEContractTypes()),
 		Aliases: []string{"ca"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
