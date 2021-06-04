@@ -154,8 +154,6 @@ func randomGenTX(t *testing.T) (json.RawMessage, sdk.AccAddress) {
 		valPubKey,
 		sdk.NewCoin(stakingToken, valTokens),
 		stakingtypes.NewDescription("testing", "", "", "", ""),
-		stakingtypes.NewCommissionRates(sdk.OneDec(), sdk.OneDec(), sdk.OneDec()),
-		sdk.OneInt(),
 	)
 	require.NoError(t, err)
 	txConfig := MakeEncodingConfig().TxConfig

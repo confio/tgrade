@@ -205,7 +205,8 @@ GenesisState - initial state of module
 <a name="confio.poe.v1beta1.QueryContractAddressRequest"></a>
 
 ### QueryContractAddressRequest
-QueryContractAddressRequest is the request type for the Query/ContractAddress RPC method.
+QueryContractAddressRequest is the request type for the Query/ContractAddress
+RPC method.
 
 
 | Field | Type | Label | Description |
@@ -220,7 +221,8 @@ QueryContractAddressRequest is the request type for the Query/ContractAddress RP
 <a name="confio.poe.v1beta1.QueryContractAddressResponse"></a>
 
 ### QueryContractAddressResponse
-QueryContractAddressRequest is the response type for the Query/ContractAddress RPC method.
+QueryContractAddressRequest is the response type for the
+Query/ContractAddress RPC method.
 
 
 | Field | Type | Label | Description |
@@ -268,8 +270,6 @@ Based on the SDK staking.MsgCreateValidator
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  |  |
-| `commission` | [cosmos.staking.v1beta1.CommissionRates](#cosmos.staking.v1beta1.CommissionRates) |  |  |
-| `min_self_delegation` | [string](#string) |  |  |
 | `delegator_address` | [string](#string) |  |  |
 | `validator_address` | [string](#string) |  |  |
 | `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  |  |

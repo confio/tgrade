@@ -251,8 +251,6 @@ func InitTestnet(
 			valPubKeys[i],
 			sdk.NewCoin(stakingToken, valTokens),
 			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
-			stakingtypes.NewCommissionRates(sdk.OneDec(), sdk.OneDec(), sdk.OneDec()),
-			sdk.OneInt(),
 		)
 		if err != nil {
 			return err

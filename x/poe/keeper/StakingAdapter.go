@@ -24,29 +24,29 @@ func NewStakingAdapter(k Keeper, contractKeeper wasmtypes.ContractOpsKeeper) Sta
 }
 
 func (s StakingAdapter) BondDenom(ctx sdk.Context) (res string) {
-	panic("implement me")
+	panic("implement me") // TODO (Alex): can be satisfied by contract
 }
 
 func (s StakingAdapter) GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool) {
-	panic("implement me")
+	panic("implement me") // TODO (Alex): can be satisfied by contract
 }
 
 func (s StakingAdapter) GetBondedValidatorsByPower(ctx sdk.Context) []stakingtypes.Validator {
-	panic("implement me")
+	panic("implement me") // TODO (Alex): can be satisfied by contract
 }
 
 func (s StakingAdapter) GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation {
-	panic("implement me")
+	return nil
 }
 
 func (s StakingAdapter) GetDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (delegation stakingtypes.Delegation, found bool) {
-	panic("implement me")
+	return
 }
 
 func (s StakingAdapter) HasReceivingRedelegation(ctx sdk.Context, delAddr sdk.AccAddress, valDstAddr sdk.ValAddress) bool {
-	panic("implement me")
+	return false
 }
 
 func (s StakingAdapter) DelegationRewards(c context.Context, req *types.QueryDelegationRewardsRequest) (*types.QueryDelegationRewardsResponse, error) {
-	panic("implement me")
+	return nil, nil
 }

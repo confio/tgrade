@@ -10,13 +10,15 @@ option go_package = "github.com/confio/tgrade/x/poe/types";
 
 // Query defines the gRPC querier service.
 service Query {
-  rpc ContractAddress(QueryContractAddressRequest) returns (QueryContractAddressResponse) {
+  rpc ContractAddress(QueryContractAddressRequest)
+      returns (QueryContractAddressResponse) {
     option (google.api.http).get = "/poe/v1beta1/contract/{contract_type}";
   }
   // todo (Alex): support query system admin as well?
 }
 
-// QueryContractAddressRequest is the request type for the Query/ContractAddress RPC method.
+// QueryContractAddressRequest is the request type for the Query/ContractAddress
+// RPC method.
 message QueryContractAddressRequest {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
@@ -25,7 +27,6 @@ message QueryContractAddressRequest {
   poe.v1beta1.PoEContractType contract_type = 1;
 }
 
-// QueryContractAddressRequest is the response type for the Query/ContractAddress RPC method.
-message QueryContractAddressResponse {
-  string address = 1;
-}
+// QueryContractAddressRequest is the response type for the
+// Query/ContractAddress RPC method.
+message QueryContractAddressResponse { string address = 1; }

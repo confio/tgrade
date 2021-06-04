@@ -30,7 +30,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// QueryContractAddressRequest is the request type for the Query/ContractAddress RPC method.
+// QueryContractAddressRequest is the request type for the Query/ContractAddress
+// RPC method.
 type QueryContractAddressRequest struct {
 	// ContractType is the type of contract
 	ContractType PoEContractType `protobuf:"varint,1,opt,name=contract_type,json=contractType,proto3,enum=confio.poe.v1beta1.PoEContractType" json:"contract_type,omitempty"`
@@ -69,7 +70,8 @@ func (m *QueryContractAddressRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryContractAddressRequest proto.InternalMessageInfo
 
-// QueryContractAddressRequest is the response type for the Query/ContractAddress RPC method.
+// QueryContractAddressRequest is the response type for the
+// Query/ContractAddress RPC method.
 type QueryContractAddressResponse struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }

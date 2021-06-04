@@ -27,13 +27,6 @@ message MsgCreateValidator {
 
   cosmos.staking.v1beta1.Description description = 1
       [ (gogoproto.nullable) = false ];
-  cosmos.staking.v1beta1.CommissionRates commission = 2
-      [ (gogoproto.nullable) = false ];
-  string min_self_delegation = 3 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
-    (gogoproto.moretags) = "yaml:\"min_self_delegation\"",
-    (gogoproto.nullable) = false
-  ];
   string delegator_address = 4
       [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
   string validator_address = 5

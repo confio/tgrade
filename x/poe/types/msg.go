@@ -21,11 +21,9 @@ var (
 // Delegator address and validator address are the same.
 func NewMsgCreateValidator(
 	valAddr sdk.ValAddress,
-	pubKey cryptotypes.PubKey, //nolint:interfacer
+	pubKey cryptotypes.PubKey,
 	selfDelegation sdk.Coin,
 	description stakingtypes.Description,
-	commission stakingtypes.CommissionRates,
-	minSelfDelegation sdk.Int,
 ) (*MsgCreateValidator, error) {
 	var pkAny *codectypes.Any
 	if pubKey != nil {
@@ -35,13 +33,11 @@ func NewMsgCreateValidator(
 		}
 	}
 	return &MsgCreateValidator{
-		Description:       description,
-		DelegatorAddress:  sdk.AccAddress(valAddr).String(),
-		ValidatorAddress:  valAddr.String(),
-		Pubkey:            pkAny,
-		Value:             selfDelegation,
-		Commission:        commission,
-		MinSelfDelegation: minSelfDelegation,
+		Description:      description,
+		DelegatorAddress: sdk.AccAddress(valAddr).String(),
+		ValidatorAddress: valAddr.String(),
+		Pubkey:           pkAny,
+		Value:            selfDelegation,
 	}, nil
 }
 
@@ -112,22 +108,6 @@ func (msg MsgCreateValidator) ValidateBasic() error {
 
 	if msg.Description == (stakingtypes.Description{}) {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty description")
-	}
-
-	if msg.Commission == (stakingtypes.CommissionRates{}) {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty commission")
-	}
-
-	if err := msg.Commission.Validate(); err != nil {
-		return err
-	}
-
-	if !msg.MinSelfDelegation.IsPositive() {
-		return stakingtypes.ErrMinSelfDelegationInvalid
-	}
-
-	if msg.Value.Amount.LT(msg.MinSelfDelegation) {
-		return stakingtypes.ErrSelfDelegationBelowMinimum
 	}
 
 	return nil

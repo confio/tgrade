@@ -39,6 +39,6 @@ message PoEContract {
 }
 
 message TG4Member {
-  string address = 1 [(gogoproto.jsontag) = "json"];
-  uint64 weight = 2 [(gogoproto.jsontag) = "weight"];
+  string address = 1 [ (gogoproto.jsontag) = "json" ];
+  uint64 weight = 2 [ (gogoproto.jsontag) = "weight" ];
 }
