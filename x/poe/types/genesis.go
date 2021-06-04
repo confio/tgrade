@@ -16,18 +16,28 @@ func DefaultGenesisState() GenesisState {
 }
 
 func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
-	if g.SeedContracts && len(g.Contracts) != 0 {
-		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "seed enabled but PoE contracts addresses provided")
-	} else if !g.SeedContracts && len(g.Contracts) == 0 {
-		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "seed disabled but no PoE contract addresses provided")
-	}
-	if len(g.Engagement) == 0 {
-		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty engagement group")
+	if g.SeedContracts {
+		if len(g.Contracts) != 0 {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "seed enabled but PoE contracts addresses provided")
+		}
+		if len(g.Engagement) == 0 {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty engagement group")
+		}
+	} else {
+		if len(g.Contracts) == 0 {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "seed disabled but no PoE contract addresses provided")
+		}
+		// todo (Alex): if we preserve state in the engagement contract then we need to ensure that there are no
+		// new members in the engagement group
+		// if we can reset state then the engagement group must not be empty
+		//if len(g.Engagement) != 0 {
+		//	return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "engagement group set")
+		//}
 	}
 	if len(g.GenTxs) == 0 {
 		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty gentx")
 	}
-	uniqueContractTypes := make(map[PoEContractTypes]struct{}, len(g.Contracts))
+	uniqueContractTypes := make(map[PoEContractType]struct{}, len(g.Contracts))
 	for i, v := range g.Contracts {
 		if err := v.ValidateBasic(); err != nil {
 			return sdkerrors.Wrapf(err, "contract %d", i)
@@ -36,7 +46,7 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "contract type %s", v.ContractType.String())
 		}
 	}
-	if len(uniqueContractTypes) != len(PoEContractTypes_name)-1 {
+	if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
 		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
 	}
 	if _, err := sdk.ValAddressFromBech32(g.SystemAdminAddress); err != nil {
@@ -78,16 +88,6 @@ func (c PoEContract) ValidateBasic() error {
 		return sdkerrors.Wrap(err, "address")
 	}
 	return sdkerrors.Wrap(c.ContractType.ValidateBasic(), "contract type")
-}
-
-func (t PoEContractTypes) ValidateBasic() error {
-	if t == PoEContractTypes_UNDEFINED {
-		return wasmtypes.ErrInvalid
-	}
-	if _, ok := PoEContractTypes_name[int32(t)]; !ok {
-		return wasmtypes.ErrNotFound
-	}
-	return nil
 }
 
 func (c TG4Member) ValidateBasic() error {

@@ -65,7 +65,7 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 		return nil, sdkerrors.Wrap(err, "serialize payload msg")
 	}
 
-	contractAddr, err := m.GetPoEContractAddress(ctx, types.PoEContractTypes_VALSET)
+	contractAddr, err := m.GetPoEContractAddress(ctx, types.PoEContractType_VALSET)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "valset")
 	}
@@ -85,7 +85,7 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "serialize payload msg")
 	}
-	contractAddr, err = m.GetPoEContractAddress(ctx, types.PoEContractTypes_STAKING)
+	contractAddr, err = m.GetPoEContractAddress(ctx, types.PoEContractType_STAKING)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "staking")
 	}

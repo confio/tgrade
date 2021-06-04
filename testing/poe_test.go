@@ -22,9 +22,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	// contract addresses are deterministic. You can get a list of all contracts in genesis via
 	// `tgrade wasm-genesis-message list-contracts --home ./testnet/node0/tgrade`
 	var (
-		engagementGroupAddr = ContractBech32Address(1, 1) // todo: query storage instead
-		valsetAddr          = ContractBech32Address(4, 4) // todo: query storage instead
-		tg4AdminAddr        = cli.GetKeyAddr("systemadmin")
+		tg4AdminAddr = cli.GetKeyAddr("systemadmin")
 	)
 	engagementGroup := make([]testingcontracts.TG4Member, sut.nodesCount)
 	stakedAmounts := make([]uint64, sut.nodesCount)
@@ -41,6 +39,9 @@ func TestProofOfEngagementSetup(t *testing.T) {
 
 	sut.StartChain(t)
 	sut.AwaitNextBlock(t)
+
+	engagementGroupAddr := gjson.Get(cli.CustomQuery("q", "poe", "contract-address", "ENGAGEMENT"), "address").String()
+	valsetAddr := gjson.Get(cli.CustomQuery("q", "poe", "contract-address", "VALSET"), "address").String()
 
 	// and smart query internal list of validators
 	qResult := cli.CustomQuery("q", "wasm", "contract-state", "smart", valsetAddr, `{"list_active_validators":{}}`)

@@ -1,9 +1,11 @@
 package poe
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/confio/tgrade/x/poe/client/cli"
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
@@ -68,14 +70,17 @@ func (b AppModuleBasic) ValidateGenesis(cdc codec.JSONMarshaler, txEncodingConfi
 func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the genutil module.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(_ client.Context, _ *runtime.ServeMux) {
+func (b AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, serveMux *runtime.ServeMux) {
+	types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(clientCtx))
 }
 
 // GetTxCmd returns no root tx command for the genutil module.
 func (AppModuleBasic) GetTxCmd() *cobra.Command { return nil }
 
 // GetQueryCmd returns no root query command for the genutil module.
-func (AppModuleBasic) GetQueryCmd() *cobra.Command { return nil }
+func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+	return cli.GetQueryCmd()
+}
 
 //____________________________________________________________________________
 
@@ -138,6 +143,7 @@ func (am AppModule) LegacyQuerierHandler(amino *codec.LegacyAmino) sdk.Querier {
 }
 
 func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewGrpcQuerier(am.poeKeeper))
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.poeKeeper, am.contractKeeper))
 }
 
@@ -153,16 +159,21 @@ func (am AppModule) EndBlock(context sdk.Context, block abci.RequestEndBlock) []
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
-
-	if err := bootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, genesisState); err != nil {
-		panic(fmt.Sprintf("bootstrap: %s", err))
+	if genesisState.SeedContracts {
+		if err := bootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, genesisState); err != nil {
+			panic(fmt.Sprintf("bootstrap PoE contracts: %s", err))
+		}
+	} else {
+		if err := verifyPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, genesisState); err != nil {
+			panic(fmt.Sprintf("verify PoE bootstrap contracts: %s", err))
+		}
 	}
 
 	if err := keeper.InitGenesis(ctx, am.poeKeeper, am.deliverTx, genesisState, am.txEncodingConfig); err != nil {
 		panic(err)
 	}
 	// verify PoE setup
-	addr, err := am.poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypes_VALSET)
+	addr, err := am.poeKeeper.GetPoEContractAddress(ctx, types.PoEContractType_VALSET)
 	if err != nil {
 		panic(fmt.Sprintf("valset addr: %s", err))
 	}

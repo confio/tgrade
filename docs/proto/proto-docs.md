@@ -8,12 +8,19 @@
     - [GenesisState](#confio.globalfee.v1beta1.GenesisState)
     - [Params](#confio.globalfee.v1beta1.Params)
   
+- [confio/poe/v1beta1/poe.proto](#confio/poe/v1beta1/poe.proto)
+    - [PoEContractType](#confio.poe.v1beta1.PoEContractType)
+  
 - [confio/poe/v1beta1/genesis.proto](#confio/poe/v1beta1/genesis.proto)
     - [GenesisState](#confio.poe.v1beta1.GenesisState)
     - [PoEContract](#confio.poe.v1beta1.PoEContract)
     - [TG4Member](#confio.poe.v1beta1.TG4Member)
   
-    - [PoEContractTypes](#confio.poe.v1beta1.PoEContractTypes)
+- [confio/poe/v1beta1/query.proto](#confio/poe/v1beta1/query.proto)
+    - [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest)
+    - [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse)
+  
+    - [Query](#confio.poe.v1beta1.Query)
   
 - [confio/poe/v1beta1/tx.proto](#confio/poe/v1beta1/tx.proto)
     - [MsgCreateValidator](#confio.poe.v1beta1.MsgCreateValidator)
@@ -90,6 +97,37 @@ Params defines the set of module parameters.
 
 
 
+<a name="confio/poe/v1beta1/poe.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## confio/poe/v1beta1/poe.proto
+
+
+ <!-- end messages -->
+
+
+<a name="confio.poe.v1beta1.PoEContractType"></a>
+
+### PoEContractType
+PoEContractType type of PoE contract
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| UNDEFINED | 0 |  |
+| STAKING | 1 |  |
+| VALSET | 2 |  |
+| ENGAGEMENT | 3 |  |
+| MIXER | 4 |  |
+
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
 <a name="confio/poe/v1beta1/genesis.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -124,7 +162,7 @@ GenesisState - initial state of module
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `contract_type` | [PoEContractTypes](#confio.poe.v1beta1.PoEContractTypes) |  |  |
+| `contract_type` | [PoEContractType](#confio.poe.v1beta1.PoEContractType) |  |  |
 | `address` | [string](#string) |  | Address is the bech32 address string |
 
 
@@ -149,24 +187,65 @@ GenesisState - initial state of module
 
  <!-- end messages -->
 
+ <!-- end enums -->
 
-<a name="confio.poe.v1beta1.PoEContractTypes"></a>
+ <!-- end HasExtensions -->
 
-### PoEContractTypes
+ <!-- end services -->
 
 
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| UNDEFINED | 0 |  |
-| STAKING | 1 |  |
-| VALSET | 2 |  |
-| ENGAGEMENT | 3 |  |
-| MIXER | 4 |  |
 
+<a name="confio/poe/v1beta1/query.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## confio/poe/v1beta1/query.proto
+
+
+
+<a name="confio.poe.v1beta1.QueryContractAddressRequest"></a>
+
+### QueryContractAddressRequest
+QueryContractAddressRequest is the request type for the Query/ContractAddress RPC method.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `contract_type` | [PoEContractType](#confio.poe.v1beta1.PoEContractType) |  | ContractType is the type of contract |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.QueryContractAddressResponse"></a>
+
+### QueryContractAddressResponse
+QueryContractAddressRequest is the response type for the Query/ContractAddress RPC method.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `address` | [string](#string) |  |  |
+
+
+
+
+
+ <!-- end messages -->
 
  <!-- end enums -->
 
  <!-- end HasExtensions -->
+
+
+<a name="confio.poe.v1beta1.Query"></a>
+
+### Query
+Query defines the gRPC querier service.
+
+| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
+| ----------- | ------------ | ------------- | ------------| ------- | -------- |
+| `ContractAddress` | [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest) | [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse) | todo (Alex): support query system admin as well? | GET|/poe/v1beta1/contract/{contract_type}|
 
  <!-- end services -->
 

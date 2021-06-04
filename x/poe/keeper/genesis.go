@@ -66,7 +66,7 @@ func ExportGenesis(ctx sdk.Context, keeper Keeper) *types.GenesisState {
 		SystemAdminAddress: keeper.GetPoESystemAdminAddress(ctx).String(),
 		Contracts:          make([]types.PoEContract, 0),
 	}
-	keeper.IteratePoEContracts(ctx, func(ctype types.PoEContractTypes, addr sdk.AccAddress) bool {
+	keeper.IteratePoEContracts(ctx, func(ctype types.PoEContractType, addr sdk.AccAddress) bool {
 		genState.Contracts = append(genState.Contracts, types.PoEContract{
 			ContractType: ctype,
 			Address:      addr.String(),

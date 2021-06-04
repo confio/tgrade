@@ -4,6 +4,7 @@ package confio.poe.v1beta1;
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmwasm/wasm/v1beta1/genesis.proto";
+import "confio/poe/v1beta1/poe.proto";
 
 option go_package = "github.com/confio/tgrade/x/poe/types";
 
@@ -19,7 +20,7 @@ message GenesisState {
     (gogoproto.moretags) = "yaml:\"gentxs\""
   ];
 
-  string system_admin_address =3;
+  string system_admin_address = 3;
   repeated PoEContract contracts = 4 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "contracts,omitempty"
@@ -32,19 +33,12 @@ message GenesisState {
 }
 
 message PoEContract {
-  PoEContractTypes contract_type = 1;
+  poe.v1beta1.PoEContractType contract_type = 1;
   // Address is the bech32 address string
   string address = 2;
 }
-enum PoEContractTypes {
-  UNDEFINED = 0;
-  STAKING = 1;
-  VALSET = 2;
-  ENGAGEMENT = 3;
-  MIXER = 4;
-}
 
 message TG4Member {
-  string address = 1 [ (gogoproto.jsontag) = "json" ];
-  uint64 weight = 2 [ (gogoproto.jsontag) = "weight" ];
+  string address = 1 [(gogoproto.jsontag) = "json"];
+  uint64 weight = 2 [(gogoproto.jsontag) = "weight"];
 }
