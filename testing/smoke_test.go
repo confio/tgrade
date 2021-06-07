@@ -4,7 +4,6 @@ package testing
 
 import (
 	"fmt"
-	"github.com/confio/tgrade/x/twasm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
@@ -55,5 +54,5 @@ func TestSmokeTest(t *testing.T) {
 	txResult = cli.CustomCommand("tx", "wasm", "instantiate", codeID, initMsg, "--label=testing", "--from=node0", "--gas=1500000")
 	RequireTxSuccess(t, txResult)
 	assert.Len(t, done(), 1)
-	assert.Contains(t, txResult, twasm.ContractAddress(poeContractCount+1, poeContractCount+1))
+	assert.Contains(t, txResult, contractAddr)
 }
