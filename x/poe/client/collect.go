@@ -54,7 +54,7 @@ func GenAppStateFromConfig(
 		return nil, err
 	}
 
-	appGenesisState, err = SetGenTxsInAppGenesisState(cdc, txEncodingConfig.TxJSONEncoder(), appGenesisState, appGenTxs)
+	appGenesisState, err = types.SetGenTxsInAppGenesisState(cdc, txEncodingConfig.TxJSONEncoder(), appGenesisState, appGenTxs)
 	if err != nil {
 		return nil, err
 	}

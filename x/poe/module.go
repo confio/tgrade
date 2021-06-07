@@ -159,6 +159,10 @@ func (am AppModule) EndBlock(context sdk.Context, block abci.RequestEndBlock) []
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
+	if len(genesisState.GenTxs) == 0 {
+		panic(sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty gentx"))
+	}
+
 	if genesisState.SeedContracts {
 		if err := bootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, genesisState); err != nil {
 			panic(fmt.Sprintf("bootstrap PoE contracts: %s", err))

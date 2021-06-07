@@ -69,7 +69,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 
 	tg4StakerInitMsg := contract.TG4StakeInitMsg{
 		Admin:           gs.SystemAdminAddress,
-		Denom:           contract.Denom{Native: "utgd"},
+		Denom:           contract.Denom{Native: gs.BondDenom},
 		MinBond:         "1",
 		TokensPerWeight: "1",
 		UnbondingPeriod: contract.UnbodingPeriod{

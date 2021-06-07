@@ -5,6 +5,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/confio/tgrade/x/poe/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	bankexported "github.com/cosmos/cosmos-sdk/x/bank/exported"
 	"io"
 	"io/ioutil"
 	"os"
@@ -25,11 +28,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
-	"github.com/cosmos/cosmos-sdk/x/genutil/types"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 )
 
+type GenesisBalancesIterator = genutiltypes.GenesisBalancesIterator
+
 // GenTxCmd builds the application's gentx command.
-func GenTxCmd(mbm module.BasicManager, txEncCfg client.TxEncodingConfig, genBalIterator types.GenesisBalancesIterator, defaultNodeHome string) *cobra.Command {
+func GenTxCmd(mbm module.BasicManager, txEncCfg client.TxEncodingConfig, genBalIterator GenesisBalancesIterator, defaultNodeHome string) *cobra.Command {
 	ipDefault, _ := server.ExternalIP()
 	fsCreateValidator, defaultsDesc := CreateValidatorMsgFlagSet(ipDefault)
 
@@ -46,9 +51,6 @@ file. The following default parameters are included:
 Example:
 $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=os --chain-id=test-chain-1 \
     --moniker="myvalidator" \
-    --commission-max-change-rate=0.01 \
-    --commission-max-rate=1.0 \
-    --commission-rate=0.07 \
     --details="..." \
     --security-contact="..." \
     --website="..."
@@ -122,7 +124,7 @@ $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=o
 				return errors.Wrap(err, "failed to parse coins")
 			}
 
-			err = genutil.ValidateAccountInGenesis(genesisState, genBalIterator, key.GetAddress(), coins, cdc)
+			err = ValidateAccountInGenesis(genesisState, genBalIterator, key.GetAddress(), coins, cdc)
 			if err != nil {
 				return errors.Wrap(err, "failed to validate account in genesis")
 			}
@@ -247,4 +249,52 @@ func writeSignedGenTx(clientCtx client.Context, outputDocument string, tx sdk.Tx
 	_, err = fmt.Fprintf(outputFile, "%s\n", json)
 
 	return err
+}
+
+// ValidateAccountInGenesis checks that the provided account has a sufficient
+// balance in the set of genesis accounts.
+func ValidateAccountInGenesis(
+	appGenesisState map[string]json.RawMessage, genBalIterator GenesisBalancesIterator,
+	addr sdk.Address, coins sdk.Coins, cdc codec.JSONMarshaler,
+) error {
+	gs := types.GetGenesisStateFromAppState(cdc, appGenesisState)
+	bondDenom := gs.BondDenom
+
+	var err error
+	accountIsInGenesis := false
+
+	genBalIterator.IterateGenesisBalances(cdc, appGenesisState,
+		func(bal bankexported.GenesisBalance) (stop bool) {
+			accAddress := bal.GetAddress()
+			accCoins := bal.GetCoins()
+
+			// ensure that account is in genesis
+			if accAddress.Equals(addr) {
+				// ensure account contains enough funds of default bond denom
+				if coins.AmountOf(bondDenom).GT(accCoins.AmountOf(bondDenom)) {
+					err = fmt.Errorf(
+						"account %s has a balance in genesis, but it only has %v%s available to stake, not %v%s",
+						addr, accCoins.AmountOf(bondDenom), bondDenom, coins.AmountOf(bondDenom), bondDenom,
+					)
+
+					return true
+				}
+
+				accountIsInGenesis = true
+				return true
+			}
+
+			return false
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if !accountIsInGenesis {
+		return fmt.Errorf("account %s does not have a balance in the genesis state", addr)
+	}
+
+	return nil
 }

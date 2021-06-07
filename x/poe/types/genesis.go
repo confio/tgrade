@@ -16,6 +16,10 @@ func DefaultGenesisState() GenesisState {
 }
 
 func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
+	if err := sdk.ValidateDenom(g.BondDenom); err != nil {
+		return sdkerrors.Wrap(err, "bond denom")
+	}
+
 	if g.SeedContracts {
 		if len(g.Contracts) != 0 {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "seed enabled but PoE contracts addresses provided")
@@ -33,23 +37,20 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		//if len(g.Engagement) != 0 {
 		//	return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "engagement group set")
 		//}
-	}
-	if len(g.GenTxs) == 0 {
-		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty gentx")
-	}
-	uniqueContractTypes := make(map[PoEContractType]struct{}, len(g.Contracts))
-	for i, v := range g.Contracts {
-		if err := v.ValidateBasic(); err != nil {
-			return sdkerrors.Wrapf(err, "contract %d", i)
+		uniqueContractTypes := make(map[PoEContractType]struct{}, len(g.Contracts))
+		for i, v := range g.Contracts {
+			if err := v.ValidateBasic(); err != nil {
+				return sdkerrors.Wrapf(err, "contract %d", i)
+			}
+			if _, exists := uniqueContractTypes[v.ContractType]; exists {
+				return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "contract type %s", v.ContractType.String())
+			}
 		}
-		if _, exists := uniqueContractTypes[v.ContractType]; exists {
-			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "contract type %s", v.ContractType.String())
+		if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
 		}
 	}
-	if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
-		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
-	}
-	if _, err := sdk.ValAddressFromBech32(g.SystemAdminAddress); err != nil {
+	if _, err := sdk.AccAddressFromBech32(g.SystemAdminAddress); err != nil {
 		return sdkerrors.Wrap(err, "system admin address")
 	}
 
@@ -84,14 +85,14 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 }
 
 func (c PoEContract) ValidateBasic() error {
-	if _, err := sdk.ValAddressFromBech32(c.Address); err != nil {
+	if _, err := sdk.AccAddressFromBech32(c.Address); err != nil {
 		return sdkerrors.Wrap(err, "address")
 	}
 	return sdkerrors.Wrap(c.ContractType.ValidateBasic(), "contract type")
 }
 
 func (c TG4Member) ValidateBasic() error {
-	if _, err := sdk.ValAddressFromBech32(c.Address); err != nil {
+	if _, err := sdk.AccAddressFromBech32(c.Address); err != nil {
 		return sdkerrors.Wrap(err, "address")
 	}
 	if c.Weight == 0 {

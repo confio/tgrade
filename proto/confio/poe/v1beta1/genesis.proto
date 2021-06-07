@@ -13,6 +13,7 @@ message GenesisState {
   // SeedContracts when enabled stores and instantiates the Proof of Engagement
   // contracts on the chain.
   bool seed_contracts = 1;
+
   // gen_txs defines the genesis transactions.
   repeated bytes gen_txs = 2 [
     (gogoproto.casttype) = "encoding/json.RawMessage",
@@ -30,6 +31,10 @@ message GenesisState {
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "engagement,omitempty"
   ];
+
+  // bond_denom defines the bondable coin denomination.
+  string bond_denom         = 6 [(gogoproto.moretags) = "yaml:\"bond_denom\""];
+
 }
 
 message PoEContract {

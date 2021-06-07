@@ -148,6 +148,7 @@ GenesisState - initial state of module
 | `system_admin_address` | [string](#string) |  |  |
 | `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated |  |
 | `engagement` | [TG4Member](#confio.poe.v1beta1.TG4Member) | repeated |  |
+| `bond_denom` | [string](#string) |  | bond_denom defines the bondable coin denomination. |
 
 
 

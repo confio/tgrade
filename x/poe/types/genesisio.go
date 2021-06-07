@@ -1,18 +1,16 @@
-package client
+package types
 
 import (
 	"encoding/json"
-	"github.com/confio/tgrade/x/poe"
-	"github.com/confio/tgrade/x/poe/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // GetGenesisStateFromAppState gets the genesis state from the expected app state
-func GetGenesisStateFromAppState(cdc codec.JSONMarshaler, appState map[string]json.RawMessage) *types.GenesisState {
-	var genesisState types.GenesisState
-	if appState[poe.ModuleName] != nil {
-		cdc.MustUnmarshalJSON(appState[poe.ModuleName], &genesisState)
+func GetGenesisStateFromAppState(cdc codec.JSONMarshaler, appState map[string]json.RawMessage) *GenesisState {
+	var genesisState GenesisState
+	if appState[ModuleName] != nil {
+		cdc.MustUnmarshalJSON(appState[ModuleName], &genesisState)
 	}
 	return &genesisState
 }
@@ -40,10 +38,10 @@ func SetGenTxsInAppGenesisState(
 
 // SetGenesisStateInAppState sets the genesis state within the expected app state
 func SetGenesisStateInAppState(
-	cdc codec.JSONMarshaler, appState map[string]json.RawMessage, genesisState *types.GenesisState,
+	cdc codec.JSONMarshaler, appState map[string]json.RawMessage, genesisState *GenesisState,
 ) map[string]json.RawMessage {
 
 	genesisStateBz := cdc.MustMarshalJSON(genesisState)
-	appState[poe.ModuleName] = genesisStateBz
+	appState[ModuleName] = genesisStateBz
 	return appState
 }

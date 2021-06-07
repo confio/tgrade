@@ -332,7 +332,7 @@ func initGenFiles(
 
 	bankGenState.Balances = genBalances
 	appGenState[banktypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&bankGenState)
-	poeGenesisState := poeclient.GetGenesisStateFromAppState(clientCtx.JSONMarshaler, appGenState)
+	poeGenesisState := poetypes.GetGenesisStateFromAppState(clientCtx.JSONMarshaler, appGenState)
 	for i, addr := range genAccounts {
 		poeGenesisState.Engagement = append(poeGenesisState.Engagement, poetypes.TG4Member{
 			Address: addr.GetAddress().String(),
@@ -340,7 +340,7 @@ func initGenFiles(
 		})
 	}
 	poeGenesisState.SystemAdminAddress = admin.String()
-	poeclient.SetGenesisStateInAppState(clientCtx.JSONMarshaler, appGenState, poeGenesisState)
+	poetypes.SetGenesisStateInAppState(clientCtx.JSONMarshaler, appGenState, poeGenesisState)
 
 	appGenStateJSON, err := json.MarshalIndent(appGenState, "", "  ")
 	if err != nil {
