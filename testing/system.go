@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/libs/sync"
 	client "github.com/tendermint/tendermint/rpc/client/http"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -199,11 +200,10 @@ func (s *SystemUnderTest) StopChain() {
 	s.cleanupFn = nil
 	cmd := exec.Command(locateExecutable("pkill"), "-15", "tgrade")
 	cmd.Dir = workDir
-	out, err := cmd.CombinedOutput()
+	_, err := cmd.CombinedOutput()
 	if err != nil {
 		s.Logf("failed to stop chain: %s\n", err)
 	}
-	s.Log(string(out))
 }
 
 // PrintBuffer prints the chain logs to the console
@@ -415,6 +415,11 @@ func (s *SystemUnderTest) resetBuffers() {
 	s.errBuff = ring.New(100)
 }
 
+// NewEventListener constructor for Eventlistener with system rpc address
+func (s *SystemUnderTest) NewEventListener(t *testing.T) *EventListener {
+	return NewEventListener(t, s.rpcAddr)
+}
+
 type Node struct {
 	ID      string
 	IP      string
@@ -484,9 +489,15 @@ func (l *EventListener) Subscribe(query string, cb EventConsumer) func() {
 }
 
 // AwaitQuery waits for single result or timeout
-func (l *EventListener) AwaitQuery(query string) *ctypes.ResultEvent {
-	c, result := CapturingEventConsumer()
-	l.Subscribe(query, TimeoutConsumer(l.t, defaultWaitTime, c))
+// For query syntax See https://docs.cosmos.network/master/core/events.html#subscribing-to-events
+func (l *EventListener) AwaitQuery(query string, optMaxWaitTime ...time.Duration) *ctypes.ResultEvent {
+	c, result := CaptureSingleEventConsumer()
+	maxWaitTime := defaultWaitTime
+	if len(optMaxWaitTime) != 0 {
+		maxWaitTime = optMaxWaitTime[0]
+	}
+	cleanupFn := l.Subscribe(query, TimeoutConsumer(l.t, maxWaitTime, c))
+	l.t.Cleanup(cleanupFn)
 	return result
 }
 
@@ -512,12 +523,41 @@ func TimeoutConsumer(t *testing.T, waitTime time.Duration, next EventConsumer) E
 	}
 }
 
-// CapturingEventConsumer consumes one event. No timeout
-func CapturingEventConsumer() (EventConsumer, *ctypes.ResultEvent) {
+// CaptureSingleEventConsumer consumes one event. No timeout
+func CaptureSingleEventConsumer() (EventConsumer, *ctypes.ResultEvent) {
 	var result ctypes.ResultEvent
 	return func(e ctypes.ResultEvent) (more bool) {
 		return false
 	}, &result
+}
+
+//CaptureAllEventsConsumer capture all events until done() is called or timeout happens.
+func CaptureAllEventsConsumer(t *testing.T, optMaxWaitTime ...time.Duration) (c EventConsumer, done func() []ctypes.ResultEvent) {
+	maxWaitTime := defaultWaitTime
+	if len(optMaxWaitTime) != 0 {
+		maxWaitTime = optMaxWaitTime[0]
+	}
+	var (
+		mu     sync.Mutex
+		events []ctypes.ResultEvent
+		exit   bool
+	)
+	x := func(e ctypes.ResultEvent) (more bool) {
+		mu.Lock()
+		defer mu.Unlock()
+		if exit {
+			return false
+		}
+		events = append(events, e)
+		return true
+	}
+
+	return TimeoutConsumer(t, maxWaitTime, x), func() []ctypes.ResultEvent {
+		mu.Lock()
+		defer mu.Unlock()
+		exit = true
+		return events
+	}
 }
 
 // restoreOriginalGenesis replace nodes genesis by the one created on setup

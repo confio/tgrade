@@ -113,8 +113,11 @@ func (c TgradeCli) FundAddress(t *testing.T, destAddr, amount string) string {
 func RequireTxSuccess(t *testing.T, got string) {
 	t.Helper()
 	code := gjson.Get(got, "code")
-	rawLog := gjson.Get(got, "raw_log").String()
-	require.Equal(t, int64(0), code.Int(), rawLog)
+	details := gjson.Get(got, "raw_log").String()
+	if len(details) == 0 {
+		details = got
+	}
+	require.Equal(t, int64(0), code.Int(), details)
 }
 
 // RequireTxFailure require the received response to contain any failure code and the passed msgsgs
