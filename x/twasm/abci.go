@@ -147,8 +147,12 @@ func callValidatorSetUpdaterContract(contractAddr sdk.AccAddress, k Sudoer, ctx 
 
 	result := make([]abci.ValidatorUpdate, len(contractResult.Diffs))
 	for i, v := range contractResult.Diffs {
+		pub, err := getPubKey(v.PubKey)
+		if err != nil {
+			return nil, err
+		}
 		result[i] = abci.ValidatorUpdate{
-			PubKey: getPubKey(v.PubKey),
+			PubKey: pub,
 			Power:  int64(v.Power),
 		}
 	}
@@ -156,11 +160,22 @@ func callValidatorSetUpdaterContract(contractAddr sdk.AccAddress, k Sudoer, ctx 
 	return result, nil
 }
 
-func getPubKey(key contract.ValidatorPubkey) crypto.PublicKey {
-	return crypto.PublicKey{
-		Sum: &crypto.PublicKey_Ed25519{
-			Ed25519: key.Ed25519,
-		},
+func getPubKey(key contract.ValidatorPubkey) (crypto.PublicKey, error) {
+	switch {
+	case key.Ed25519 != nil:
+		return crypto.PublicKey{
+			Sum: &crypto.PublicKey_Ed25519{
+				Ed25519: key.Ed25519,
+			},
+		}, nil
+	case key.Secp256k1 != nil:
+		return crypto.PublicKey{
+			Sum: &crypto.PublicKey_Secp256K1{
+				Secp256K1: key.Secp256k1,
+			},
+		}, nil
+	default:
+		return crypto.PublicKey{}, types.ErrValidatorPubKeyTypeNotSupported
 	}
 }
 

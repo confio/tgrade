@@ -7,10 +7,13 @@ import (
 	"github.com/tendermint/tendermint/libs/rand"
 )
 
+const DefaultBondDenom = "utgd"
+
 // DefaultGenesisState default values
 func DefaultGenesisState() GenesisState {
 	return GenesisState{
 		SeedContracts:      true,
+		BondDenom:          DefaultBondDenom,
 		SystemAdminAddress: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),
 	}
 }

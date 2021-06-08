@@ -18,19 +18,15 @@ import (
 
 // default values
 var (
-	DefaultTokens                  = sdk.TokensFromConsensusPower(100)
-	defaultAmount                  = DefaultTokens.String() + sdk.DefaultBondDenom
-	defaultCommissionRate          = "0.1"
-	defaultCommissionMaxRate       = "0.2"
-	defaultCommissionMaxChangeRate = "0.01"
-	defaultMinSelfDelegation       = "1"
+	DefaultTokens = sdk.TokensFromConsensusPower(100)
+	defaultAmount = DefaultTokens.String() + sdk.DefaultBondDenom
 )
 
 // NewTxCmd returns a root CLI command handler for all x/staking transaction commands.
 func NewTxCmd() *cobra.Command {
 	stakingTxCmd := &cobra.Command{
 		Use:                        types.ModuleName,
-		Short:                      "Staking transaction subcommands",
+		Short:                      "PoE transaction subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
@@ -144,15 +140,7 @@ func CreateValidatorMsgFlagSet(ipDefault string) (fs *flag.FlagSet, defaultsDesc
 	fsCreateValidator.AddFlagSet(FlagSetAmount())
 	fsCreateValidator.AddFlagSet(FlagSetPublicKey())
 
-	defaultsDesc = fmt.Sprintf(`
-	delegation amount:           %s
-	commission rate:             %s
-	commission max rate:         %s
-	commission max change rate:  %s
-	minimum self delegation:     %s
-`, defaultAmount, defaultCommissionRate,
-		defaultCommissionMaxRate, defaultCommissionMaxChangeRate,
-		defaultMinSelfDelegation)
+	defaultsDesc = fmt.Sprintf(`delegation amount: %s`, defaultAmount)
 
 	return fsCreateValidator, defaultsDesc
 }

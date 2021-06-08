@@ -8,9 +8,13 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-func NewHandler(k keeper.Keeper, contractKeeper wasmtypes.ContractOpsKeeper) sdk.Handler {
-	msgServer := keeper.NewMsgServerImpl(k, contractKeeper)
+// NewHandler constructor
+func NewHandler(k keeper.ContractSource, contractKeeper wasmtypes.ContractOpsKeeper) sdk.Handler {
+	return newHandler(keeper.NewMsgServerImpl(k, contractKeeper))
+}
 
+// internal constructor for testing
+func newHandler(msgServer types.MsgServer) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
 		ctx = ctx.WithEventManager(sdk.NewEventManager())
 

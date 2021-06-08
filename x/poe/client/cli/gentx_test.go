@@ -32,57 +32,79 @@ import (
 )
 
 const (
-	myChainID = "testing"
-	myKey     = "myKey"
-	bondDenum = "ustake"
+	myChainID      = "testing"
+	myKey          = "myKey"
+	bondDenum      = "utgd"
+	initialBalance = 100
 )
 
 func TestGenTxCmd(t *testing.T) {
-	dir := t.TempDir()
-	encodingConfig := twasmkeeper.MakeEncodingConfig(t)
-	addr, clientCtx, moduleManager := setupSystem(t, dir, encodingConfig)
+	specs := map[string]struct {
+		stakingAmount sdk.Coin
+		expErr        bool
+	}{
+		"all good": {
+			stakingAmount: sdk.NewCoin(bondDenum, sdk.NewInt(1)),
+		},
+		"staked more than balance": {
+			stakingAmount: sdk.NewCoin(bondDenum, sdk.NewInt(initialBalance+1)),
+			expErr:        true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
 
-	genBalIterator := banktypes.GenesisBalancesIterator{}
-	cmd := cli.GenTxCmd(
-		moduleManager,
-		encodingConfig.TxConfig, genBalIterator, dir)
+			dir := t.TempDir()
+			encodingConfig := twasmkeeper.MakeEncodingConfig(t)
+			addr, clientCtx, moduleManager := setupSystem(t, dir, encodingConfig)
 
-	_, out := testutil.ApplyMockIO(cmd)
-	clientCtx.WithOutput(out)
+			genBalIterator := banktypes.GenesisBalancesIterator{}
+			cmd := cli.GenTxCmd(
+				moduleManager,
+				encodingConfig.TxConfig, genBalIterator, dir)
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, sdkclient.ClientContextKey, &clientCtx)
+			_, out := testutil.ApplyMockIO(cmd)
+			clientCtx.WithOutput(out)
+			ctx := context.WithValue(context.Background(), sdkclient.ClientContextKey, &clientCtx)
 
-	amount := sdk.NewCoin("ustake", sdk.NewInt(12))
-	genTxFile := filepath.Join(dir, "myTx")
-	cmd.SetArgs([]string{
-		fmt.Sprintf("--%s=%s", flags.FlagChainID, myChainID),
-		fmt.Sprintf("--%s=%s", flags.FlagOutputDocument, genTxFile),
-		myKey,
-		amount.String(),
-	})
+			// when
+			genTxFile := filepath.Join(dir, "myTx")
+			cmd.SetArgs([]string{
+				fmt.Sprintf("--%s=%s", flags.FlagChainID, myChainID),
+				fmt.Sprintf("--%s=%s", flags.FlagOutputDocument, genTxFile),
+				myKey,
+				spec.stakingAmount.String(),
+			})
 
-	err := cmd.ExecuteContext(ctx)
-	require.NoError(t, err)
+			gotErr := cmd.ExecuteContext(ctx)
 
-	// Validate generated transaction.
-	open, err := os.Open(genTxFile)
-	require.NoError(t, err)
+			// then
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
 
-	all, err := ioutil.ReadAll(open)
-	require.NoError(t, err)
+			// Validate generated transaction.
+			open, err := os.Open(genTxFile)
+			require.NoError(t, err)
 
-	tx, err := encodingConfig.TxConfig.TxJSONDecoder()(all)
-	require.NoError(t, err)
+			all, err := ioutil.ReadAll(open)
+			require.NoError(t, err)
 
-	msgs := tx.GetMsgs()
-	require.Len(t, msgs, 1)
+			tx, err := encodingConfig.TxConfig.TxJSONDecoder()(all)
+			require.NoError(t, err)
 
-	require.Equal(t, types.TypeMsgCreateValidator, msgs[0].Type())
-	require.Equal(t, []sdk.AccAddress{addr}, msgs[0].GetSigners())
-	require.Equal(t, amount, msgs[0].(*types.MsgCreateValidator).Value)
-	err = tx.ValidateBasic()
-	require.NoError(t, err)
+			msgs := tx.GetMsgs()
+			require.Len(t, msgs, 1)
+
+			require.Equal(t, types.TypeMsgCreateValidator, msgs[0].Type())
+			require.Equal(t, []sdk.AccAddress{addr}, msgs[0].GetSigners())
+			require.Equal(t, spec.stakingAmount, msgs[0].(*types.MsgCreateValidator).Value)
+			require.NoError(t, tx.ValidateBasic())
+			require.NoError(t, msgs[0].ValidateBasic())
+		})
+	}
 }
 
 func setupSystem(t *testing.T, workDir string, encodingConfig params.EncodingConfig) (sdk.AccAddress, sdkclient.Context, module.BasicManager) {
@@ -121,7 +143,7 @@ func setupSystem(t *testing.T, workDir string, encodingConfig params.EncodingCon
 	bs := banktypes.GetGenesisStateFromAppState(encodingConfig.Marshaler, gs)
 	bs.Balances = append(bs.Balances, banktypes.Balance{
 		Address: addr.String(),
-		Coins:   sdk.NewCoins(sdk.NewCoin(bondDenum, sdk.NewInt(1000))),
+		Coins:   sdk.NewCoins(sdk.NewCoin(bondDenum, sdk.NewInt(initialBalance))),
 	})
 	genesisStateBz := encodingConfig.Marshaler.MustMarshalJSON(bs)
 	gs[banktypes.ModuleName] = genesisStateBz
@@ -136,7 +158,6 @@ func setupSystem(t *testing.T, workDir string, encodingConfig params.EncodingCon
 
 	appGenStateJSON, err := json.MarshalIndent(gs, "", "  ")
 	require.NoError(t, err)
-	t.Log(string(appGenStateJSON))
 
 	genDoc := tmtypes.GenesisDoc{
 		ChainID:    myChainID,

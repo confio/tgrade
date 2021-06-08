@@ -14,15 +14,19 @@ import (
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
 )
 
+// ContractSource is a subset of the keeper
+type ContractSource interface {
+	GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error)
+}
 type msgServer struct {
-	Keeper
+	contractSource ContractSource
 	contractKeeper wasmtypes.ContractOpsKeeper
 }
 
 // NewMsgServerImpl returns an implementation of the bank MsgServer interface
 // for the provided Keeper.
-func NewMsgServerImpl(keeper Keeper, contractKeeper wasmtypes.ContractOpsKeeper) types.MsgServer {
-	return &msgServer{Keeper: keeper, contractKeeper: contractKeeper}
+func NewMsgServerImpl(poeKeeper ContractSource, contractKeeper wasmtypes.ContractOpsKeeper) types.MsgServer {
+	return &msgServer{contractSource: poeKeeper, contractKeeper: contractKeeper}
 }
 
 var _ types.MsgServer = msgServer{}
@@ -49,15 +53,13 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 		}
 	}
 
-	// register validator
-	if pk.Type() != "ed25519" { // todo (Alex): revisit
-		return nil, sdkerrors.Wrap(wasmtypes.ErrInvalid, "only ed25519 supported currently")
+	pub, err := contract.NewValidatorPubkey(pk)
+	if err != nil {
+		return nil, err
 	}
 	registerValidator := poecontract.TG4ValsetExecute{
 		RegisterValidatorKey: poecontract.RegisterValidatorKey{
-			PubKey: contract.ValidatorPubkey{
-				Ed25519: pk.Bytes(),
-			},
+			PubKey: pub,
 		},
 	}
 	payloadBz, err := json.Marshal(&registerValidator)
@@ -65,7 +67,7 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 		return nil, sdkerrors.Wrap(err, "serialize payload msg")
 	}
 
-	contractAddr, err := m.GetPoEContractAddress(ctx, types.PoEContractType_VALSET)
+	contractAddr, err := m.contractSource.GetPoEContractAddress(ctx, types.PoEContractType_VALSET)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "valset")
 	}
@@ -85,7 +87,7 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "serialize payload msg")
 	}
-	contractAddr, err = m.GetPoEContractAddress(ctx, types.PoEContractType_STAKING)
+	contractAddr, err = m.contractSource.GetPoEContractAddress(ctx, types.PoEContractType_STAKING)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "staking")
 	}

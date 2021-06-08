@@ -34,9 +34,14 @@ func clearEmbeddedContracts() {
 	tgValset = nil
 }
 
+type poeKeeper interface {
+	keeper.ContractSource
+	SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
+}
+
 // bootstrapPoEContracts set up all PoE contracts:
 //
-func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper keeper.Keeper, gs types.GenesisState) error {
+func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
 	defer clearEmbeddedContracts()
 	tg4EngagementInitMsg := contract.TG4GroupInitMsg{
 		Admin:    gs.SystemAdminAddress,
@@ -51,7 +56,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 	systemAdmin, err := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	if err != nil {
-		panic(fmt.Sprintf("admin: %s", err))
+		return sdkerrors.Wrap(err, "system admin")
 	}
 	creator := systemAdmin
 	codeID, err := k.Create(ctx, creator, tg4Group, "https://foo.bar/", "foo/bar:latest", &wasmtypes.AllowEverybody)
