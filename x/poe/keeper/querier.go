@@ -11,17 +11,12 @@ import (
 
 var _ types.QueryServer = &grpcQuerier{}
 
-// queryKeeper is a subset of the keeper's methods
-type queryKeeper interface {
-	GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error)
-}
-
 type grpcQuerier struct {
-	keeper queryKeeper
+	keeper ContractSource
 }
 
 // NewGrpcQuerier constructor
-func NewGrpcQuerier(keeper queryKeeper) *grpcQuerier {
+func NewGrpcQuerier(keeper ContractSource) *grpcQuerier {
 	return &grpcQuerier{keeper: keeper}
 }
 

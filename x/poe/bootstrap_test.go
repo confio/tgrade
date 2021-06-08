@@ -1,6 +1,7 @@
 package poe
 
 import (
+	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 	"github.com/confio/tgrade/x/twasm"
 	twasmtesting "github.com/confio/tgrade/x/twasm/testing"
@@ -122,7 +123,7 @@ func CaptureSetPrivilegedFn() (func(ctx sdk.Context, contractAddr sdk.AccAddress
 var _ poeKeeper = poeKeeperMock{}
 
 type poeKeeperMock struct {
-	GetPoEContractAddressFn func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error)
+	keeper.ContractSourceMock
 	SetPoEContractAddressFn func(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
 }
 
