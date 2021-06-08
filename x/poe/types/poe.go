@@ -14,10 +14,10 @@ func (t PoEContractType) ValidateBasic() error {
 	return nil
 }
 
-func PoEContractTypeFrom(s string) *PoEContractType {
+func PoEContractTypeFrom(s string) PoEContractType {
 	v, ok := PoEContractType_value[s]
 	if !ok {
-		return nil
+		return PoEContractType_UNDEFINED
 	}
-	return (*PoEContractType)(&v)
+	return PoEContractType(v)
 }

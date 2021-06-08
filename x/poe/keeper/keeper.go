@@ -29,6 +29,9 @@ func (k Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractTy
 	if ctype == types.PoEContractType_UNDEFINED {
 		return nil, sdkerrors.Wrap(wasmtypes.ErrInvalid, "contract type")
 	}
+	if _, ok := types.PoEContractType_name[int32(ctype)]; !ok {
+		return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract type")
+	}
 	store := ctx.KVStore(k.storeKey)
 	addr := store.Get(poeContractAddressKey(ctype))
 	if len(addr) == 0 {

@@ -65,6 +65,7 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		if _, exists := uniqueMembers[v.Address]; exists {
 			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "member: %s", v.Address)
 		}
+		uniqueMembers[v.Address] = struct{}{}
 	}
 
 	for i, v := range g.GenTxs {

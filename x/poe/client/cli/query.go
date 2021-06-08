@@ -40,7 +40,7 @@ func GetCmdShowPoEContract() *cobra.Command {
 			}
 
 			cbt := types.PoEContractTypeFrom(args[0])
-			if cbt == nil {
+			if cbt == types.PoEContractType_UNDEFINED {
 				return fmt.Errorf("unknown contract type: %q", args[0])
 			}
 
@@ -48,7 +48,7 @@ func GetCmdShowPoEContract() *cobra.Command {
 			res, err := queryClient.ContractAddress(
 				cmd.Context(),
 				&types.QueryContractAddressRequest{
-					ContractType: *cbt,
+					ContractType: cbt,
 				},
 			)
 			if err != nil {

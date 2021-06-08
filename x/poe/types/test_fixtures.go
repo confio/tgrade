@@ -22,6 +22,11 @@ func MsgCreateValidatorFixture(mutators ...func(m *MsgCreateValidator)) *MsgCrea
 
 func GenesisStateFixture(mutators ...func(m *GenesisState)) GenesisState {
 	r := DefaultGenesisState()
+	r.Engagement = []TG4Member{{
+		Address: RandomAccAddress().String(),
+		Weight:  10,
+	}}
+
 	for _, m := range mutators {
 		m(&r)
 	}

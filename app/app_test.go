@@ -3,16 +3,9 @@ package app
 import (
 	"encoding/json"
 	poetypes "github.com/confio/tgrade/x/poe/types"
-	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/libs/rand"
 	"os"
 	"testing"
@@ -27,8 +20,6 @@ import (
 )
 
 var emptyWasmOpts []wasm.Option = nil
-
-const stakingToken = "utgd"
 
 func TestTgradeExport(t *testing.T) {
 	db := db.NewMemDB()
@@ -65,7 +56,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 
 	marshaler := MakeEncodingConfig().Marshaler
 
-	myGenTx, myAddr := randomGenTX(t)
+	myGenTx, myAddr := poetypes.RandomGenTX(t)
 
 	var authGenState authtypes.GenesisState
 	marshaler.MustUnmarshalJSON(genesisState[authtypes.ModuleName], &authGenState)
@@ -78,13 +69,13 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	var bankGenState banktypes.GenesisState
 	marshaler.MustUnmarshalJSON(genesisState[banktypes.ModuleName], &bankGenState)
 
-	coins := sdk.Coins{sdk.NewCoin(stakingToken, sdk.NewInt(1000000000))}
+	coins := sdk.Coins{sdk.NewCoin(poetypes.DefaultBondDenom, sdk.NewInt(1000000000))}
 	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: myAddr.String(), Coins: coins.Sort()})
 	genesisState[banktypes.ModuleName] = marshaler.MustMarshalJSON(&bankGenState)
 
 	// add system admin to not fail poe on validation
 	poeGS := poetypes.GetGenesisStateFromAppState(marshaler, genesisState)
-	poeGS.BondDenom = stakingToken
+	poeGS.BondDenom = poetypes.DefaultBondDenom
 	poeGS.SystemAdminAddress = sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String()
 	poeGS.GenTxs = []json.RawMessage{myGenTx}
 	poeGS.Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Weight: 10}}
@@ -127,50 +118,4 @@ func setGenesis(gapp *TgradeApp) error {
 
 	gapp.Commit()
 	return nil
-}
-
-// randomGenTX returns a signed genesis tx
-func randomGenTX(t *testing.T) (json.RawMessage, sdk.AccAddress) {
-	t.Helper()
-	nodeConfig := cfg.TestConfig()
-	nodeConfig.RootDir = t.TempDir()
-	nodeConfig.NodeKey = "key.json"
-	_, valPubKey, err := genutil.InitializeNodeValidatorFiles(nodeConfig)
-	require.NoError(t, err)
-	//setup keyring
-	kb, err := keyring.New(sdk.KeyringServiceName(), keyring.BackendTest, t.TempDir(), nil)
-	require.NoError(t, err)
-	keyringAlgos, _ := kb.SupportedAlgorithms()
-	algo, err := keyring.NewSigningAlgoFromString(string(hd.Secp256k1Type), keyringAlgos)
-	require.NoError(t, err)
-	const myKey = "myKey"
-	addr, _, err := server.GenerateSaveCoinKey(kb, myKey, true, algo)
-	require.NoError(t, err)
-
-	// prepare genesis tx
-	valTokens := sdk.TokensFromConsensusPower(100)
-	createValMsg, err := poetypes.NewMsgCreateValidator(
-		sdk.ValAddress(addr),
-		valPubKey,
-		sdk.NewCoin(stakingToken, valTokens),
-		stakingtypes.NewDescription("testing", "", "", "", ""),
-	)
-	require.NoError(t, err)
-	txConfig := MakeEncodingConfig().TxConfig
-	txBuilder := txConfig.NewTxBuilder()
-	err = txBuilder.SetMsgs(createValMsg)
-	require.NoError(t, err)
-
-	txFactory := tx.Factory{}
-	txFactory = txFactory.
-		WithChainID("").
-		WithKeybase(kb).
-		WithTxConfig(txConfig)
-
-	err = tx.Sign(txFactory, myKey, txBuilder, true)
-	require.NoError(t, err)
-
-	txBz, err := txConfig.TxJSONEncoder()(txBuilder.GetTx())
-	require.NoError(t, err)
-	return txBz, addr
 }
