@@ -3,6 +3,7 @@ package poe
 import (
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/confio/tgrade/x/poe/contract"
@@ -139,12 +140,11 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 // verifyPoEContracts verifies all PoE contracts are setup as expected
 func verifyPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper keeper.Keeper, gs types.GenesisState) error {
 	defer clearEmbeddedContracts()
-
+	return errors.New("not supported, yet")
 	// all poe contracts pinned
 	// valset privileged
 	// valset has registered for endblock valset update privilege
 	// admin set matches genesis system admin address for engagement and staking contract
-	return nil
 }
 
 // mustMarshalJson with stdlib json

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -31,27 +32,28 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty engagement group")
 		}
 	} else {
-		if len(g.Contracts) == 0 {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "seed disabled but no PoE contract addresses provided")
-		}
+		return errors.New("not supported, yet")
+		//if len(g.Contracts) == 0 {
+		//	return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "seed disabled but no PoE contract addresses provided")
+		//}
 		// todo (Alex): if we preserve state in the engagement contract then we need to ensure that there are no
 		// new members in the engagement group
 		// if we can reset state then the engagement group must not be empty
 		//if len(g.Engagement) != 0 {
 		//	return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "engagement group set")
 		//}
-		uniqueContractTypes := make(map[PoEContractType]struct{}, len(g.Contracts))
-		for i, v := range g.Contracts {
-			if err := v.ValidateBasic(); err != nil {
-				return sdkerrors.Wrapf(err, "contract %d", i)
-			}
-			if _, exists := uniqueContractTypes[v.ContractType]; exists {
-				return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "contract type %s", v.ContractType.String())
-			}
-		}
-		if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
-		}
+		//uniqueContractTypes := make(map[PoEContractType]struct{}, len(g.Contracts))
+		//for i, v := range g.Contracts {
+		//	if err := v.ValidateBasic(); err != nil {
+		//		return sdkerrors.Wrapf(err, "contract %d", i)
+		//	}
+		//	if _, exists := uniqueContractTypes[v.ContractType]; exists {
+		//		return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "contract type %s", v.ContractType.String())
+		//	}
+		//}
+		//if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
+		//	return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
+		//}
 	}
 	if _, err := sdk.AccAddressFromBech32(g.SystemAdminAddress); err != nil {
 		return sdkerrors.Wrap(err, "system admin address")

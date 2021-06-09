@@ -38,8 +38,8 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			tm := twasmKeeperMock{
 				SetPrivilegedFn: spFn,
 			}
-			sFn, capSetAddr := CaptureSetPoEContractAddressFn()
-			pm := poeKeeperMock{
+			sFn, capSetAddr := keeper.CaptureSetPoEContractAddressFn()
+			pm := keeper.PoEKeeperMock{
 				SetPoEContractAddressFn: sFn,
 			}
 			// when
@@ -63,11 +63,11 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			// and pinned
 			assert.Equal(t, []uint64{1, 2, 3}, *capPin)
 
-			assert.Equal(t, []CapturedPoEContractAddress{
-				{ctype: types.PoEContractType_ENGAGEMENT, contractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 1)},
-				{ctype: types.PoEContractType_STAKING, contractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 2)},
-				{ctype: types.PoEContractType_MIXER, contractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 3)},
-				{ctype: types.PoEContractType_VALSET, contractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)},
+			assert.Equal(t, []keeper.CapturedPoEContractAddress{
+				{Ctype: types.PoEContractType_ENGAGEMENT, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 1)},
+				{Ctype: types.PoEContractType_STAKING, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 2)},
+				{Ctype: types.PoEContractType_MIXER, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 3)},
+				{Ctype: types.PoEContractType_VALSET, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)},
 			}, *capSetAddr)
 			// and privilege set
 			require.Equal(t, []sdk.AccAddress{twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)}, *capPriv)
@@ -117,38 +117,5 @@ func CaptureSetPrivilegedFn() (func(ctx sdk.Context, contractAddr sdk.AccAddress
 	return func(ctx sdk.Context, contractAddr sdk.AccAddress) error {
 		r = append(r, contractAddr)
 		return nil
-	}, &r
-}
-
-var _ poeKeeper = poeKeeperMock{}
-
-type poeKeeperMock struct {
-	keeper.ContractSourceMock
-	SetPoEContractAddressFn func(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
-}
-
-func (m poeKeeperMock) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
-	if m.GetPoEContractAddressFn == nil {
-		panic("not expected to be called")
-	}
-	return m.GetPoEContractAddressFn(ctx, ctype)
-}
-
-func (m poeKeeperMock) SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress) {
-	if m.SetPoEContractAddressFn == nil {
-		panic("not expected to be called")
-	}
-	m.SetPoEContractAddressFn(ctx, ctype, contractAddr)
-}
-
-type CapturedPoEContractAddress struct {
-	ctype        types.PoEContractType
-	contractAddr sdk.AccAddress
-}
-
-func CaptureSetPoEContractAddressFn() (func(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress), *[]CapturedPoEContractAddress) {
-	var r []CapturedPoEContractAddress
-	return func(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress) {
-		r = append(r, CapturedPoEContractAddress{ctype: ctype, contractAddr: contractAddr})
 	}, &r
 }
