@@ -43,7 +43,7 @@ func TestSetGetPoEContractAddress(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			ctx, _, k := CreateDefaultTestInput(t)
+			ctx, _, k := createMinTestInput(t)
 			var myAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 			if !spec.skipStore {
 				k.SetPoEContractAddress(ctx, spec.srcType, myAddr)
@@ -60,14 +60,14 @@ func TestSetGetPoEContractAddress(t *testing.T) {
 }
 
 func TestSetGetPoESystemAdmin(t *testing.T) {
-	ctx, _, k := CreateDefaultTestInput(t)
+	ctx, _, k := createMinTestInput(t)
 	require.Empty(t, k.GetPoESystemAdminAddress(ctx))
 	var myAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 	k.setPoESystemAdminAddress(ctx, myAddr)
 	assert.Equal(t, myAddr, k.GetPoESystemAdminAddress(ctx))
 }
 func TestIteratePoEContracts(t *testing.T) {
-	ctx, _, k := CreateDefaultTestInput(t)
+	ctx, _, k := createMinTestInput(t)
 	storedTypes := make(map[types.PoEContractType]sdk.AccAddress)
 	for c, _ := range types.PoEContractType_name {
 		src := types.PoEContractType(c)

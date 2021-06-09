@@ -2,11 +2,9 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	poecontract "github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
-	"github.com/confio/tgrade/x/twasm/contract"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -53,20 +51,6 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 		}
 	}
 
-	pub, err := contract.NewValidatorPubkey(pk)
-	if err != nil {
-		return nil, err
-	}
-	registerValidator := poecontract.TG4ValsetExecute{
-		RegisterValidatorKey: poecontract.RegisterValidatorKey{
-			PubKey: pub,
-		},
-	}
-	payloadBz, err := json.Marshal(&registerValidator)
-	if err != nil {
-		return nil, sdkerrors.Wrap(err, "serialize payload msg")
-	}
-
 	contractAddr, err := m.contractSource.GetPoEContractAddress(ctx, types.PoEContractType_VALSET)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "valset")
@@ -75,24 +59,18 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "delegator address")
 	}
-	_, err = m.contractKeeper.Execute(ctx, contractAddr, delegatorAddress, payloadBz, nil)
+
+	err = contract.RegisterValidator(ctx, contractAddr, pk, delegatorAddress, m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "register validator")
 	}
 	// delegate
-	initialStake := poecontract.TG4StakeExecute{
-		Bond: &struct{}{},
-	}
-	payloadBz, err = json.Marshal(&initialStake)
-	if err != nil {
-		return nil, sdkerrors.Wrap(err, "serialize payload msg")
-	}
 	contractAddr, err = m.contractSource.GetPoEContractAddress(ctx, types.PoEContractType_STAKING)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "staking")
 	}
 
-	_, err = m.contractKeeper.Execute(ctx, contractAddr, delegatorAddress, payloadBz, sdk.NewCoins(msg.Value))
+	err = contract.BondTokens(ctx, contractAddr, delegatorAddress, sdk.NewCoins(msg.Value), m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "self delegation validator")
 	}

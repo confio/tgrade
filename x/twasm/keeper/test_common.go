@@ -55,7 +55,7 @@ import (
 	"time"
 )
 
-var ModuleBasics = module.NewBasicManager(
+var moduleBasics = module.NewBasicManager(
 	auth.AppModuleBasic{},
 	bank.AppModuleBasic{},
 	capability.AppModuleBasic{},
@@ -77,8 +77,8 @@ func MakeEncodingConfig(_ testing.TB) params2.EncodingConfig {
 	std.RegisterInterfaces(interfaceRegistry)
 	std.RegisterLegacyAminoCodec(amino)
 
-	ModuleBasics.RegisterLegacyAminoCodec(amino)
-	ModuleBasics.RegisterInterfaces(interfaceRegistry)
+	moduleBasics.RegisterLegacyAminoCodec(amino)
+	moduleBasics.RegisterInterfaces(interfaceRegistry)
 	types.RegisterInterfaces(interfaceRegistry)
 	types.RegisterLegacyAminoCodec(amino)
 
@@ -303,8 +303,4 @@ func NewWasmVMMock(mutators ...func(*wasmtesting.MockWasmer)) *wasmtesting.MockW
 
 func RandomAddress(_ *testing.T) sdk.AccAddress {
 	return rand.Bytes(sdk.AddrLen)
-}
-
-func RandomBech32Address(t *testing.T) string {
-	return RandomAddress(t).String()
 }

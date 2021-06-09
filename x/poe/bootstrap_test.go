@@ -84,6 +84,10 @@ type twasmKeeperMock struct {
 	HasPrivilegedContractCallbackFn func(ctx sdk.Context, contractAddr sdk.AccAddress, callbackType twasmtypes.PrivilegedCallbackType) (bool, error)
 }
 
+func (m twasmKeeperMock) IterateContractCallbacksByType(ctx sdk.Context, callbackType twasmtypes.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+	panic("implement me")
+}
+
 func (m twasmKeeperMock) QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 	if m.QuerySmartFn == nil {
 		panic("not expected to be called")

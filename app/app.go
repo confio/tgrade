@@ -335,7 +335,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	// if we want to allow any custom callbacks
 	supportedFeatures := "staking,stargate"
 
-	stakingAdapter := poekeeper.NewStakingAdapter(app.poeKeeper, app.twasmKeeper.GetContractKeeper())
+	stakingAdapter := poekeeper.NewStakingAdapter(&app.poeKeeper, app.twasmKeeper.GetContractKeeper())
 	app.twasmKeeper = twasmkeeper.NewKeeper(
 		appCodec,
 		keys[twasm.StoreKey],
@@ -383,7 +383,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.mm = module.NewManager(
-		poe.NewAppModule(app.poeKeeper, app.accountKeeper, app.stakingKeeper, &app.twasmKeeper, app.BaseApp.DeliverTx, encodingConfig.TxConfig, app.twasmKeeper.GetContractKeeper()),
+		poe.NewAppModule(app.poeKeeper, &app.twasmKeeper, app.BaseApp.DeliverTx, encodingConfig.TxConfig, app.twasmKeeper.GetContractKeeper()),
 		auth.NewAppModule(appCodec, app.accountKeeper, authsims.RandomGenesisAccounts),
 		vesting.NewAppModule(app.accountKeeper, app.bankKeeper),
 		bank.NewAppModule(appCodec, app.bankKeeper, app.accountKeeper),

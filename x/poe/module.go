@@ -16,12 +16,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 var (
@@ -87,9 +85,6 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule implements an application module for the genutil module.
 type AppModule struct {
 	AppModuleBasic
-
-	accountKeeper    genutiltypes.AccountKeeper
-	stakingKeeper    genutiltypes.StakingKeeper
 	deliverTx        DeliverTxfn
 	txEncodingConfig client.TxEncodingConfig
 	twasmKeeper      twasmKeeper
@@ -99,6 +94,7 @@ type AppModule struct {
 
 // twasmKeeper subset of keeper to decouple from twasm module
 type twasmKeeper interface {
+	abciKeeper
 	QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
 	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
 	SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) error
@@ -108,8 +104,6 @@ type twasmKeeper interface {
 // NewAppModule creates a new AppModule object
 func NewAppModule(
 	poeKeeper keeper.Keeper,
-	accountKeeper genutiltypes.AccountKeeper,
-	stakingKeeper genutiltypes.StakingKeeper,
 	twasmKeeper twasmKeeper,
 	deliverTx DeliverTxfn,
 	txEncodingConfig client.TxEncodingConfig,
@@ -117,11 +111,9 @@ func NewAppModule(
 ) AppModule {
 	return AppModule{
 		AppModuleBasic:   AppModuleBasic{},
-		accountKeeper:    accountKeeper,
 		twasmKeeper:      twasmKeeper,
 		contractKeeper:   contractKeeper,
 		poeKeeper:        poeKeeper,
-		stakingKeeper:    stakingKeeper,
 		deliverTx:        deliverTx,
 		txEncodingConfig: txEncodingConfig,
 	}
@@ -151,12 +143,13 @@ func (am AppModule) BeginBlock(context sdk.Context, block abci.RequestBeginBlock
 }
 
 func (am AppModule) EndBlock(context sdk.Context, block abci.RequestEndBlock) []abci.ValidatorUpdate {
-	return nil
+	return EndBlocker(context, am.twasmKeeper)
 }
 
 // InitGenesis performs genesis initialization for the genutil module. It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data json.RawMessage) []abci.ValidatorUpdate {
+	defer clearEmbeddedContracts()
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	if len(genesisState.GenTxs) == 0 {
@@ -189,7 +182,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data j
 	}
 
 	// query validators from PoE for initial abci set
-	switch diff, err := callValidatorSetUpdaterContract(ctx, addr, am.twasmKeeper); {
+	switch diff, err := contract.CallEndBlockWithValidatorUpdate(ctx, addr, am.twasmKeeper); {
 	case err != nil:
 		panic(fmt.Sprintf("poe sudo call: %s", err))
 	case len(diff) == 0:
@@ -197,47 +190,6 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data j
 	default:
 		return diff
 	}
-}
-
-func getPubKey(key contract.ValidatorPubkey) crypto.PublicKey {
-	// todo (alex): same as in twasm: support other algorithms?
-	return crypto.PublicKey{
-		Sum: &crypto.PublicKey_Ed25519{
-			Ed25519: key.Ed25519,
-		},
-	}
-}
-
-func callValidatorSetUpdaterContract(ctx sdk.Context, contractAddr sdk.AccAddress, k twasmKeeper) ([]abci.ValidatorUpdate, error) {
-	sudoMsg := contract.TgradeSudoMsg{EndWithValidatorUpdate: &struct{}{}}
-	msgBz, err := json.Marshal(sudoMsg)
-	if err != nil {
-		return nil, sdkerrors.Wrap(err, "tgrade sudo msg")
-	}
-	resp, err := k.Sudo(ctx, contractAddr, msgBz)
-	if err != nil {
-		return nil, sdkerrors.Wrap(err, "sudo")
-	}
-	if len(resp.Data) == 0 {
-		return nil, nil
-	}
-	var contractResult contract.EndWithValidatorUpdateResponse
-	if err := json.Unmarshal(resp.Data, &contractResult); err != nil {
-		return nil, sdkerrors.Wrap(err, "contract response")
-	}
-	if len(contractResult.Diffs) == 0 {
-		return nil, nil
-	}
-
-	result := make([]abci.ValidatorUpdate, len(contractResult.Diffs))
-	for i, v := range contractResult.Diffs {
-		result[i] = abci.ValidatorUpdate{
-			PubKey: getPubKey(v.PubKey),
-			Power:  int64(v.Power),
-		}
-	}
-	keeper.ModuleLogger(ctx).Info("privileged contract callback", "type", "validator-set-update", "result", result)
-	return result, nil
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the genutil

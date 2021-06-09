@@ -14,11 +14,11 @@ var _ wasmtypes.StakingKeeper = &StakingAdapter{}
 var _ wasmtypes.DistributionKeeper = &StakingAdapter{}
 
 type StakingAdapter struct {
-	k              Keeper
+	k              *Keeper
 	contractKeeper wasmtypes.ContractOpsKeeper
 }
 
-func NewStakingAdapter(k Keeper, contractKeeper wasmtypes.ContractOpsKeeper) StakingAdapter {
+func NewStakingAdapter(k *Keeper, contractKeeper wasmtypes.ContractOpsKeeper) StakingAdapter {
 	return StakingAdapter{k: k, contractKeeper: contractKeeper}
 
 }

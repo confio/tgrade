@@ -43,7 +43,6 @@ type poeKeeper interface {
 // bootstrapPoEContracts set up all PoE contracts:
 //
 func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
-	defer clearEmbeddedContracts()
 	tg4EngagementInitMsg := contract.TG4GroupInitMsg{
 		Admin:    gs.SystemAdminAddress,
 		Members:  make([]contract.TG4Member, len(gs.Engagement)),
@@ -138,8 +137,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 }
 
 // verifyPoEContracts verifies all PoE contracts are setup as expected
-func verifyPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper keeper.Keeper, gs types.GenesisState) error {
-	defer clearEmbeddedContracts()
+func verifyPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
 	return errors.New("not supported, yet")
 	// all poe contracts pinned
 	// valset privileged

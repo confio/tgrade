@@ -2,16 +2,9 @@ package contract
 
 import (
 	"encoding/json"
-	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/stretchr/testify/require"
 	"sort"
 	"testing"
-)
-
-type (
-	ValidatorPubkey                = contract.ValidatorPubkey
-	TgradeSudoMsg                  = contract.TgradeSudoMsg
-	EndWithValidatorUpdateResponse = contract.EndWithValidatorUpdateResponse
 )
 
 // TG4GroupInitMsg contract init message
@@ -62,7 +55,7 @@ func (m *TG4UpdateMembersMsg) Json(t *testing.T) string {
 // TG4MixerInitMsg contract init message
 //See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-mixer/schema/instantiate_msg.json
 type TG4MixerInitMsg struct {
-	Admin      string `json:"admin,omitempty"`
+	//Admin      string `json:"admin,omitempty"`
 	LeftGroup  string `json:"left_group"`
 	RightGroup string `json:"right_group"`
 	Preauths   uint64 `json:"preauths,omitempty"`
