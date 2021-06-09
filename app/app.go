@@ -412,7 +412,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		evidencetypes.ModuleName /*stakingtypes.ModuleName,*/, ibchost.ModuleName,
 		twasm.ModuleName,
 	)
-	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName /*stakingtypes.ModuleName , */, twasm.ModuleName)
+	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName /*stakingtypes.ModuleName , */, twasm.ModuleName, poe.ModuleName)
 
 	// NOTE: The poe module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
