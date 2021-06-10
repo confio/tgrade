@@ -50,7 +50,6 @@ func TestSmokeTest(t *testing.T) {
 	initMsg := fmt.Sprintf(`{"verifier":%q, "beneficiary":%q}`, randomBech32Addr(), randomBech32Addr())
 	txResult = cli.CustomCommand("tx", "wasm", "instantiate", codeID, initMsg, "--label=testing", "--from=node0", "--gas=1500000")
 	RequireTxSuccess(t, txResult)
-	sut.AwaitNextBlock(t)
 	assert.Len(t, done(), 1)
 	assert.Contains(t, txResult, ContractBech32Address(1, 1))
 }
