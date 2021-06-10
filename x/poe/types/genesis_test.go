@@ -79,6 +79,22 @@ func TestValidateGenesis(t *testing.T) {
 				})
 			}),
 		},
+		"duplicate gentx": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.GenTxs = []json.RawMessage{myGenTx, myGenTx}
+				m.Engagement = append(m.Engagement, TG4Member{
+					Address: myOperatorAddr.String(),
+					Weight:  11,
+				})
+			}),
+			expErr: true,
+		},
+		"validator not in engagement group": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.GenTxs = []json.RawMessage{myGenTx}
+			}),
+			expErr: true,
+		},
 		"invalid gentx json": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.GenTxs = []json.RawMessage{[]byte("invalid")}

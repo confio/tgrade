@@ -59,17 +59,18 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		return sdkerrors.Wrap(err, "system admin address")
 	}
 
-	uniqueMembers := make(map[string]struct{}, len(g.Engagement))
+	uniqueEngagementMembers := make(map[string]struct{}, len(g.Engagement))
 	for i, v := range g.Engagement {
 		if err := v.ValidateBasic(); err != nil {
 			return sdkerrors.Wrapf(err, "contract %d", i)
 		}
-		if _, exists := uniqueMembers[v.Address]; exists {
+		if _, exists := uniqueEngagementMembers[v.Address]; exists {
 			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "member: %s", v.Address)
 		}
-		uniqueMembers[v.Address] = struct{}{}
+		uniqueEngagementMembers[v.Address] = struct{}{}
 	}
 
+	uniqueOperators := make(map[string]struct{}, len(g.GenTxs))
 	for i, v := range g.GenTxs {
 		genTx, err := txJSONDecoder(v)
 		if err != nil {
@@ -83,9 +84,13 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		if err := msg.ValidateBasic(); err != nil {
 			return sdkerrors.Wrapf(err, "gentx %d", i)
 		}
-		if _, ok := uniqueMembers[msg.DelegatorAddress]; !ok {
+		if _, ok := uniqueEngagementMembers[msg.DelegatorAddress]; !ok {
 			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator not in engagement group: %q, gentx: %d", msg.DelegatorAddress, i)
 		}
+		if _, exists := uniqueOperators[msg.DelegatorAddress]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator used already with another gen tx: %q, gentx: %d", msg.DelegatorAddress, i)
+		}
+		uniqueOperators[msg.DelegatorAddress] = struct{}{}
 	}
 	return nil
 }
