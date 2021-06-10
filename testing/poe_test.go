@@ -207,6 +207,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	// wait for msg execution
 	sut.AwaitNextBlock(t, sut.blockTime*5)
 	// wait for update manifests in valset (epoch has completed)
+	time.Sleep(time.Second)
 	sut.AwaitNextBlock(t)
 
 	// then validator set is updated

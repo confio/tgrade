@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/libs/sync"
 	client "github.com/tendermint/tendermint/rpc/client/http"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -199,11 +200,10 @@ func (s *SystemUnderTest) StopChain() {
 	s.cleanupFn = nil
 	cmd := exec.Command(locateExecutable("pkill"), "-15", "tgrade")
 	cmd.Dir = workDir
-	out, err := cmd.CombinedOutput()
+	_, err := cmd.CombinedOutput()
 	if err != nil {
 		s.Logf("failed to stop chain: %s\n", err)
 	}
-	s.Log(string(out))
 }
 
 // PrintBuffer prints the chain logs to the console
@@ -415,6 +415,11 @@ func (s *SystemUnderTest) resetBuffers() {
 	s.errBuff = ring.New(100)
 }
 
+// NewEventListener constructor for Eventlistener with system rpc address
+func (s *SystemUnderTest) NewEventListener(t *testing.T) *EventListener {
+	return NewEventListener(t, s.rpcAddr)
+}
+
 type Node struct {
 	ID      string
 	IP      string
@@ -459,7 +464,7 @@ type (
 	EventConsumer func(e ctypes.ResultEvent) (more bool)
 )
 
-// Subscribe to receive events for a topic.
+// Subscribe to receive events for a topic. Does not block.
 // For query syntax See https://docs.cosmos.network/master/core/events.html#subscribing-to-events
 func (l *EventListener) Subscribe(query string, cb EventConsumer) func() {
 	ctx, done := context.WithCancel(context.Background())
@@ -483,27 +488,33 @@ func (l *EventListener) Subscribe(query string, cb EventConsumer) func() {
 	return cleanup
 }
 
-// AwaitQuery waits for single result or timeout
-func (l *EventListener) AwaitQuery(query string) *ctypes.ResultEvent {
-	c, result := CapturingEventConsumer()
-	l.Subscribe(query, TimeoutConsumer(l.t, defaultWaitTime, c))
+// AwaitQuery blocks and waits for a single result or timeout. This can be used with `broadcast-mode=async`.
+// For query syntax See https://docs.cosmos.network/master/core/events.html#subscribing-to-events
+func (l *EventListener) AwaitQuery(query string, optMaxWaitTime ...time.Duration) *ctypes.ResultEvent {
+	c, result := CaptureSingleEventConsumer()
+	maxWaitTime := defaultWaitTime
+	if len(optMaxWaitTime) != 0 {
+		maxWaitTime = optMaxWaitTime[0]
+	}
+	cleanupFn := l.Subscribe(query, TimeoutConsumer(l.t, maxWaitTime, c))
+	l.t.Cleanup(cleanupFn)
 	return result
 }
 
 // TimeoutConsumer is an event consumer decorator with a max wait time. Panics when wait time exceeded without
 // a result returned
-func TimeoutConsumer(t *testing.T, waitTime time.Duration, next EventConsumer) EventConsumer {
+func TimeoutConsumer(t *testing.T, maxWaitTime time.Duration, next EventConsumer) EventConsumer {
 	ctx, done := context.WithCancel(context.Background())
-	timeout := time.NewTimer(waitTime)
+	timeout := time.NewTimer(maxWaitTime)
 	go func() {
 		select {
 		case <-ctx.Done():
 		case <-timeout.C:
-			t.Fatalf("Timeout waiting for new events %s", waitTime)
+			t.Fatalf("Timeout waiting for new events %s", maxWaitTime)
 		}
 	}()
 	return func(e ctypes.ResultEvent) (more bool) {
-		timeout.Reset(waitTime)
+		timeout.Reset(maxWaitTime)
 		result := next(e)
 		if !result {
 			done()
@@ -512,12 +523,52 @@ func TimeoutConsumer(t *testing.T, waitTime time.Duration, next EventConsumer) E
 	}
 }
 
-// CapturingEventConsumer consumes one event. No timeout
-func CapturingEventConsumer() (EventConsumer, *ctypes.ResultEvent) {
+// CaptureSingleEventConsumer consumes one event. No timeout
+func CaptureSingleEventConsumer() (EventConsumer, *ctypes.ResultEvent) {
 	var result ctypes.ResultEvent
 	return func(e ctypes.ResultEvent) (more bool) {
 		return false
 	}, &result
+}
+
+// CaptureAllEventsConsumer is an `EventConsumer` that captures all events until `done()` is called to stop or timeout happens.
+// The consumer works async in the background and returns all the captured events when `done()` is called.
+// This can be used to verify that certain events have happened.
+// Example usage:
+// 	c, done := CaptureAllEventsConsumer(t)
+//	query := `tm.event='Tx'`
+//	cleanupFn := l.Subscribe(query, c)
+//	t.Cleanup(cleanupFn)
+//
+//  // do something in your test that create events
+//
+//	assert.Len(t, done(), 1) // then verify your assumption
+func CaptureAllEventsConsumer(t *testing.T, optMaxWaitTime ...time.Duration) (c EventConsumer, done func() []ctypes.ResultEvent) {
+	maxWaitTime := defaultWaitTime
+	if len(optMaxWaitTime) != 0 {
+		maxWaitTime = optMaxWaitTime[0]
+	}
+	var (
+		mu             sync.Mutex
+		capturedEvents []ctypes.ResultEvent
+		exit           bool
+	)
+	collectEventsConsumer := func(e ctypes.ResultEvent) (more bool) {
+		mu.Lock()
+		defer mu.Unlock()
+		if exit {
+			return false
+		}
+		capturedEvents = append(capturedEvents, e)
+		return true
+	}
+
+	return TimeoutConsumer(t, maxWaitTime, collectEventsConsumer), func() []ctypes.ResultEvent {
+		mu.Lock()
+		defer mu.Unlock()
+		exit = true
+		return capturedEvents
+	}
 }
 
 // restoreOriginalGenesis replace nodes genesis by the one created on setup
