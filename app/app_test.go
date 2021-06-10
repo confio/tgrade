@@ -53,7 +53,6 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	// - account object
 	// - enough funds on the bank
 	// - membership in engagement group
-
 	marshaler := MakeEncodingConfig().Marshaler
 
 	myGenTx, myAddr, _ := poetypes.RandomGenTX(t, 100)

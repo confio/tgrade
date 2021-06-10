@@ -12,19 +12,19 @@ func TestPoEContractTypeValidate(t *testing.T) {
 		expErr  bool
 	}{
 		"staking": {
-			srcType: PoEContractType_STAKING,
+			srcType: PoEContractTypeStaking,
 		},
 		"valset": {
-			srcType: PoEContractType_VALSET,
+			srcType: PoEContractTypeValset,
 		},
 		"engagement": {
-			srcType: PoEContractType_ENGAGEMENT,
+			srcType: PoEContractTypeEngagement,
 		},
 		"mixer": {
-			srcType: PoEContractType_MIXER,
+			srcType: PoEContractTypeMixer,
 		},
 		"undefined": {
-			srcType: PoEContractType_UNDEFINED,
+			srcType: PoEContractTypeUndefined,
 			expErr:  true,
 		},
 		"unsupported type": {
@@ -51,27 +51,27 @@ func TestPoEContractTypeFrom(t *testing.T) {
 	}{
 		"STAKING": {
 			src: "STAKING",
-			exp: PoEContractType_STAKING,
+			exp: PoEContractTypeStaking,
 		},
 		"VALSET": {
 			src: "VALSET",
-			exp: PoEContractType_VALSET,
+			exp: PoEContractTypeValset,
 		},
 		"ENGAGEMENT": {
 			src: "ENGAGEMENT",
-			exp: PoEContractType_ENGAGEMENT,
+			exp: PoEContractTypeEngagement,
 		},
 		"MIXER": {
 			src: "MIXER",
-			exp: PoEContractType_MIXER,
+			exp: PoEContractTypeMixer,
 		},
 		"lower case ": {
 			src: "staking",
-			exp: PoEContractType_UNDEFINED,
+			exp: PoEContractTypeUndefined,
 		},
 		"not in list": {
 			src: "foobar",
-			exp: PoEContractType_UNDEFINED,
+			exp: PoEContractTypeUndefined,
 		},
 	}
 	for name, spec := range specs {

@@ -29,7 +29,7 @@ func GetQueryCmd() *cobra.Command {
 func GetCmdShowPoEContract() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "contract-address <contract_type>",
-		Short:   "Show contract addresses for given contract type type",
+		Short:   "Show contract address for given contract type",
 		Long:    fmt.Sprintf("Show contract address for PoE type [%s]", allPoEContractTypes()),
 		Aliases: []string{"ca"},
 		Args:    cobra.ExactArgs(1),
@@ -40,7 +40,7 @@ func GetCmdShowPoEContract() *cobra.Command {
 			}
 
 			cbt := types.PoEContractTypeFrom(args[0])
-			if cbt == types.PoEContractType_UNDEFINED {
+			if cbt == types.PoEContractTypeUndefined {
 				return fmt.Errorf("unknown contract type: %q", args[0])
 			}
 
@@ -64,7 +64,7 @@ func GetCmdShowPoEContract() *cobra.Command {
 func allPoEContractTypes() string {
 	r := make([]string, 0, len(types.PoEContractType_name)-1)
 	for _, v := range types.PoEContractType_name {
-		if v == types.PoEContractType_UNDEFINED.String() {
+		if v == types.PoEContractTypeUndefined.String() {
 			continue
 		}
 		r = append(r, v)

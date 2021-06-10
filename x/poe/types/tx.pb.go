@@ -35,11 +35,16 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // MsgCreateValidator defines a PoE message for creating a new validator.
 // Based on the SDK staking.MsgCreateValidator
 type MsgCreateValidator struct {
-	Description      types.Description `protobuf:"bytes,1,opt,name=description,proto3" json:"description"`
-	DelegatorAddress string            `protobuf:"bytes,4,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty" yaml:"delegator_address"`
-	ValidatorAddress string            `protobuf:"bytes,5,opt,name=validator_address,json=validatorAddress,proto3" json:"validator_address,omitempty" yaml:"validator_address"`
-	Pubkey           *types1.Any       `protobuf:"bytes,6,opt,name=pubkey,proto3" json:"pubkey,omitempty"`
-	Value            types2.Coin       `protobuf:"bytes,7,opt,name=value,proto3" json:"value"`
+	// Description meta data
+	Description types.Description `protobuf:"bytes,1,opt,name=description,proto3" json:"description"`
+	// DelegatorAddress is the bech32 address string
+	DelegatorAddress string `protobuf:"bytes,4,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty" yaml:"delegator_address"`
+	// ValidatorAddress is the bech32 address string with the
+	ValidatorAddress string `protobuf:"bytes,5,opt,name=validator_address,json=validatorAddress,proto3" json:"validator_address,omitempty" yaml:"validator_address"`
+	// Pubkey public key
+	Pubkey *types1.Any `protobuf:"bytes,6,opt,name=pubkey,proto3" json:"pubkey,omitempty"`
+	// Value defines the initial staking amount
+	Value types2.Coin `protobuf:"bytes,7,opt,name=value,proto3" json:"value"`
 }
 
 func (m *MsgCreateValidator) Reset()         { *m = MsgCreateValidator{} }

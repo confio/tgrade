@@ -19,7 +19,7 @@ import (
 // default values
 var (
 	DefaultTokens = sdk.TokensFromConsensusPower(100)
-	defaultAmount = DefaultTokens.String() + sdk.DefaultBondDenom
+	defaultAmount = DefaultTokens.String() + types.DefaultBondDenom
 )
 
 // NewTxCmd returns a root CLI command handler for all x/staking transaction commands.

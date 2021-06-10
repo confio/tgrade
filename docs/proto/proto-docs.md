@@ -144,11 +144,11 @@ GenesisState - initial state of module
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `seed_contracts` | [bool](#bool) |  | SeedContracts when enabled stores and instantiates the Proof of Engagement contracts on the chain. |
-| `gen_txs` | [bytes](#bytes) | repeated | gen_txs defines the genesis transactions. |
-| `system_admin_address` | [string](#string) |  |  |
-| `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated |  |
-| `engagement` | [TG4Member](#confio.poe.v1beta1.TG4Member) | repeated |  |
-| `bond_denom` | [string](#string) |  | bond_denom defines the bondable coin denomination. |
+| `gen_txs` | [bytes](#bytes) | repeated | GenTxs defines the genesis transactions to create a validator. |
+| `system_admin_address` | [string](#string) |  | SystemAdminAddress single address that is set as admin for the PoE contracts in seed mode. |
+| `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated | Contracts Poe contract addresses and types when used with state dump in non seed mode. |
+| `engagement` | [TG4Member](#confio.poe.v1beta1.TG4Member) | repeated | Engagement weighted members of the engagement group. Validators should be in here. |
+| `bond_denom` | [string](#string) |  | BondDenom defines the bondable coin denomination. |
 
 
 
@@ -158,12 +158,12 @@ GenesisState - initial state of module
 <a name="confio.poe.v1beta1.PoEContract"></a>
 
 ### PoEContract
-
+PoEContract address and type information
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `contract_type` | [PoEContractType](#confio.poe.v1beta1.PoEContractType) |  |  |
+| `contract_type` | [PoEContractType](#confio.poe.v1beta1.PoEContractType) |  | ContractType type. |
 | `address` | [string](#string) |  | Address is the bech32 address string |
 
 
@@ -174,12 +174,12 @@ GenesisState - initial state of module
 <a name="confio.poe.v1beta1.TG4Member"></a>
 
 ### TG4Member
-
+TG4Member member of the Engagement group.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `address` | [string](#string) |  |  |
+| `address` | [string](#string) |  | Address is the bech32 address string |
 | `weight` | [uint64](#uint64) |  |  |
 
 
@@ -248,7 +248,7 @@ Query defines the gRPC querier service.
 
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
-| `ContractAddress` | [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest) | [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse) | todo (Alex): support query system admin as well? | GET|/poe/v1beta1/contract/{contract_type}|
+| `ContractAddress` | [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest) | [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse) |  | GET|/poe/v1beta1/contract/{contract_type}|
 
  <!-- end services -->
 
@@ -270,11 +270,11 @@ Based on the SDK staking.MsgCreateValidator
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  |  |
-| `delegator_address` | [string](#string) |  |  |
-| `validator_address` | [string](#string) |  |  |
-| `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  |  |
-| `value` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+| `description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  | Description meta data |
+| `delegator_address` | [string](#string) |  | DelegatorAddress is the bech32 address string |
+| `validator_address` | [string](#string) |  | ValidatorAddress is the bech32 address string with the |
+| `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  | Pubkey public key |
+| `value` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | Value defines the initial staking amount |
 
 
 

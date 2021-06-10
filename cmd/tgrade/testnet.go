@@ -212,7 +212,7 @@ func InitTestnet(
 			_ = os.RemoveAll(outputDir)
 			return err
 		}
-		if i == 0 { // generate one key in node0 keychain. This is used by system tests
+		if i == 0 { // generate new key for system admin in node0 keychain. This keychain is used by system tests
 			adminAddr, _, err = server.GenerateSaveCoinKey(kb, "systemadmin", true, algo)
 			if err != nil {
 				_ = os.RemoveAll(outputDir)

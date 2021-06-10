@@ -26,7 +26,7 @@ func (k Keeper) SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractTy
 }
 
 func (k Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
-	if ctype == types.PoEContractType_UNDEFINED {
+	if ctype == types.PoEContractTypeUndefined {
 		return nil, sdkerrors.Wrap(wasmtypes.ErrInvalid, "contract type")
 	}
 	if _, ok := types.PoEContractType_name[int32(ctype)]; !ok {

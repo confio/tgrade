@@ -14,7 +14,6 @@ service Query {
       returns (QueryContractAddressResponse) {
     option (google.api.http).get = "/poe/v1beta1/contract/{contract_type}";
   }
-  // todo (Alex): support query system admin as well?
 }
 
 // QueryContractAddressRequest is the request type for the Query/ContractAddress

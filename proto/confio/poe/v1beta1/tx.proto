@@ -14,9 +14,6 @@ option go_package = "github.com/confio/tgrade/x/poe/types";
 service Msg {
   // CreateValidator defines a method for creating a new validator.
   rpc CreateValidator(MsgCreateValidator) returns (MsgCreateValidatorResponse);
-
-  // todo (Alex): Do we need the following and others?
-  // EditValidator, Delegate, BeginRedelegate, Undelegate
 }
 
 // MsgCreateValidator defines a PoE message for creating a new validator.
@@ -25,14 +22,21 @@ message MsgCreateValidator {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 
+  // Description meta data
   cosmos.staking.v1beta1.Description description = 1
       [ (gogoproto.nullable) = false ];
+  // DelegatorAddress is the bech32 address string
   string delegator_address = 4
       [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
+  // ValidatorAddress is the bech32 address string with the
   string validator_address = 5
       [ (gogoproto.moretags) = "yaml:\"validator_address\"" ];
+
+  // Pubkey public key
   google.protobuf.Any pubkey = 6
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
+
+  // Value defines the initial staking amount
   cosmos.base.v1beta1.Coin value = 7 [ (gogoproto.nullable) = false ];
 }
 

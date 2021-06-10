@@ -23,7 +23,7 @@ func TestQueryContractAddress(t *testing.T) {
 		expErrCode codes.Code
 	}{
 		"return address": {
-			srcMsg: types.QueryContractAddressRequest{ContractType: types.PoEContractType_MIXER},
+			srcMsg: types.QueryContractAddressRequest{ContractType: types.PoEContractTypeMixer},
 			mockFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
 				return myContractAddr, nil
 			},
@@ -32,14 +32,14 @@ func TestQueryContractAddress(t *testing.T) {
 			},
 		},
 		"not found": {
-			srcMsg: types.QueryContractAddressRequest{ContractType: types.PoEContractType_MIXER},
+			srcMsg: types.QueryContractAddressRequest{ContractType: types.PoEContractTypeMixer},
 			mockFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
 				return nil, wasmtypes.ErrNotFound
 			},
 			expErrCode: codes.NotFound,
 		},
 		"other error": {
-			srcMsg: types.QueryContractAddressRequest{ContractType: types.PoEContractType_MIXER},
+			srcMsg: types.QueryContractAddressRequest{ContractType: types.PoEContractTypeMixer},
 			mockFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
 				return nil, errors.New("testing")
 			},

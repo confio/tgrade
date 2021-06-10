@@ -16,6 +16,7 @@ type abciKeeper interface {
 	IterateContractCallbacksByType(ctx sdk.Context, callbackType twasmtypes.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 
+// EndBlocker calls the Valset contract for the validator diff.
 func EndBlocker(parentCtx sdk.Context, k abciKeeper) []abci.ValidatorUpdate {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 	logger := keeper.ModuleLogger(parentCtx)

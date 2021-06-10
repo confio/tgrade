@@ -40,8 +40,16 @@ type poeKeeper interface {
 	SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
 }
 
-// bootstrapPoEContracts set up all PoE contracts:
+// bootstrapPoEContracts stores and instantiates all PoE contracts:
 //
+// * [tg4-group](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-group) - engagement group with weighted
+//  members
+//* [tg4-stake](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-stake) - validator group weighted by
+//  staked amount
+//* [valset](https://github.com/confio/tgrade-contracts/tree/main/contracts/tgrade-valset) - privileged contract to map a
+//  trusted cw4 contract to the Tendermint validator set running the chain
+//* [mixer](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-mixer) - calculates the combined value of
+//  stake and engagement points. Source for the valset contract.
 func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
 	tg4EngagementInitMsg := contract.TG4GroupInitMsg{
 		Admin:    gs.SystemAdminAddress,
@@ -67,7 +75,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 group")
 	}
-	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractType_ENGAGEMENT, engagementContractAddr)
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeEngagement, engagementContractAddr)
 	if err := k.PinCode(ctx, codeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tg4 group contract")
 	}
@@ -90,7 +98,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 stake")
 	}
-	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractType_STAKING, stakersContractAddr)
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeStaking, stakersContractAddr)
 	if err := k.PinCode(ctx, codeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tg4 stake contract")
 	}
@@ -107,7 +115,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 mixer")
 	}
-	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractType_MIXER, mixerContractAddr)
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeMixer, mixerContractAddr)
 
 	if err := k.PinCode(ctx, codeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tg4 mixer contract")
@@ -128,7 +136,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate valset")
 	}
-	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractType_VALSET, valsetContractAddr)
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeValset, valsetContractAddr)
 
 	if err := tk.SetPrivileged(ctx, valsetContractAddr); err != nil {
 		return sdkerrors.Wrap(err, "grant privileges to valset contract")

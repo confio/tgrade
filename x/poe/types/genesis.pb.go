@@ -31,12 +31,18 @@ type GenesisState struct {
 	// SeedContracts when enabled stores and instantiates the Proof of Engagement
 	// contracts on the chain.
 	SeedContracts bool `protobuf:"varint,1,opt,name=seed_contracts,json=seedContracts,proto3" json:"seed_contracts,omitempty"`
-	// gen_txs defines the genesis transactions.
-	GenTxs             []encoding_json.RawMessage `protobuf:"bytes,2,rep,name=gen_txs,json=genTxs,proto3,casttype=encoding/json.RawMessage" json:"gentxs" yaml:"gentxs"`
-	SystemAdminAddress string                     `protobuf:"bytes,3,opt,name=system_admin_address,json=systemAdminAddress,proto3" json:"system_admin_address,omitempty"`
-	Contracts          []PoEContract              `protobuf:"bytes,4,rep,name=contracts,proto3" json:"contracts,omitempty"`
-	Engagement         []TG4Member                `protobuf:"bytes,5,rep,name=engagement,proto3" json:"engagement,omitempty"`
-	// bond_denom defines the bondable coin denomination.
+	// GenTxs defines the genesis transactions to create a validator.
+	GenTxs []encoding_json.RawMessage `protobuf:"bytes,2,rep,name=gen_txs,json=genTxs,proto3,casttype=encoding/json.RawMessage" json:"gentxs" yaml:"gentxs"`
+	// SystemAdminAddress single address that is set as admin for the PoE
+	// contracts in seed mode.
+	SystemAdminAddress string `protobuf:"bytes,3,opt,name=system_admin_address,json=systemAdminAddress,proto3" json:"system_admin_address,omitempty"`
+	// Contracts Poe contract addresses and types when used with state dump in non
+	// seed mode.
+	Contracts []PoEContract `protobuf:"bytes,4,rep,name=contracts,proto3" json:"contracts,omitempty"`
+	// Engagement weighted members of the engagement group. Validators should be
+	// in here.
+	Engagement []TG4Member `protobuf:"bytes,5,rep,name=engagement,proto3" json:"engagement,omitempty"`
+	// BondDenom defines the bondable coin denomination.
 	BondDenom string `protobuf:"bytes,6,opt,name=bond_denom,json=bondDenom,proto3" json:"bond_denom,omitempty" yaml:"bond_denom"`
 }
 
@@ -115,7 +121,9 @@ func (m *GenesisState) GetBondDenom() string {
 	return ""
 }
 
+// PoEContract address and type information
 type PoEContract struct {
+	// ContractType type.
 	ContractType PoEContractType `protobuf:"varint,1,opt,name=contract_type,json=contractType,proto3,enum=confio.poe.v1beta1.PoEContractType" json:"contract_type,omitempty"`
 	// Address is the bech32 address string
 	Address string `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
@@ -158,7 +166,7 @@ func (m *PoEContract) GetContractType() PoEContractType {
 	if m != nil {
 		return m.ContractType
 	}
-	return PoEContractType_UNDEFINED
+	return PoEContractTypeUndefined
 }
 
 func (m *PoEContract) GetAddress() string {
@@ -168,7 +176,9 @@ func (m *PoEContract) GetAddress() string {
 	return ""
 }
 
+// TG4Member member of the Engagement group.
 type TG4Member struct {
+	// Address is the bech32 address string
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"json"`
 	Weight  uint64 `protobuf:"varint,2,opt,name=weight,proto3" json:"weight"`
 }

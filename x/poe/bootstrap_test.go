@@ -64,10 +64,10 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			assert.Equal(t, []uint64{1, 2, 3}, *capPin)
 
 			assert.Equal(t, []keeper.CapturedPoEContractAddress{
-				{Ctype: types.PoEContractType_ENGAGEMENT, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 1)},
-				{Ctype: types.PoEContractType_STAKING, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 2)},
-				{Ctype: types.PoEContractType_MIXER, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 3)},
-				{Ctype: types.PoEContractType_VALSET, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)},
+				{Ctype: types.PoEContractTypeEngagement, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 1)},
+				{Ctype: types.PoEContractTypeStaking, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 2)},
+				{Ctype: types.PoEContractTypeMixer, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 3)},
+				{Ctype: types.PoEContractTypeValset, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)},
 			}, *capSetAddr)
 			// and privilege set
 			require.Equal(t, []sdk.AccAddress{twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)}, *capPriv)

@@ -16,19 +16,19 @@ func TestSetGetPoEContractAddress(t *testing.T) {
 		expErr    bool
 	}{
 		"staking": {
-			srcType: types.PoEContractType_STAKING,
+			srcType: types.PoEContractTypeStaking,
 		},
 		"valset": {
-			srcType: types.PoEContractType_VALSET,
+			srcType: types.PoEContractTypeValset,
 		},
 		"engagement": {
-			srcType: types.PoEContractType_ENGAGEMENT,
+			srcType: types.PoEContractTypeEngagement,
 		},
 		"mixer": {
-			srcType: types.PoEContractType_MIXER,
+			srcType: types.PoEContractTypeMixer,
 		},
 		"undefined": {
-			srcType: types.PoEContractType_UNDEFINED,
+			srcType: types.PoEContractTypeUndefined,
 			expErr:  true,
 		},
 		"unsupported type": {
@@ -71,7 +71,7 @@ func TestIteratePoEContracts(t *testing.T) {
 	storedTypes := make(map[types.PoEContractType]sdk.AccAddress)
 	for c, _ := range types.PoEContractType_name {
 		src := types.PoEContractType(c)
-		if src == types.PoEContractType_UNDEFINED {
+		if src == types.PoEContractTypeUndefined {
 			continue
 		}
 		var myAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)

@@ -124,18 +124,18 @@ func TestInitGenesis(t *testing.T) {
 	assert.Equal(t, valsetAsMap(myValidators.expValidatorSet()), valsetAsMap(gotValset)) // compare unordered
 
 	// and engagement group is setup as expected
-	addr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractType_ENGAGEMENT)
+	addr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
 	require.NoError(t, err)
 	gotMembers := queryAllMembers(t, ctx, example.TWasmKeeper, addr)
 	assert.Equal(t, myValidators.expEngagementGroup(), gotMembers)
 
 	// and staking group setup as expected
-	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractType_STAKING)
+	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	gotMembers = queryAllMembers(t, ctx, example.TWasmKeeper, addr)
 	assert.Equal(t, myValidators.expStakingGroup(), gotMembers)
 
 	// and valset config
-	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractType_VALSET)
+	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	require.NoError(t, err)
 	res, err := example.TWasmKeeper.QuerySmart(ctx, addr, []byte(`{"config":{}}`))
 	require.NoError(t, err)
@@ -143,7 +143,7 @@ func TestInitGenesis(t *testing.T) {
 	var gotValsetConfig contract.ValsetConfigQueryResponse
 	require.NoError(t, json.Unmarshal(res, &gotValsetConfig))
 
-	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractType_MIXER)
+	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
 	require.NoError(t, err)
 
 	expConfig := contract.ValsetConfigQueryResponse{

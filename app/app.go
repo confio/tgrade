@@ -198,7 +198,7 @@ type TgradeApp struct {
 	crisisKeeper     crisiskeeper.Keeper
 	upgradeKeeper    upgradekeeper.Keeper
 	paramsKeeper     paramskeeper.Keeper
-	ibcKeeper        *ibckeeper.Keeper // IBC contractSource must be a pointer in the app, so we can SetRouter on it correctly
+	ibcKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	evidenceKeeper   evidencekeeper.Keeper
 	transferKeeper   ibctransferkeeper.Keeper
 	twasmKeeper      twasmkeeper.Keeper
@@ -291,7 +291,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		stakingtypes.NewMultiStakingHooks(app.distrKeeper.Hooks(), app.slashingKeeper.Hooks()),
 	)
 
-	// Create IBC contractSource
+	// Create IBC Keeper
 	app.ibcKeeper = ibckeeper.NewKeeper(
 		appCodec, keys[ibchost.StoreKey], app.getSubspace(ibchost.ModuleName), app.stakingKeeper, scopedIBCKeeper,
 	)
@@ -408,11 +408,11 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
-		upgradetypes.ModuleName, /* minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName, */
-		evidencetypes.ModuleName /*stakingtypes.ModuleName,*/, ibchost.ModuleName,
+		upgradetypes.ModuleName,
+		evidencetypes.ModuleName, ibchost.ModuleName,
 		twasm.ModuleName,
 	)
-	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName /*stakingtypes.ModuleName , */, twasm.ModuleName, poe.ModuleName)
+	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, govtypes.ModuleName, twasm.ModuleName, poe.ModuleName)
 
 	// NOTE: The poe module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.

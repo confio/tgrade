@@ -9,9 +9,13 @@ option go_package = "github.com/confio/tgrade/x/poe/types";
 
 // PoEContractType type of PoE contract
 enum PoEContractType {
-  UNDEFINED = 0;
-  STAKING = 1;
-  VALSET = 2;
-  ENGAGEMENT = 3;
-  MIXER = 4;
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  UNDEFINED = 0
+      [ (gogoproto.enumvalue_customname) = "PoEContractTypeUndefined" ];
+  STAKING = 1 [ (gogoproto.enumvalue_customname) = "PoEContractTypeStaking" ];
+  VALSET = 2 [ (gogoproto.enumvalue_customname) = "PoEContractTypeValset" ];
+  ENGAGEMENT = 3
+      [ (gogoproto.enumvalue_customname) = "PoEContractTypeEngagement" ];
+  MIXER = 4 [ (gogoproto.enumvalue_customname) = "PoEContractTypeMixer" ];
 }

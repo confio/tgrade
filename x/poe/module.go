@@ -170,7 +170,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data j
 		panic(err)
 	}
 	// verify PoE setup
-	addr, err := am.poeKeeper.GetPoEContractAddress(ctx, types.PoEContractType_VALSET)
+	addr, err := am.poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	if err != nil {
 		panic(fmt.Sprintf("valset addr: %s", err))
 	}

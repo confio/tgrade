@@ -42,7 +42,7 @@ func TestValidateGenesis(t *testing.T) {
 		},
 		"seed with legacy contracts": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.Contracts = []PoEContract{{ContractType: PoEContractType_VALSET, Address: RandomAccAddress().String()}}
+				m.Contracts = []PoEContract{{ContractType: PoEContractTypeValset, Address: RandomAccAddress().String()}}
 			}),
 			expErr: true,
 		},

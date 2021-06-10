@@ -49,9 +49,9 @@ func TestCreateValidator(t *testing.T) {
 			cm := ContractSourceMock{
 				GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
 					switch ctype {
-					case types.PoEContractType_VALSET:
+					case types.PoEContractTypeValset:
 						return myValsetContract, nil
-					case types.PoEContractType_STAKING:
+					case types.PoEContractTypeStaking:
 						return myStakingContract, nil
 					default:
 						t.Fatalf("unexpected type: %s", ctype)
