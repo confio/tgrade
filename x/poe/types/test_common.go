@@ -7,6 +7,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/server"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	"github.com/cosmos/cosmos-sdk/std"
@@ -43,7 +44,7 @@ func RandomAccAddress() sdk.AccAddress {
 }
 
 // RandomGenTX returns a signed genesis tx
-func RandomGenTX(t *testing.T) (json.RawMessage, sdk.AccAddress) {
+func RandomGenTX(t *testing.T, power uint32) (json.RawMessage, sdk.AccAddress, cryptotypes.PubKey) {
 	t.Helper()
 	nodeConfig := cfg.TestConfig()
 	nodeConfig.RootDir = t.TempDir()
@@ -61,7 +62,7 @@ func RandomGenTX(t *testing.T) (json.RawMessage, sdk.AccAddress) {
 	require.NoError(t, err)
 
 	// prepare genesis tx
-	valTokens := sdk.TokensFromConsensusPower(100)
+	valTokens := sdk.TokensFromConsensusPower(int64(power))
 	createValMsg, err := NewMsgCreateValidator(
 		sdk.ValAddress(addr),
 		valPubKey,
@@ -85,5 +86,5 @@ func RandomGenTX(t *testing.T) (json.RawMessage, sdk.AccAddress) {
 
 	txBz, err := txConfig.TxJSONEncoder()(txBuilder.GetTx())
 	require.NoError(t, err)
-	return txBz, addr
+	return txBz, addr, valPubKey
 }

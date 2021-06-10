@@ -8,7 +8,7 @@ import (
 
 func TestValidateGenesis(t *testing.T) {
 	var anyAccAddr = RandomAccAddress()
-	myGenTx, myOperatorAddr := RandomGenTX(t)
+	myGenTx, myOperatorAddr, _ := RandomGenTX(t, 100)
 	txConfig := MakeEncodingConfig(t).TxConfig
 	specs := map[string]struct {
 		source GenesisState

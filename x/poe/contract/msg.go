@@ -24,9 +24,9 @@ type TG4Member struct {
 	Weight uint64 `json:"weight"`
 }
 
-func SortByWeight(s []TG4Member) []TG4Member {
+func SortByWeightDesc(s []TG4Member) []TG4Member {
 	sort.Slice(s, func(i, j int) bool {
-		return s[i].Weight > s[j].Weight || s[i].Weight == s[j].Weight && s[i].Addr > s[j].Addr
+		return s[i].Weight > s[j].Weight || s[i].Weight == s[j].Weight && s[i].Addr < s[j].Addr
 	})
 	return s
 }

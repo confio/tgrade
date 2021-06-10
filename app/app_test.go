@@ -56,7 +56,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 
 	marshaler := MakeEncodingConfig().Marshaler
 
-	myGenTx, myAddr := poetypes.RandomGenTX(t)
+	myGenTx, myAddr, _ := poetypes.RandomGenTX(t, 100)
 
 	var authGenState authtypes.GenesisState
 	marshaler.MustUnmarshalJSON(genesisState[authtypes.ModuleName], &authGenState)

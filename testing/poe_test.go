@@ -49,7 +49,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	require.Len(t, validators, sut.nodesCount, qResult)
 	t.Log("got query result", qResult)
 
-	sortedMember := testingcontracts.SortByWeight(engagementGroup)
+	sortedMember := testingcontracts.SortByWeightDesc(engagementGroup)
 	assertValidatorsUpdated(t, sortedMember, stakedAmounts, sut.nodesCount)
 
 	if sut.nodesCount < 4 {
