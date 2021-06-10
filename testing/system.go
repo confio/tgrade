@@ -464,7 +464,7 @@ type (
 	EventConsumer func(e ctypes.ResultEvent) (more bool)
 )
 
-// Subscribe to receive events for a topic.
+// Subscribe to receive events for a topic. Does not block.
 // For query syntax See https://docs.cosmos.network/master/core/events.html#subscribing-to-events
 func (l *EventListener) Subscribe(query string, cb EventConsumer) func() {
 	ctx, done := context.WithCancel(context.Background())
@@ -488,7 +488,7 @@ func (l *EventListener) Subscribe(query string, cb EventConsumer) func() {
 	return cleanup
 }
 
-// AwaitQuery waits for single result or timeout
+// AwaitQuery blocks and waits for a single result or timeout. This can be used with `broadcast-mode=async`.
 // For query syntax See https://docs.cosmos.network/master/core/events.html#subscribing-to-events
 func (l *EventListener) AwaitQuery(query string, optMaxWaitTime ...time.Duration) *ctypes.ResultEvent {
 	c, result := CaptureSingleEventConsumer()
@@ -503,18 +503,18 @@ func (l *EventListener) AwaitQuery(query string, optMaxWaitTime ...time.Duration
 
 // TimeoutConsumer is an event consumer decorator with a max wait time. Panics when wait time exceeded without
 // a result returned
-func TimeoutConsumer(t *testing.T, waitTime time.Duration, next EventConsumer) EventConsumer {
+func TimeoutConsumer(t *testing.T, maxWaitTime time.Duration, next EventConsumer) EventConsumer {
 	ctx, done := context.WithCancel(context.Background())
-	timeout := time.NewTimer(waitTime)
+	timeout := time.NewTimer(maxWaitTime)
 	go func() {
 		select {
 		case <-ctx.Done():
 		case <-timeout.C:
-			t.Fatalf("Timeout waiting for new events %s", waitTime)
+			t.Fatalf("Timeout waiting for new events %s", maxWaitTime)
 		}
 	}()
 	return func(e ctypes.ResultEvent) (more bool) {
-		timeout.Reset(waitTime)
+		timeout.Reset(maxWaitTime)
 		result := next(e)
 		if !result {
 			done()
@@ -531,32 +531,43 @@ func CaptureSingleEventConsumer() (EventConsumer, *ctypes.ResultEvent) {
 	}, &result
 }
 
-//CaptureAllEventsConsumer capture all events until done() is called or timeout happens.
+// CaptureAllEventsConsumer is an `EventConsumer` that captures all events until `done()` is called to stop or timeout happens.
+// The consumer works async in the background and returns all the captured events when `done()` is called.
+// This can be used to verify that certain events have happened.
+// Example usage:
+// 	c, done := CaptureAllEventsConsumer(t)
+//	query := `tm.event='Tx'`
+//	cleanupFn := l.Subscribe(query, c)
+//	t.Cleanup(cleanupFn)
+//
+//  // do something in your test that create events
+//
+//	assert.Len(t, done(), 1) // then verify your assumption
 func CaptureAllEventsConsumer(t *testing.T, optMaxWaitTime ...time.Duration) (c EventConsumer, done func() []ctypes.ResultEvent) {
 	maxWaitTime := defaultWaitTime
 	if len(optMaxWaitTime) != 0 {
 		maxWaitTime = optMaxWaitTime[0]
 	}
 	var (
-		mu     sync.Mutex
-		events []ctypes.ResultEvent
-		exit   bool
+		mu             sync.Mutex
+		capturedEvents []ctypes.ResultEvent
+		exit           bool
 	)
-	x := func(e ctypes.ResultEvent) (more bool) {
+	collectEventsConsumer := func(e ctypes.ResultEvent) (more bool) {
 		mu.Lock()
 		defer mu.Unlock()
 		if exit {
 			return false
 		}
-		events = append(events, e)
+		capturedEvents = append(capturedEvents, e)
 		return true
 	}
 
-	return TimeoutConsumer(t, maxWaitTime, x), func() []ctypes.ResultEvent {
+	return TimeoutConsumer(t, maxWaitTime, collectEventsConsumer), func() []ctypes.ResultEvent {
 		mu.Lock()
 		defer mu.Unlock()
 		exit = true
-		return events
+		return capturedEvents
 	}
 }
 
