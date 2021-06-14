@@ -24,7 +24,7 @@ var (
 
 // NewTxCmd returns a root CLI command handler for all x/staking transaction commands.
 func NewTxCmd() *cobra.Command {
-	stakingTxCmd := &cobra.Command{
+	poeTxCmd := &cobra.Command{
 		Use:                        types.ModuleName,
 		Short:                      "PoE transaction subcommands",
 		DisableFlagParsing:         true,
@@ -32,11 +32,11 @@ func NewTxCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	stakingTxCmd.AddCommand(
+	poeTxCmd.AddCommand(
 		NewCreateValidatorCmd(),
 	)
 
-	return stakingTxCmd
+	return poeTxCmd
 }
 
 func NewCreateValidatorCmd() *cobra.Command {
