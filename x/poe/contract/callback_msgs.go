@@ -2,15 +2,13 @@ package contract
 
 import (
 	"github.com/confio/tgrade/x/poe/types"
-	"github.com/confio/tgrade/x/twasm/contract"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-// TgradeSudoMsg callback message sent to a contract.
+// ValidatorUpdateSudoMsg callback message sent to a contract.
 // See https://github.com/confio/tgrade-contracts/blob/main/packages/bindings/src/sudo.rs
-type TgradeSudoMsg struct {
-	contract.TgradeSudoMsg
+type ValidatorUpdateSudoMsg struct {
 	/// This will be delivered after everything.
 	/// The data in the Response is (JSON?) encoded diff to the validator set
 	EndWithValidatorUpdate *struct{} `json:"end_with_validator_update,omitempty"`
