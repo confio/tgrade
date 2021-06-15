@@ -22,8 +22,8 @@ import (
 	"strings"
 )
 
-// GenAppStateFromConfig gets the genesis app state from the config
-func GenAppStateFromConfig(
+// AddGenTxsToGenesisFile collects and adds the gentx to the app state
+func AddGenTxsToGenesisFile(
 	cdc codec.JSONMarshaler,
 	txEncodingConfig client.TxEncodingConfig,
 	config *cfg.Config,
@@ -33,7 +33,7 @@ func GenAppStateFromConfig(
 ) (json.RawMessage, error) {
 
 	// process genesis transactions, else create default genesis.json
-	appGenTxs, persistentPeers, err := CollectTxs(
+	appGenTxs, persistentPeers, err := collectTxs(
 		cdc, txEncodingConfig.TxJSONDecoder(), config.Moniker, initCfg.GenTxsDir, genDoc, genBalIterator,
 	)
 	if err != nil {
@@ -65,14 +65,14 @@ func GenAppStateFromConfig(
 	}
 
 	genDoc.AppState = appState
-	err = ExportGenesisFile(&genDoc, config.GenesisFile())
+	err = exportGenesisFile(&genDoc, config.GenesisFile())
 
 	return appState, err
 }
 
-// ExportGenesisFile creates and writes the genesis configuration to disk. An
+// exportGenesisFile creates and writes the genesis configuration to disk. An
 // error is returned if building or writing the configuration to file fails.
-func ExportGenesisFile(genDoc *tmtypes.GenesisDoc, genFile string) error {
+func exportGenesisFile(genDoc *tmtypes.GenesisDoc, genFile string) error {
 	if err := genDoc.ValidateAndComplete(); err != nil {
 		return err
 	}
@@ -80,9 +80,9 @@ func ExportGenesisFile(genDoc *tmtypes.GenesisDoc, genFile string) error {
 	return genDoc.SaveAs(genFile)
 }
 
-// CollectTxs processes and validates application's genesis Txs and returns
+// collectTxs processes and validates application's genesis Txs and returns
 // the list of appGenTxs, and persistent peers required to generate genesis.json.
-func CollectTxs(cdc codec.JSONMarshaler, txJSONDecoder sdk.TxDecoder, moniker, genTxsDir string,
+func collectTxs(cdc codec.JSONMarshaler, txJSONDecoder sdk.TxDecoder, moniker, genTxsDir string,
 	genDoc tmtypes.GenesisDoc, genBalIterator genutiltypes.GenesisBalancesIterator,
 ) (appGenTxs []sdk.Tx, persistentPeers string, err error) {
 	// prepare a map of all balances in genesis state to then validate
@@ -151,33 +151,18 @@ func CollectTxs(cdc codec.JSONMarshaler, txJSONDecoder sdk.TxDecoder, moniker, g
 			return appGenTxs, persistentPeers, errors.New("each genesis transaction must provide a single genesis message")
 		}
 
-		// TODO abstract out staking message validation back to staking
 		msg := msgs[0].(*types.MsgCreateValidator)
 
 		// validate delegator and validator addresses and funds against the accounts in the state
 		delAddr := msg.DelegatorAddress
-		valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
-		if err != nil {
-			return appGenTxs, persistentPeers, err
-		}
-
 		delBal, delOk := balancesMap[delAddr]
 		if !delOk {
 			_, file, no, ok := runtime.Caller(1)
 			if ok {
-				fmt.Printf("CollectTxs-1, called from %s#%d\n", file, no)
+				fmt.Printf("collectTxs-1, called from %s#%d\n", file, no)
 			}
 
 			return appGenTxs, persistentPeers, fmt.Errorf("account %s balance not in genesis state: %+v", delAddr, balancesMap)
-		}
-
-		_, valOk := balancesMap[sdk.AccAddress(valAddr).String()]
-		if !valOk {
-			_, file, no, ok := runtime.Caller(1)
-			if ok {
-				fmt.Printf("CollectTxs-2, called from %s#%d - %s\n", file, no, sdk.AccAddress(msg.ValidatorAddress).String())
-			}
-			return appGenTxs, persistentPeers, fmt.Errorf("account %s balance not in genesis state: %+v", valAddr, balancesMap)
 		}
 
 		if delBal.GetCoins().AmountOf(msg.Value.Denom).LT(msg.Value.Amount) {

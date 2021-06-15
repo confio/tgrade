@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	poeclient "github.com/confio/tgrade/x/poe/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"os"
 	"path/filepath"
@@ -53,7 +54,7 @@ func CollectGenTxsCmd(genBalIterator types.GenesisBalancesIterator, defaultNodeH
 			toPrint := newPrintInfo(config.Moniker, genDoc.ChainID, nodeID, genTxsDir, json.RawMessage(""))
 			initCfg := types.NewInitConfig(genDoc.ChainID, genTxsDir, nodeID, valPubKey)
 
-			appMessage, err := genutil.GenAppStateFromConfig(cdc,
+			appMessage, err := poeclient.AddGenTxsToGenesisFile(cdc,
 				clientCtx.TxConfig,
 				config, initCfg, *genDoc, genBalIterator)
 			if err != nil {

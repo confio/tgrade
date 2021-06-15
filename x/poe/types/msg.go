@@ -1,7 +1,6 @@
 package types
 
 import (
-	"bytes"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,7 +19,7 @@ var (
 // NewMsgCreateValidator creates a new MsgCreateValidator instance.
 // Delegator address and validator address are the same.
 func NewMsgCreateValidator(
-	valAddr sdk.ValAddress,
+	valAddr sdk.AccAddress,
 	pubKey cryptotypes.PubKey,
 	selfDelegation sdk.Coin,
 	description stakingtypes.Description,
@@ -34,8 +33,7 @@ func NewMsgCreateValidator(
 	}
 	return &MsgCreateValidator{
 		Description:      description,
-		DelegatorAddress: sdk.AccAddress(valAddr).String(),
-		ValidatorAddress: valAddr.String(),
+		DelegatorAddress: valAddr.String(),
 		Pubkey:           pkAny,
 		Value:            selfDelegation,
 	}, nil
@@ -57,16 +55,7 @@ func (msg MsgCreateValidator) GetSigners() []sdk.AccAddress {
 	if err != nil {
 		panic(err)
 	}
-	addrs := []sdk.AccAddress{delAddr}
-	addr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
-	if err != nil {
-		panic(err)
-	}
-	if !bytes.Equal(delAddr.Bytes(), addr.Bytes()) {
-		addrs = append(addrs, sdk.AccAddress(addr))
-	}
-
-	return addrs
+	return []sdk.AccAddress{delAddr}
 }
 
 // GetSignBytes returns the message bytes to sign over.
@@ -84,18 +73,6 @@ func (msg MsgCreateValidator) ValidateBasic() error {
 	}
 	if delAddr.Empty() {
 		return stakingtypes.ErrEmptyDelegatorAddr
-	}
-
-	if msg.ValidatorAddress == "" {
-		return stakingtypes.ErrEmptyValidatorAddr
-	}
-
-	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
-	if err != nil {
-		return err
-	}
-	if !sdk.AccAddress(valAddr).Equals(delAddr) {
-		return stakingtypes.ErrBadValidatorAddr
 	}
 
 	if msg.Pubkey == nil {

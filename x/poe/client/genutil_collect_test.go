@@ -1,8 +1,7 @@
-package client_test
+package client
 
 import (
 	"encoding/json"
-	"github.com/confio/tgrade/x/poe/client"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -62,7 +61,7 @@ func TestCollectTxsHandlesDirectories(t *testing.T) {
 	balItr := new(doNothingIterator)
 
 	dnc := &doNothingUnmarshalJSON{cdc}
-	if _, _, err := client.CollectTxs(dnc, txDecoder, "foo", testDir, gdoc, balItr); err != nil {
+	if _, _, err := collectTxs(dnc, txDecoder, "foo", testDir, gdoc, balItr); err != nil {
 		t.Fatal(err)
 	}
 }

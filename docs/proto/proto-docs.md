@@ -272,7 +272,6 @@ Based on the SDK staking.MsgCreateValidator
 | ----- | ---- | ----- | ----------- |
 | `description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  | Description meta data |
 | `delegator_address` | [string](#string) |  | DelegatorAddress is the bech32 address string |
-| `validator_address` | [string](#string) |  | ValidatorAddress is the bech32 address string with the |
 | `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  | Pubkey public key |
 | `value` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | Value defines the initial staking amount |
 

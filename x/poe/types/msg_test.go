@@ -17,8 +17,8 @@ var (
 	coinPos     = sdk.NewInt64Coin(sdk.DefaultBondDenom, 1000)
 	coinZero    = sdk.NewInt64Coin(sdk.DefaultBondDenom, 0)
 	pk1         = ed25519.GenPrivKey().PubKey()
-	valAddr1    = sdk.ValAddress(pk1.Address())
-	emptyAddr   sdk.ValAddress
+	valAddr1    = sdk.AccAddress(pk1.Address())
+	emptyAddr   sdk.AccAddress
 	emptyPubkey cryptotypes.PubKey
 )
 
@@ -57,7 +57,7 @@ func TestMsgDecode(t *testing.T) {
 func TestMsgCreateValidator(t *testing.T) {
 	tests := []struct {
 		name, moniker, identity, website, securityContact, details string
-		validatorAddr                                              sdk.ValAddress
+		delegatorAddr                                              sdk.AccAddress
 		pubkey                                                     cryptotypes.PubKey
 		bond                                                       sdk.Coin
 		expectPass                                                 bool
@@ -73,7 +73,7 @@ func TestMsgCreateValidator(t *testing.T) {
 
 	for _, tc := range tests {
 		description := stakingtypes.NewDescription(tc.moniker, tc.identity, tc.website, tc.securityContact, tc.details)
-		msg, err := types.NewMsgCreateValidator(tc.validatorAddr, tc.pubkey, tc.bond, description)
+		msg, err := types.NewMsgCreateValidator(tc.delegatorAddr, tc.pubkey, tc.bond, description)
 		require.NoError(t, err)
 		if tc.expectPass {
 			require.Nil(t, msg.ValidateBasic(), "test: %v", tc.name)

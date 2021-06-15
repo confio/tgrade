@@ -103,9 +103,7 @@ func NewBuildCreateValidatorMsg(clientCtx client.Context, txf tx.Factory, fs *fl
 		details,
 	)
 
-	msg, err := types.NewMsgCreateValidator(
-		sdk.ValAddress(valAddr), pk, amount, description,
-	)
+	msg, err := types.NewMsgCreateValidator(valAddr, pk, amount, description)
 	if err != nil {
 		return txf, nil, err
 	}
@@ -244,7 +242,7 @@ func BuildCreateValidatorMsg(clientCtx client.Context, config TxCreateValidatorC
 		config.Details,
 	)
 
-	msg, err := types.NewMsgCreateValidator(sdk.ValAddress(valAddr), pk, amount, description)
+	msg, err := types.NewMsgCreateValidator(valAddr, pk, amount, description)
 	if err != nil {
 		return txBldr, msg, err
 	}

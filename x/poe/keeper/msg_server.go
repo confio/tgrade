@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"encoding/hex"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
@@ -78,7 +79,8 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeCreateValidator,
-			sdk.NewAttribute(types.AttributeKeyValidator, msg.ValidatorAddress),
+			sdk.NewAttribute(types.AttributeKeyValOperator, msg.DelegatorAddress),
+			sdk.NewAttribute(types.AttributeKeyPubKeyHex, hex.EncodeToString(pk.Bytes())),
 			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Value.Amount.String()),
 		),
 		sdk.NewEvent(

@@ -67,7 +67,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "system admin")
 	}
 	creator := systemAdmin
-	codeID, err := k.Create(ctx, creator, tg4Group, "https://foo.bar/", "foo/bar:latest", &wasmtypes.AllowEverybody)
+	codeID, err := k.Create(ctx, creator, tg4Group, "https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-group", "cosmwasm/workspace-optimizer:0.11.3", &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 group contract")
 	}
@@ -90,7 +90,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		},
 		Preauths: 1,
 	}
-	codeID, err = k.Create(ctx, creator, tg4Stake, "https://foo.bar/", "foo/bar:latest", &wasmtypes.AllowEverybody)
+	codeID, err = k.Create(ctx, creator, tg4Stake, "https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-stake", "cosmwasm/workspace-optimizer:0.11.3", &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 stake contract")
 	}
@@ -107,7 +107,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		LeftGroup:  engagementContractAddr.String(),
 		RightGroup: stakersContractAddr.String(),
 	}
-	codeID, err = k.Create(ctx, creator, tg4Mixer, "https://foo.bar/", "foo/bar:latest", &wasmtypes.AllowEverybody)
+	codeID, err = k.Create(ctx, creator, tg4Mixer, "https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-mixer", "cosmwasm/workspace-optimizer:0.11.3", &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 mixer contract")
 	}
@@ -128,7 +128,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		EpochLength:   1,
 		InitialKeys:   []contract.ValsetInitKey{},
 	}
-	codeID, err = k.Create(ctx, creator, tgValset, "https://foo.bar/", "foo/bar:latest", &wasmtypes.AllowEverybody)
+	codeID, err = k.Create(ctx, creator, tgValset, "https://github.com/confio/tgrade-contracts/tree/main/contracts/tgrade-valset", "cosmwasm/workspace-optimizer:0.11.3", &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store valset contract")
 	}

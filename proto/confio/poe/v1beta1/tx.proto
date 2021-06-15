@@ -25,12 +25,10 @@ message MsgCreateValidator {
   // Description meta data
   cosmos.staking.v1beta1.Description description = 1
       [ (gogoproto.nullable) = false ];
+
   // DelegatorAddress is the bech32 address string
   string delegator_address = 4
       [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
-  // ValidatorAddress is the bech32 address string with the
-  string validator_address = 5
-      [ (gogoproto.moretags) = "yaml:\"validator_address\"" ];
 
   // Pubkey public key
   google.protobuf.Any pubkey = 6

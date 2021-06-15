@@ -64,7 +64,7 @@ func RandomGenTX(t *testing.T, power uint32) (json.RawMessage, sdk.AccAddress, c
 	// prepare genesis tx
 	valTokens := sdk.TokensFromConsensusPower(int64(power))
 	createValMsg, err := NewMsgCreateValidator(
-		sdk.ValAddress(addr),
+		addr,
 		valPubKey,
 		sdk.NewCoin(DefaultBondDenom, valTokens),
 		stakingtypes.NewDescription("testing", "", "", "", ""),

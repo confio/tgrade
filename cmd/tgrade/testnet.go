@@ -247,7 +247,7 @@ func InitTestnet(
 
 		valTokens := sdk.TokensFromConsensusPower(100)
 		createValMsg, err := poetypes.NewMsgCreateValidator(
-			sdk.ValAddress(addr),
+			addr,
 			valPubKeys[i],
 			sdk.NewCoin(stakingToken, valTokens),
 			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
@@ -401,7 +401,7 @@ func collectGenFiles(
 			return err
 		}
 
-		nodeAppState, err := poeclient.GenAppStateFromConfig(clientCtx.JSONMarshaler, clientCtx.TxConfig, nodeConfig, initCfg, *genDoc, genBalIterator)
+		nodeAppState, err := poeclient.AddGenTxsToGenesisFile(clientCtx.JSONMarshaler, clientCtx.TxConfig, nodeConfig, initCfg, *genDoc, genBalIterator)
 		if err != nil {
 			return err
 		}
