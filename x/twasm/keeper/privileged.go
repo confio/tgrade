@@ -86,7 +86,7 @@ func (k Keeper) UnsetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) er
 	if err := contractInfo.ReadExtension(&details); err != nil {
 		return err
 	}
-	details.IterateRegisteredCallbacks(func(callbackType types.PrivilegedCallbackType, pos uint8) bool {
+	details.IterateRegisteredCallbacks(func(callbackType types.PrivilegeType, pos uint8) bool {
 		k.removePrivilegedContractCallbacks(ctx, callbackType, pos, contractAddr)
 		details.RemoveRegisteredCallback(callbackType, pos)
 		return false
@@ -165,7 +165,7 @@ func (k Keeper) IteratePrivileged(ctx sdk.Context, cb func(sdk.AccAddress) bool)
 }
 
 // appendToPrivilegedContractCallbacks registers given contract for a callback type.
-func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddr sdk.AccAddress) (uint8, error) {
+func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegeType, contractAddr sdk.AccAddress) (uint8, error) {
 	store := ctx.KVStore(k.storeKey)
 
 	// find last position value for callback type
@@ -196,13 +196,13 @@ func (k Keeper) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackTyp
 }
 
 // storeCallbackRegistration persists the callback registration the contract
-func (k Keeper) storeCallbackRegistration(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8, contractAddr sdk.AccAddress) {
+func (k Keeper) storeCallbackRegistration(ctx sdk.Context, callbackType types.PrivilegeType, pos uint8, contractAddr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(contractCallbacksSecondaryIndexKey(callbackType, pos), contractAddr)
 }
 
 // removePrivilegedContractCallbacks unregisters the given contract for a callback type
-func (k Keeper) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8, contractAddr sdk.AccAddress) bool {
+func (k Keeper) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegeType, pos uint8, contractAddr sdk.AccAddress) bool {
 	store := ctx.KVStore(k.storeKey)
 	key := contractCallbacksSecondaryIndexKey(callbackType, pos)
 	if !store.Has(key) {
@@ -221,14 +221,14 @@ func (k Keeper) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType 
 }
 
 // getPrivilegedContractCallback returns the key stored at the given type and position. Result can be nil when none exists
-func (k Keeper) getPrivilegedContractCallback(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8) sdk.AccAddress {
+func (k Keeper) getPrivilegedContractCallback(ctx sdk.Context, callbackType types.PrivilegeType, pos uint8) sdk.AccAddress {
 	store := ctx.KVStore(k.storeKey)
 	key := contractCallbacksSecondaryIndexKey(callbackType, pos)
 	return store.Get(key)
 }
 
 // ExistsAnyPrivilegedContractCallback returns if any contract is registered for the given type
-func (k Keeper) ExistsAnyPrivilegedContractCallback(ctx sdk.Context, callbackType types.PrivilegedCallbackType) bool {
+func (k Keeper) ExistsAnyPrivilegedContractCallback(ctx sdk.Context, callbackType types.PrivilegeType) bool {
 	store := ctx.KVStore(k.storeKey)
 
 	start := []byte{0}
@@ -240,7 +240,7 @@ func (k Keeper) ExistsAnyPrivilegedContractCallback(ctx sdk.Context, callbackTyp
 }
 
 // IterateContractCallbacksByType iterates through all contracts for the given type by position and address ASC
-func (k Keeper) IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+func (k Keeper) IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), getContractCallbacksSecondaryIndexPrefix(callbackType))
 	iter := prefixStore.Iterator(nil, nil)
 	for ; iter.Valid(); iter.Next() {
@@ -253,7 +253,7 @@ func (k Keeper) IterateContractCallbacksByType(ctx sdk.Context, callbackType typ
 
 // HasPrivilegedContractCallback returns if the contract has the given callback type registered.
 // Returns error for unknown contract addresses.
-func (k Keeper) HasPrivilegedContractCallback(ctx sdk.Context, contractAddr sdk.AccAddress, callbackType types.PrivilegedCallbackType) (bool, error) {
+func (k Keeper) HasPrivilegedContractCallback(ctx sdk.Context, contractAddr sdk.AccAddress, callbackType types.PrivilegeType) (bool, error) {
 	d, err := k.getContractDetails(ctx, contractAddr)
 	if err != nil {
 		return false, err
@@ -267,7 +267,7 @@ func privilegedContractsSecondaryIndexKey(contractAddr sdk.AccAddress) []byte {
 
 // contractCallbacksSecondaryIndexKey returns the key for privileged contract callbacks
 // `<prefix><callbackType><position>
-func contractCallbacksSecondaryIndexKey(callbackType types.PrivilegedCallbackType, pos uint8) []byte {
+func contractCallbacksSecondaryIndexKey(callbackType types.PrivilegeType, pos uint8) []byte {
 	prefix := getContractCallbacksSecondaryIndexPrefix(callbackType)
 	prefixLen := len(prefix)
 	const posLen = 1 // 1 byte for position
@@ -278,16 +278,16 @@ func contractCallbacksSecondaryIndexKey(callbackType types.PrivilegedCallbackTyp
 }
 
 // getContractCallbacksSecondaryIndexPrefix return `<prefix><callbackType>`
-func getContractCallbacksSecondaryIndexPrefix(callbackType types.PrivilegedCallbackType) []byte {
+func getContractCallbacksSecondaryIndexPrefix(callbackType types.PrivilegeType) []byte {
 	return append(contractCallbacksSecondaryIndexPrefix, byte(callbackType))
 }
 
 // splits source of type `<callbackType><position>`
-func splitUnprefixedContractCallbacksSecondaryIndexKey(key []byte) (types.PrivilegedCallbackType, uint8) {
+func splitUnprefixedContractCallbacksSecondaryIndexKey(key []byte) (types.PrivilegeType, uint8) {
 	if len(key) != 1+1 {
 		panic(fmt.Sprintf("unexpected key lenght %d", len(key)))
 	}
-	return types.PrivilegedCallbackType(key[0]), parseContractPosition(key[1:])
+	return types.PrivilegeType(key[0]), parseContractPosition(key[1:])
 }
 
 // splits source of type `<position>`

@@ -65,7 +65,7 @@ func TgradeContractDetailsFixture(t *testing.T, mutators ...func(d *TgradeContra
 	d := TgradeContractDetails{
 		RegisteredCallbacks: []*RegisteredCallback{{
 			Position:     1,
-			CallbackType: "begin_block",
+			CallbackType: "begin_blocker",
 		}},
 	}
 	for _, m := range mutators {

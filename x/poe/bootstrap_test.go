@@ -81,10 +81,10 @@ type twasmKeeperMock struct {
 	QuerySmartFn                    func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
 	SudoFn                          func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
 	SetPrivilegedFn                 func(ctx sdk.Context, contractAddr sdk.AccAddress) error
-	HasPrivilegedContractCallbackFn func(ctx sdk.Context, contractAddr sdk.AccAddress, callbackType twasmtypes.PrivilegedCallbackType) (bool, error)
+	HasPrivilegedContractCallbackFn func(ctx sdk.Context, contractAddr sdk.AccAddress, callbackType twasmtypes.PrivilegeType) (bool, error)
 }
 
-func (m twasmKeeperMock) IterateContractCallbacksByType(ctx sdk.Context, callbackType twasmtypes.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+func (m twasmKeeperMock) IterateContractCallbacksByType(ctx sdk.Context, callbackType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 	panic("implement me")
 }
 
@@ -109,7 +109,7 @@ func (m twasmKeeperMock) SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddr
 	return m.SetPrivilegedFn(ctx, contractAddr)
 }
 
-func (m twasmKeeperMock) HasPrivilegedContractCallback(ctx sdk.Context, contractAddr sdk.AccAddress, callbackType twasmtypes.PrivilegedCallbackType) (bool, error) {
+func (m twasmKeeperMock) HasPrivilegedContractCallback(ctx sdk.Context, contractAddr sdk.AccAddress, callbackType twasmtypes.PrivilegeType) (bool, error) {
 	if m.HasPrivilegedContractCallbackFn == nil {
 		panic("not expected to be called")
 	}

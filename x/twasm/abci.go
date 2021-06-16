@@ -17,7 +17,7 @@ import (
 
 type abciKeeper interface {
 	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
-	IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
+	IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 
 func BeginBlocker(parentCtx sdk.Context, k abciKeeper, b abci.RequestBeginBlock) {
@@ -54,7 +54,7 @@ func BeginBlocker(parentCtx sdk.Context, k abciKeeper, b abci.RequestBeginBlock)
 		panic(err) // todo (reviewer): this will break consensus
 	}
 	logger := keeper.ModuleLogger(parentCtx)
-	k.IterateContractCallbacksByType(parentCtx, types.CallbackTypeBeginBlock, func(pos uint8, contractAddr sdk.AccAddress) bool {
+	k.IterateContractCallbacksByType(parentCtx, types.PrivilegeTypeBeginBlock, func(pos uint8, contractAddr sdk.AccAddress) bool {
 		logger.Debug("privileged contract callback", "type", "begin-block", "msg", string(msgBz))
 		ctx, commit := parentCtx.CacheContext()
 
@@ -80,7 +80,7 @@ func EndBlocker(parentCtx sdk.Context, k abciKeeper) []abci.ValidatorUpdate {
 		panic(err) // this will break consensus
 	}
 	logger := keeper.ModuleLogger(parentCtx)
-	k.IterateContractCallbacksByType(parentCtx, types.CallbackTypeEndBlock, func(pos uint8, contractAddr sdk.AccAddress) bool {
+	k.IterateContractCallbacksByType(parentCtx, types.PrivilegeTypeEndBlock, func(pos uint8, contractAddr sdk.AccAddress) bool {
 		logger.Debug("privileged contract callback", "type", "end-block", "msg", string(msgBz))
 		ctx, commit := parentCtx.CacheContext()
 

@@ -6,14 +6,14 @@ import (
 	"math"
 )
 
-func (d *TgradeContractDetails) AddRegisteredCallback(t PrivilegedCallbackType, pos uint8) {
+func (d *TgradeContractDetails) AddRegisteredCallback(t PrivilegeType, pos uint8) {
 	d.RegisteredCallbacks = append(d.RegisteredCallbacks, &RegisteredCallback{
 		CallbackType: t.String(),
 		Position:     uint32(pos),
 	})
 }
 
-func (d *TgradeContractDetails) RemoveRegisteredCallback(t PrivilegedCallbackType, pos uint8) {
+func (d *TgradeContractDetails) RemoveRegisteredCallback(t PrivilegeType, pos uint8) {
 	src := &RegisteredCallback{
 		CallbackType: t.String(),
 		Position:     uint32(pos),
@@ -25,7 +25,7 @@ func (d *TgradeContractDetails) RemoveRegisteredCallback(t PrivilegedCallbackTyp
 	}
 }
 
-func (d *TgradeContractDetails) HasRegisteredContractCallback(c PrivilegedCallbackType) bool {
+func (d *TgradeContractDetails) HasRegisteredContractCallback(c PrivilegeType) bool {
 	for _, v := range d.RegisteredCallbacks {
 		if v.CallbackType == c.String() {
 			return true
@@ -34,7 +34,7 @@ func (d *TgradeContractDetails) HasRegisteredContractCallback(c PrivilegedCallba
 	return false
 }
 
-func (d TgradeContractDetails) IterateRegisteredCallbacks(cb func(c PrivilegedCallbackType, pos uint8) bool) {
+func (d TgradeContractDetails) IterateRegisteredCallbacks(cb func(c PrivilegeType, pos uint8) bool) {
 	for _, v := range d.RegisteredCallbacks {
 		if cb(*PrivilegedCallbackTypeFrom(v.CallbackType), uint8(v.Position)) {
 			return
@@ -44,7 +44,7 @@ func (d TgradeContractDetails) IterateRegisteredCallbacks(cb func(c PrivilegedCa
 
 // ValidateBasic syntax checks
 func (d TgradeContractDetails) ValidateBasic() error {
-	unique := make(map[PrivilegedCallbackType]struct{})
+	unique := make(map[PrivilegeType]struct{})
 	for i, c := range d.RegisteredCallbacks {
 		if err := c.ValidateBasic(); err != nil {
 			return sdkerrors.Wrapf(err, "callback %d", i)

@@ -68,13 +68,13 @@ func TestQueryContractsByCallbackType(t *testing.T) {
 	}{
 		"none found": {
 			src: types.QueryContractsByCallbackTypeRequest{
-				CallbackType: types.CallbackTypeEndBlock.String(),
+				CallbackType: types.PrivilegeTypeEndBlock.String(),
 			},
 			expRsp: &types.QueryContractsByCallbackTypeResponse{},
 		},
 		"single found": {
 			src: types.QueryContractsByCallbackTypeRequest{
-				CallbackType: types.CallbackTypeEndBlock.String(),
+				CallbackType: types.PrivilegeTypeEndBlock.String(),
 			},
 			state: []sdk.AccAddress{addr1},
 			expRsp: &types.QueryContractsByCallbackTypeResponse{
@@ -83,7 +83,7 @@ func TestQueryContractsByCallbackType(t *testing.T) {
 		},
 		"multiple found": {
 			src: types.QueryContractsByCallbackTypeRequest{
-				CallbackType: types.CallbackTypeEndBlock.String(),
+				CallbackType: types.PrivilegeTypeEndBlock.String(),
 			},
 			state: []sdk.AccAddress{addr1, addr2},
 			expRsp: &types.QueryContractsByCallbackTypeResponse{
@@ -105,7 +105,7 @@ func TestQueryContractsByCallbackType(t *testing.T) {
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 			mock := MockQueryKeeper{
-				IterateContractCallbacksByTypeFn: func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+				IterateContractCallbacksByTypeFn: func(ctx sdk.Context, callbackType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 					for i, a := range spec.state {
 						if cb(uint8(i+1), a) {
 							return
@@ -131,7 +131,7 @@ func TestQueryContractsByCallbackType(t *testing.T) {
 
 type MockQueryKeeper struct {
 	IteratePrivilegedFn              func(ctx sdk.Context, cb func(sdk.AccAddress) bool)
-	IterateContractCallbacksByTypeFn func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
+	IterateContractCallbacksByTypeFn func(ctx sdk.Context, callbackType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 
 func (m MockQueryKeeper) IteratePrivileged(ctx sdk.Context, cb func(sdk.AccAddress) bool) {
@@ -141,7 +141,7 @@ func (m MockQueryKeeper) IteratePrivileged(ctx sdk.Context, cb func(sdk.AccAddre
 	m.IteratePrivilegedFn(ctx, cb)
 }
 
-func (m MockQueryKeeper) IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+func (m MockQueryKeeper) IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 	if m.IterateContractCallbacksByTypeFn == nil {
 		panic("not expected to be called")
 	}

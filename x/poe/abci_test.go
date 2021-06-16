@@ -123,8 +123,8 @@ func TestEndBlock(t *testing.T) {
 	}
 }
 
-func iterateContractsFn(t *testing.T, expType twasmtypes.PrivilegedCallbackType, addrs ...sdk.AccAddress) func(ctx sdk.Context, callbackType twasmtypes.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
-	return func(ctx sdk.Context, callbackType twasmtypes.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+func iterateContractsFn(t *testing.T, expType twasmtypes.PrivilegeType, addrs ...sdk.AccAddress) func(ctx sdk.Context, callbackType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+	return func(ctx sdk.Context, callbackType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 		require.Equal(t, expType, callbackType)
 		for i, a := range addrs {
 			if cb(uint8(i+1), a) {
@@ -135,13 +135,13 @@ func iterateContractsFn(t *testing.T, expType twasmtypes.PrivilegedCallbackType,
 }
 
 // helper function to handle both types in end block
-func endBlockTypeIterateContractsFn(t *testing.T, end []sdk.AccAddress, valset []sdk.AccAddress) func(sdk.Context, twasmtypes.PrivilegedCallbackType, func(uint8, sdk.AccAddress) bool) {
-	return func(ctx sdk.Context, callbackType twasmtypes.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+func endBlockTypeIterateContractsFn(t *testing.T, end []sdk.AccAddress, valset []sdk.AccAddress) func(sdk.Context, twasmtypes.PrivilegeType, func(uint8, sdk.AccAddress) bool) {
+	return func(ctx sdk.Context, callbackType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 		switch callbackType {
-		case twasmtypes.CallbackTypeEndBlock:
-			iterateContractsFn(t, twasmtypes.CallbackTypeEndBlock, end...)(ctx, callbackType, cb)
-		case twasmtypes.CallbackTypeValidatorSetUpdate:
-			iterateContractsFn(t, twasmtypes.CallbackTypeValidatorSetUpdate, valset...)(ctx, callbackType, cb)
+		case twasmtypes.PrivilegeTypeEndBlock:
+			iterateContractsFn(t, twasmtypes.PrivilegeTypeEndBlock, end...)(ctx, callbackType, cb)
+		case twasmtypes.PrivilegeTypeValidatorSetUpdate:
+			iterateContractsFn(t, twasmtypes.PrivilegeTypeValidatorSetUpdate, valset...)(ctx, callbackType, cb)
 		default:
 			t.Errorf("unexpected callback type: %q", callbackType.String())
 		}
@@ -162,7 +162,7 @@ func captureSudos(capturedSudoCalls *[]tuple) func(ctx sdk.Context, contractAddr
 
 type MockSudoer struct {
 	SudoFn                           func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
-	IterateContractCallbacksByTypeFn func(ctx sdk.Context, callbackType twasmtypes.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
+	IterateContractCallbacksByTypeFn func(ctx sdk.Context, callbackType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 
 func (m MockSudoer) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
@@ -172,7 +172,7 @@ func (m MockSudoer) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []
 	return m.SudoFn(ctx, contractAddress, msg)
 }
 
-func (m MockSudoer) IterateContractCallbacksByType(ctx sdk.Context, callbackType twasmtypes.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+func (m MockSudoer) IterateContractCallbacksByType(ctx sdk.Context, callbackType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 	if m.IterateContractCallbacksByTypeFn == nil {
 		panic("not expected to be called")
 	}

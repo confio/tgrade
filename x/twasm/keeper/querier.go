@@ -13,7 +13,7 @@ var _ types.QueryServer = &grpcQuerier{}
 // queryKeeper is a subset of the keeper's methods
 type queryKeeper interface {
 	IteratePrivileged(ctx sdk.Context, cb func(sdk.AccAddress) bool)
-	IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
+	IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 type grpcQuerier struct {
 	keeper queryKeeper

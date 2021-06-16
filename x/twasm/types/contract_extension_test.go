@@ -22,16 +22,16 @@ func TestTgradeContractDetailsValidation(t *testing.T) {
 		"multiple callbacks": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
 				d.RegisteredCallbacks = []*RegisteredCallback{
-					{Position: 1, CallbackType: "begin_block"},
-					{Position: 1, CallbackType: "end_block"},
+					{Position: 1, CallbackType: "begin_blocker"},
+					{Position: 1, CallbackType: "end_blocker"},
 				}
 			}),
 		},
 		"duplicate callbacks": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
 				d.RegisteredCallbacks = []*RegisteredCallback{
-					{Position: 1, CallbackType: "begin_block"},
-					{Position: 2, CallbackType: "begin_block"},
+					{Position: 1, CallbackType: "begin_blocker"},
+					{Position: 2, CallbackType: "begin_blocker"},
 				}
 			}),
 			expErr: true,
@@ -50,13 +50,13 @@ func TestTgradeContractDetailsValidation(t *testing.T) {
 		},
 		"invalid callback position": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredCallbacks = []*RegisteredCallback{{Position: math.MaxUint8 + 1, CallbackType: "begin_block"}}
+				d.RegisteredCallbacks = []*RegisteredCallback{{Position: math.MaxUint8 + 1, CallbackType: "begin_blocker"}}
 			}),
 			expErr: true,
 		},
 		"empty callback position": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredCallbacks = []*RegisteredCallback{{CallbackType: "begin_block"}}
+				d.RegisteredCallbacks = []*RegisteredCallback{{CallbackType: "begin_blocker"}}
 			}),
 			expErr: true,
 		},

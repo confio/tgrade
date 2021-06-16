@@ -13,7 +13,7 @@ import (
 
 type abciKeeper interface {
 	contract.Sudoer
-	IterateContractCallbacksByType(ctx sdk.Context, callbackType twasmtypes.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
+	IterateContractCallbacksByType(ctx sdk.Context, callbackType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 
 // EndBlocker calls the Valset contract for the validator diff.
@@ -23,7 +23,7 @@ func EndBlocker(parentCtx sdk.Context, k abciKeeper) []abci.ValidatorUpdate {
 
 	var diff []abci.ValidatorUpdate
 	// allow validator set updates for this group only
-	k.IterateContractCallbacksByType(parentCtx, twasmtypes.CallbackTypeValidatorSetUpdate, func(pos uint8, contractAddr sdk.AccAddress) bool {
+	k.IterateContractCallbacksByType(parentCtx, twasmtypes.PrivilegeTypeValidatorSetUpdate, func(pos uint8, contractAddr sdk.AccAddress) bool {
 		logger.Info("privileged contract callback", "type", "validator-set-update")
 		ctx, commit := parentCtx.CacheContext()
 		var err error
