@@ -8,6 +8,7 @@ import (
 	"github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -104,6 +105,7 @@ func WasmQuerier(k *Keeper) wasmtypes.QueryServer {
 func (Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ModuleLogger(ctx)
 }
+
 func ModuleLogger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
@@ -111,4 +113,23 @@ func ModuleLogger(ctx sdk.Context) log.Logger {
 // setContractDetails stores new tgrade data with the contract info.
 func (k Keeper) setContractDetails(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error {
 	return k.contractKeeper.SetContractInfoExtension(ctx, contract, details)
+}
+
+// getContractDetails loads tgrade details. This method should only be used when no ContractInfo is used anywhere.
+func (k Keeper) getContractDetails(ctx sdk.Context, contract sdk.AccAddress) (*types.TgradeContractDetails, error) {
+	contractInfo := k.GetContractInfo(ctx, contract)
+	if contractInfo == nil {
+		return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract info")
+	}
+
+	var details types.TgradeContractDetails
+	if err := contractInfo.ReadExtension(&details); err != nil {
+		return nil, err
+	}
+	return &details, nil
+}
+
+// GetContractKeeper returns the contract keeper instance with default permissions set
+func (k *Keeper) GetContractKeeper() wasmtypes.ContractOpsKeeper {
+	return k.contractKeeper
 }

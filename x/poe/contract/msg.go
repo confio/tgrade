@@ -1,4 +1,4 @@
-package contracts
+package contract
 
 import (
 	"encoding/json"
@@ -21,12 +21,12 @@ func (m TG4GroupInitMsg) Json(t *testing.T) string {
 
 type TG4Member struct {
 	Addr   string `json:"addr"`
-	Weight int    `json:"weight"`
+	Weight uint64 `json:"weight"`
 }
 
-func SortByWeight(s []TG4Member) []TG4Member {
+func SortByWeightDesc(s []TG4Member) []TG4Member {
 	sort.Slice(s, func(i, j int) bool {
-		return s[i].Weight > s[j].Weight || s[i].Weight == s[j].Weight && s[i].Addr > s[j].Addr
+		return s[i].Weight > s[j].Weight || s[i].Weight == s[j].Weight && s[i].Addr < s[j].Addr
 	})
 	return s
 }
@@ -55,7 +55,7 @@ func (m *TG4UpdateMembersMsg) Json(t *testing.T) string {
 // TG4MixerInitMsg contract init message
 //See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-mixer/schema/instantiate_msg.json
 type TG4MixerInitMsg struct {
-	Admin      string `json:"admin,omitempty"`
+	//Admin      string `json:"admin,omitempty"`
 	LeftGroup  string `json:"left_group"`
 	RightGroup string `json:"right_group"`
 	Preauths   uint64 `json:"preauths,omitempty"`
@@ -116,17 +116,19 @@ type ValsetInitKey struct {
 	ValidatorPubkey ValidatorPubkey `json:"validator_pubkey"`
 }
 
-func NewValsetInitKey(operator, ed25519Pubkey string) ValsetInitKey {
-	return ValsetInitKey{Operator: operator, ValidatorPubkey: ValidatorPubkey{Ed25519: ed25519Pubkey}}
-}
-
-type ValidatorPubkey struct {
-	Ed25519 string `json:"ed25519,omitempty"`
-}
-
 func asJson(t *testing.T, m interface{}) string {
 	t.Helper()
 	r, err := json.Marshal(&m)
 	require.NoError(t, err)
 	return string(r)
+}
+
+// TG4ValsetExecute Valset contract validator key registration
+// See https://github.com/confio/tgrade-contracts/blob/main/contracts/tgrade-valset/schema/execute_msg.json
+type TG4ValsetExecute struct {
+	RegisterValidatorKey RegisterValidatorKey `json:"register_validator_key"`
+}
+
+type RegisterValidatorKey struct {
+	PubKey ValidatorPubkey `json:"pubkey"`
 }

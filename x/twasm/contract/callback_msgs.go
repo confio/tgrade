@@ -50,21 +50,3 @@ type Validator struct {
 	Address []byte `json:"address"`
 	Power   uint64 `json:"power"`
 }
-
-// EndWithValidatorUpdateResponse is the response to an `EndWithValidatorUpdate` sudo call.
-type EndWithValidatorUpdateResponse struct {
-	Diffs []ValidatorUpdate `json:"diffs"`
-}
-
-// ValidatorUpdate  is used to update the validator set
-// See https://github.com/tendermint/tendermint/blob/v0.34.8/proto/tendermint/abci/types.proto#L343-L346
-type ValidatorUpdate struct {
-	// PubKey is the ed25519 pubkey used in Tendermint consensus
-	PubKey ValidatorPubkey `json:"pubkey"`
-	// Power is the new voting power in the consensus rounds
-	Power uint64 `json:"power"`
-}
-
-type ValidatorPubkey struct {
-	Ed25519 []byte `json:"ed25519,omitempty"`
-}

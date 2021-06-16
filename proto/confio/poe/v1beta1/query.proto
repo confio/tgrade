@@ -1,0 +1,31 @@
+syntax = "proto3";
+package confio.poe.v1beta1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "confio/poe/v1beta1/poe.proto";
+
+option go_package = "github.com/confio/tgrade/x/poe/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  rpc ContractAddress(QueryContractAddressRequest)
+      returns (QueryContractAddressResponse) {
+    option (google.api.http).get = "/poe/v1beta1/contract/{contract_type}";
+  }
+}
+
+// QueryContractAddressRequest is the request type for the Query/ContractAddress
+// RPC method.
+message QueryContractAddressRequest {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // ContractType is the type of contract
+  poe.v1beta1.PoEContractType contract_type = 1;
+}
+
+// QueryContractAddressRequest is the response type for the
+// Query/ContractAddress RPC method.
+message QueryContractAddressResponse { string address = 1; }

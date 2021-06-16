@@ -22,7 +22,7 @@ func TestGovProposal(t *testing.T) {
 		{
 			"wasm-genesis-message",
 			"store",
-			"testing/contracts/tgrade_gov_reflect.wasm",
+			"x/poe/contract/tgrade_gov_reflect.wasm",
 			"--instantiate-everybody=true",
 			"--builder=foo/bar:latest",
 			fmt.Sprintf("--run-as=%s", myKey),

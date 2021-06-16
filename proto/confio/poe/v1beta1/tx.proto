@@ -1,0 +1,42 @@
+syntax = "proto3";
+package confio.poe.v1beta1;
+
+import "google/protobuf/any.proto";
+import "gogoproto/gogo.proto";
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/staking/v1beta1/staking.proto";
+
+option go_package = "github.com/confio/tgrade/x/poe/types";
+
+// Msg defines the staking Msg service.
+service Msg {
+  // CreateValidator defines a method for creating a new validator.
+  rpc CreateValidator(MsgCreateValidator) returns (MsgCreateValidatorResponse);
+}
+
+// MsgCreateValidator defines a PoE message for creating a new validator.
+// Based on the SDK staking.MsgCreateValidator
+message MsgCreateValidator {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // Description meta data
+  cosmos.staking.v1beta1.Description description = 1
+      [ (gogoproto.nullable) = false ];
+
+  // DelegatorAddress is the bech32 address string
+  string delegator_address = 4
+      [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
+
+  // Pubkey public key
+  google.protobuf.Any pubkey = 6
+      [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
+
+  // Value defines the initial staking amount
+  cosmos.base.v1beta1.Coin value = 7 [ (gogoproto.nullable) = false ];
+}
+
+// MsgCreateValidatorResponse defines the Msg/CreateValidator response type.
+message MsgCreateValidatorResponse {}

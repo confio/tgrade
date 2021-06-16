@@ -301,6 +301,13 @@ func (s *SystemUnderTest) ModifyGenesisJson(t *testing.T, mutators ...GenesisMut
 	s.SetGenesis(t, out.Name())
 }
 
+// ReadGenesisJson returns current genesis.json content as raw string
+func (s *SystemUnderTest) ReadGenesisJson(t *testing.T) string {
+	content, err := ioutil.ReadFile(filepath.Join(workDir, s.nodePath(0), "config", "genesis.json"))
+	require.NoError(t, err)
+	return string(content)
+}
+
 // SetGenesis copy genesis file to all nodes
 func (s *SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
 	in, err := os.Open(srcPath)

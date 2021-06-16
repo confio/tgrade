@@ -3,12 +3,11 @@
 package testing
 
 import (
-	"encoding/binary"
 	"flag"
 	"fmt"
+	"github.com/confio/tgrade/x/twasm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
-	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/libs/rand"
 	"os"
 	"os/exec"
@@ -124,11 +123,5 @@ func encodeBech32Addr(src []byte) string {
 
 // ContractBech32Address build a tgrade bech32 contract address
 func ContractBech32Address(codeID, instanceID uint64) string {
-	// NOTE: It is possible to get a duplicate address if either codeID or instanceID
-	// overflow 32 bits. This is highly improbable, but something that could be refactored.
-	contractID := codeID<<32 + instanceID
-	addr := make([]byte, 20)
-	addr[0] = 'C'
-	binary.PutUvarint(addr[1:], contractID)
-	return encodeBech32Addr(crypto.AddressHash(addr))
+	return encodeBech32Addr(twasm.ContractAddress(codeID, instanceID))
 }

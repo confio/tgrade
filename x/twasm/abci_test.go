@@ -2,10 +2,8 @@ package twasm
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/confio/tgrade/x/twasm/keeper"
 	"github.com/confio/tgrade/x/twasm/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -14,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/proto/tendermint/crypto"
 	"testing"
 	"time"
 )
@@ -182,11 +179,10 @@ func TestEndBlock(t *testing.T) {
 	)
 
 	specs := map[string]struct {
-		setup           func(m *MockSudoer)
-		expSudoCalls    []tuple
-		expPanic        bool
-		expCommitted    []bool
-		expValsetUpdate []abci.ValidatorUpdate
+		setup        func(m *MockSudoer)
+		expSudoCalls []tuple
+		expPanic     bool
+		expCommitted []bool
 	}{
 		"end block - single callback": {
 			setup: func(m *MockSudoer) {
@@ -237,66 +233,6 @@ func TestEndBlock(t *testing.T) {
 			expSudoCalls: []tuple{{addr: myOtherAddr, msg: []byte(`{"end_block":{}}`)}},
 			expCommitted: []bool{false, true},
 		},
-		"valset update - empty response": {
-			setup: func(m *MockSudoer) {
-				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
-					_, err := captureSudos(&capturedSudoCalls)(ctx, contractAddress, msg)
-					return &sdk.Result{}, err
-				}
-				m.IterateContractCallbacksByTypeFn = endBlockTypeIterateContractsFn(t, nil, []sdk.AccAddress{myAddr})
-			},
-			expSudoCalls: []tuple{{addr: myAddr, msg: []byte(`{"end_with_validator_update":{}}`)}},
-			expCommitted: []bool{true},
-		},
-		"valset update - empty list": {
-			setup: func(m *MockSudoer) {
-				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
-					captureSudos(&capturedSudoCalls)(ctx, contractAddress, msg)
-					bz, err := json.Marshal(&contract.EndWithValidatorUpdateResponse{})
-					require.NoError(t, err)
-					return &sdk.Result{Data: bz}, err
-				}
-				m.IterateContractCallbacksByTypeFn = endBlockTypeIterateContractsFn(t, nil, []sdk.AccAddress{myAddr})
-			},
-			expSudoCalls: []tuple{{addr: myAddr, msg: []byte(`{"end_with_validator_update":{}}`)}},
-			expCommitted: []bool{true},
-		},
-		"valset update - response list": {
-			setup: func(m *MockSudoer) {
-				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
-					captureSudos(&capturedSudoCalls)(ctx, contractAddress, msg)
-					bz, err := json.Marshal(&contract.EndWithValidatorUpdateResponse{
-						Diffs: []contract.ValidatorUpdate{
-							{PubKey: contract.ValidatorPubkey{Ed25519: []byte("my key")}, Power: 1},
-							{PubKey: contract.ValidatorPubkey{Ed25519: []byte("my other key")}, Power: 2}},
-					})
-					require.NoError(t, err)
-					return &sdk.Result{Data: bz}, err
-				}
-				m.IterateContractCallbacksByTypeFn = endBlockTypeIterateContractsFn(t, nil, []sdk.AccAddress{myAddr})
-			},
-			expSudoCalls: []tuple{{addr: myAddr, msg: []byte(`{"end_with_validator_update":{}}`)}},
-			expCommitted: []bool{true},
-			expValsetUpdate: []abci.ValidatorUpdate{{
-				PubKey: crypto.PublicKey{Sum: &crypto.PublicKey_Ed25519{Ed25519: []byte("my key")}},
-				Power:  1,
-			}, {
-				PubKey: crypto.PublicKey{Sum: &crypto.PublicKey_Ed25519{Ed25519: []byte("my other key")}},
-				Power:  2,
-			}},
-		},
-		"valset update - panic not handled": {
-			setup: func(m *MockSudoer) {
-				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
-					if contractAddress.Equals(myAddr) {
-						panic("testing")
-					}
-					return captureSudos(&capturedSudoCalls)(ctx, contractAddress, msg)
-				}
-				m.IterateContractCallbacksByTypeFn = endBlockTypeIterateContractsFn(t, nil, []sdk.AccAddress{myAddr})
-			},
-			expPanic: true,
-		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
@@ -315,7 +251,7 @@ func TestEndBlock(t *testing.T) {
 				return
 			}
 			gotValsetUpdate := EndBlocker(ctx, &mock)
-			assert.Equal(t, spec.expValsetUpdate, gotValsetUpdate)
+			require.Empty(t, gotValsetUpdate)
 
 			// then
 			require.Len(t, capturedSudoCalls, len(spec.expSudoCalls))
