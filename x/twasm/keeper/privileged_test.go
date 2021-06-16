@@ -150,7 +150,7 @@ func TestUnsetPrivileged(t *testing.T) {
 			codeID, contractAddr := seedTestContract(t, ctx, k)
 
 			h := NewTgradeHandler(nil, k, nil)
-			// and privileged with a callback
+			// and privileged with a type
 			k.setPrivilegedFlag(ctx, contractAddr)
 			err := h.handlePrivilege(ctx, contractAddr, &contract.PrivilegeMsg{
 				Request: &types.PrivilegeTypeBeginBlock,
@@ -177,9 +177,9 @@ func TestUnsetPrivileged(t *testing.T) {
 			assert.Equal(t, expChecksum, *capturedUnpinChecksum)
 			// and flag not set
 			assert.False(t, k.IsPrivileged(ctx, contractAddr))
-			// and callbacks removed
-			assert.False(t, k.ExistsAnyPrivilegedContractCallback(ctx, types.PrivilegeTypeEndBlock))
-			assert.False(t, k.ExistsAnyPrivilegedContractCallback(ctx, types.PrivilegeTypeBeginBlock))
+			// and privileges removed
+			assert.False(t, k.ExistsAnyPrivilegedContract(ctx, types.PrivilegeTypeEndBlock))
+			assert.False(t, k.ExistsAnyPrivilegedContract(ctx, types.PrivilegeTypeBeginBlock))
 			// and sudo called
 			assert.Equal(t, expChecksum, *capturedSudoChecksum)
 			assert.JSONEq(t, `{"privilege_change":{"demoted":{}}}`, string(capturedSudoMsg), "got %s", string(capturedSudoMsg))
@@ -187,7 +187,7 @@ func TestUnsetPrivileged(t *testing.T) {
 			info := k.GetContractInfo(ctx, contractAddr)
 			var details types.TgradeContractDetails
 			require.NoError(t, info.ReadExtension(&details))
-			assert.Empty(t, details.RegisteredCallbacks)
+			assert.Empty(t, details.RegisteredPrivileges)
 		})
 	}
 }
@@ -236,7 +236,7 @@ func TestIteratePrivileged(t *testing.T) {
 	}
 
 }
-func TestAppendToPrivilegedContractCallbacks(t *testing.T) {
+func TestAppendToPrivilegedContracts(t *testing.T) {
 	var (
 		addr1 = sdk.AccAddress(bytes.Repeat([]byte{1}, sdk.AddrLen))
 		addr2 = sdk.AccAddress(bytes.Repeat([]byte{2}, sdk.AddrLen))
@@ -255,31 +255,31 @@ func TestAppendToPrivilegedContractCallbacks(t *testing.T) {
 		expPersisted []tuple
 		expErr       *sdkerrors.Error
 	}{
-		"first callback": {
+		"first privilege": {
 			setup:        func(ctx sdk.Context, k *Keeper) {},
 			srcType:      types.PrivilegeTypeBeginBlock,
 			expPos:       1,
 			expPersisted: []tuple{{p: 1, a: addr1}},
 		},
-		"second callback - ordered by position": {
+		"second privilege - ordered by position": {
 			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.PrivilegeTypeBeginBlock, addr3)
+				k.appendToPrivilegedContracts(ctx, types.PrivilegeTypeBeginBlock, addr3)
 			},
 			srcType:      types.PrivilegeTypeBeginBlock,
 			expPos:       2,
 			expPersisted: []tuple{{p: 1, a: addr3}, {p: 2, a: addr1}},
 		},
-		"second callback with same address": {
+		"second privilege with same address": {
 			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.PrivilegeTypeBeginBlock, addr1)
+				k.appendToPrivilegedContracts(ctx, types.PrivilegeTypeBeginBlock, addr1)
 			},
 			srcType:      types.PrivilegeTypeBeginBlock,
 			expPos:       2,
 			expPersisted: []tuple{{p: 1, a: addr1}, {p: 2, a: addr1}},
 		},
-		"other callback type - separate group": {
+		"other privilege type - separate group": {
 			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.PrivilegeTypeEndBlock, addr2)
+				k.appendToPrivilegedContracts(ctx, types.PrivilegeTypeEndBlock, addr2)
 			},
 			srcType:      types.PrivilegeTypeBeginBlock,
 			expPos:       1,
@@ -287,7 +287,7 @@ func TestAppendToPrivilegedContractCallbacks(t *testing.T) {
 		},
 		"singleton type fails when other exists": {
 			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.PrivilegeTypeValidatorSetUpdate, addr1)
+				k.appendToPrivilegedContracts(ctx, types.PrivilegeTypeValidatorSetUpdate, addr1)
 			},
 			srcType:      types.PrivilegeTypeValidatorSetUpdate,
 			expPersisted: []tuple{{p: 1, a: addr1}},
@@ -301,12 +301,12 @@ func TestAppendToPrivilegedContractCallbacks(t *testing.T) {
 			k := keepers.TWasmKeeper
 			spec.setup(ctx, k)
 			// when
-			gotPos, gotErr := k.appendToPrivilegedContractCallbacks(ctx, spec.srcType, addr1)
+			gotPos, gotErr := k.appendToPrivilegedContracts(ctx, spec.srcType, addr1)
 			assert.True(t, spec.expErr.Is(gotErr), "expected %v but got #%+v", spec.expErr, gotErr)
 			// then
 			assert.Equal(t, spec.expPos, gotPos)
 			var captured []tuple
-			k.IterateContractCallbacksByType(ctx, spec.srcType, func(prio uint8, contractAddr sdk.AccAddress) bool {
+			k.IteratePrivilegedContractsByType(ctx, spec.srcType, func(prio uint8, contractAddr sdk.AccAddress) bool {
 				captured = append(captured, tuple{p: prio, a: contractAddr})
 				return false
 			})
@@ -315,7 +315,7 @@ func TestAppendToPrivilegedContractCallbacks(t *testing.T) {
 	}
 }
 
-func TestRemovePrivilegedContractCallbacks(t *testing.T) {
+func TestRemovePrivilegedContractRegistration(t *testing.T) {
 	var (
 		myAddr      = sdk.AccAddress(bytes.Repeat([]byte{1}, sdk.AddrLen))
 		otherAddr   = sdk.AccAddress(bytes.Repeat([]byte{2}, sdk.AddrLen))
@@ -333,27 +333,27 @@ func TestRemovePrivilegedContractCallbacks(t *testing.T) {
 		expRemoved   bool
 		expRemaining []tuple
 	}{
-		"one callback": {
+		"one privilege": {
 			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.PrivilegeTypeBeginBlock, myAddr)
+				k.appendToPrivilegedContracts(ctx, types.PrivilegeTypeBeginBlock, myAddr)
 			},
 			srcPos:     1,
 			expRemoved: true,
 		},
-		"multiple callback - first": {
+		"multiple privilege - first": {
 			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.PrivilegeTypeBeginBlock, myAddr)
-				k.appendToPrivilegedContractCallbacks(ctx, types.PrivilegeTypeBeginBlock, myAddr)
+				k.appendToPrivilegedContracts(ctx, types.PrivilegeTypeBeginBlock, myAddr)
+				k.appendToPrivilegedContracts(ctx, types.PrivilegeTypeBeginBlock, myAddr)
 			},
 			srcPos:       1,
 			expRemoved:   true,
 			expRemaining: []tuple{{p: 2, a: myAddr}},
 		},
-		"multiple callback - middle": {
+		"multiple privilege - middle": {
 			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.PrivilegeTypeBeginBlock, otherAddr)
-				k.appendToPrivilegedContractCallbacks(ctx, types.PrivilegeTypeBeginBlock, myAddr)
-				k.appendToPrivilegedContractCallbacks(ctx, types.PrivilegeTypeBeginBlock, anotheraddr)
+				k.appendToPrivilegedContracts(ctx, types.PrivilegeTypeBeginBlock, otherAddr)
+				k.appendToPrivilegedContracts(ctx, types.PrivilegeTypeBeginBlock, myAddr)
+				k.appendToPrivilegedContracts(ctx, types.PrivilegeTypeBeginBlock, anotheraddr)
 			},
 			srcPos:       2,
 			expRemoved:   true,
@@ -361,13 +361,13 @@ func TestRemovePrivilegedContractCallbacks(t *testing.T) {
 		},
 		"non existing position": {
 			setup: func(ctx sdk.Context, k *Keeper) {
-				k.appendToPrivilegedContractCallbacks(ctx, types.PrivilegeTypeBeginBlock, myAddr)
+				k.appendToPrivilegedContracts(ctx, types.PrivilegeTypeBeginBlock, myAddr)
 			},
 			srcPos:       2,
 			expRemoved:   false,
 			expRemaining: []tuple{{p: 1, a: myAddr}},
 		},
-		"no callbacks": {
+		"no privileges": {
 			setup:      func(ctx sdk.Context, k *Keeper) {},
 			srcPos:     1,
 			expRemoved: false,
@@ -380,11 +380,11 @@ func TestRemovePrivilegedContractCallbacks(t *testing.T) {
 			spec.setup(ctx, k)
 
 			// when
-			removed := k.removePrivilegedContractCallbacks(ctx, types.PrivilegeTypeBeginBlock, spec.srcPos, myAddr)
+			removed := k.removePrivilegeRegistration(ctx, types.PrivilegeTypeBeginBlock, spec.srcPos, myAddr)
 
 			// then
 			var captured []tuple
-			k.IterateContractCallbacksByType(ctx, types.PrivilegeTypeBeginBlock, func(prio uint8, contractAddr sdk.AccAddress) bool {
+			k.IteratePrivilegedContractsByType(ctx, types.PrivilegeTypeBeginBlock, func(prio uint8, contractAddr sdk.AccAddress) bool {
 				captured = append(captured, tuple{p: prio, a: contractAddr})
 				return false
 			})

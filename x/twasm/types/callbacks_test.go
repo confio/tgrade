@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestPrivilegedCallbackTypeFrom(t *testing.T) {
+func TestPrivilegeTypeFrom(t *testing.T) {
 	specs := map[string]struct {
 		src    string
 		expVal PrivilegeType
@@ -37,7 +37,7 @@ func TestPrivilegedCallbackTypeFrom(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			got := PrivilegedCallbackTypeFrom(spec.src)
+			got := PrivilegeTypeFrom(spec.src)
 			if spec.expNil {
 				assert.Nil(t, got)
 				return
@@ -48,7 +48,7 @@ func TestPrivilegedCallbackTypeFrom(t *testing.T) {
 	}
 }
 
-func TestPrivilegedCallbackTypeValidation(t *testing.T) {
+func TestPrivilegeTypeValidation(t *testing.T) {
 	specs := map[string]struct {
 		src    PrivilegeType
 		expErr bool
@@ -86,7 +86,7 @@ func TestPrivilegedCallbackTypeSingletons(t *testing.T) {
 			assert.Equal(t, c.IsSingleton(), exp)
 		})
 	}
-	require.Len(t, specs, len(AllCallbackTypeNames()), "got %v", AllCallbackTypeNames())
+	require.Len(t, specs, len(AllPrivilegeTypeNames()), "got %v", AllPrivilegeTypeNames())
 }
 
 func TestPrivilegeTypeMarshalJson(t *testing.T) {

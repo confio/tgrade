@@ -15,8 +15,8 @@ import (
 // tgradeKeeper defines a subset of Keeper
 type tgradeKeeper interface {
 	IsPrivileged(ctx sdk.Context, contract sdk.AccAddress) bool
-	appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error)
-	removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegeType, pos uint8, contractAddr sdk.AccAddress) bool
+	appendToPrivilegedContracts(ctx sdk.Context, privilegeType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error)
+	removePrivilegeRegistration(ctx sdk.Context, privilegeType types.PrivilegeType, pos uint8, contractAddr sdk.AccAddress) bool
 	setContractDetails(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error
 	GetContractInfo(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
 }
@@ -69,26 +69,26 @@ func (h TgradeHandler) handlePrivilege(ctx sdk.Context, contractAddr sdk.AccAddr
 	}
 
 	register := func(c types.PrivilegeType) error {
-		if details.HasRegisteredContractCallback(c) {
+		if details.HasRegisteredPrivilege(c) {
 			return nil
 		}
-		pos, err := h.keeper.appendToPrivilegedContractCallbacks(ctx, c, contractAddr)
+		pos, err := h.keeper.appendToPrivilegedContracts(ctx, c, contractAddr)
 		if err != nil {
-			return sdkerrors.Wrap(err, "callback registration")
+			return sdkerrors.Wrap(err, "privilege registration")
 		}
-		details.AddRegisteredCallback(c, pos)
+		details.AddRegisteredPrivilege(c, pos)
 		return sdkerrors.Wrap(h.keeper.setContractDetails(ctx, contractAddr, &details), "store details")
 	}
 	unregister := func(tp types.PrivilegeType) error {
-		if !details.HasRegisteredContractCallback(tp) {
+		if !details.HasRegisteredPrivilege(tp) {
 			return nil
 		}
-		details.IterateRegisteredCallbacks(func(c types.PrivilegeType, pos uint8) bool {
+		details.IterateRegisteredPrivileges(func(c types.PrivilegeType, pos uint8) bool {
 			if c != tp {
 				return false
 			}
-			h.keeper.removePrivilegedContractCallbacks(ctx, c, pos, contractAddr)
-			details.RemoveRegisteredCallback(c, pos)
+			h.keeper.removePrivilegeRegistration(ctx, c, pos, contractAddr)
+			details.RemoveRegisteredPrivilege(c, pos)
 			return false
 		})
 		return sdkerrors.Wrap(h.keeper.setContractDetails(ctx, contractAddr, &details), "store details")
@@ -114,7 +114,7 @@ func (h TgradeHandler) handleGovProposalExecution(ctx sdk.Context, contractAddr 
 	if err := contractInfo.ReadExtension(&details); err != nil {
 		return err
 	}
-	if !details.HasRegisteredContractCallback(types.PrivilegeTypeGovProposalExecutor) {
+	if !details.HasRegisteredPrivilege(types.PrivilegeTypeGovProposalExecutor) {
 		return sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "requires: %s", types.PrivilegeTypeGovProposalExecutor.String())
 	}
 

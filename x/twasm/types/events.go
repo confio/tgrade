@@ -7,5 +7,5 @@ const (
 	EventTypeUnregisterCallback = "unregister_callback"
 )
 const ( // event attributes
-	AttributeKeyCallbackType = "callback_type"
+	AttributeKeyCallbackType = "privilege_type"
 )

@@ -32,7 +32,7 @@ func InitGenesis(
 		if err := info.ReadExtension(&d); err != nil {
 			return nil, sdkerrors.Wrapf(err, "extension contract: %d, %s", i, m.ContractAddress)
 		}
-		if len(d.RegisteredCallbacks) == 0 {
+		if len(d.RegisteredPrivileges) == 0 {
 			continue // nothing to do
 		}
 
@@ -41,7 +41,7 @@ func InitGenesis(
 			return nil, sdkerrors.Wrapf(err, "contract: %d", i)
 		}
 		if err := keeper.importPrivileged(ctx, addr, info.CodeID, d); err != nil {
-			return nil, sdkerrors.Wrapf(err, "callback registration for contract: %s", m.ContractAddress)
+			return nil, sdkerrors.Wrapf(err, "privilege registration for contract: %s", m.ContractAddress)
 		}
 		importedCallbackContracts[m.ContractAddress] = struct{}{}
 	}

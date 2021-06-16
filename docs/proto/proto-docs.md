@@ -29,7 +29,7 @@
     - [Msg](#confio.poe.v1beta1.Msg)
   
 - [confio/twasm/v1beta1/contract_extension.proto](#confio/twasm/v1beta1/contract_extension.proto)
-    - [RegisteredCallback](#confio.twasm.v1beta1.RegisteredCallback)
+    - [RegisteredPrivilege](#confio.twasm.v1beta1.RegisteredPrivilege)
     - [TgradeContractDetails](#confio.twasm.v1beta1.TgradeContractDetails)
   
 - [confio/twasm/v1beta1/genesis.proto](#confio/twasm/v1beta1/genesis.proto)
@@ -40,8 +40,8 @@
     - [PromoteToPrivilegedContractProposal](#confio.twasm.v1beta1.PromoteToPrivilegedContractProposal)
   
 - [confio/twasm/v1beta1/query.proto](#confio/twasm/v1beta1/query.proto)
-    - [QueryContractsByCallbackTypeRequest](#confio.twasm.v1beta1.QueryContractsByCallbackTypeRequest)
-    - [QueryContractsByCallbackTypeResponse](#confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse)
+    - [QueryContractsByPrivilegeTypeRequest](#confio.twasm.v1beta1.QueryContractsByPrivilegeTypeRequest)
+    - [QueryContractsByPrivilegeTypeResponse](#confio.twasm.v1beta1.QueryContractsByPrivilegeTypeResponse)
     - [QueryPrivilegedContractsRequest](#confio.twasm.v1beta1.QueryPrivilegedContractsRequest)
     - [QueryPrivilegedContractsResponse](#confio.twasm.v1beta1.QueryPrivilegedContractsResponse)
   
@@ -316,16 +316,16 @@ Msg defines the staking Msg service.
 
 
 
-<a name="confio.twasm.v1beta1.RegisteredCallback"></a>
+<a name="confio.twasm.v1beta1.RegisteredPrivilege"></a>
 
-### RegisteredCallback
-
+### RegisteredPrivilege
+RegisteredPrivilege stores position and privilege name
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `position` | [uint32](#uint32) |  |  |
-| `callback_type` | [string](#string) |  |  |
+| `privilege_type` | [string](#string) |  |  |
 
 
 
@@ -335,12 +335,12 @@ Msg defines the staking Msg service.
 <a name="confio.twasm.v1beta1.TgradeContractDetails"></a>
 
 ### TgradeContractDetails
-
+TgradeContractDetails is a custom extension to the wasmd ContractInfo
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `registered_callbacks` | [RegisteredCallback](#confio.twasm.v1beta1.RegisteredCallback) | repeated |  |
+| `registered_privileges` | [RegisteredPrivilege](#confio.twasm.v1beta1.RegisteredPrivilege) | repeated |  |
 
 
 
@@ -447,27 +447,27 @@ PromoteToPrivilegedContractProposal gov proposal content type to add
 
 
 
-<a name="confio.twasm.v1beta1.QueryContractsByCallbackTypeRequest"></a>
+<a name="confio.twasm.v1beta1.QueryContractsByPrivilegeTypeRequest"></a>
 
-### QueryContractsByCallbackTypeRequest
-QueryContractsByCallbackTypeRequest is the request type for the
-Query/ContractsByCallbackType RPC method
+### QueryContractsByPrivilegeTypeRequest
+QueryContractsByPrivilegeTypeRequest is the request type for the
+Query/ContractsByPrivilegeType RPC method
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `callback_type` | [string](#string) |  |  |
+| `privilege_type` | [string](#string) |  |  |
 
 
 
 
 
 
-<a name="confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse"></a>
+<a name="confio.twasm.v1beta1.QueryContractsByPrivilegeTypeResponse"></a>
 
-### QueryContractsByCallbackTypeResponse
-QueryContractsByCallbackTypeResponse is the response type for the
-Query/ContractsByCallbackType RPC method
+### QueryContractsByPrivilegeTypeResponse
+QueryContractsByPrivilegeTypeResponse is the response type for the
+Query/ContractsByPrivilegeType RPC method
 
 
 | Field | Type | Label | Description |
@@ -520,7 +520,7 @@ Query provides defines the gRPC querier service
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
 | `PrivilegedContracts` | [QueryPrivilegedContractsRequest](#confio.twasm.v1beta1.QueryPrivilegedContractsRequest) | [QueryPrivilegedContractsResponse](#confio.twasm.v1beta1.QueryPrivilegedContractsResponse) | PrivilegedContracts returns all privileged contracts | GET|/twasm/v1beta1/contracts/privileged|
-| `ContractsByCallbackType` | [QueryContractsByCallbackTypeRequest](#confio.twasm.v1beta1.QueryContractsByCallbackTypeRequest) | [QueryContractsByCallbackTypeResponse](#confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse) | ContractsByCallbackType returns all contracts that have registered for the callback type | GET|/twasm/v1beta1/contracts/callback/{callback_type}|
+| `ContractsByPrivilegeType` | [QueryContractsByPrivilegeTypeRequest](#confio.twasm.v1beta1.QueryContractsByPrivilegeTypeRequest) | [QueryContractsByPrivilegeTypeResponse](#confio.twasm.v1beta1.QueryContractsByPrivilegeTypeResponse) | ContractsByPrivilegeType returns all contracts that have registered for the privilege type | GET|/twasm/v1beta1/contracts/privilege/{privilege_type}|
 
  <!-- end services -->
 

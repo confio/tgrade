@@ -16,12 +16,12 @@ service Query {
       returns (QueryPrivilegedContractsResponse) {
     option (google.api.http).get = "/twasm/v1beta1/contracts/privileged";
   }
-  // ContractsByCallbackType returns all contracts that have registered for the
-  // callback type
-  rpc ContractsByCallbackType(QueryContractsByCallbackTypeRequest)
-      returns (QueryContractsByCallbackTypeResponse) {
+  // ContractsByPrivilegeType returns all contracts that have registered for the
+  // privilege type
+  rpc ContractsByPrivilegeType(QueryContractsByPrivilegeTypeRequest)
+      returns (QueryContractsByPrivilegeTypeResponse) {
     option (google.api.http).get =
-        "/twasm/v1beta1/contracts/callback/{callback_type}";
+        "/twasm/v1beta1/contracts/privilege/{privilege_type}";
   }
 }
 
@@ -35,13 +35,13 @@ message QueryPrivilegedContractsResponse {
   // contracts are a set of contract addresses
   repeated string contracts = 1;
 }
-// QueryContractsByCallbackTypeRequest is the request type for the
-// Query/ContractsByCallbackType RPC method
-message QueryContractsByCallbackTypeRequest { string callback_type = 2; }
+// QueryContractsByPrivilegeTypeRequest is the request type for the
+// Query/ContractsByPrivilegeType RPC method
+message QueryContractsByPrivilegeTypeRequest { string privilege_type = 1; }
 
-// QueryContractsByCallbackTypeResponse is the response type for the
-// Query/ContractsByCallbackType RPC method
-message QueryContractsByCallbackTypeResponse {
+// QueryContractsByPrivilegeTypeResponse is the response type for the
+// Query/ContractsByPrivilegeType RPC method
+message QueryContractsByPrivilegeTypeResponse {
   // contracts are a set of contract addresses
   repeated string contracts = 1;
 }

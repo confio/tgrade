@@ -40,7 +40,7 @@ func registerCallbackType(i uint8, name string, singleton bool) PrivilegeType {
 	if _, exists := callbackTypeToString[r]; exists {
 		panic(fmt.Sprintf("type exists already: %d", i))
 	}
-	if PrivilegedCallbackTypeFrom(name) != nil {
+	if PrivilegeTypeFrom(name) != nil {
 		panic(fmt.Sprintf("name exists already: %q", name))
 	}
 	callbackTypeToString[r] = name
@@ -50,8 +50,8 @@ func registerCallbackType(i uint8, name string, singleton bool) PrivilegeType {
 	return r
 }
 
-// PrivilegedCallbackTypeFrom convert name to type. Returns nil when none matches
-func PrivilegedCallbackTypeFrom(name string) *PrivilegeType {
+// PrivilegeTypeFrom convert name to type. Returns nil when none matches
+func PrivilegeTypeFrom(name string) *PrivilegeType {
 	for k, v := range callbackTypeToString {
 		if v == name {
 			return &k
@@ -60,8 +60,8 @@ func PrivilegedCallbackTypeFrom(name string) *PrivilegeType {
 	return nil
 }
 
-// AllCallbackTypeNames returns a list of all callback type names
-func AllCallbackTypeNames() []string {
+// AllPrivilegeTypeNames returns a list of all callback type names
+func AllPrivilegeTypeNames() []string {
 	result := make([]string, 0, len(callbackTypeToString))
 	for _, v := range callbackTypeToString {
 		result = append(result, v)
@@ -98,7 +98,7 @@ func (t *PrivilegeType) UnmarshalJSON(raw []byte) error {
 	if len(src) == 0 {
 		return wasmtypes.ErrInvalid
 	}
-	if v := PrivilegedCallbackTypeFrom(src); v != nil {
+	if v := PrivilegeTypeFrom(src); v != nil {
 		*t = *v
 	}
 	return nil

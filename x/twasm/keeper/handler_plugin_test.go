@@ -38,7 +38,7 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 				noopRegisterHook(m, func(info *wasmtypes.ContractInfo) {
 					var details types.TgradeContractDetails
 					require.NoError(t, info.ReadExtension(&details))
-					details.AddRegisteredCallback(types.PrivilegeTypeGovProposalExecutor, 1)
+					details.AddRegisteredPrivilege(types.PrivilegeTypeGovProposalExecutor, 1)
 					require.NoError(t, info.SetExtension(&details))
 				})
 			},
@@ -104,13 +104,13 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 	}
 
 	var capturedRegistrations []registration
-	captureRegistrations := func(ctx sdk.Context, callbackType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error) {
-		capturedRegistrations = append(capturedRegistrations, registration{cb: callbackType, addr: contractAddress})
+	captureRegistrations := func(ctx sdk.Context, privilegeType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error) {
+		capturedRegistrations = append(capturedRegistrations, registration{cb: privilegeType, addr: contractAddress})
 		return 1, nil
 	}
 	var capturedUnRegistrations []unregistration
-	captureUnRegistrations := func(ctx sdk.Context, callbackType types.PrivilegeType, pos uint8, contractAddress sdk.AccAddress) bool {
-		capturedUnRegistrations = append(capturedUnRegistrations, unregistration{cb: callbackType, pos: pos, addr: contractAddress})
+	captureUnRegistrations := func(ctx sdk.Context, privilegeType types.PrivilegeType, pos uint8, contractAddress sdk.AccAddress) bool {
+		capturedUnRegistrations = append(capturedUnRegistrations, unregistration{cb: privilegeType, pos: pos, addr: contractAddress})
 		return true
 	}
 
@@ -121,8 +121,8 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 				return &f
 			}
 			m.setContractDetailsFn = captureContractDetails
-			m.appendToPrivilegedContractCallbacksFn = captureRegistrations
-			m.removePrivilegedContractCallbacksFn = captureUnRegistrations
+			m.appendToPrivilegedContractsFn = captureRegistrations
+			m.removePrivilegeRegistrationFn = captureUnRegistrations
 		}
 	}
 
@@ -138,7 +138,7 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src:   contract.PrivilegeMsg{Request: &types.PrivilegeTypeBeginBlock},
 			setup: captureWithMock(),
 			expDetails: &types.TgradeContractDetails{
-				RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "begin_blocker"}},
+				RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 			},
 			expRegistrations: []registration{{cb: types.PrivilegeTypeBeginBlock, addr: myContractAddr}},
 		},
@@ -146,18 +146,18 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Release: &types.PrivilegeTypeBeginBlock},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				ext := &types.TgradeContractDetails{
-					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "begin_blocker"}},
+					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 				}
 				info.SetExtension(ext)
 			}),
-			expDetails:         &types.TgradeContractDetails{RegisteredCallbacks: []*types.RegisteredCallback{}},
+			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []*types.RegisteredPrivilege{}},
 			expUnRegistrations: []unregistration{{cb: types.PrivilegeTypeBeginBlock, pos: 1, addr: myContractAddr}},
 		},
 		"register end block": {
 			src:   contract.PrivilegeMsg{Request: &types.PrivilegeTypeEndBlock},
 			setup: captureWithMock(),
 			expDetails: &types.TgradeContractDetails{
-				RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "end_blocker"}},
+				RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "end_blocker"}},
 			},
 			expRegistrations: []registration{{cb: types.PrivilegeTypeEndBlock, addr: myContractAddr}},
 		},
@@ -165,18 +165,18 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Release: &types.PrivilegeTypeEndBlock},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				ext := &types.TgradeContractDetails{
-					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "end_blocker"}},
+					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "end_blocker"}},
 				}
 				info.SetExtension(ext)
 			}),
-			expDetails:         &types.TgradeContractDetails{RegisteredCallbacks: []*types.RegisteredCallback{}},
+			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []*types.RegisteredPrivilege{}},
 			expUnRegistrations: []unregistration{{cb: types.PrivilegeTypeEndBlock, pos: 1, addr: myContractAddr}},
 		},
 		"register validator set update block": {
 			src:   contract.PrivilegeMsg{Request: &types.PrivilegeTypeValidatorSetUpdate},
 			setup: captureWithMock(),
 			expDetails: &types.TgradeContractDetails{
-				RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "validator_set_updater"}},
+				RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "validator_set_updater"}},
 			},
 			expRegistrations: []registration{{cb: types.PrivilegeTypeValidatorSetUpdate, addr: myContractAddr}},
 		},
@@ -184,18 +184,18 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Release: &types.PrivilegeTypeValidatorSetUpdate},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				ext := &types.TgradeContractDetails{
-					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "validator_set_updater"}},
+					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "validator_set_updater"}},
 				}
 				info.SetExtension(ext)
 			}),
-			expDetails:         &types.TgradeContractDetails{RegisteredCallbacks: []*types.RegisteredCallback{}},
+			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []*types.RegisteredPrivilege{}},
 			expUnRegistrations: []unregistration{{cb: types.PrivilegeTypeValidatorSetUpdate, pos: 1, addr: myContractAddr}},
 		},
 		"register gov proposal executor": {
 			src:   contract.PrivilegeMsg{Request: &types.PrivilegeTypeGovProposalExecutor},
 			setup: captureWithMock(),
 			expDetails: &types.TgradeContractDetails{
-				RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "gov_proposal_executor"}},
+				RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
 			},
 			expRegistrations: []registration{{cb: types.PrivilegeTypeGovProposalExecutor, addr: myContractAddr}},
 		},
@@ -203,11 +203,11 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Release: &types.PrivilegeTypeGovProposalExecutor},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				ext := &types.TgradeContractDetails{
-					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "gov_proposal_executor"}},
+					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
 				}
 				info.SetExtension(ext)
 			}),
-			expDetails:         &types.TgradeContractDetails{RegisteredCallbacks: []*types.RegisteredCallback{}},
+			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []*types.RegisteredPrivilege{}},
 			expUnRegistrations: []unregistration{{cb: types.PrivilegeTypeGovProposalExecutor, pos: 1, addr: myContractAddr}},
 		},
 		"register privilege fails": {
@@ -217,7 +217,7 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 					r := wasmtypes.ContractInfoFixture()
 					return &r
 				}
-				m.appendToPrivilegedContractCallbacksFn = func(ctx sdk.Context, callbackType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error) {
+				m.appendToPrivilegedContractsFn = func(ctx sdk.Context, privilegeType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error) {
 					return 0, wasmtypes.ErrDuplicate
 				}
 			},
@@ -227,7 +227,7 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Request: &types.PrivilegeTypeBeginBlock},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				info.SetExtension(&types.TgradeContractDetails{
-					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "begin_blocker"}},
+					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 				})
 			}),
 		},
@@ -235,11 +235,11 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Request: &types.PrivilegeTypeBeginBlock},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				info.SetExtension(&types.TgradeContractDetails{
-					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 100, CallbackType: "end_blocker"}},
+					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 100, PrivilegeType: "end_blocker"}},
 				})
 			}),
 			expDetails: &types.TgradeContractDetails{
-				RegisteredCallbacks: []*types.RegisteredCallback{{Position: 100, CallbackType: "end_blocker"}, {Position: 1, CallbackType: "begin_blocker"}},
+				RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 100, PrivilegeType: "end_blocker"}, {Position: 1, PrivilegeType: "begin_blocker"}},
 			},
 			expRegistrations: []registration{{cb: types.PrivilegeTypeBeginBlock, addr: myContractAddr}},
 		},
@@ -247,17 +247,17 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Release: &types.PrivilegeTypeBeginBlock},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				ext := &types.TgradeContractDetails{
-					RegisteredCallbacks: []*types.RegisteredCallback{
-						{Position: 3, CallbackType: "validator_set_updater"},
-						{Position: 1, CallbackType: "begin_blocker"},
-						{Position: 100, CallbackType: "end_blocker"},
+					RegisteredPrivileges: []*types.RegisteredPrivilege{
+						{Position: 3, PrivilegeType: "validator_set_updater"},
+						{Position: 1, PrivilegeType: "begin_blocker"},
+						{Position: 100, PrivilegeType: "end_blocker"},
 					},
 				}
 				info.SetExtension(ext)
 			}),
-			expDetails: &types.TgradeContractDetails{RegisteredCallbacks: []*types.RegisteredCallback{
-				{Position: 3, CallbackType: "validator_set_updater"},
-				{Position: 100, CallbackType: "end_blocker"},
+			expDetails: &types.TgradeContractDetails{RegisteredPrivileges: []*types.RegisteredPrivilege{
+				{Position: 3, PrivilegeType: "validator_set_updater"},
+				{Position: 100, PrivilegeType: "end_blocker"},
 			}},
 			expUnRegistrations: []unregistration{{cb: types.PrivilegeTypeBeginBlock, pos: 1, addr: myContractAddr}},
 		},
@@ -306,7 +306,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
 					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
 						info.SetExtension(&types.TgradeContractDetails{
-							RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "gov_proposal_executor"}},
+							RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
 						})
 					})
 					return &c
@@ -334,7 +334,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
 					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
 						info.SetExtension(&types.TgradeContractDetails{
-							RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "gov_proposal_executor"}},
+							RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
 						})
 					})
 					return &c
@@ -348,7 +348,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
 					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
 						info.SetExtension(&types.TgradeContractDetails{
-							RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "gov_proposal_executor"}},
+							RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
 						})
 					})
 					return &c
@@ -393,7 +393,7 @@ func noopRegisterHook(m *handlerTgradeKeeperMock, mutators ...func(*wasmtypes.Co
 		}}, mutators...)...)
 		return &v
 	}
-	m.appendToPrivilegedContractCallbacksFn = func(ctx sdk.Context, callbackType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error) {
+	m.appendToPrivilegedContractsFn = func(ctx sdk.Context, privilegeType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error) {
 		return 1, nil
 	}
 	m.setContractDetailsFn = func(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error {
@@ -404,11 +404,11 @@ func noopRegisterHook(m *handlerTgradeKeeperMock, mutators ...func(*wasmtypes.Co
 var _ tgradeKeeper = handlerTgradeKeeperMock{}
 
 type handlerTgradeKeeperMock struct {
-	IsPrivilegedFn                        func(ctx sdk.Context, contract sdk.AccAddress) bool
-	appendToPrivilegedContractCallbacksFn func(ctx sdk.Context, callbackType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error)
-	removePrivilegedContractCallbacksFn   func(ctx sdk.Context, callbackType types.PrivilegeType, pos uint8, contractAddr sdk.AccAddress) bool
-	setContractDetailsFn                  func(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error
-	GetContractInfoFn                     func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
+	IsPrivilegedFn                func(ctx sdk.Context, contract sdk.AccAddress) bool
+	appendToPrivilegedContractsFn func(ctx sdk.Context, privilegeType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error)
+	removePrivilegeRegistrationFn func(ctx sdk.Context, privilegeType types.PrivilegeType, pos uint8, contractAddr sdk.AccAddress) bool
+	setContractDetailsFn          func(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error
+	GetContractInfoFn             func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
 }
 
 func (m handlerTgradeKeeperMock) IsPrivileged(ctx sdk.Context, contract sdk.AccAddress) bool {
@@ -418,18 +418,18 @@ func (m handlerTgradeKeeperMock) IsPrivileged(ctx sdk.Context, contract sdk.AccA
 	return m.IsPrivilegedFn(ctx, contract)
 }
 
-func (m handlerTgradeKeeperMock) appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error) {
-	if m.appendToPrivilegedContractCallbacksFn == nil {
+func (m handlerTgradeKeeperMock) appendToPrivilegedContracts(ctx sdk.Context, privilegeType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error) {
+	if m.appendToPrivilegedContractsFn == nil {
 		panic("not expected to be called")
 	}
-	return m.appendToPrivilegedContractCallbacksFn(ctx, callbackType, contractAddress)
+	return m.appendToPrivilegedContractsFn(ctx, privilegeType, contractAddress)
 }
 
-func (m handlerTgradeKeeperMock) removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegeType, pos uint8, contractAddr sdk.AccAddress) bool {
-	if m.removePrivilegedContractCallbacksFn == nil {
+func (m handlerTgradeKeeperMock) removePrivilegeRegistration(ctx sdk.Context, privilegeType types.PrivilegeType, pos uint8, contractAddr sdk.AccAddress) bool {
+	if m.removePrivilegeRegistrationFn == nil {
 		panic("not expected to be called")
 	}
-	return m.removePrivilegedContractCallbacksFn(ctx, callbackType, pos, contractAddr)
+	return m.removePrivilegeRegistrationFn(ctx, privilegeType, pos, contractAddr)
 }
 
 func (m handlerTgradeKeeperMock) setContractDetails(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error {
