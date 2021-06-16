@@ -118,6 +118,10 @@ func (c TgradeCli) FundAddress(t *testing.T, destAddr, amount string) string {
 	return c.run(c.withTXFlags(cmd...))
 }
 
+func (c TgradeCli) QueryBalances(addr string) string {
+	return c.CustomQuery("q", "bank", "balances", addr)
+}
+
 // RequireTxSuccess require the received response to contain the success code
 func RequireTxSuccess(t *testing.T, got string) {
 	t.Helper()

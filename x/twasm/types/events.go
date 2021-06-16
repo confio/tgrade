@@ -10,5 +10,5 @@ const (
 
 const ( // event attributes
 	AttributeKeyCallbackType    = "privilege_type"
-	AttributeKeyRewardRecipient = "reward_recipient"
+	AttributeKeyRewardRecipient = "recipient"
 )

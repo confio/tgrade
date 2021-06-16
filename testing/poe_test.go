@@ -73,6 +73,10 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	sortedMember = sortedMember[1:sut.nodesCount]
 	stakedAmounts = stakedAmounts[1:sut.nodesCount]
 	assertValidatorsUpdated(t, sortedMember, stakedAmounts, sut.nodesCount-1)
+	for _, v := range sortedMember {
+		t.Log("balance", cli.QueryBalances(v.Addr))
+	}
+	// TODO: verify balances
 }
 
 func assertValidatorsUpdated(t *testing.T, sortedMember []testingcontracts.TG4Member, stakedAmounts []uint64, expValidators int) {
