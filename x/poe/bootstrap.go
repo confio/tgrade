@@ -126,6 +126,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		MinWeight:     1,
 		MaxValidators: 100,
 		EpochLength:   1,
+		EpochReward:   sdk.NewCoin(gs.BondDenom, sdk.ZeroInt()),
 		InitialKeys:   []contract.ValsetInitKey{},
 	}
 	codeID, err = k.Create(ctx, creator, tgValset, "https://github.com/confio/tgrade-contracts/tree/main/contracts/tgrade-valset", "cosmwasm/workspace-optimizer:0.11.3", &wasmtypes.AllowEverybody)

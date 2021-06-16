@@ -2,6 +2,7 @@ package contract
 
 import (
 	"encoding/json"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"sort"
 	"testing"
@@ -103,6 +104,7 @@ type ValsetInitMsg struct {
 	MinWeight     int             `json:"min_weight"`
 	MaxValidators int             `json:"max_validators"`
 	EpochLength   int             `json:"epoch_length"`
+	EpochReward   sdk.Coin        `json:"epoch_reward"`
 	InitialKeys   []ValsetInitKey `json:"initial_keys"`
 	Scaling       int             `json:"scaling,omitempty"`
 }
