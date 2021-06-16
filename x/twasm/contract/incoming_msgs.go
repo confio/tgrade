@@ -16,6 +16,7 @@ import (
 type TgradeMsg struct {
 	Privilege          *PrivilegeMsg       `json:"privilege,omitempty"`
 	ExecuteGovProposal *ExecuteGovProposal `json:"execute_gov_proposal,omitempty"`
+	MintTokens         *MintTokens         `json:"mint_tokens,omitempty"`
 }
 
 // UnmarshalWithAny from json to Go objects with cosmos-sdk Any types that have their objects/ interfaces unpacked and
@@ -246,4 +247,12 @@ type proposalContent struct {
 
 	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L109-L121
 	UnpinCodes *wasmtypes.UnpinCodesProposal `json:"unpin_codes"`
+}
+
+// MintTokens custom message to mint native tokens on the chain.
+// See https://github.com/confio/tgrade-contracts/blob/main/packages/bindings/schema/tgrade_msg.json
+type MintTokens struct {
+	Denom         string `json:"denom"`
+	Amount        string `json:"amount"`
+	RecipientAddr string `json:"recipient"`
 }

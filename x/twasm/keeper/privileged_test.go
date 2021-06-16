@@ -149,7 +149,7 @@ func TestUnsetPrivileged(t *testing.T) {
 			k := keepers.TWasmKeeper
 			codeID, contractAddr := seedTestContract(t, ctx, k)
 
-			h := NewTgradeHandler(nil, k, nil)
+			h := NewTgradeHandler(nil, k, nil, nil)
 			// and privileged with a type
 			k.setPrivilegedFlag(ctx, contractAddr)
 			err := h.handlePrivilege(ctx, contractAddr, &contract.PrivilegeMsg{
