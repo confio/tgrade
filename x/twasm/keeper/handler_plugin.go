@@ -94,10 +94,10 @@ func (h TgradeHandler) handlePrivilege(ctx sdk.Context, contractAddr sdk.AccAddr
 		return sdkerrors.Wrap(h.keeper.setContractDetails(ctx, contractAddr, &details), "store details")
 	}
 	switch {
-	case msg.Release != nil:
-		return unregister(*msg.Release)
-	case msg.Request != nil:
-		return register(*msg.Request)
+	case msg.Release != types.PrivilegeTypeUndefined:
+		return unregister(msg.Release)
+	case msg.Request != types.PrivilegeTypeUndefined:
+		return register(msg.Request)
 	default:
 		return wasmtypes.ErrUnknownMsg
 	}

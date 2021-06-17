@@ -57,7 +57,7 @@ func TestGovProposal(t *testing.T) {
 	RequireTxSuccess(t, txResult)
 
 	// then should not be privileged anymore
-	qResult = cli.CustomQuery("q", "wasm", "list-privileged-contracts-by-type", "gov_proposal_executor")
+	qResult = cli.CustomQuery("q", "wasm", "list-privileged-by-type", "gov_proposal_executor")
 	contracts = gjson.Get(qResult, "contracts").Array()
 	require.Len(t, contracts, 0, qResult)
 }

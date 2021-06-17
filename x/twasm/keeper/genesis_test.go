@@ -90,7 +90,7 @@ func TestInitGenesis(t *testing.T) {
 				// callback registers for end block on sudo call
 				m.PinFn = func(checksum cosmwasm.Checksum) error { return nil }
 				m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64) (*wasmvmtypes.Response, uint64, error) {
-					tradeMsg := contract.TgradeMsg{Privilege: &contract.PrivilegeMsg{Request: &types.PrivilegeTypeEndBlock}}
+					tradeMsg := contract.TgradeMsg{Privilege: &contract.PrivilegeMsg{Request: types.PrivilegeTypeEndBlock}}
 					msgBz, err := json.Marshal(&tradeMsg)
 					require.NoError(t, err)
 					return &wasmvmtypes.Response{

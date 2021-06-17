@@ -90,28 +90,40 @@ func TestPrivilegedCallbackTypeSingletons(t *testing.T) {
 }
 
 func TestPrivilegeTypeMarshalJson(t *testing.T) {
-	unknownType := PrivilegeType(0)
+	type myTestType struct {
+		Foo PrivilegeType `json:"foo,omitempty"`
+	}
 	specs := map[string]struct {
 		src     interface{}
 		expJson []byte
 		expErr  bool
 	}{
 		"all good": {
+			src:     PrivilegeTypeBeginBlock,
+			expJson: []byte(`"begin_blocker"`),
+		},
+		"obj value": {
+			src:     myTestType{Foo: PrivilegeTypeBeginBlock},
+			expJson: []byte(`{"foo":"begin_blocker"}`),
+		},
+		"empty obj": {
+			src:     myTestType{},
+			expJson: []byte(`{}`),
+		},
+		"ref": {
 			src:     &PrivilegeTypeBeginBlock,
 			expJson: []byte(`"begin_blocker"`),
 		},
-		"empty": {
+		"empty ref": {
 			src:     (*PrivilegeType)(nil),
 			expJson: []byte(`null`),
 		},
-		"empty obj": {
-			src: struct {
-				Foo *PrivilegeType `json:"foo,omitempty"`
-			}{},
-			expJson: []byte(`{}`),
+		"undefined": {
+			src:    PrivilegeTypeUndefined,
+			expErr: true,
 		},
-		"unknown": {
-			src:    &unknownType,
+		"not existing": {
+			src:    PrivilegeType(0xff),
 			expErr: true,
 		},
 	}
@@ -131,6 +143,9 @@ func TestPrivilegeTypeMarshalJson(t *testing.T) {
 
 func TestPrivilegeTypeUnmarshalJson(t *testing.T) {
 	var x PrivilegeType
+	type myTestType struct {
+		Foo PrivilegeType `json:"foo,omitempty"`
+	}
 	specs := map[string]struct {
 		src    []byte
 		target interface{}
@@ -147,29 +162,19 @@ func TestPrivilegeTypeUnmarshalJson(t *testing.T) {
 			expErr: true,
 		},
 		"empty obj": {
-			src: []byte(`{}`),
-			target: &struct {
-				Foo *PrivilegeType `json:"foo,omitempty"`
-			}{},
-			exp: &struct {
-				Foo *PrivilegeType `json:"foo,omitempty"`
-			}{},
+			src:    []byte(`{}`),
+			target: &myTestType{},
+			exp:    &myTestType{},
 		},
 		"empty obj value": {
-			src: []byte(`{"foo":""}`),
-			target: &struct {
-				Foo *PrivilegeType `json:"foo,omitempty"`
-			}{},
+			src:    []byte(`{"foo":""}`),
+			target: &myTestType{},
 			expErr: true,
 		},
 		"obj value set": {
-			src: []byte(`{"foo":"begin_blocker"}`),
-			target: &struct {
-				Foo *PrivilegeType `json:"foo,omitempty"`
-			}{},
-			exp: &struct {
-				Foo *PrivilegeType `json:"foo,omitempty"`
-			}{Foo: &PrivilegeTypeBeginBlock},
+			src:    []byte(`{"foo":"begin_blocker"}`),
+			target: &myTestType{},
+			exp:    &myTestType{Foo: PrivilegeTypeBeginBlock},
 		},
 	}
 	for name, spec := range specs {

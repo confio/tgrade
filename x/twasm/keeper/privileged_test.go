@@ -153,11 +153,11 @@ func TestUnsetPrivileged(t *testing.T) {
 			// and privileged with a type
 			k.setPrivilegedFlag(ctx, contractAddr)
 			err := h.handlePrivilege(ctx, contractAddr, &contract.PrivilegeMsg{
-				Request: &types.PrivilegeTypeBeginBlock,
+				Request: types.PrivilegeTypeBeginBlock,
 			})
 			require.NoError(t, err)
 			err = h.handlePrivilege(ctx, contractAddr, &contract.PrivilegeMsg{
-				Request: &types.PrivilegeTypeEndBlock,
+				Request: types.PrivilegeTypeEndBlock,
 			})
 			require.NoError(t, err)
 

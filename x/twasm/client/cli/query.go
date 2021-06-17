@@ -37,10 +37,10 @@ func GetQueryCmd() *cobra.Command {
 
 func GetCmdShowPrivilegedContracts() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "list-privileged-contracts-by-type <privilege_type>",
+		Use:     "list-privileged-by-type <privilege_type>",
 		Short:   "List all contract addresses for given privilege type",
 		Long:    fmt.Sprintf("List all contracts for privilege type [%s]", strings.Join(types.AllPrivilegeTypeNames(), ", ")),
-		Aliases: []string{"privilege-contracts-by-type", "privileged-contract-by-type", "lpct"},
+		Aliases: []string{"privilege-contracts-by-type", "with-privilege", "lpct"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -73,10 +73,10 @@ func GetCmdShowPrivilegedContracts() *cobra.Command {
 // GetCmdListPrivilegedContracts lists all privileged contracts
 func GetCmdListPrivilegedContracts() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "list-privileged-contracts",
+		Use:     "list-privileged",
 		Short:   "List all privileged contract addresses",
 		Long:    "List all contract addresses with privileged permission set",
-		Aliases: []string{"privileged-contracts", "privileged-contract", "lpc"},
+		Aliases: []string{"privileged-contracts", "privileged", "lpc"},
 		Args:    cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)

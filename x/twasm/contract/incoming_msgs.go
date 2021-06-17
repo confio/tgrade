@@ -32,8 +32,8 @@ func (p *TgradeMsg) UnmarshalWithAny(bz []byte, unpacker codectypes.AnyUnpacker)
 }
 
 type PrivilegeMsg struct {
-	Request *types.PrivilegeType `json:"request,omitempty"`
-	Release *types.PrivilegeType `json:"release,omitempty"`
+	Request types.PrivilegeType `json:"request,omitempty"`
+	Release types.PrivilegeType `json:"release,omitempty"`
 }
 
 // ExecuteGovProposal will execute an approved proposal in the Cosmos SDK "Gov Router".

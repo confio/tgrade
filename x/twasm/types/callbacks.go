@@ -10,6 +10,8 @@ import (
 type PrivilegeType byte
 
 var (
+	// PrivilegeTypeUndefined is empty value
+	PrivilegeTypeUndefined PrivilegeType = 0
 	// PrivilegeTypeBeginBlock called every block before the TX are processed
 	// Multiple contracts can register for this callback privilege
 	PrivilegeTypeBeginBlock = registerCallbackType(0x1, "begin_blocker", false)
@@ -36,6 +38,9 @@ var (
 
 // registerCallbackType internal method to register callback types with meta data.
 func registerCallbackType(i uint8, name string, singleton bool) PrivilegeType {
+	if i == 0 {
+		panic("unique number must not be empty")
+	}
 	r := PrivilegeType(i)
 	if _, exists := callbackTypeToString[r]; exists {
 		panic(fmt.Sprintf("type exists already: %d", i))
@@ -104,8 +109,8 @@ func (t *PrivilegeType) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
-func (t *PrivilegeType) MarshalJSON() ([]byte, error) {
-	if t == nil {
+func (t PrivilegeType) MarshalJSON() ([]byte, error) {
+	if t == 0 {
 		return nil, nil
 	}
 	if err := t.ValidateBasic(); err != nil {
