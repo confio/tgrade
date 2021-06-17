@@ -119,7 +119,7 @@ func TestPrivilegeTypeMarshalJson(t *testing.T) {
 			expJson: []byte(`null`),
 		},
 		"undefined": {
-			src:    PrivilegeTypeUndefined,
+			src:    PrivilegeTypeEmpty,
 			expErr: true,
 		},
 		"not existing": {

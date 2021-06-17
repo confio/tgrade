@@ -10,8 +10,8 @@ import (
 type PrivilegeType byte
 
 var (
-	// PrivilegeTypeUndefined is empty value
-	PrivilegeTypeUndefined PrivilegeType = 0
+	// PrivilegeTypeEmpty is empty value
+	PrivilegeTypeEmpty PrivilegeType = 0
 	// PrivilegeTypeBeginBlock called every block before the TX are processed
 	// Multiple contracts can register for this callback privilege
 	PrivilegeTypeBeginBlock = registerCallbackType(0x1, "begin_blocker", false)
