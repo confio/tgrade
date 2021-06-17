@@ -6,37 +6,40 @@ import (
 	"math"
 )
 
-func (d *TgradeContractDetails) AddRegisteredCallback(t PrivilegedCallbackType, pos uint8) {
-	d.RegisteredCallbacks = append(d.RegisteredCallbacks, &RegisteredCallback{
-		CallbackType: t.String(),
-		Position:     uint32(pos),
+//AddRegisteredPrivilege add privilege type to list
+func (d *TgradeContractDetails) AddRegisteredPrivilege(t PrivilegeType, pos uint8) {
+	d.RegisteredPrivileges = append(d.RegisteredPrivileges, &RegisteredPrivilege{
+		PrivilegeType: t.String(),
+		Position:      uint32(pos),
 	})
 }
 
-func (d *TgradeContractDetails) RemoveRegisteredCallback(t PrivilegedCallbackType, pos uint8) {
-	src := &RegisteredCallback{
-		CallbackType: t.String(),
-		Position:     uint32(pos),
+// RemoveRegisteredPrivilege remove privilege type from list
+func (d *TgradeContractDetails) RemoveRegisteredPrivilege(t PrivilegeType, pos uint8) {
+	src := &RegisteredPrivilege{
+		PrivilegeType: t.String(),
+		Position:      uint32(pos),
 	}
-	for i, v := range d.RegisteredCallbacks {
+	for i, v := range d.RegisteredPrivileges {
 		if src.Equal(v) {
-			d.RegisteredCallbacks = append(d.RegisteredCallbacks[0:i], d.RegisteredCallbacks[i+1:]...)
+			d.RegisteredPrivileges = append(d.RegisteredPrivileges[0:i], d.RegisteredPrivileges[i+1:]...)
 		}
 	}
 }
 
-func (d *TgradeContractDetails) HasRegisteredContractCallback(c PrivilegedCallbackType) bool {
-	for _, v := range d.RegisteredCallbacks {
-		if v.CallbackType == c.String() {
+// HasRegisteredPrivilege returs true when given type was registered by this contract
+func (d *TgradeContractDetails) HasRegisteredPrivilege(c PrivilegeType) bool {
+	for _, v := range d.RegisteredPrivileges {
+		if v.PrivilegeType == c.String() {
 			return true
 		}
 	}
 	return false
 }
 
-func (d TgradeContractDetails) IterateRegisteredCallbacks(cb func(c PrivilegedCallbackType, pos uint8) bool) {
-	for _, v := range d.RegisteredCallbacks {
-		if cb(*PrivilegedCallbackTypeFrom(v.CallbackType), uint8(v.Position)) {
+func (d TgradeContractDetails) IterateRegisteredPrivileges(cb func(c PrivilegeType, pos uint8) bool) {
+	for _, v := range d.RegisteredPrivileges {
+		if cb(*PrivilegeTypeFrom(v.PrivilegeType), uint8(v.Position)) {
 			return
 		}
 	}
@@ -44,31 +47,31 @@ func (d TgradeContractDetails) IterateRegisteredCallbacks(cb func(c PrivilegedCa
 
 // ValidateBasic syntax checks
 func (d TgradeContractDetails) ValidateBasic() error {
-	unique := make(map[PrivilegedCallbackType]struct{})
-	for i, c := range d.RegisteredCallbacks {
+	unique := make(map[PrivilegeType]struct{})
+	for i, c := range d.RegisteredPrivileges {
 		if err := c.ValidateBasic(); err != nil {
-			return sdkerrors.Wrapf(err, "callback %d", i)
+			return sdkerrors.Wrapf(err, "privilege %d", i)
 		}
-		callbackType := *PrivilegedCallbackTypeFrom(c.CallbackType)
-		if _, exists := unique[callbackType]; exists {
-			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "callback %q", callbackType.String())
+		privilegeType := *PrivilegeTypeFrom(c.PrivilegeType)
+		if _, exists := unique[privilegeType]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "privilege %q", privilegeType.String())
 		}
-		unique[callbackType] = struct{}{}
+		unique[privilegeType] = struct{}{}
 	}
 	return nil
 }
 
 // ValidateBasic syntax checks
-func (r RegisteredCallback) ValidateBasic() error {
+func (r RegisteredPrivilege) ValidateBasic() error {
 	if r.Position > math.MaxUint8 {
 		return sdkerrors.Wrap(wasmtypes.ErrInvalid, "position exceeds max")
 	}
 	if r.Position == 0 {
 		return sdkerrors.Wrap(wasmtypes.ErrEmpty, "position")
 	}
-	tp := PrivilegedCallbackTypeFrom(r.CallbackType)
+	tp := PrivilegeTypeFrom(r.PrivilegeType)
 	if tp == nil {
-		return sdkerrors.Wrap(wasmtypes.ErrInvalid, "callback type")
+		return sdkerrors.Wrap(wasmtypes.ErrInvalid, "privilege type")
 	}
 	return nil
 }

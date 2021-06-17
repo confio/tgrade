@@ -49,8 +49,8 @@ func local_request_Query_PrivilegedContracts_0(ctx context.Context, marshaler ru
 
 }
 
-func request_Query_ContractsByCallbackType_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryContractsByCallbackTypeRequest
+func request_Query_ContractsByPrivilegeType_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryContractsByPrivilegeTypeRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -60,24 +60,24 @@ func request_Query_ContractsByCallbackType_0(ctx context.Context, marshaler runt
 		_   = err
 	)
 
-	val, ok = pathParams["callback_type"]
+	val, ok = pathParams["privilege_type"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "callback_type")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "privilege_type")
 	}
 
-	protoReq.CallbackType, err = runtime.String(val)
+	protoReq.PrivilegeType, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "callback_type", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "privilege_type", err)
 	}
 
-	msg, err := client.ContractsByCallbackType(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ContractsByPrivilegeType(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_Query_ContractsByCallbackType_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryContractsByCallbackTypeRequest
+func local_request_Query_ContractsByPrivilegeType_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq QueryContractsByPrivilegeTypeRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -87,18 +87,18 @@ func local_request_Query_ContractsByCallbackType_0(ctx context.Context, marshale
 		_   = err
 	)
 
-	val, ok = pathParams["callback_type"]
+	val, ok = pathParams["privilege_type"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "callback_type")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "privilege_type")
 	}
 
-	protoReq.CallbackType, err = runtime.String(val)
+	protoReq.PrivilegeType, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "callback_type", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "privilege_type", err)
 	}
 
-	msg, err := server.ContractsByCallbackType(ctx, &protoReq)
+	msg, err := server.ContractsByPrivilegeType(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -129,7 +129,7 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 
 	})
 
-	mux.Handle("GET", pattern_Query_ContractsByCallbackType_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Query_ContractsByPrivilegeType_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -138,14 +138,14 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_Query_ContractsByCallbackType_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_Query_ContractsByPrivilegeType_0(rctx, inboundMarshaler, server, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Query_ContractsByCallbackType_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Query_ContractsByPrivilegeType_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -210,7 +210,7 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 
 	})
 
-	mux.Handle("GET", pattern_Query_ContractsByCallbackType_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_Query_ContractsByPrivilegeType_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -219,14 +219,14 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_Query_ContractsByCallbackType_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_Query_ContractsByPrivilegeType_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_Query_ContractsByCallbackType_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_Query_ContractsByPrivilegeType_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -236,11 +236,11 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 var (
 	pattern_Query_PrivilegedContracts_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"twasm", "v1beta1", "contracts", "privileged"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_ContractsByCallbackType_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"twasm", "v1beta1", "contracts", "callback", "callback_type"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ContractsByPrivilegeType_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"twasm", "v1beta1", "contracts", "privilege", "privilege_type"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
 	forward_Query_PrivilegedContracts_0 = runtime.ForwardResponseMessage
 
-	forward_Query_ContractsByCallbackType_0 = runtime.ForwardResponseMessage
+	forward_Query_ContractsByPrivilegeType_0 = runtime.ForwardResponseMessage
 )

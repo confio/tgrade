@@ -15,8 +15,8 @@ import (
 // tgradeKeeper defines a subset of Keeper
 type tgradeKeeper interface {
 	IsPrivileged(ctx sdk.Context, contract sdk.AccAddress) bool
-	appendToPrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, contractAddress sdk.AccAddress) (uint8, error)
-	removePrivilegedContractCallbacks(ctx sdk.Context, callbackType types.PrivilegedCallbackType, pos uint8, contractAddr sdk.AccAddress) bool
+	appendToPrivilegedContracts(ctx sdk.Context, privilegeType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error)
+	removePrivilegeRegistration(ctx sdk.Context, privilegeType types.PrivilegeType, pos uint8, contractAddr sdk.AccAddress) bool
 	setContractDetails(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error
 	GetContractInfo(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
 }
@@ -48,16 +48,16 @@ func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress,
 		return nil, nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	switch {
-	case tMsg.Hooks != nil:
-		return nil, nil, h.handleHooks(ctx, contractAddr, tMsg.Hooks)
+	case tMsg.Privilege != nil:
+		return nil, nil, h.handlePrivilege(ctx, contractAddr, tMsg.Privilege)
 	case tMsg.ExecuteGovProposal != nil:
 		return nil, nil, h.handleGovProposalExecution(ctx, contractAddr, tMsg.ExecuteGovProposal)
 	}
 	return nil, nil, wasmtypes.ErrUnknownMsg
 }
 
-// handle register/ unregister hook messages
-func (h TgradeHandler) handleHooks(ctx sdk.Context, contractAddr sdk.AccAddress, hooks *contract.Hooks) error {
+// handle register/ unregister privilege messages
+func (h TgradeHandler) handlePrivilege(ctx sdk.Context, contractAddr sdk.AccAddress, msg *contract.PrivilegeMsg) error {
 	contractInfo := h.keeper.GetContractInfo(ctx, contractAddr)
 	if contractInfo == nil {
 		return sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract info")
@@ -68,48 +68,36 @@ func (h TgradeHandler) handleHooks(ctx sdk.Context, contractAddr sdk.AccAddress,
 		return err
 	}
 
-	register := func(c types.PrivilegedCallbackType) error {
-		if details.HasRegisteredContractCallback(c) {
+	register := func(c types.PrivilegeType) error {
+		if details.HasRegisteredPrivilege(c) {
 			return nil
 		}
-		pos, err := h.keeper.appendToPrivilegedContractCallbacks(ctx, c, contractAddr)
+		pos, err := h.keeper.appendToPrivilegedContracts(ctx, c, contractAddr)
 		if err != nil {
-			return sdkerrors.Wrap(err, "callback registration")
+			return sdkerrors.Wrap(err, "privilege registration")
 		}
-		details.AddRegisteredCallback(c, pos)
+		details.AddRegisteredPrivilege(c, pos)
 		return sdkerrors.Wrap(h.keeper.setContractDetails(ctx, contractAddr, &details), "store details")
 	}
-	unregister := func(tp types.PrivilegedCallbackType) error {
-		if !details.HasRegisteredContractCallback(tp) {
+	unregister := func(tp types.PrivilegeType) error {
+		if !details.HasRegisteredPrivilege(tp) {
 			return nil
 		}
-		details.IterateRegisteredCallbacks(func(c types.PrivilegedCallbackType, pos uint8) bool {
+		details.IterateRegisteredPrivileges(func(c types.PrivilegeType, pos uint8) bool {
 			if c != tp {
 				return false
 			}
-			h.keeper.removePrivilegedContractCallbacks(ctx, c, pos, contractAddr)
-			details.RemoveRegisteredCallback(c, pos)
+			h.keeper.removePrivilegeRegistration(ctx, c, pos, contractAddr)
+			details.RemoveRegisteredPrivilege(c, pos)
 			return false
 		})
 		return sdkerrors.Wrap(h.keeper.setContractDetails(ctx, contractAddr, &details), "store details")
 	}
 	switch {
-	case hooks.RegisterBeginBlock != nil:
-		return register(types.CallbackTypeBeginBlock)
-	case hooks.UnregisterBeginBlock != nil:
-		return unregister(types.CallbackTypeBeginBlock)
-	case hooks.RegisterEndBlock != nil:
-		return register(types.CallbackTypeEndBlock)
-	case hooks.UnregisterEndBlock != nil:
-		return unregister(types.CallbackTypeEndBlock)
-	case hooks.RegisterValidatorSetUpdate != nil:
-		return register(types.CallbackTypeValidatorSetUpdate)
-	case hooks.UnregisterValidatorSetUpdate != nil:
-		return unregister(types.CallbackTypeValidatorSetUpdate)
-	case hooks.RegisterGovProposalExecutor != nil:
-		return register(types.CallbackTypeGovProposalExecutor)
-	case hooks.UnregisterGovProposalExecutor != nil:
-		return unregister(types.CallbackTypeGovProposalExecutor)
+	case msg.Release != types.PrivilegeTypeEmpty:
+		return unregister(msg.Release)
+	case msg.Request != types.PrivilegeTypeEmpty:
+		return register(msg.Request)
 	default:
 		return wasmtypes.ErrUnknownMsg
 	}
@@ -126,8 +114,8 @@ func (h TgradeHandler) handleGovProposalExecution(ctx sdk.Context, contractAddr 
 	if err := contractInfo.ReadExtension(&details); err != nil {
 		return err
 	}
-	if !details.HasRegisteredContractCallback(types.CallbackTypeGovProposalExecutor) {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "requires: %s", types.CallbackTypeGovProposalExecutor.String())
+	if !details.HasRegisteredPrivilege(types.PrivilegeTypeGovProposalExecutor) {
+		return sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "requires: %s", types.PrivilegeTypeGovProposalExecutor.String())
 	}
 
 	content := exec.GetProposalContent()

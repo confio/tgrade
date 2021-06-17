@@ -14,8 +14,8 @@ import (
 
 // TgradeMsg messages coming from a contract
 type TgradeMsg struct {
-	Hooks              *Hooks              `json:"hooks"`
-	ExecuteGovProposal *ExecuteGovProposal `json:"execute_gov_proposal"`
+	Privilege          *PrivilegeMsg       `json:"privilege,omitempty"`
+	ExecuteGovProposal *ExecuteGovProposal `json:"execute_gov_proposal,omitempty"`
 }
 
 // UnmarshalWithAny from json to Go objects with cosmos-sdk Any types that have their objects/ interfaces unpacked and
@@ -31,19 +31,9 @@ func (p *TgradeMsg) UnmarshalWithAny(bz []byte, unpacker codectypes.AnyUnpacker)
 	return nil
 }
 
-// Hooks contains method to interact with system callbacks
-type Hooks struct {
-	RegisterBeginBlock   *struct{} `json:"register_begin_block"`
-	UnregisterBeginBlock *struct{} `json:"unregister_begin_block"`
-	// these are called the end of every block
-	RegisterEndBlock   *struct{} `json:"register_end_block"`
-	UnregisterEndBlock *struct{} `json:"unregister_end_block"`
-	// only max 1 contract can be registered here, this is called in EndBlock (after everything else) and can change the validator set.
-	RegisterValidatorSetUpdate   *struct{} `json:"register_validator_set_update"`
-	UnregisterValidatorSetUpdate *struct{} `json:"unregister_validator_set_update"`
-
-	RegisterGovProposalExecutor   *struct{} `json:"register_gov_proposal_executor"`
-	UnregisterGovProposalExecutor *struct{} `json:"unregister_gov_proposal_executor"`
+type PrivilegeMsg struct {
+	Request types.PrivilegeType `json:"request,omitempty"`
+	Release types.PrivilegeType `json:"release,omitempty"`
 }
 
 // ExecuteGovProposal will execute an approved proposal in the Cosmos SDK "Gov Router".
@@ -138,7 +128,7 @@ type ProtoAny struct {
 	Value   []byte `json:"value"`
 }
 
-// Encode convertes to a cosmos-sdk Any type.
+// Encode converts to a cosmos-sdk Any type.
 func (a ProtoAny) Encode() *codectypes.Any {
 	return &codectypes.Any{
 		TypeUrl: a.TypeUrl,

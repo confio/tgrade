@@ -63,9 +63,9 @@ func GenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisS
 func TgradeContractDetailsFixture(t *testing.T, mutators ...func(d *TgradeContractDetails)) TgradeContractDetails {
 	t.Helper()
 	d := TgradeContractDetails{
-		RegisteredCallbacks: []*RegisteredCallback{{
-			Position:     1,
-			CallbackType: "begin_block",
+		RegisteredPrivileges: []*RegisteredPrivilege{{
+			Position:      1,
+			PrivilegeType: "begin_blocker",
 		}},
 	}
 	for _, m := range mutators {

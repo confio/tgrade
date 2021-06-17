@@ -78,13 +78,13 @@ func TestBootstrapPoEContracts(t *testing.T) {
 var _ twasmKeeper = twasmKeeperMock{}
 
 type twasmKeeperMock struct {
-	QuerySmartFn                    func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
-	SudoFn                          func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
-	SetPrivilegedFn                 func(ctx sdk.Context, contractAddr sdk.AccAddress) error
-	HasPrivilegedContractCallbackFn func(ctx sdk.Context, contractAddr sdk.AccAddress, callbackType twasmtypes.PrivilegedCallbackType) (bool, error)
+	QuerySmartFn            func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
+	SudoFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
+	SetPrivilegedFn         func(ctx sdk.Context, contractAddr sdk.AccAddress) error
+	HasPrivilegedContractFn func(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error)
 }
 
-func (m twasmKeeperMock) IterateContractCallbacksByType(ctx sdk.Context, callbackType twasmtypes.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+func (m twasmKeeperMock) IteratePrivilegedContractsByType(ctx sdk.Context, privilegeType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 	panic("implement me")
 }
 
@@ -109,11 +109,11 @@ func (m twasmKeeperMock) SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddr
 	return m.SetPrivilegedFn(ctx, contractAddr)
 }
 
-func (m twasmKeeperMock) HasPrivilegedContractCallback(ctx sdk.Context, contractAddr sdk.AccAddress, callbackType twasmtypes.PrivilegedCallbackType) (bool, error) {
-	if m.HasPrivilegedContractCallbackFn == nil {
+func (m twasmKeeperMock) HasPrivilegedContract(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error) {
+	if m.HasPrivilegedContractFn == nil {
 		panic("not expected to be called")
 	}
-	return m.HasPrivilegedContractCallbackFn(ctx, contractAddr, callbackType)
+	return m.HasPrivilegedContractFn(ctx, contractAddr, privilegeType)
 }
 
 func CaptureSetPrivilegedFn() (func(ctx sdk.Context, contractAddr sdk.AccAddress) error, *[]sdk.AccAddress) {

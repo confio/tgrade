@@ -36,7 +36,7 @@ func TestBeginBlock(t *testing.T) {
 		"single callback": {
 			setup: func(m *MockSudoer) {
 				m.SudoFn = captureSudos(&capturedSudoCalls)
-				m.IterateContractCallbacksByTypeFn = iterateContractsFn(t, types.CallbackTypeBeginBlock, myAddr)
+				m.IteratePrivilegedContractsByTypeFn = iterateContractsFn(t, types.PrivilegeTypeBeginBlock, myAddr)
 			},
 			expSudoCalls: []tuple{{addr: myAddr, msg: []byte(`{"begin_block":{"evidence":[]}}`)}},
 			expCommitted: []bool{true},
@@ -44,7 +44,7 @@ func TestBeginBlock(t *testing.T) {
 		"multiple callbacks": {
 			setup: func(m *MockSudoer) {
 				m.SudoFn = captureSudos(&capturedSudoCalls)
-				m.IterateContractCallbacksByTypeFn = iterateContractsFn(t, types.CallbackTypeBeginBlock, myAddr, myOtherAddr)
+				m.IteratePrivilegedContractsByTypeFn = iterateContractsFn(t, types.PrivilegeTypeBeginBlock, myAddr, myOtherAddr)
 			},
 			expSudoCalls: []tuple{
 				{addr: myAddr, msg: []byte(`{"begin_block":{"evidence":[]}}`)},
@@ -53,13 +53,13 @@ func TestBeginBlock(t *testing.T) {
 		},
 		"no callback": {
 			setup: func(m *MockSudoer) {
-				m.IterateContractCallbacksByTypeFn = iterateContractsFn(t, types.CallbackTypeBeginBlock)
+				m.IteratePrivilegedContractsByTypeFn = iterateContractsFn(t, types.PrivilegeTypeBeginBlock)
 			},
 		},
 		"with evidence - light client": {
 			setup: func(m *MockSudoer) {
 				m.SudoFn = captureSudos(&capturedSudoCalls)
-				m.IterateContractCallbacksByTypeFn = iterateContractsFn(t, types.CallbackTypeBeginBlock, myAddr)
+				m.IteratePrivilegedContractsByTypeFn = iterateContractsFn(t, types.PrivilegeTypeBeginBlock, myAddr)
 			},
 			src: abci.RequestBeginBlock{
 				ByzantineValidators: []abci.Evidence{{
@@ -80,7 +80,7 @@ func TestBeginBlock(t *testing.T) {
 		"with evidence - duplicate vote": {
 			setup: func(m *MockSudoer) {
 				m.SudoFn = captureSudos(&capturedSudoCalls)
-				m.IterateContractCallbacksByTypeFn = iterateContractsFn(t, types.CallbackTypeBeginBlock, myAddr)
+				m.IteratePrivilegedContractsByTypeFn = iterateContractsFn(t, types.PrivilegeTypeBeginBlock, myAddr)
 			},
 			src: abci.RequestBeginBlock{
 				ByzantineValidators: []abci.Evidence{{
@@ -101,7 +101,7 @@ func TestBeginBlock(t *testing.T) {
 		"with evidence - unknown type": {
 			setup: func(m *MockSudoer) {
 				m.SudoFn = captureSudos(&capturedSudoCalls)
-				m.IterateContractCallbacksByTypeFn = iterateContractsFn(t, types.CallbackTypeBeginBlock, myAddr)
+				m.IteratePrivilegedContractsByTypeFn = iterateContractsFn(t, types.PrivilegeTypeBeginBlock, myAddr)
 			},
 			src: abci.RequestBeginBlock{
 				ByzantineValidators: []abci.Evidence{{
@@ -119,7 +119,7 @@ func TestBeginBlock(t *testing.T) {
 					}
 					return captureSudos(&capturedSudoCalls)(ctx, contractAddress, msg)
 				}
-				m.IterateContractCallbacksByTypeFn = iterateContractsFn(t, types.CallbackTypeBeginBlock, myAddr, myOtherAddr)
+				m.IteratePrivilegedContractsByTypeFn = iterateContractsFn(t, types.PrivilegeTypeBeginBlock, myAddr, myOtherAddr)
 			},
 			expSudoCalls: []tuple{{addr: myOtherAddr, msg: []byte(`{"begin_block":{"evidence":[]}}`)}},
 			expCommitted: []bool{false, true},
@@ -132,7 +132,7 @@ func TestBeginBlock(t *testing.T) {
 					}
 					return captureSudos(&capturedSudoCalls)(ctx, contractAddress, msg)
 				}
-				m.IterateContractCallbacksByTypeFn = iterateContractsFn(t, types.CallbackTypeBeginBlock, myAddr, myOtherAddr)
+				m.IteratePrivilegedContractsByTypeFn = iterateContractsFn(t, types.PrivilegeTypeBeginBlock, myAddr, myOtherAddr)
 			},
 			expSudoCalls: []tuple{{addr: myOtherAddr, msg: []byte(`{"begin_block":{"evidence":[]}}`)}},
 			expCommitted: []bool{false, true},
@@ -187,7 +187,7 @@ func TestEndBlock(t *testing.T) {
 		"end block - single callback": {
 			setup: func(m *MockSudoer) {
 				m.SudoFn = captureSudos(&capturedSudoCalls)
-				m.IterateContractCallbacksByTypeFn = endBlockTypeIterateContractsFn(t, []sdk.AccAddress{myAddr}, nil)
+				m.IteratePrivilegedContractsByTypeFn = endBlockTypeIterateContractsFn(t, []sdk.AccAddress{myAddr}, nil)
 			},
 			expSudoCalls: []tuple{{addr: myAddr, msg: []byte(`{"end_block":{}}`)}},
 			expCommitted: []bool{true},
@@ -195,7 +195,7 @@ func TestEndBlock(t *testing.T) {
 		"end block - multiple callbacks": {
 			setup: func(m *MockSudoer) {
 				m.SudoFn = captureSudos(&capturedSudoCalls)
-				m.IterateContractCallbacksByTypeFn = endBlockTypeIterateContractsFn(t, []sdk.AccAddress{myAddr, myOtherAddr}, nil)
+				m.IteratePrivilegedContractsByTypeFn = endBlockTypeIterateContractsFn(t, []sdk.AccAddress{myAddr, myOtherAddr}, nil)
 			},
 			expSudoCalls: []tuple{
 				{addr: myAddr, msg: []byte(`{"end_block":{}}`)},
@@ -204,7 +204,7 @@ func TestEndBlock(t *testing.T) {
 		},
 		"no callback": {
 			setup: func(m *MockSudoer) {
-				m.IterateContractCallbacksByTypeFn = endBlockTypeIterateContractsFn(t, nil, nil)
+				m.IteratePrivilegedContractsByTypeFn = endBlockTypeIterateContractsFn(t, nil, nil)
 			},
 		},
 		"end block - sudo return error handled": {
@@ -215,7 +215,7 @@ func TestEndBlock(t *testing.T) {
 					}
 					return captureSudos(&capturedSudoCalls)(ctx, contractAddress, msg)
 				}
-				m.IterateContractCallbacksByTypeFn = endBlockTypeIterateContractsFn(t, []sdk.AccAddress{myAddr, myOtherAddr}, nil)
+				m.IteratePrivilegedContractsByTypeFn = endBlockTypeIterateContractsFn(t, []sdk.AccAddress{myAddr, myOtherAddr}, nil)
 			},
 			expSudoCalls: []tuple{{addr: myOtherAddr, msg: []byte(`{"end_block":{}}`)}},
 			expCommitted: []bool{false, true},
@@ -228,7 +228,7 @@ func TestEndBlock(t *testing.T) {
 					}
 					return captureSudos(&capturedSudoCalls)(ctx, contractAddress, msg)
 				}
-				m.IterateContractCallbacksByTypeFn = endBlockTypeIterateContractsFn(t, []sdk.AccAddress{myAddr, myOtherAddr}, nil)
+				m.IteratePrivilegedContractsByTypeFn = endBlockTypeIterateContractsFn(t, []sdk.AccAddress{myAddr, myOtherAddr}, nil)
 			},
 			expSudoCalls: []tuple{{addr: myOtherAddr, msg: []byte(`{"end_block":{}}`)}},
 			expCommitted: []bool{false, true},
@@ -268,8 +268,8 @@ func TestEndBlock(t *testing.T) {
 	}
 }
 
-func iterateContractsFn(t *testing.T, expType types.PrivilegedCallbackType, addrs ...sdk.AccAddress) func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
-	return func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+func iterateContractsFn(t *testing.T, expType types.PrivilegeType, addrs ...sdk.AccAddress) func(ctx sdk.Context, callbackType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+	return func(ctx sdk.Context, callbackType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 		require.Equal(t, expType, callbackType)
 		for i, a := range addrs {
 			if cb(uint8(i+1), a) {
@@ -280,13 +280,13 @@ func iterateContractsFn(t *testing.T, expType types.PrivilegedCallbackType, addr
 }
 
 // helper function to handle both types in end block
-func endBlockTypeIterateContractsFn(t *testing.T, end []sdk.AccAddress, valset []sdk.AccAddress) func(sdk.Context, types.PrivilegedCallbackType, func(uint8, sdk.AccAddress) bool) {
-	return func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+func endBlockTypeIterateContractsFn(t *testing.T, end []sdk.AccAddress, valset []sdk.AccAddress) func(sdk.Context, types.PrivilegeType, func(uint8, sdk.AccAddress) bool) {
+	return func(ctx sdk.Context, callbackType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 		switch callbackType {
-		case types.CallbackTypeEndBlock:
-			iterateContractsFn(t, types.CallbackTypeEndBlock, end...)(ctx, callbackType, cb)
-		case types.CallbackTypeValidatorSetUpdate:
-			iterateContractsFn(t, types.CallbackTypeValidatorSetUpdate, valset...)(ctx, callbackType, cb)
+		case types.PrivilegeTypeEndBlock:
+			iterateContractsFn(t, types.PrivilegeTypeEndBlock, end...)(ctx, callbackType, cb)
+		case types.PrivilegeTypeValidatorSetUpdate:
+			iterateContractsFn(t, types.PrivilegeTypeValidatorSetUpdate, valset...)(ctx, callbackType, cb)
 		default:
 			t.Errorf("unexpected callback type: %q", callbackType.String())
 		}
@@ -306,8 +306,8 @@ func captureSudos(capturedSudoCalls *[]tuple) func(ctx sdk.Context, contractAddr
 }
 
 type MockSudoer struct {
-	SudoFn                           func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
-	IterateContractCallbacksByTypeFn func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
+	SudoFn                             func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
+	IteratePrivilegedContractsByTypeFn func(ctx sdk.Context, privilegeType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 
 func (m MockSudoer) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
@@ -317,11 +317,11 @@ func (m MockSudoer) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []
 	return m.SudoFn(ctx, contractAddress, msg)
 }
 
-func (m MockSudoer) IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
-	if m.IterateContractCallbacksByTypeFn == nil {
+func (m MockSudoer) IteratePrivilegedContractsByType(ctx sdk.Context, privilegeType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+	if m.IteratePrivilegedContractsByTypeFn == nil {
 		panic("not expected to be called")
 	}
-	m.IterateContractCallbacksByTypeFn(ctx, callbackType, cb)
+	m.IteratePrivilegedContractsByTypeFn(ctx, privilegeType, cb)
 }
 
 type mockCommitMultiStore struct {

@@ -98,7 +98,7 @@ type twasmKeeper interface {
 	QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
 	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
 	SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) error
-	HasPrivilegedContractCallback(ctx sdk.Context, contractAddr sdk.AccAddress, callbackType twasmtypes.PrivilegedCallbackType) (bool, error)
+	HasPrivilegedContract(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error)
 }
 
 // NewAppModule creates a new AppModule object
@@ -174,7 +174,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data j
 	if err != nil {
 		panic(fmt.Sprintf("valset addr: %s", err))
 	}
-	switch ok, err := am.twasmKeeper.HasPrivilegedContractCallback(ctx, addr, twasmtypes.CallbackTypeValidatorSetUpdate); {
+	switch ok, err := am.twasmKeeper.HasPrivilegedContract(ctx, addr, twasmtypes.PrivilegeTypeValidatorSetUpdate); {
 	case err != nil:
 		panic(fmt.Sprintf("valset contract: %s", err))
 	case !ok:

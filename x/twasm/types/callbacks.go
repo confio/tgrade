@@ -1,45 +1,51 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
-// PrivilegedCallbackType is a system callback to a contract
-type PrivilegedCallbackType byte
+// PrivilegeType is a system callback to a contract
+type PrivilegeType byte
 
 var (
-	// CallbackTypeBeginBlock called every block before the TX are processed
-	// Multiple contracts can register for this callback
-	CallbackTypeBeginBlock = registerCallbackType(0x1, "begin_block", false)
+	// PrivilegeTypeEmpty is empty value
+	PrivilegeTypeEmpty PrivilegeType = 0
+	// PrivilegeTypeBeginBlock called every block before the TX are processed
+	// Multiple contracts can register for this callback privilege
+	PrivilegeTypeBeginBlock = registerCallbackType(0x1, "begin_blocker", false)
 
-	// CallbackTypeEndBlock called every block after the TX are processed
-	// Multiple contracts can register for this callback
-	CallbackTypeEndBlock = registerCallbackType(0x2, "end_block", false)
+	// PrivilegeTypeEndBlock called every block after the TX are processed
+	// Multiple contracts can register for this callback privilege
+	PrivilegeTypeEndBlock = registerCallbackType(0x2, "end_blocker", false)
 
-	// CallbackTypeValidatorSetUpdate end-blocker that can modify the validator set
-	// This callback is exclusive to one contract instance, only.
-	CallbackTypeValidatorSetUpdate = registerCallbackType(0x3, "validator_set_update", true)
+	// PrivilegeTypeValidatorSetUpdate end-blocker that can modify the validator set
+	// This callback privilege is exclusive to one contract instance, only.
+	PrivilegeTypeValidatorSetUpdate = registerCallbackType(0x3, "validator_set_updater", true)
 
-	// CallbackTypeGovProposalExecutor
-	// This is a permission to execute governance proposals.
-	CallbackTypeGovProposalExecutor = registerCallbackType(0x4, "gov_proposal_executor", false)
+	// PrivilegeTypeGovProposalExecutor
+	// This is a permission privilege to execute governance proposals.
+	PrivilegeTypeGovProposalExecutor = registerCallbackType(0x4, "gov_proposal_executor", false)
 )
 
 var (
 	// callbackTypeToString stores the string representation for every type
-	callbackTypeToString = make(map[PrivilegedCallbackType]string)
+	callbackTypeToString = make(map[PrivilegeType]string)
 	// singleInstanceCallbackTypes stores a flag for singleton instances only
-	singleInstanceCallbackTypes = make(map[PrivilegedCallbackType]struct{})
+	singleInstanceCallbackTypes = make(map[PrivilegeType]struct{})
 )
 
 // registerCallbackType internal method to register callback types with meta data.
-func registerCallbackType(i uint8, name string, singleton bool) PrivilegedCallbackType {
-	r := PrivilegedCallbackType(i)
+func registerCallbackType(i uint8, name string, singleton bool) PrivilegeType {
+	if i == 0 {
+		panic("unique number must not be empty")
+	}
+	r := PrivilegeType(i)
 	if _, exists := callbackTypeToString[r]; exists {
 		panic(fmt.Sprintf("type exists already: %d", i))
 	}
-	if PrivilegedCallbackTypeFrom(name) != nil {
+	if PrivilegeTypeFrom(name) != nil {
 		panic(fmt.Sprintf("name exists already: %q", name))
 	}
 	callbackTypeToString[r] = name
@@ -49,8 +55,8 @@ func registerCallbackType(i uint8, name string, singleton bool) PrivilegedCallba
 	return r
 }
 
-// PrivilegedCallbackTypeFrom convert name to type. Returns nil when none matches
-func PrivilegedCallbackTypeFrom(name string) *PrivilegedCallbackType {
+// PrivilegeTypeFrom convert name to type. Returns nil when none matches
+func PrivilegeTypeFrom(name string) *PrivilegeType {
 	for k, v := range callbackTypeToString {
 		if v == name {
 			return &k
@@ -59,8 +65,8 @@ func PrivilegedCallbackTypeFrom(name string) *PrivilegedCallbackType {
 	return nil
 }
 
-// AllCallbackTypeNames returns a list of all callback type names
-func AllCallbackTypeNames() []string {
+// AllPrivilegeTypeNames returns a list of all callback type names
+func AllPrivilegeTypeNames() []string {
 	result := make([]string, 0, len(callbackTypeToString))
 	for _, v := range callbackTypeToString {
 		result = append(result, v)
@@ -68,20 +74,47 @@ func AllCallbackTypeNames() []string {
 	return result
 }
 
-func (t PrivilegedCallbackType) String() string {
+func (t PrivilegeType) String() string {
 	return callbackTypeToString[t]
 }
 
 // IsSingleton returns if only a single contract instance for this type can register (true) or multiple (false)
-func (t PrivilegedCallbackType) IsSingleton() bool {
+func (t PrivilegeType) IsSingleton() bool {
 	_, ok := singleInstanceCallbackTypes[t]
 	return ok
 }
 
 // ValidateBasic checks if the callback type was registered
-func (t PrivilegedCallbackType) ValidateBasic() error {
+func (t PrivilegeType) ValidateBasic() error {
 	if _, ok := callbackTypeToString[t]; !ok {
 		return wasmtypes.ErrInvalid
 	}
 	return nil
+}
+
+var _ json.Unmarshaler = &PrivilegeTypeBeginBlock
+var _ json.Marshaler = &PrivilegeTypeBeginBlock
+
+func (t *PrivilegeType) UnmarshalJSON(raw []byte) error {
+	var src string
+	if err := json.Unmarshal(raw, &src); err != nil {
+		return err
+	}
+	if len(src) == 0 {
+		return wasmtypes.ErrInvalid
+	}
+	if v := PrivilegeTypeFrom(src); v != nil {
+		*t = *v
+	}
+	return nil
+}
+
+func (t PrivilegeType) MarshalJSON() ([]byte, error) {
+	if t == 0 {
+		return nil, nil
+	}
+	if err := t.ValidateBasic(); err != nil {
+		return nil, err
+	}
+	return json.Marshal(t.String())
 }

@@ -16,47 +16,47 @@ func TestTgradeContractDetailsValidation(t *testing.T) {
 		},
 		"empty callbacks": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredCallbacks = nil
+				d.RegisteredPrivileges = nil
 			}),
 		},
 		"multiple callbacks": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredCallbacks = []*RegisteredCallback{
-					{Position: 1, CallbackType: "begin_block"},
-					{Position: 1, CallbackType: "end_block"},
+				d.RegisteredPrivileges = []*RegisteredPrivilege{
+					{Position: 1, PrivilegeType: "begin_blocker"},
+					{Position: 1, PrivilegeType: "end_blocker"},
 				}
 			}),
 		},
 		"duplicate callbacks": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredCallbacks = []*RegisteredCallback{
-					{Position: 1, CallbackType: "begin_block"},
-					{Position: 2, CallbackType: "begin_block"},
+				d.RegisteredPrivileges = []*RegisteredPrivilege{
+					{Position: 1, PrivilegeType: "begin_blocker"},
+					{Position: 2, PrivilegeType: "begin_blocker"},
 				}
 			}),
 			expErr: true,
 		},
 		"unknown callback": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredCallbacks = []*RegisteredCallback{{Position: 1, CallbackType: "unknown"}}
+				d.RegisteredPrivileges = []*RegisteredPrivilege{{Position: 1, PrivilegeType: "unknown"}}
 			}),
 			expErr: true,
 		},
 		"empty callback": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredCallbacks = []*RegisteredCallback{{Position: 1}}
+				d.RegisteredPrivileges = []*RegisteredPrivilege{{Position: 1}}
 			}),
 			expErr: true,
 		},
 		"invalid callback position": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredCallbacks = []*RegisteredCallback{{Position: math.MaxUint8 + 1, CallbackType: "begin_block"}}
+				d.RegisteredPrivileges = []*RegisteredPrivilege{{Position: math.MaxUint8 + 1, PrivilegeType: "begin_blocker"}}
 			}),
 			expErr: true,
 		},
 		"empty callback position": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredCallbacks = []*RegisteredCallback{{CallbackType: "begin_block"}}
+				d.RegisteredPrivileges = []*RegisteredPrivilege{{PrivilegeType: "begin_blocker"}}
 			}),
 			expErr: true,
 		},

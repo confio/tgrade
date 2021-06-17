@@ -81,13 +81,6 @@ else
 	go build -mod=readonly $(BUILD_FLAGS) -o build/tgrade ./cmd/tgrade
 endif
 
-build-contract-tests-hooks:
-ifeq ($(OS),Windows_NT)
-	go build -mod=readonly $(BUILD_FLAGS) -o build/contract_tests.exe ./cmd/contract_tests
-else
-	go build -mod=readonly $(BUILD_FLAGS) -o build/contract_tests ./cmd/contract_tests
-endif
-
 install: go.sum
 	go install -mod=readonly $(BUILD_FLAGS) ./cmd/tgrade
 

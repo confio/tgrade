@@ -116,24 +116,24 @@ func (m *QueryPrivilegedContractsResponse) GetContracts() []string {
 	return nil
 }
 
-// QueryContractsByCallbackTypeRequest is the request type for the
-// Query/ContractsByCallbackType RPC method
-type QueryContractsByCallbackTypeRequest struct {
-	CallbackType string `protobuf:"bytes,2,opt,name=callback_type,json=callbackType,proto3" json:"callback_type,omitempty"`
+// QueryContractsByPrivilegeTypeRequest is the request type for the
+// Query/ContractsByPrivilegeType RPC method
+type QueryContractsByPrivilegeTypeRequest struct {
+	PrivilegeType string `protobuf:"bytes,1,opt,name=privilege_type,json=privilegeType,proto3" json:"privilege_type,omitempty"`
 }
 
-func (m *QueryContractsByCallbackTypeRequest) Reset()         { *m = QueryContractsByCallbackTypeRequest{} }
-func (m *QueryContractsByCallbackTypeRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryContractsByCallbackTypeRequest) ProtoMessage()    {}
-func (*QueryContractsByCallbackTypeRequest) Descriptor() ([]byte, []int) {
+func (m *QueryContractsByPrivilegeTypeRequest) Reset()         { *m = QueryContractsByPrivilegeTypeRequest{} }
+func (m *QueryContractsByPrivilegeTypeRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryContractsByPrivilegeTypeRequest) ProtoMessage()    {}
+func (*QueryContractsByPrivilegeTypeRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1dcfe179625ad95e, []int{2}
 }
-func (m *QueryContractsByCallbackTypeRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryContractsByPrivilegeTypeRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryContractsByCallbackTypeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryContractsByPrivilegeTypeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryContractsByCallbackTypeRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryContractsByPrivilegeTypeRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -143,44 +143,44 @@ func (m *QueryContractsByCallbackTypeRequest) XXX_Marshal(b []byte, deterministi
 		return b[:n], nil
 	}
 }
-func (m *QueryContractsByCallbackTypeRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryContractsByCallbackTypeRequest.Merge(m, src)
+func (m *QueryContractsByPrivilegeTypeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryContractsByPrivilegeTypeRequest.Merge(m, src)
 }
-func (m *QueryContractsByCallbackTypeRequest) XXX_Size() int {
+func (m *QueryContractsByPrivilegeTypeRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryContractsByCallbackTypeRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryContractsByCallbackTypeRequest.DiscardUnknown(m)
+func (m *QueryContractsByPrivilegeTypeRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryContractsByPrivilegeTypeRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryContractsByCallbackTypeRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryContractsByPrivilegeTypeRequest proto.InternalMessageInfo
 
-func (m *QueryContractsByCallbackTypeRequest) GetCallbackType() string {
+func (m *QueryContractsByPrivilegeTypeRequest) GetPrivilegeType() string {
 	if m != nil {
-		return m.CallbackType
+		return m.PrivilegeType
 	}
 	return ""
 }
 
-// QueryContractsByCallbackTypeResponse is the response type for the
-// Query/ContractsByCallbackType RPC method
-type QueryContractsByCallbackTypeResponse struct {
+// QueryContractsByPrivilegeTypeResponse is the response type for the
+// Query/ContractsByPrivilegeType RPC method
+type QueryContractsByPrivilegeTypeResponse struct {
 	// contracts are a set of contract addresses
 	Contracts []string `protobuf:"bytes,1,rep,name=contracts,proto3" json:"contracts,omitempty"`
 }
 
-func (m *QueryContractsByCallbackTypeResponse) Reset()         { *m = QueryContractsByCallbackTypeResponse{} }
-func (m *QueryContractsByCallbackTypeResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryContractsByCallbackTypeResponse) ProtoMessage()    {}
-func (*QueryContractsByCallbackTypeResponse) Descriptor() ([]byte, []int) {
+func (m *QueryContractsByPrivilegeTypeResponse) Reset()         { *m = QueryContractsByPrivilegeTypeResponse{} }
+func (m *QueryContractsByPrivilegeTypeResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryContractsByPrivilegeTypeResponse) ProtoMessage()    {}
+func (*QueryContractsByPrivilegeTypeResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1dcfe179625ad95e, []int{3}
 }
-func (m *QueryContractsByCallbackTypeResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryContractsByPrivilegeTypeResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryContractsByCallbackTypeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryContractsByPrivilegeTypeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryContractsByCallbackTypeResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryContractsByPrivilegeTypeResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -190,19 +190,19 @@ func (m *QueryContractsByCallbackTypeResponse) XXX_Marshal(b []byte, determinist
 		return b[:n], nil
 	}
 }
-func (m *QueryContractsByCallbackTypeResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryContractsByCallbackTypeResponse.Merge(m, src)
+func (m *QueryContractsByPrivilegeTypeResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryContractsByPrivilegeTypeResponse.Merge(m, src)
 }
-func (m *QueryContractsByCallbackTypeResponse) XXX_Size() int {
+func (m *QueryContractsByPrivilegeTypeResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryContractsByCallbackTypeResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryContractsByCallbackTypeResponse.DiscardUnknown(m)
+func (m *QueryContractsByPrivilegeTypeResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryContractsByPrivilegeTypeResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryContractsByCallbackTypeResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryContractsByPrivilegeTypeResponse proto.InternalMessageInfo
 
-func (m *QueryContractsByCallbackTypeResponse) GetContracts() []string {
+func (m *QueryContractsByPrivilegeTypeResponse) GetContracts() []string {
 	if m != nil {
 		return m.Contracts
 	}
@@ -212,14 +212,14 @@ func (m *QueryContractsByCallbackTypeResponse) GetContracts() []string {
 func init() {
 	proto.RegisterType((*QueryPrivilegedContractsRequest)(nil), "confio.twasm.v1beta1.QueryPrivilegedContractsRequest")
 	proto.RegisterType((*QueryPrivilegedContractsResponse)(nil), "confio.twasm.v1beta1.QueryPrivilegedContractsResponse")
-	proto.RegisterType((*QueryContractsByCallbackTypeRequest)(nil), "confio.twasm.v1beta1.QueryContractsByCallbackTypeRequest")
-	proto.RegisterType((*QueryContractsByCallbackTypeResponse)(nil), "confio.twasm.v1beta1.QueryContractsByCallbackTypeResponse")
+	proto.RegisterType((*QueryContractsByPrivilegeTypeRequest)(nil), "confio.twasm.v1beta1.QueryContractsByPrivilegeTypeRequest")
+	proto.RegisterType((*QueryContractsByPrivilegeTypeResponse)(nil), "confio.twasm.v1beta1.QueryContractsByPrivilegeTypeResponse")
 }
 
 func init() { proto.RegisterFile("confio/twasm/v1beta1/query.proto", fileDescriptor_1dcfe179625ad95e) }
 
 var fileDescriptor_1dcfe179625ad95e = []byte{
-	// 409 bytes of a gzipped FileDescriptorProto
+	// 400 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x48, 0xce, 0xcf, 0x4b,
 	0xcb, 0xcc, 0xd7, 0x2f, 0x29, 0x4f, 0x2c, 0xce, 0xd5, 0x2f, 0x33, 0x4c, 0x4a, 0x2d, 0x49, 0x34,
 	0xd4, 0x2f, 0x2c, 0x4d, 0x2d, 0xaa, 0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0x81, 0xa8,
@@ -232,20 +232,19 @@ var fileDescriptor_1dcfe179625ad95e = []byte{
 	0x9c, 0xd4, 0xf4, 0xd4, 0x14, 0xe7, 0xfc, 0xbc, 0x92, 0xa2, 0xc4, 0xe4, 0x92, 0xe2, 0xa0, 0xd4,
 	0xc2, 0xd2, 0xd4, 0xe2, 0x12, 0x25, 0x07, 0x2e, 0x05, 0xdc, 0x4a, 0x8a, 0x0b, 0xf2, 0xf3, 0x8a,
 	0x53, 0x85, 0x64, 0xb8, 0x38, 0x93, 0x61, 0x82, 0x12, 0x8c, 0x0a, 0xcc, 0x1a, 0x9c, 0x41, 0x08,
-	0x01, 0x25, 0x2f, 0x2e, 0x65, 0xb0, 0x09, 0x70, 0x7d, 0x4e, 0x95, 0xce, 0x89, 0x39, 0x39, 0x49,
-	0x89, 0xc9, 0xd9, 0x21, 0x95, 0x05, 0xa9, 0x50, 0x8b, 0x84, 0x94, 0xb9, 0x78, 0x93, 0xa1, 0xc2,
-	0xf1, 0x20, 0xdf, 0x4a, 0x30, 0x29, 0x30, 0x6a, 0x70, 0x06, 0xf1, 0x24, 0x23, 0xa9, 0x55, 0x72,
-	0xe1, 0x52, 0xc1, 0x6f, 0x16, 0x31, 0x2e, 0x32, 0xea, 0x64, 0xe6, 0x62, 0x05, 0x1b, 0x23, 0xb4,
-	0x91, 0x91, 0x4b, 0x18, 0x8b, 0xcf, 0x84, 0x4c, 0xf5, 0xb0, 0x45, 0x99, 0x1e, 0x81, 0xc0, 0x92,
-	0x32, 0x23, 0x55, 0x1b, 0xc4, 0xb9, 0x4a, 0xda, 0x4d, 0x97, 0x9f, 0x4c, 0x66, 0x52, 0x15, 0x52,
-	0x46, 0x4b, 0x44, 0x70, 0x27, 0xeb, 0x17, 0xc0, 0x75, 0x0b, 0x9d, 0x66, 0xe4, 0x12, 0xc7, 0xe1,
-	0x7f, 0x21, 0x4b, 0x3c, 0x0e, 0xc0, 0x1f, 0xfe, 0x52, 0x56, 0xe4, 0x68, 0x85, 0xba, 0xdf, 0x12,
-	0xec, 0x7e, 0x63, 0x21, 0x43, 0x9c, 0xee, 0x87, 0xc5, 0xa2, 0x7e, 0x35, 0x4a, 0x24, 0xd7, 0x3a,
-	0x39, 0x9c, 0x78, 0x24, 0xc7, 0x78, 0xe1, 0x91, 0x1c, 0xe3, 0x83, 0x47, 0x72, 0x8c, 0x13, 0x1e,
-	0xcb, 0x31, 0x5c, 0x78, 0x2c, 0xc7, 0x70, 0xe3, 0xb1, 0x1c, 0x43, 0x94, 0x5a, 0x7a, 0x66, 0x49,
-	0x46, 0x69, 0x92, 0x5e, 0x72, 0x7e, 0xae, 0x3e, 0x2c, 0x8b, 0xa5, 0x17, 0x25, 0xa6, 0xa4, 0xea,
-	0x57, 0x40, 0xad, 0x01, 0x67, 0x8a, 0x24, 0x36, 0x70, 0x5a, 0x36, 0x06, 0x04, 0x00, 0x00, 0xff,
-	0xff, 0x63, 0x97, 0x66, 0x50, 0x88, 0x03, 0x00, 0x00,
+	0x01, 0x25, 0x5f, 0x2e, 0x15, 0xb0, 0x09, 0x70, 0x7d, 0x4e, 0x08, 0xc3, 0x42, 0x2a, 0x0b, 0x52,
+	0xa1, 0x36, 0x09, 0xa9, 0x72, 0xf1, 0x15, 0xc0, 0xc4, 0xe3, 0x41, 0xfe, 0x95, 0x60, 0x54, 0x60,
+	0xd4, 0xe0, 0x0c, 0xe2, 0x2d, 0x40, 0x56, 0xad, 0xe4, 0xca, 0xa5, 0x4a, 0xc0, 0x38, 0x62, 0x5c,
+	0x65, 0xd4, 0xc7, 0xcc, 0xc5, 0x0a, 0x36, 0x47, 0x68, 0x23, 0x23, 0x97, 0x30, 0x16, 0xdf, 0x09,
+	0x99, 0xea, 0x61, 0x8b, 0x36, 0x3d, 0x02, 0x01, 0x26, 0x65, 0x46, 0xaa, 0x36, 0x88, 0x73, 0x95,
+	0xb4, 0x9b, 0x2e, 0x3f, 0x99, 0xcc, 0xa4, 0x2a, 0xa4, 0x8c, 0x96, 0x90, 0xe0, 0x4e, 0xd6, 0x87,
+	0x87, 0x43, 0x8a, 0xd0, 0x05, 0x46, 0x2e, 0x09, 0x5c, 0x01, 0x20, 0x64, 0x85, 0xc7, 0x05, 0x04,
+	0x22, 0x41, 0xca, 0x9a, 0x2c, 0xbd, 0x50, 0x2f, 0x58, 0x83, 0xbd, 0x60, 0x2a, 0x64, 0x4c, 0xd8,
+	0x0b, 0xfa, 0xd5, 0xa8, 0x71, 0x5d, 0xeb, 0xe4, 0x70, 0xe2, 0x91, 0x1c, 0xe3, 0x85, 0x47, 0x72,
+	0x8c, 0x0f, 0x1e, 0xc9, 0x31, 0x4e, 0x78, 0x2c, 0xc7, 0x70, 0xe1, 0xb1, 0x1c, 0xc3, 0x8d, 0xc7,
+	0x72, 0x0c, 0x51, 0x6a, 0xe9, 0x99, 0x25, 0x19, 0xa5, 0x49, 0x7a, 0xc9, 0xf9, 0xb9, 0xfa, 0xb0,
+	0xbc, 0x96, 0x5e, 0x94, 0x98, 0x92, 0xaa, 0x5f, 0x01, 0xb5, 0x08, 0x9c, 0x3b, 0x92, 0xd8, 0xc0,
+	0x89, 0xda, 0x18, 0x10, 0x00, 0x00, 0xff, 0xff, 0x58, 0xb8, 0xa3, 0xa1, 0x91, 0x03, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -262,9 +261,9 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// PrivilegedContracts returns all privileged contracts
 	PrivilegedContracts(ctx context.Context, in *QueryPrivilegedContractsRequest, opts ...grpc.CallOption) (*QueryPrivilegedContractsResponse, error)
-	// ContractsByCallbackType returns all contracts that have registered for the
-	// callback type
-	ContractsByCallbackType(ctx context.Context, in *QueryContractsByCallbackTypeRequest, opts ...grpc.CallOption) (*QueryContractsByCallbackTypeResponse, error)
+	// ContractsByPrivilegeType returns all contracts that have registered for the
+	// privilege type
+	ContractsByPrivilegeType(ctx context.Context, in *QueryContractsByPrivilegeTypeRequest, opts ...grpc.CallOption) (*QueryContractsByPrivilegeTypeResponse, error)
 }
 
 type queryClient struct {
@@ -284,9 +283,9 @@ func (c *queryClient) PrivilegedContracts(ctx context.Context, in *QueryPrivileg
 	return out, nil
 }
 
-func (c *queryClient) ContractsByCallbackType(ctx context.Context, in *QueryContractsByCallbackTypeRequest, opts ...grpc.CallOption) (*QueryContractsByCallbackTypeResponse, error) {
-	out := new(QueryContractsByCallbackTypeResponse)
-	err := c.cc.Invoke(ctx, "/confio.twasm.v1beta1.Query/ContractsByCallbackType", in, out, opts...)
+func (c *queryClient) ContractsByPrivilegeType(ctx context.Context, in *QueryContractsByPrivilegeTypeRequest, opts ...grpc.CallOption) (*QueryContractsByPrivilegeTypeResponse, error) {
+	out := new(QueryContractsByPrivilegeTypeResponse)
+	err := c.cc.Invoke(ctx, "/confio.twasm.v1beta1.Query/ContractsByPrivilegeType", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -297,9 +296,9 @@ func (c *queryClient) ContractsByCallbackType(ctx context.Context, in *QueryCont
 type QueryServer interface {
 	// PrivilegedContracts returns all privileged contracts
 	PrivilegedContracts(context.Context, *QueryPrivilegedContractsRequest) (*QueryPrivilegedContractsResponse, error)
-	// ContractsByCallbackType returns all contracts that have registered for the
-	// callback type
-	ContractsByCallbackType(context.Context, *QueryContractsByCallbackTypeRequest) (*QueryContractsByCallbackTypeResponse, error)
+	// ContractsByPrivilegeType returns all contracts that have registered for the
+	// privilege type
+	ContractsByPrivilegeType(context.Context, *QueryContractsByPrivilegeTypeRequest) (*QueryContractsByPrivilegeTypeResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -309,8 +308,8 @@ type UnimplementedQueryServer struct {
 func (*UnimplementedQueryServer) PrivilegedContracts(ctx context.Context, req *QueryPrivilegedContractsRequest) (*QueryPrivilegedContractsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PrivilegedContracts not implemented")
 }
-func (*UnimplementedQueryServer) ContractsByCallbackType(ctx context.Context, req *QueryContractsByCallbackTypeRequest) (*QueryContractsByCallbackTypeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ContractsByCallbackType not implemented")
+func (*UnimplementedQueryServer) ContractsByPrivilegeType(ctx context.Context, req *QueryContractsByPrivilegeTypeRequest) (*QueryContractsByPrivilegeTypeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ContractsByPrivilegeType not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -335,20 +334,20 @@ func _Query_PrivilegedContracts_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_ContractsByCallbackType_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryContractsByCallbackTypeRequest)
+func _Query_ContractsByPrivilegeType_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryContractsByPrivilegeTypeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).ContractsByCallbackType(ctx, in)
+		return srv.(QueryServer).ContractsByPrivilegeType(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/confio.twasm.v1beta1.Query/ContractsByCallbackType",
+		FullMethod: "/confio.twasm.v1beta1.Query/ContractsByPrivilegeType",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ContractsByCallbackType(ctx, req.(*QueryContractsByCallbackTypeRequest))
+		return srv.(QueryServer).ContractsByPrivilegeType(ctx, req.(*QueryContractsByPrivilegeTypeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -362,8 +361,8 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_PrivilegedContracts_Handler,
 		},
 		{
-			MethodName: "ContractsByCallbackType",
-			Handler:    _Query_ContractsByCallbackType_Handler,
+			MethodName: "ContractsByPrivilegeType",
+			Handler:    _Query_ContractsByPrivilegeType_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -425,7 +424,7 @@ func (m *QueryPrivilegedContractsResponse) MarshalToSizedBuffer(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryContractsByCallbackTypeRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryContractsByPrivilegeTypeRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -435,27 +434,27 @@ func (m *QueryContractsByCallbackTypeRequest) Marshal() (dAtA []byte, err error)
 	return dAtA[:n], nil
 }
 
-func (m *QueryContractsByCallbackTypeRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryContractsByPrivilegeTypeRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryContractsByCallbackTypeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryContractsByPrivilegeTypeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.CallbackType) > 0 {
-		i -= len(m.CallbackType)
-		copy(dAtA[i:], m.CallbackType)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.CallbackType)))
+	if len(m.PrivilegeType) > 0 {
+		i -= len(m.PrivilegeType)
+		copy(dAtA[i:], m.PrivilegeType)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.PrivilegeType)))
 		i--
-		dAtA[i] = 0x12
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryContractsByCallbackTypeResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryContractsByPrivilegeTypeResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -465,12 +464,12 @@ func (m *QueryContractsByCallbackTypeResponse) Marshal() (dAtA []byte, err error
 	return dAtA[:n], nil
 }
 
-func (m *QueryContractsByCallbackTypeResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryContractsByPrivilegeTypeResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryContractsByCallbackTypeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryContractsByPrivilegeTypeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -522,20 +521,20 @@ func (m *QueryPrivilegedContractsResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryContractsByCallbackTypeRequest) Size() (n int) {
+func (m *QueryContractsByPrivilegeTypeRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.CallbackType)
+	l = len(m.PrivilegeType)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
 }
 
-func (m *QueryContractsByCallbackTypeResponse) Size() (n int) {
+func (m *QueryContractsByPrivilegeTypeResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -688,7 +687,7 @@ func (m *QueryPrivilegedContractsResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryContractsByCallbackTypeRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryContractsByPrivilegeTypeRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -711,15 +710,15 @@ func (m *QueryContractsByCallbackTypeRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryContractsByCallbackTypeRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryContractsByPrivilegeTypeRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryContractsByCallbackTypeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryContractsByPrivilegeTypeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 2:
+		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CallbackType", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field PrivilegeType", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -747,7 +746,7 @@ func (m *QueryContractsByCallbackTypeRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CallbackType = string(dAtA[iNdEx:postIndex])
+			m.PrivilegeType = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -770,7 +769,7 @@ func (m *QueryContractsByCallbackTypeRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryContractsByCallbackTypeResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryContractsByPrivilegeTypeResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -793,10 +792,10 @@ func (m *QueryContractsByCallbackTypeResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryContractsByCallbackTypeResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryContractsByPrivilegeTypeResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryContractsByCallbackTypeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryContractsByPrivilegeTypeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

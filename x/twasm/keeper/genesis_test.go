@@ -30,7 +30,7 @@ func TestInitGenesis(t *testing.T) {
 	type registeredCallback struct {
 		addr sdk.AccAddress
 		pos  uint8
-		cbt  types.PrivilegedCallbackType
+		cbt  types.PrivilegeType
 	}
 
 	specs := map[string]struct {
@@ -56,22 +56,22 @@ func TestInitGenesis(t *testing.T) {
 			wasmvm: noopMock,
 			expErr: true,
 		},
-		"callback set for dumped contract": {
+		"privilege set for dumped contract": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = []string{genContractAddress(2, 2).String()}
 				state.Wasm.Contracts[1] = wasmtypes.ContractFixture(func(contract *wasmtypes.Contract) {
 					contract.ContractAddress = genContractAddress(2, 2).String()
 					err := contract.ContractInfo.SetExtension(&types.TgradeContractDetails{
-						RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "begin_block"}},
+						RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 					})
 					require.NoError(t, err)
 					contract.ContractInfo.CodeID = 2
 				})
 			}),
 			wasmvm:         noopMock,
-			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.CallbackTypeBeginBlock, addr: genContractAddress(2, 2)}},
+			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeBeginBlock, addr: genContractAddress(2, 2)}},
 		},
-		"callback set for gen msg contract": {
+		"privilege set for gen msg contract": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = []string{genContractAddress(2, 1).String()}
 				state.Wasm.Contracts = nil
@@ -90,7 +90,7 @@ func TestInitGenesis(t *testing.T) {
 				// callback registers for end block on sudo call
 				m.PinFn = func(checksum cosmwasm.Checksum) error { return nil }
 				m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64) (*wasmvmtypes.Response, uint64, error) {
-					tradeMsg := contract.TgradeMsg{Hooks: &contract.Hooks{RegisterEndBlock: &struct{}{}}}
+					tradeMsg := contract.TgradeMsg{Privilege: &contract.PrivilegeMsg{Request: types.PrivilegeTypeEndBlock}}
 					msgBz, err := json.Marshal(&tradeMsg)
 					require.NoError(t, err)
 					return &wasmvmtypes.Response{
@@ -98,13 +98,13 @@ func TestInitGenesis(t *testing.T) {
 					}, 0, nil
 				}
 			}),
-			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.CallbackTypeEndBlock, addr: genContractAddress(2, 1)}},
+			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeEndBlock, addr: genContractAddress(2, 1)}},
 		},
-		"callbacks set from dump but not privileged anymore": {
+		"privileges set from dump but not privileged anymore": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
 				err := state.Wasm.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
-					RegisteredCallbacks: []*types.RegisteredCallback{{Position: 1, CallbackType: "begin_block"}},
+					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 				})
 				require.NoError(t, err)
 			}),
@@ -136,16 +136,16 @@ func TestInitGenesis(t *testing.T) {
 				assert.True(t, k.IsPinnedCode(ctx, codeInfo.CodeID))
 			}
 			var allCallbacks int
-			for _, n := range types.AllCallbackTypeNames() {
-				cb := *types.PrivilegedCallbackTypeFrom(n)
-				k.IterateContractCallbacksByType(ctx, cb, func(prio uint8, contractAddr sdk.AccAddress) bool {
+			for _, n := range types.AllPrivilegeTypeNames() {
+				cb := *types.PrivilegeTypeFrom(n)
+				k.IteratePrivilegedContractsByType(ctx, cb, func(prio uint8, contractAddr sdk.AccAddress) bool {
 					allCallbacks++
 					return false
 				})
 			}
 			require.Equal(t, len(spec.expCallbackReg), allCallbacks)
 			for _, x := range spec.expCallbackReg {
-				gotAddr := k.getPrivilegedContractCallback(ctx, x.cbt, x.pos)
+				gotAddr := k.getPrivilegedContract(ctx, x.cbt, x.pos)
 				assert.Equal(t, x.addr, gotAddr)
 			}
 		})

@@ -13,7 +13,7 @@ var _ types.QueryServer = &grpcQuerier{}
 // queryKeeper is a subset of the keeper's methods
 type queryKeeper interface {
 	IteratePrivileged(ctx sdk.Context, cb func(sdk.AccAddress) bool)
-	IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
+	IteratePrivilegedContractsByType(ctx sdk.Context, privilegeType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 type grpcQuerier struct {
 	keeper queryKeeper
@@ -32,13 +32,13 @@ func (q grpcQuerier) PrivilegedContracts(c context.Context, _ *types.QueryPrivil
 	return &result, nil
 }
 
-func (q grpcQuerier) ContractsByCallbackType(c context.Context, req *types.QueryContractsByCallbackTypeRequest) (*types.QueryContractsByCallbackTypeResponse, error) {
-	var result types.QueryContractsByCallbackTypeResponse
-	cType := types.PrivilegedCallbackTypeFrom(req.CallbackType)
+func (q grpcQuerier) ContractsByPrivilegeType(c context.Context, req *types.QueryContractsByPrivilegeTypeRequest) (*types.QueryContractsByPrivilegeTypeResponse, error) {
+	var result types.QueryContractsByPrivilegeTypeResponse
+	cType := types.PrivilegeTypeFrom(req.PrivilegeType)
 	if cType == nil {
-		return nil, status.Error(codes.NotFound, "callback type")
+		return nil, status.Error(codes.NotFound, "privilege type")
 	}
-	q.keeper.IterateContractCallbacksByType(sdk.UnwrapSDKContext(c), *cType, func(_ uint8, contractAddr sdk.AccAddress) bool {
+	q.keeper.IteratePrivilegedContractsByType(sdk.UnwrapSDKContext(c), *cType, func(_ uint8, contractAddr sdk.AccAddress) bool {
 		result.Contracts = append(result.Contracts, contractAddr.String())
 		return false
 	})

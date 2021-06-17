@@ -56,48 +56,48 @@ func TestQueryPrivilegedContracts(t *testing.T) {
 	}
 }
 
-func TestQueryContractsByCallbackType(t *testing.T) {
+func TestQueryContractsByPrivilegeType(t *testing.T) {
 	addr1 := RandomAddress(t)
 	addr2 := RandomAddress(t)
 
 	specs := map[string]struct {
 		state  []sdk.AccAddress
-		src    types.QueryContractsByCallbackTypeRequest
-		expRsp *types.QueryContractsByCallbackTypeResponse
+		src    types.QueryContractsByPrivilegeTypeRequest
+		expRsp *types.QueryContractsByPrivilegeTypeResponse
 		expErr bool
 	}{
 		"none found": {
-			src: types.QueryContractsByCallbackTypeRequest{
-				CallbackType: types.CallbackTypeEndBlock.String(),
+			src: types.QueryContractsByPrivilegeTypeRequest{
+				PrivilegeType: types.PrivilegeTypeEndBlock.String(),
 			},
-			expRsp: &types.QueryContractsByCallbackTypeResponse{},
+			expRsp: &types.QueryContractsByPrivilegeTypeResponse{},
 		},
 		"single found": {
-			src: types.QueryContractsByCallbackTypeRequest{
-				CallbackType: types.CallbackTypeEndBlock.String(),
+			src: types.QueryContractsByPrivilegeTypeRequest{
+				PrivilegeType: types.PrivilegeTypeEndBlock.String(),
 			},
 			state: []sdk.AccAddress{addr1},
-			expRsp: &types.QueryContractsByCallbackTypeResponse{
+			expRsp: &types.QueryContractsByPrivilegeTypeResponse{
 				Contracts: []string{addr1.String()},
 			},
 		},
 		"multiple found": {
-			src: types.QueryContractsByCallbackTypeRequest{
-				CallbackType: types.CallbackTypeEndBlock.String(),
+			src: types.QueryContractsByPrivilegeTypeRequest{
+				PrivilegeType: types.PrivilegeTypeEndBlock.String(),
 			},
 			state: []sdk.AccAddress{addr1, addr2},
-			expRsp: &types.QueryContractsByCallbackTypeResponse{
+			expRsp: &types.QueryContractsByPrivilegeTypeResponse{
 				Contracts: []string{addr1.String(), addr2.String()},
 			},
 		},
-		"unknown callback type": {
-			src: types.QueryContractsByCallbackTypeRequest{
-				CallbackType: "unknown",
+		"unknown privilege type": {
+			src: types.QueryContractsByPrivilegeTypeRequest{
+				PrivilegeType: "unknown",
 			},
 			expErr: true,
 		},
-		"empty callback type": {
-			src:    types.QueryContractsByCallbackTypeRequest{},
+		"empty privilege type": {
+			src:    types.QueryContractsByPrivilegeTypeRequest{},
 			expErr: true,
 		},
 	}
@@ -105,7 +105,7 @@ func TestQueryContractsByCallbackType(t *testing.T) {
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 			mock := MockQueryKeeper{
-				IterateContractCallbacksByTypeFn: func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+				IterateContractCallbacksByTypeFn: func(ctx sdk.Context, privilegeType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 					for i, a := range spec.state {
 						if cb(uint8(i+1), a) {
 							return
@@ -116,7 +116,7 @@ func TestQueryContractsByCallbackType(t *testing.T) {
 
 			q := NewGrpcQuerier(mock)
 			// when
-			gotRsp, gotErr := q.ContractsByCallbackType(sdk.WrapSDKContext(ctx), &spec.src)
+			gotRsp, gotErr := q.ContractsByPrivilegeType(sdk.WrapSDKContext(ctx), &spec.src)
 			// then
 			if spec.expErr {
 				require.Error(t, gotErr)
@@ -131,7 +131,7 @@ func TestQueryContractsByCallbackType(t *testing.T) {
 
 type MockQueryKeeper struct {
 	IteratePrivilegedFn              func(ctx sdk.Context, cb func(sdk.AccAddress) bool)
-	IterateContractCallbacksByTypeFn func(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
+	IterateContractCallbacksByTypeFn func(ctx sdk.Context, privilegeType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 
 func (m MockQueryKeeper) IteratePrivileged(ctx sdk.Context, cb func(sdk.AccAddress) bool) {
@@ -141,9 +141,9 @@ func (m MockQueryKeeper) IteratePrivileged(ctx sdk.Context, cb func(sdk.AccAddre
 	m.IteratePrivilegedFn(ctx, cb)
 }
 
-func (m MockQueryKeeper) IterateContractCallbacksByType(ctx sdk.Context, callbackType types.PrivilegedCallbackType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
+func (m MockQueryKeeper) IteratePrivilegedContractsByType(ctx sdk.Context, privilegeType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 	if m.IterateContractCallbacksByTypeFn == nil {
 		panic("not expected to be called")
 	}
-	m.IterateContractCallbacksByTypeFn(ctx, callbackType, cb)
+	m.IterateContractCallbacksByTypeFn(ctx, privilegeType, cb)
 }
