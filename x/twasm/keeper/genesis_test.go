@@ -62,7 +62,7 @@ func TestInitGenesis(t *testing.T) {
 				state.Wasm.Contracts[1] = wasmtypes.ContractFixture(func(contract *wasmtypes.Contract) {
 					contract.ContractAddress = genContractAddress(2, 2).String()
 					err := contract.ContractInfo.SetExtension(&types.TgradeContractDetails{
-						RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
+						RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 					})
 					require.NoError(t, err)
 					contract.ContractInfo.CodeID = 2
@@ -104,7 +104,7 @@ func TestInitGenesis(t *testing.T) {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
 				err := state.Wasm.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
-					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 				})
 				require.NoError(t, err)
 			}),

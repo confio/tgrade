@@ -141,7 +141,7 @@ func (h TgradeHandler) handleMintToken(ctx sdk.Context, contractAddr sdk.AccAddr
 	}
 	recipient, err := sdk.AccAddressFromBech32(mint.RecipientAddr)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "recipient")
+		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "recipient")
 	}
 	amount, ok := sdk.NewIntFromString(mint.Amount)
 	if !ok {
@@ -149,7 +149,7 @@ func (h TgradeHandler) handleMintToken(ctx sdk.Context, contractAddr sdk.AccAddr
 	}
 	token := sdk.Coin{Denom: mint.Denom, Amount: amount}
 	if err := token.Validate(); err != nil {
-		return nil, sdkerrors.Wrap(err, "mint tokens handler")
+		return nil, sdkerrors.Wrap(sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, err.Error()), "mint tokens handler")
 	}
 	if err := h.minter.MintCoins(ctx, types.ModuleName, sdk.NewCoins(token)); err != nil {
 		return nil, sdkerrors.Wrap(err, "mint")

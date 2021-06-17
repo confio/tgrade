@@ -21,7 +21,7 @@ func TestTgradeContractDetailsValidation(t *testing.T) {
 		},
 		"multiple callbacks": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredPrivileges = []*RegisteredPrivilege{
+				d.RegisteredPrivileges = []RegisteredPrivilege{
 					{Position: 1, PrivilegeType: "begin_blocker"},
 					{Position: 1, PrivilegeType: "end_blocker"},
 				}
@@ -29,7 +29,7 @@ func TestTgradeContractDetailsValidation(t *testing.T) {
 		},
 		"duplicate callbacks": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredPrivileges = []*RegisteredPrivilege{
+				d.RegisteredPrivileges = []RegisteredPrivilege{
 					{Position: 1, PrivilegeType: "begin_blocker"},
 					{Position: 2, PrivilegeType: "begin_blocker"},
 				}
@@ -38,25 +38,25 @@ func TestTgradeContractDetailsValidation(t *testing.T) {
 		},
 		"unknown callback": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredPrivileges = []*RegisteredPrivilege{{Position: 1, PrivilegeType: "unknown"}}
+				d.RegisteredPrivileges = []RegisteredPrivilege{{Position: 1, PrivilegeType: "unknown"}}
 			}),
 			expErr: true,
 		},
 		"empty callback": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredPrivileges = []*RegisteredPrivilege{{Position: 1}}
+				d.RegisteredPrivileges = []RegisteredPrivilege{{Position: 1}}
 			}),
 			expErr: true,
 		},
 		"invalid callback position": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredPrivileges = []*RegisteredPrivilege{{Position: math.MaxUint8 + 1, PrivilegeType: "begin_blocker"}}
+				d.RegisteredPrivileges = []RegisteredPrivilege{{Position: math.MaxUint8 + 1, PrivilegeType: "begin_blocker"}}
 			}),
 			expErr: true,
 		},
 		"empty callback position": {
 			src: TgradeContractDetailsFixture(t, func(d *TgradeContractDetails) {
-				d.RegisteredPrivileges = []*RegisteredPrivilege{{PrivilegeType: "begin_blocker"}}
+				d.RegisteredPrivileges = []RegisteredPrivilege{{PrivilegeType: "begin_blocker"}}
 			}),
 			expErr: true,
 		},

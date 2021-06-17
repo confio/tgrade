@@ -12,7 +12,8 @@ option (gogoproto.equal_all) = true;
 // TgradeContractDetails is a custom extension to the wasmd ContractInfo
 message TgradeContractDetails {
   option (cosmos_proto.implements_interface) = "ContractInfoExtension";
-  repeated RegisteredPrivilege registered_privileges = 1;
+  repeated RegisteredPrivilege registered_privileges = 1
+      [ (gogoproto.nullable) = false ];
 }
 
 // RegisteredPrivilege stores position and privilege name
