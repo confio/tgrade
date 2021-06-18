@@ -8,6 +8,12 @@
     - [GenesisState](#confio.globalfee.v1beta1.GenesisState)
     - [Params](#confio.globalfee.v1beta1.Params)
   
+- [confio/globalfee/v1beta1/query.proto](#confio/globalfee/v1beta1/query.proto)
+    - [QueryMinimumGasPricesRequest](#confio.globalfee.v1beta1.QueryMinimumGasPricesRequest)
+    - [QueryMinimumGasPricesResponse](#confio.globalfee.v1beta1.QueryMinimumGasPricesResponse)
+  
+    - [Query](#confio.globalfee.v1beta1.Query)
+  
 - [confio/poe/v1beta1/poe.proto](#confio/poe/v1beta1/poe.proto)
     - [PoEContractType](#confio.poe.v1beta1.PoEContractType)
   
@@ -92,6 +98,59 @@ Params defines the set of module parameters.
  <!-- end enums -->
 
  <!-- end HasExtensions -->
+
+ <!-- end services -->
+
+
+
+<a name="confio/globalfee/v1beta1/query.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## confio/globalfee/v1beta1/query.proto
+
+
+
+<a name="confio.globalfee.v1beta1.QueryMinimumGasPricesRequest"></a>
+
+### QueryMinimumGasPricesRequest
+QueryMinimumGasPricesRequest is the request type for the
+Query/MinimumGasPrices RPC method.
+
+
+
+
+
+
+<a name="confio.globalfee.v1beta1.QueryMinimumGasPricesResponse"></a>
+
+### QueryMinimumGasPricesResponse
+QueryMinimumGasPricesResponse is the response type for the
+Query/MinimumGasPrices RPC method.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `minimum_gas_prices` | [cosmos.base.v1beta1.DecCoin](#cosmos.base.v1beta1.DecCoin) | repeated |  |
+
+
+
+
+
+ <!-- end messages -->
+
+ <!-- end enums -->
+
+ <!-- end HasExtensions -->
+
+
+<a name="confio.globalfee.v1beta1.Query"></a>
+
+### Query
+Query defines the gRPC querier service.
+
+| Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
+| ----------- | ------------ | ------------- | ------------| ------- | -------- |
+| `MinimumGasPrices` | [QueryMinimumGasPricesRequest](#confio.globalfee.v1beta1.QueryMinimumGasPricesRequest) | [QueryMinimumGasPricesResponse](#confio.globalfee.v1beta1.QueryMinimumGasPricesResponse) |  | GET|/globalfee/v1beta1/minimum_gas_prices|
 
  <!-- end services -->
 
