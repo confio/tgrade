@@ -44,7 +44,7 @@ func TestGovProposal(t *testing.T) {
 	sut.ModifyGenesisCLI(t, commands...)
 	sut.StartChain(t)
 
-	qResult := cli.CustomQuery("q", "wasm", "list-privileged-contracts-by-type", "gov_proposal_executor")
+	qResult := cli.CustomQuery("q", "wasm", "list-privileged-by-type", "gov_proposal_executor")
 	contracts := gjson.Get(qResult, "contracts").Array()
 	require.Len(t, contracts, 1, qResult)
 	require.Equal(t, "tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy", contracts[0].String())

@@ -55,6 +55,12 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	if sut.nodesCount < 4 {
 		t.Skip("4 nodes required")
 	}
+	initialValBalances := make(map[string]int64, len(sortedMember))
+	for _, v := range sortedMember {
+		initialValBalances[v.Addr] = cli.QueryBalance(v.Addr, "utgd")
+	}
+	initialSupply := cli.QueryTotalSupply("utgd")
+
 	// And when removed from **engagement** group
 	engagementUpdateMsg := testingcontracts.TG4UpdateMembersMsg{
 		Remove: []string{sortedMember[0].Addr},
@@ -73,6 +79,18 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	sortedMember = sortedMember[1:sut.nodesCount]
 	stakedAmounts = stakedAmounts[1:sut.nodesCount]
 	assertValidatorsUpdated(t, sortedMember, stakedAmounts, sut.nodesCount-1)
+
+	// and new tokens were minted
+	assert.Greater(t, cli.QueryTotalSupply("utgd"), initialSupply)
+
+	// and distributed to the validators
+	var distributed bool
+	for _, v := range sortedMember {
+		if initialValBalances[v.Addr] < cli.QueryBalance(v.Addr, "utgd") {
+			distributed = true
+		}
+	}
+	assert.True(t, distributed, "no tokens distributed")
 }
 
 func assertValidatorsUpdated(t *testing.T, sortedMember []testingcontracts.TG4Member, stakedAmounts []uint64, expValidators int) {

@@ -8,7 +8,7 @@ import (
 
 //AddRegisteredPrivilege add privilege type to list
 func (d *TgradeContractDetails) AddRegisteredPrivilege(t PrivilegeType, pos uint8) {
-	d.RegisteredPrivileges = append(d.RegisteredPrivileges, &RegisteredPrivilege{
+	d.RegisteredPrivileges = append(d.RegisteredPrivileges, RegisteredPrivilege{
 		PrivilegeType: t.String(),
 		Position:      uint32(pos),
 	})

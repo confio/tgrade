@@ -27,6 +27,10 @@ var (
 	// PrivilegeTypeGovProposalExecutor
 	// This is a permission privilege to execute governance proposals.
 	PrivilegeTypeGovProposalExecutor = registerCallbackType(0x4, "gov_proposal_executor", false)
+
+	// PrivilegeTypeTokenMinter
+	// This is a permission to mint native tokens on the chain.
+	PrivilegeTypeTokenMinter = registerCallbackType(0x5, "token_minter", false)
 )
 
 var (

@@ -118,6 +118,28 @@ func (c TgradeCli) FundAddress(t *testing.T, destAddr, amount string) string {
 	return c.run(c.withTXFlags(cmd...))
 }
 
+// QueryBalances queries all balances for an account. Returns json response
+// Example:`{"balances":[{"denom":"node0token","amount":"1000000000"},{"denom":"utgd","amount":"400000003"}],"pagination":{}}`
+func (c TgradeCli) QueryBalances(addr string) string {
+	return c.CustomQuery("q", "bank", "balances", addr)
+}
+
+// QueryBalance returns balance amount for given denom.
+// 0 when not found
+func (c TgradeCli) QueryBalance(addr, denom string) int64 {
+	raw := c.CustomQuery("q", "bank", "balances", addr, "--denom="+denom)
+	require.Contains(c.t, raw, "amount", raw)
+	return gjson.Get(raw, "amount").Int()
+}
+
+// QueryTotalSupply returns total amount of tokens for a given denom.
+// 0 when not found
+func (c TgradeCli) QueryTotalSupply(denom string) int64 {
+	raw := c.CustomQuery("q", "bank", "total", "--denom="+denom)
+	require.Contains(c.t, raw, "amount", raw)
+	return gjson.Get(raw, "amount").Int()
+}
+
 // RequireTxSuccess require the received response to contain the success code
 func RequireTxSuccess(t *testing.T, got string) {
 	t.Helper()

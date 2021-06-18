@@ -20,19 +20,24 @@ type tgradeKeeper interface {
 	setContractDetails(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error
 	GetContractInfo(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
 }
+type minter interface {
+	MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error
+	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
+}
 
 var _ wasmkeeper.Messenger = TgradeHandler{}
 
 // TgradeHandler is a custom message handler plugin for wasmd.
 type TgradeHandler struct {
 	keeper    tgradeKeeper
+	minter    minter
 	govRouter govtypes.Router
 	cdc       codec.Marshaler
 }
 
 // NewTgradeHandler constructor
-func NewTgradeHandler(cdc codec.Marshaler, keeper tgradeKeeper, govRouter govtypes.Router) *TgradeHandler {
-	return &TgradeHandler{cdc: cdc, keeper: keeper, govRouter: govRouter}
+func NewTgradeHandler(cdc codec.Marshaler, keeper tgradeKeeper, bankKeeper minter, govRouter govtypes.Router) *TgradeHandler {
+	return &TgradeHandler{cdc: cdc, keeper: keeper, govRouter: govRouter, minter: bankKeeper}
 }
 
 // DispatchMsg handles wasmVM message for privileged contracts
@@ -52,7 +57,13 @@ func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress,
 		return nil, nil, h.handlePrivilege(ctx, contractAddr, tMsg.Privilege)
 	case tMsg.ExecuteGovProposal != nil:
 		return nil, nil, h.handleGovProposalExecution(ctx, contractAddr, tMsg.ExecuteGovProposal)
+	case tMsg.MintTokens != nil:
+		evts, err := h.handleMintToken(ctx, contractAddr, tMsg.MintTokens)
+		return evts, nil, err
 	}
+
+	ModuleLogger(ctx).Info("unhandled message", "msg", msg)
+
 	return nil, nil, wasmtypes.ErrUnknownMsg
 }
 
@@ -105,17 +116,8 @@ func (h TgradeHandler) handlePrivilege(ctx sdk.Context, contractAddr sdk.AccAddr
 
 // handle gov proposal execution
 func (h TgradeHandler) handleGovProposalExecution(ctx sdk.Context, contractAddr sdk.AccAddress, exec *contract.ExecuteGovProposal) error {
-	contractInfo := h.keeper.GetContractInfo(ctx, contractAddr)
-	if contractInfo == nil {
-		return sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract info")
-	}
-
-	var details types.TgradeContractDetails
-	if err := contractInfo.ReadExtension(&details); err != nil {
+	if err := h.assertHasPrivilege(ctx, contractAddr, types.PrivilegeTypeGovProposalExecutor); err != nil {
 		return err
-	}
-	if !details.HasRegisteredPrivilege(types.PrivilegeTypeGovProposalExecutor) {
-		return sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "requires: %s", types.PrivilegeTypeGovProposalExecutor.String())
 	}
 
 	content := exec.GetProposalContent()
@@ -130,4 +132,54 @@ func (h TgradeHandler) handleGovProposalExecution(ctx sdk.Context, contractAddr 
 	}
 	govHandler := h.govRouter.GetRoute(content.ProposalRoute())
 	return govHandler(ctx, content)
+}
+
+// handle mint token message
+func (h TgradeHandler) handleMintToken(ctx sdk.Context, contractAddr sdk.AccAddress, mint *contract.MintTokens) ([]sdk.Event, error) {
+	if err := h.assertHasPrivilege(ctx, contractAddr, types.PrivilegeTypeTokenMinter); err != nil {
+		return nil, err
+	}
+	recipient, err := sdk.AccAddressFromBech32(mint.RecipientAddr)
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "recipient")
+	}
+	amount, ok := sdk.NewIntFromString(mint.Amount)
+	if !ok {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, mint.Amount+mint.Denom)
+	}
+	token := sdk.Coin{Denom: mint.Denom, Amount: amount}
+	if err := token.Validate(); err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, err.Error()), "mint tokens handler")
+	}
+	if err := h.minter.MintCoins(ctx, types.ModuleName, sdk.NewCoins(token)); err != nil {
+		return nil, sdkerrors.Wrap(err, "mint")
+	}
+
+	if err := h.minter.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipient, sdk.NewCoins(token)); err != nil {
+		return nil, sdkerrors.Wrap(err, "send to recipient")
+	}
+
+	return sdk.Events{sdk.NewEvent(
+		types.EventTypeRewards,
+		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+		sdk.NewAttribute(sdk.AttributeKeyAmount, token.String()),
+		sdk.NewAttribute(types.AttributeKeyRewardRecipient, mint.RecipientAddr),
+	)}, nil
+}
+
+// assertHasPrivilege helper to assert that the contract has the required privilege
+func (h TgradeHandler) assertHasPrivilege(ctx sdk.Context, contractAddr sdk.AccAddress, requiredPrivilege types.PrivilegeType) error {
+	contractInfo := h.keeper.GetContractInfo(ctx, contractAddr)
+	if contractInfo == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract info")
+	}
+
+	var details types.TgradeContractDetails
+	if err := contractInfo.ReadExtension(&details); err != nil {
+		return err
+	}
+	if !details.HasRegisteredPrivilege(requiredPrivilege) {
+		return sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "requires: %s", requiredPrivilege.String())
+	}
+	return nil
 }

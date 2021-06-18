@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	"github.com/confio/tgrade/x/twasm/contract"
@@ -15,7 +16,10 @@ import (
 )
 
 func TestTgradeHandlesDispatchMsg(t *testing.T) {
-	contractAddr := RandomAddress(t)
+	var (
+		contractAddr = RandomAddress(t)
+		otherAddr    = RandomAddress(t)
+	)
 	specs := map[string]struct {
 		setup                 func(m *handlerTgradeKeeperMock)
 		src                   wasmvmtypes.CosmosMsg
@@ -43,6 +47,19 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 				})
 			},
 			expCapturedGovContent: []govtypes.Content{&govtypes.TextProposal{Title: "foo", Description: "bar"}},
+		},
+		"handle minter msg": {
+			src: wasmvmtypes.CosmosMsg{
+				Custom: []byte(fmt.Sprintf(`{"mint_tokens":{"amount":"1","denom":"utgd","recipient":%q}}`, otherAddr.String())),
+			},
+			setup: func(m *handlerTgradeKeeperMock) {
+				noopRegisterHook(m, func(info *wasmtypes.ContractInfo) {
+					var details types.TgradeContractDetails
+					require.NoError(t, info.ReadExtension(&details))
+					details.AddRegisteredPrivilege(types.PrivilegeTypeTokenMinter, 1)
+					require.NoError(t, info.SetExtension(&details))
+				})
+			},
 		},
 		"non custom msg rejected": {
 			src:    wasmvmtypes.CosmosMsg{},
@@ -72,9 +89,10 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cdc := MakeEncodingConfig(t).Marshaler
 			govRouter := &CapturingGovRouter{}
+			minterMock := NoopMinterMock()
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
-			h := NewTgradeHandler(cdc, mock, govRouter)
+			h := NewTgradeHandler(cdc, mock, minterMock, govRouter)
 			var ctx sdk.Context
 			_, _, gotErr := h.DispatchMsg(ctx, contractAddr, "", spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -138,7 +156,7 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src:   contract.PrivilegeMsg{Request: types.PrivilegeTypeBeginBlock},
 			setup: captureWithMock(),
 			expDetails: &types.TgradeContractDetails{
-				RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
+				RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 			},
 			expRegistrations: []registration{{cb: types.PrivilegeTypeBeginBlock, addr: myContractAddr}},
 		},
@@ -146,18 +164,18 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Release: types.PrivilegeTypeBeginBlock},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				ext := &types.TgradeContractDetails{
-					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 				}
 				info.SetExtension(ext)
 			}),
-			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []*types.RegisteredPrivilege{}},
+			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []types.RegisteredPrivilege{}},
 			expUnRegistrations: []unregistration{{cb: types.PrivilegeTypeBeginBlock, pos: 1, addr: myContractAddr}},
 		},
 		"register end block": {
 			src:   contract.PrivilegeMsg{Request: types.PrivilegeTypeEndBlock},
 			setup: captureWithMock(),
 			expDetails: &types.TgradeContractDetails{
-				RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "end_blocker"}},
+				RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "end_blocker"}},
 			},
 			expRegistrations: []registration{{cb: types.PrivilegeTypeEndBlock, addr: myContractAddr}},
 		},
@@ -165,18 +183,18 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Release: types.PrivilegeTypeEndBlock},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				ext := &types.TgradeContractDetails{
-					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "end_blocker"}},
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "end_blocker"}},
 				}
 				info.SetExtension(ext)
 			}),
-			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []*types.RegisteredPrivilege{}},
+			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []types.RegisteredPrivilege{}},
 			expUnRegistrations: []unregistration{{cb: types.PrivilegeTypeEndBlock, pos: 1, addr: myContractAddr}},
 		},
 		"register validator set update block": {
 			src:   contract.PrivilegeMsg{Request: types.PrivilegeTypeValidatorSetUpdate},
 			setup: captureWithMock(),
 			expDetails: &types.TgradeContractDetails{
-				RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "validator_set_updater"}},
+				RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "validator_set_updater"}},
 			},
 			expRegistrations: []registration{{cb: types.PrivilegeTypeValidatorSetUpdate, addr: myContractAddr}},
 		},
@@ -184,18 +202,18 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Release: types.PrivilegeTypeValidatorSetUpdate},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				ext := &types.TgradeContractDetails{
-					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "validator_set_updater"}},
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "validator_set_updater"}},
 				}
 				info.SetExtension(ext)
 			}),
-			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []*types.RegisteredPrivilege{}},
+			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []types.RegisteredPrivilege{}},
 			expUnRegistrations: []unregistration{{cb: types.PrivilegeTypeValidatorSetUpdate, pos: 1, addr: myContractAddr}},
 		},
 		"register gov proposal executor": {
 			src:   contract.PrivilegeMsg{Request: types.PrivilegeTypeGovProposalExecutor},
 			setup: captureWithMock(),
 			expDetails: &types.TgradeContractDetails{
-				RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
+				RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
 			},
 			expRegistrations: []registration{{cb: types.PrivilegeTypeGovProposalExecutor, addr: myContractAddr}},
 		},
@@ -203,11 +221,11 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Release: types.PrivilegeTypeGovProposalExecutor},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				ext := &types.TgradeContractDetails{
-					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
 				}
 				info.SetExtension(ext)
 			}),
-			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []*types.RegisteredPrivilege{}},
+			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []types.RegisteredPrivilege{}},
 			expUnRegistrations: []unregistration{{cb: types.PrivilegeTypeGovProposalExecutor, pos: 1, addr: myContractAddr}},
 		},
 		"register privilege fails": {
@@ -227,7 +245,7 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Request: types.PrivilegeTypeBeginBlock},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				info.SetExtension(&types.TgradeContractDetails{
-					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 				})
 			}),
 		},
@@ -235,11 +253,11 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Request: types.PrivilegeTypeBeginBlock},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				info.SetExtension(&types.TgradeContractDetails{
-					RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 100, PrivilegeType: "end_blocker"}},
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 100, PrivilegeType: "end_blocker"}},
 				})
 			}),
 			expDetails: &types.TgradeContractDetails{
-				RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 100, PrivilegeType: "end_blocker"}, {Position: 1, PrivilegeType: "begin_blocker"}},
+				RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 100, PrivilegeType: "end_blocker"}, {Position: 1, PrivilegeType: "begin_blocker"}},
 			},
 			expRegistrations: []registration{{cb: types.PrivilegeTypeBeginBlock, addr: myContractAddr}},
 		},
@@ -247,7 +265,7 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			src: contract.PrivilegeMsg{Release: types.PrivilegeTypeBeginBlock},
 			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
 				ext := &types.TgradeContractDetails{
-					RegisteredPrivileges: []*types.RegisteredPrivilege{
+					RegisteredPrivileges: []types.RegisteredPrivilege{
 						{Position: 3, PrivilegeType: "validator_set_updater"},
 						{Position: 1, PrivilegeType: "begin_blocker"},
 						{Position: 100, PrivilegeType: "end_blocker"},
@@ -255,7 +273,7 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 				}
 				info.SetExtension(ext)
 			}),
-			expDetails: &types.TgradeContractDetails{RegisteredPrivileges: []*types.RegisteredPrivilege{
+			expDetails: &types.TgradeContractDetails{RegisteredPrivileges: []types.RegisteredPrivilege{
 				{Position: 3, PrivilegeType: "validator_set_updater"},
 				{Position: 100, PrivilegeType: "end_blocker"},
 			}},
@@ -278,7 +296,7 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			capturedDetails, capturedRegistrations, capturedUnRegistrations = nil, nil, nil
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
-			h := NewTgradeHandler(nil, mock, nil)
+			h := NewTgradeHandler(nil, mock, nil, nil)
 			var ctx sdk.Context
 			gotErr := h.handlePrivilege(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -306,7 +324,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
 					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
 						info.SetExtension(&types.TgradeContractDetails{
-							RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
+							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
 						})
 					})
 					return &c
@@ -334,7 +352,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
 					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
 						info.SetExtension(&types.TgradeContractDetails{
-							RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
+							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
 						})
 					})
 					return &c
@@ -348,7 +366,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
 					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
 						info.SetExtension(&types.TgradeContractDetails{
-							RegisteredPrivileges: []*types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
+							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
 						})
 					})
 					return &c
@@ -372,7 +390,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
 			router := &CapturingGovRouter{}
-			h := NewTgradeHandler(cdc, mock, router)
+			h := NewTgradeHandler(cdc, mock, nil, router)
 			var ctx sdk.Context
 			gotErr := h.handleGovProposalExecution(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -380,6 +398,162 @@ func TestHandleGovProposalExecution(t *testing.T) {
 		})
 	}
 
+}
+
+func TestHandleMintToken(t *testing.T) {
+	myContractAddr := RandomAddress(t)
+	myRecipientAddr := RandomAddress(t)
+	specs := map[string]struct {
+		src            contract.MintTokens
+		setup          func(k *handlerTgradeKeeperMock)
+		expErr         *sdkerrors.Error
+		expMintedCoins sdk.Coins
+		expRecipient   sdk.AccAddress
+	}{
+		"all good": {
+			src: contract.MintTokens{
+				Denom:         "foo",
+				Amount:        "123",
+				RecipientAddr: myRecipientAddr.String(),
+			},
+			setup: func(k *handlerTgradeKeeperMock) {
+				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "token_minter"}},
+						})
+					})
+					return &c
+				}
+			},
+			expMintedCoins: sdk.NewCoins(sdk.NewCoin("foo", sdk.NewInt(123))),
+			expRecipient:   myRecipientAddr,
+		},
+		"unauthorized contract": {
+			src: contract.MintTokens{
+				Denom:         "foo",
+				Amount:        "123",
+				RecipientAddr: myRecipientAddr.String(),
+			},
+			setup: func(k *handlerTgradeKeeperMock) {
+				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredPrivileges: []types.RegisteredPrivilege{},
+						})
+					})
+					return &c
+				}
+			},
+			expErr: sdkerrors.ErrUnauthorized,
+		},
+		"invalid denom": {
+			src: contract.MintTokens{
+				Denom:         "&&&foo",
+				Amount:        "123",
+				RecipientAddr: myRecipientAddr.String(),
+			},
+			setup: func(k *handlerTgradeKeeperMock) {
+				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "token_minter"}},
+						})
+					})
+					return &c
+				}
+			},
+			expErr: sdkerrors.ErrInvalidCoins,
+		},
+		"invalid amount": {
+			src: contract.MintTokens{
+				Denom:         "foo",
+				Amount:        "not-a-number",
+				RecipientAddr: myRecipientAddr.String(),
+			},
+			setup: func(k *handlerTgradeKeeperMock) {
+				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "token_minter"}},
+						})
+					})
+					return &c
+				}
+			},
+			expErr: sdkerrors.ErrInvalidCoins,
+		},
+		"invalid recipient": {
+			src: contract.MintTokens{
+				Denom:         "foo",
+				Amount:        "123",
+				RecipientAddr: "not-an-address",
+			},
+			setup: func(k *handlerTgradeKeeperMock) {
+				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "token_minter"}},
+						})
+					})
+					return &c
+				}
+			},
+			expErr: sdkerrors.ErrInvalidAddress,
+		},
+		"no content": {
+			src: contract.MintTokens{},
+			setup: func(k *handlerTgradeKeeperMock) {
+				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "token_minter"}},
+						})
+					})
+					return &c
+				}
+			},
+			expErr: sdkerrors.ErrInvalidAddress,
+		},
+		"unknown origin contract": {
+			src: contract.MintTokens{
+				Denom:         "foo",
+				Amount:        "123",
+				RecipientAddr: "not-an-address",
+			},
+			setup: func(m *handlerTgradeKeeperMock) {
+				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					return nil
+				}
+			},
+			expErr: wasmtypes.ErrNotFound,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			cdc := MakeEncodingConfig(t).Marshaler
+			mintFn, capturedMintedCoins := CaptureMintedCoinsFn()
+			sendFn, capturedSentCoins := CaptureSendCoinsFn()
+			mock := MinterMock{MintCoinsFn: mintFn, SendCoinsFromModuleToAccountFn: sendFn}
+			keeperMock := handlerTgradeKeeperMock{}
+			spec.setup(&keeperMock)
+			h := NewTgradeHandler(cdc, keeperMock, mock, nil)
+			var ctx sdk.Context
+			gotEvts, gotErr := h.handleMintToken(ctx, myContractAddr, &spec.src)
+			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
+			if spec.expErr != nil {
+				assert.Len(t, gotEvts, 0)
+				return
+			}
+			require.Len(t, *capturedMintedCoins, 1)
+			assert.Equal(t, spec.expMintedCoins, (*capturedMintedCoins)[0])
+			require.Len(t, *capturedSentCoins, 1)
+			assert.Equal(t, (*capturedSentCoins)[0].coins, spec.expMintedCoins)
+			assert.Equal(t, (*capturedSentCoins)[0].recipientAddr, spec.expRecipient)
+			require.Len(t, gotEvts, 1)
+			assert.Equal(t, types.EventTypeRewards, gotEvts[0].Type)
+		})
+	}
 }
 
 // noopRegisterHook does nothing and but all methods for registration
@@ -444,4 +618,56 @@ func (m handlerTgradeKeeperMock) GetContractInfo(ctx sdk.Context, contractAddres
 		panic("not expected to be called")
 	}
 	return m.GetContractInfoFn(ctx, contractAddress)
+}
+
+// MinterMock test helper that satisfies the `minter` interface
+type MinterMock struct {
+	MintCoinsFn                    func(ctx sdk.Context, moduleName string, amt sdk.Coins) error
+	SendCoinsFromModuleToAccountFn func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
+}
+
+func (m MinterMock) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+	if m.MintCoinsFn == nil {
+		panic("not expected to be called")
+	}
+	return m.MintCoinsFn(ctx, moduleName, amt)
+}
+
+func (m MinterMock) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	if m.SendCoinsFromModuleToAccountFn == nil {
+		panic("not expected to be called")
+	}
+	return m.SendCoinsFromModuleToAccountFn(ctx, senderModule, recipientAddr, amt)
+}
+
+func NoopMinterMock() *MinterMock {
+	return &MinterMock{
+		MintCoinsFn: func(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+			return nil
+		},
+		SendCoinsFromModuleToAccountFn: func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+			return nil
+		},
+	}
+}
+
+func CaptureMintedCoinsFn() (func(ctx sdk.Context, moduleName string, amt sdk.Coins) error, *[]sdk.Coins) {
+	var r []sdk.Coins
+	return func(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+		r = append(r, amt)
+		return nil
+	}, &r
+}
+
+type capturedSendCoins struct {
+	recipientAddr sdk.AccAddress
+	coins         sdk.Coins
+}
+
+func CaptureSendCoinsFn() (func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error, *[]capturedSendCoins) {
+	var r []capturedSendCoins
+	return func(ctx sdk.Context, moduleName string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+		r = append(r, capturedSendCoins{recipientAddr: recipientAddr, coins: amt})
+		return nil
+	}, &r
 }
