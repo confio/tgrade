@@ -1,4 +1,4 @@
-package globalfee
+package types
 
 import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"

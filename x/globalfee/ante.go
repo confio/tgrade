@@ -1,6 +1,7 @@
 package globalfee
 
 import (
+	"github.com/confio/tgrade/x/globalfee/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -65,14 +66,14 @@ func NewGlobalMinimumChainFeeDecorator(paramSpace paramtypes.Subspace) GlobalMin
 
 // AnteHandle method that performs custom pre- and post-processing.
 func (g GlobalMinimumChainFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
-	if g.paramSource.Has(ctx, ParamStoreKeyMinGasPrices) {
+	if g.paramSource.Has(ctx, types.ParamStoreKeyMinGasPrices) {
 		feeTx, ok := tx.(sdk.FeeTx)
 		if !ok {
 			return ctx, sdkerrors.Wrap(sdkerrors.ErrTxDecode, "tx must be a sdk FeeTx")
 		}
 
 		var minGasPrices sdk.DecCoins
-		g.paramSource.Get(ctx, ParamStoreKeyMinGasPrices, &minGasPrices)
+		g.paramSource.Get(ctx, types.ParamStoreKeyMinGasPrices, &minGasPrices)
 		if !minGasPrices.IsZero() {
 			requiredFees := make(sdk.Coins, len(minGasPrices))
 

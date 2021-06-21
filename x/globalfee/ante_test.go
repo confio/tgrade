@@ -1,6 +1,7 @@
 package globalfee
 
 import (
+	"github.com/confio/tgrade/x/globalfee/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -28,7 +29,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 	}{
 		"single fee above min": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt())),
 				})
 			},
@@ -37,7 +38,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"single fee below min": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.NewInt(2))),
 				})
 			},
@@ -47,7 +48,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"single fee equal min": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt())),
 				})
 			},
@@ -56,7 +57,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"multiple fees both above min": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt()), sdk.NewDecCoin("BLX", sdk.OneInt())),
 				})
 			},
@@ -65,7 +66,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"multiple fees both below min": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.NewInt(2)), sdk.NewDecCoin("BLX", sdk.NewInt(2))),
 				})
 			},
@@ -75,7 +76,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"multiple fees both equal min": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt()), sdk.NewDecCoin("BLX", sdk.OneInt())),
 				})
 			},
@@ -84,7 +85,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"multiple fees one below min": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.NewInt(2)), sdk.NewDecCoin("BLX", sdk.NewInt(2))),
 				})
 			},
@@ -93,7 +94,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"multiple fees one equal min": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.NewInt(2)), sdk.NewDecCoin("BLX", sdk.NewInt(2))),
 				})
 			},
@@ -102,7 +103,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"multiple fees one submitted": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt()), sdk.NewDecCoin("BLX", sdk.OneInt())),
 				})
 			},
@@ -111,7 +112,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"multiple fees with non fee token added": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt()), sdk.NewDecCoin("BLX", sdk.OneInt())),
 				})
 			},
@@ -120,7 +121,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"multiple fees with only non fee token": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt()), sdk.NewDecCoin("BLX", sdk.OneInt())),
 				})
 			},
@@ -130,7 +131,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"no min gas price set": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{})
+				s.SetParamSet(ctx, &types.Params{})
 			},
 			gasLimit: 1,
 		},
@@ -141,7 +142,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"no gas set": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt())),
 				})
 			},
@@ -150,7 +151,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 		},
 		"no fee set": {
 			setupStore: func(ctx sdk.Context, s paramtypes.Subspace) {
-				s.SetParamSet(ctx, &Params{
+				s.SetParamSet(ctx, &types.Params{
 					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt())),
 				})
 			},
@@ -200,7 +201,7 @@ func setupTestStore(t *testing.T) (sdk.Context, simappparams.EncodingConfig, par
 		Time:   time.Date(2020, time.April, 22, 12, 0, 0, 0, time.UTC),
 	}, false, log.NewNopLogger())
 
-	subspace := paramsKeeper.Subspace(ModuleName).WithKeyTable(ParamKeyTable())
+	subspace := paramsKeeper.Subspace(ModuleName).WithKeyTable(types.ParamKeyTable())
 	return ctx, encCfg, subspace
 }
 

@@ -290,6 +290,13 @@ func (s *SystemUnderTest) ModifyGenesisCLI(t *testing.T, cmds ...[]string) {
 type GenesisMutator func([]byte) []byte
 
 // ModifyGenesisJson executes the callbacks to update the json representation
+// The mutator callbacks after each other receive the genesis as raw bytes and return the updated genesis for the next.
+// example:
+// 	return func(genesis []byte) []byte {
+//		val, _ := json.Marshal(sdk.NewDecCoins(fees...))
+//		state, _ := sjson.SetRawBytes(genesis, "app_state.globalfee.params.minimum_gas_prices", val)
+//		return state
+//	}
 func (s *SystemUnderTest) ModifyGenesisJson(t *testing.T, mutators ...GenesisMutator) {
 	current, err := ioutil.ReadFile(filepath.Join(workDir, s.nodePath(0), "config", "genesis.json"))
 	require.NoError(t, err)

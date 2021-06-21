@@ -1,6 +1,7 @@
 package globalfee
 
 import (
+	"github.com/confio/tgrade/x/globalfee/types"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
@@ -57,20 +58,20 @@ func TestValidateGenesis(t *testing.T) {
 func TestInitExportGenesis(t *testing.T) {
 	specs := map[string]struct {
 		src string
-		exp GenesisState
+		exp types.GenesisState
 	}{
 		"single fee": {
 			src: `{"params":{"minimum_gas_prices":[{"denom":"ALX", "amount":"1"}]}}`,
-			exp: GenesisState{Params{MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.NewInt(1)))}},
+			exp: types.GenesisState{types.Params{MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.NewInt(1)))}},
 		},
 		"multiple fee options": {
 			src: `{"params":{"minimum_gas_prices":[{"denom":"ALX", "amount":"1"}, {"denom":"BLX", "amount":"0.001"}]}}`,
-			exp: GenesisState{Params{MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.NewInt(1)),
+			exp: types.GenesisState{types.Params{MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.NewInt(1)),
 				sdk.NewDecCoinFromDec("BLX", sdk.NewDecWithPrec(1, 3)))}},
 		},
 		"no fee set": {
 			src: `{"params":{}}`,
-			exp: GenesisState{Params{MinimumGasPrices: sdk.DecCoins{}}},
+			exp: types.GenesisState{types.Params{MinimumGasPrices: sdk.DecCoins{}}},
 		},
 	}
 	for name, spec := range specs {
@@ -79,7 +80,7 @@ func TestInitExportGenesis(t *testing.T) {
 			m := NewAppModule(subspace)
 			m.InitGenesis(ctx, encCfg.Marshaler, []byte(spec.src))
 			gotJson := m.ExportGenesis(ctx, encCfg.Marshaler)
-			var got GenesisState
+			var got types.GenesisState
 			require.NoError(t, encCfg.Marshaler.UnmarshalJSON(gotJson, &got))
 			assert.Equal(t, spec.exp, got, string(gotJson))
 		})
