@@ -22,7 +22,7 @@ import (
 func TestInitGenesis(t *testing.T) {
 	noopMock := NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
 		m.PinFn = func(checksum cosmwasm.Checksum) error { return nil }
-		m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64) (*wasmvmtypes.Response, uint64, error) {
+		m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 			return &wasmvmtypes.Response{}, 0, nil
 		}
 	})
@@ -89,12 +89,12 @@ func TestInitGenesis(t *testing.T) {
 			wasmvm: NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
 				// callback registers for end block on sudo call
 				m.PinFn = func(checksum cosmwasm.Checksum) error { return nil }
-				m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64) (*wasmvmtypes.Response, uint64, error) {
+				m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 					tradeMsg := contract.TgradeMsg{Privilege: &contract.PrivilegeMsg{Request: types.PrivilegeTypeEndBlock}}
 					msgBz, err := json.Marshal(&tradeMsg)
 					require.NoError(t, err)
 					return &wasmvmtypes.Response{
-						Messages: []wasmvmtypes.CosmosMsg{{Custom: msgBz}},
+						Messages: []wasmvmtypes.SubMsg{{ReplyOn: wasmvmtypes.ReplyNever, Msg: wasmvmtypes.CosmosMsg{Custom: msgBz}}},
 					}, 0, nil
 				}
 			}),
@@ -161,7 +161,7 @@ func TestExportGenesis(t *testing.T) {
 			return hash[:], nil
 		}
 		m.PinFn = func(checksum cosmwasm.Checksum) error { return nil }
-		m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64) (*wasmvmtypes.Response, uint64, error) {
+		m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 			return &wasmvmtypes.Response{}, 0, nil
 		}
 		m.GetCodeFn = func(checksum cosmwasm.Checksum) (cosmwasm.WasmCode, error) {

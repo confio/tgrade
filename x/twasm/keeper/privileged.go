@@ -44,7 +44,7 @@ func (k Keeper) SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) erro
 	event := sdk.NewEvent(
 		types.EventTypeSetPrivileged,
 		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-		sdk.NewAttribute(wasmtypes.AttributeKeyContract, contractAddr.String()),
+		sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
 	)
 	ctx.EventManager().EmitEvent(event)
 	return nil
@@ -99,7 +99,7 @@ func (k Keeper) UnsetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) er
 	event := sdk.NewEvent(
 		types.EventTypeUnsetPrivileged,
 		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-		sdk.NewAttribute(wasmtypes.AttributeKeyContract, contractAddr.String()),
+		sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
 	)
 	ctx.EventManager().EmitEvent(event)
 	return nil
@@ -188,7 +188,7 @@ func (k Keeper) appendToPrivilegedContracts(ctx sdk.Context, privilegeType types
 	event := sdk.NewEvent(
 		types.EventTypeRegisterPrivilege,
 		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-		sdk.NewAttribute(wasmtypes.AttributeKeyContract, contractAddr.String()),
+		sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
 		sdk.NewAttribute(types.AttributeKeyCallbackType, privilegeType.String()),
 	)
 	ctx.EventManager().EmitEvent(event)
@@ -213,7 +213,7 @@ func (k Keeper) removePrivilegeRegistration(ctx sdk.Context, privilegeType types
 	event := sdk.NewEvent(
 		types.EventTypeReleasePrivilege,
 		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-		sdk.NewAttribute(wasmtypes.AttributeKeyContract, contractAddr.String()),
+		sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
 		sdk.NewAttribute(types.AttributeKeyCallbackType, privilegeType.String()),
 	)
 	ctx.EventManager().EmitEvent(event)

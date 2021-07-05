@@ -96,7 +96,7 @@ type AppModule struct {
 type twasmKeeper interface {
 	abciKeeper
 	QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
-	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
+	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
 	SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) error
 	HasPrivilegedContract(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error)
 }

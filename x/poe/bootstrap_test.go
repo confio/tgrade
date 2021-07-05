@@ -79,7 +79,7 @@ var _ twasmKeeper = twasmKeeperMock{}
 
 type twasmKeeperMock struct {
 	QuerySmartFn            func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
-	SudoFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
+	SudoFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
 	SetPrivilegedFn         func(ctx sdk.Context, contractAddr sdk.AccAddress) error
 	HasPrivilegedContractFn func(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error)
 }
@@ -95,7 +95,7 @@ func (m twasmKeeperMock) QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddress
 	return m.QuerySmartFn(ctx, contractAddr, req)
 }
 
-func (m twasmKeeperMock) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+func (m twasmKeeperMock) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 	if m.SudoFn == nil {
 		panic("not expected to be called")
 	}
