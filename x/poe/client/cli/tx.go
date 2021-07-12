@@ -57,7 +57,7 @@ func NewCreateValidatorCmd() *cobra.Command {
 
 			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
 		},
-		Long: fmt.Println(`Create validator gentx with PoE parameters. Considering this is run pre-genesis
+		Long: fmt.Sprintln(`Create validator gentx with PoE parameters. Considering this is run pre-genesis
 --generate-only flag should be set. Otherwise client will try to connect to non-existent node. Also pass in
 address instead of keyname to --from flag.
 
