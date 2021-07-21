@@ -308,3 +308,15 @@ func RandomAddress(_ *testing.T) sdk.AccAddress {
 func RandomBech32Address(t *testing.T) string {
 	return RandomAddress(t).String()
 }
+
+func createFakeFundedAccount(t *testing.T, ctx sdk.Context, am authkeeper.AccountKeeper, bank bankkeeper.Keeper, coins sdk.Coins) sdk.AccAddress {
+	addr := RandomAddress(t)
+	fundAccounts(t, ctx, am, bank, addr, coins)
+	return addr
+}
+
+func fundAccounts(t *testing.T, ctx sdk.Context, am authkeeper.AccountKeeper, bank bankkeeper.Keeper, addr sdk.AccAddress, coins sdk.Coins) {
+	acc := am.NewAccountWithAddress(ctx, addr)
+	am.SetAccount(ctx, acc)
+	require.NoError(t, bank.SetBalances(ctx, addr, coins))
+}
