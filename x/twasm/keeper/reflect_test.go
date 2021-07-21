@@ -121,21 +121,25 @@ func TestReflectContractSend(t *testing.T) {
 	initMsgBz, err := json.Marshal(initMsg)
 	require.NoError(t, err)
 
-	createMsgs := []wasmvmtypes.CosmosMsg{{
-		Wasm: &wasmvmtypes.WasmMsg{
-			Instantiate: &wasmvmtypes.InstantiateMsg{
-				CodeID: escrowID,
-				Msg:    initMsgBz,
-				Send: []wasmvmtypes.Coin{{
-					Denom:  "denom",
-					Amount: "25000",
-				}},
-				Label: "My Favorite Testcase",
+	createMsgs := []wasmvmtypes.SubMsg{{
+		ID: 1,
+		ReplyOn: wasmvmtypes.ReplySuccess,
+		Msg: wasmvmtypes.CosmosMsg{
+			Wasm: &wasmvmtypes.WasmMsg{
+				Instantiate: &wasmvmtypes.InstantiateMsg{
+					CodeID: escrowID,
+					Msg:    initMsgBz,
+					Send: []wasmvmtypes.Coin{{
+						Denom:  "denom",
+						Amount: "25000",
+					}},
+					Label: "My Favorite Testcase",
+				},
 			},
 		},
 	}}
 	reflectSendCreate := ReflectHandleMsg{
-		Reflect: &reflectPayload{
+		ReflectSubCall: &reflectSubPayload{
 			Msgs: createMsgs,
 		},
 	}
@@ -152,10 +156,10 @@ func TestReflectContractSend(t *testing.T) {
 		}
 	}
 	// the address is from the last attribute on the last event
-	event := events[len(events)-1]
+	event := events[len(events)-2]
 	attr := event.Attributes[3]
 	require.Equal(t, "contract_address", string(attr.Key))
-	fmt.Println(string(attr.Value))
+	fmt.Printf("Escrow contract: %s\n", string(attr.Value))
 	escrowAddr, err := sdk.AccAddressFromBech32(string(attr.Value))
 	require.NoError(t, err)
 
