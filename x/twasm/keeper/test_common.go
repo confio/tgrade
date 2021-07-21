@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
 	"github.com/confio/tgrade/x/twasm/types"
@@ -275,6 +276,9 @@ func createTestInput(
 		opts...,
 	)
 	keeper.setParams(ctx, types.DefaultParams())
+	twh := wasm.NewHandler(wasmkeeper.NewDefaultPermissionKeeper(keeper))
+	router.AddRoute(sdk.NewRoute(types.RouterKey, twh))
+
 	keepers := TestKeepers{
 		AccountKeeper: authKeeper,
 		StakingKeeper: stakingKeeper,

@@ -59,7 +59,6 @@ type ChainResponse struct {
 	Data []byte `json:"data,omitempty"`
 }
 
-
 type HackatomExampleInitMsg struct {
 	Verifier    sdk.AccAddress `json:"verifier"`
 	Beneficiary sdk.AccAddress `json:"beneficiary"`
@@ -70,7 +69,6 @@ func (m HackatomExampleInitMsg) GetBytes(t *testing.T) []byte {
 	require.NoError(t, err)
 	return initMsgBz
 }
-
 
 func buildReflectQuery(t *testing.T, query *ReflectQueryMsg) []byte {
 	bz, err := json.Marshal(query)
@@ -127,7 +125,7 @@ func TestReflectContractSend(t *testing.T) {
 		Wasm: &wasmvmtypes.WasmMsg{
 			Instantiate: &wasmvmtypes.InstantiateMsg{
 				CodeID: escrowID,
-				Msg:          initMsgBz,
+				Msg:    initMsgBz,
 				Send: []wasmvmtypes.Coin{{
 					Denom:  "denom",
 					Amount: "25000",
@@ -143,16 +141,23 @@ func TestReflectContractSend(t *testing.T) {
 	}
 	reflectSendCreateBz, err := json.Marshal(reflectSendCreate)
 	require.NoError(t, err)
-	res, err := keeper.Execute(ctx, reflectAddr, creator, reflectSendCreateBz, nil)
+	_, err = keeper.Execute(ctx, reflectAddr, creator, reflectSendCreateBz, nil)
 	require.NoError(t, err)
-	fmt.Printf("%#v\n", res.Events)
-
-	// TODO: fix this!!
-	escrowAddr := RandomAddress(t)
-
-	//escrowAddr, _, err := keeper.Instantiate(ctx, escrowID, creator, nil, initMsgBz, "escrow contract 2", escrowStart)
-	//require.NoError(t, err)
-	//require.NotEmpty(t, escrowAddr)
+	// useful debug statements
+	events := ctx.EventManager().Events()
+	for _, event := range events {
+		fmt.Printf("type: %s\n", event.Type)
+		for _, attr := range event.Attributes {
+			fmt.Printf("  %s: %s\n", string(attr.Key), string(attr.Value))
+		}
+	}
+	// the address is from the last attribute on the last event
+	event := events[len(events)-1]
+	attr := event.Attributes[3]
+	require.Equal(t, "contract_address", string(attr.Key))
+	fmt.Println(string(attr.Value))
+	escrowAddr, err := sdk.AccAddressFromBech32(string(attr.Value))
+	require.NoError(t, err)
 
 	// let's make sure all balances make sense
 	checkAccount(t, ctx, accKeeper, bankKeeper, creator, sdk.NewCoins(sdk.NewInt64Coin("denom", 35000))) // 100k - 40k - 25k
