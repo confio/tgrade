@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/json"
+	"fmt"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"io/ioutil"
 	"testing"
@@ -109,26 +110,54 @@ func TestReflectContractSend(t *testing.T) {
 
 	// creator instantiates a contract and gives it tokens
 	reflectStart := sdk.NewCoins(sdk.NewInt64Coin("denom", 40000))
-	reflectAddr, _, err := keeper.Instantiate(ctx, reflectID, creator, nil, []byte("{}"), "reflect contract 2", reflectStart)
+	escrowStart := sdk.NewInt64Coin("denom", 25000)
+	reflectAddr, _, err := keeper.Instantiate(ctx, reflectID, creator, nil, []byte("{}"), "reflect contract 2", reflectStart.Add(escrowStart))
 	require.NoError(t, err)
 	require.NotEmpty(t, reflectAddr)
 
-	// now we set contract as verifier of an escrow
+	// reflect contract will create this hackatom contract
 	initMsg := HackatomExampleInitMsg{
 		Verifier:    reflectAddr,
 		Beneficiary: bob,
 	}
 	initMsgBz, err := json.Marshal(initMsg)
 	require.NoError(t, err)
-	escrowStart := sdk.NewCoins(sdk.NewInt64Coin("denom", 25000))
-	escrowAddr, _, err := keeper.Instantiate(ctx, escrowID, creator, nil, initMsgBz, "escrow contract 2", escrowStart)
+
+	createMsgs := []wasmvmtypes.CosmosMsg{{
+		Wasm: &wasmvmtypes.WasmMsg{
+			Instantiate: &wasmvmtypes.InstantiateMsg{
+				CodeID: escrowID,
+				Msg:          initMsgBz,
+				Send: []wasmvmtypes.Coin{{
+					Denom:  "denom",
+					Amount: "25000",
+				}},
+				Label: "My Favorite Testcase",
+			},
+		},
+	}}
+	reflectSendCreate := ReflectHandleMsg{
+		Reflect: &reflectPayload{
+			Msgs: createMsgs,
+		},
+	}
+	reflectSendCreateBz, err := json.Marshal(reflectSendCreate)
 	require.NoError(t, err)
-	require.NotEmpty(t, escrowAddr)
+	res, err := keeper.Execute(ctx, reflectAddr, creator, reflectSendCreateBz, nil)
+	require.NoError(t, err)
+	fmt.Printf("%#v\n", res.Events)
+
+	// TODO: fix this!!
+	escrowAddr := RandomAddress(t)
+
+	//escrowAddr, _, err := keeper.Instantiate(ctx, escrowID, creator, nil, initMsgBz, "escrow contract 2", escrowStart)
+	//require.NoError(t, err)
+	//require.NotEmpty(t, escrowAddr)
 
 	// let's make sure all balances make sense
 	checkAccount(t, ctx, accKeeper, bankKeeper, creator, sdk.NewCoins(sdk.NewInt64Coin("denom", 35000))) // 100k - 40k - 25k
 	checkAccount(t, ctx, accKeeper, bankKeeper, reflectAddr, reflectStart)
-	checkAccount(t, ctx, accKeeper, bankKeeper, escrowAddr, escrowStart)
+	checkAccount(t, ctx, accKeeper, bankKeeper, escrowAddr, sdk.NewCoins(escrowStart))
 	checkAccount(t, ctx, accKeeper, bankKeeper, bob, nil)
 
 	// now for the trick.... we reflect a message through the reflect to call the escrow
