@@ -57,6 +57,22 @@ func NewCreateValidatorCmd() *cobra.Command {
 
 			return tx.GenerateOrBroadcastTxWithFactory(clientCtx, txf, msg)
 		},
+		Long: fmt.Sprintln(`Create validator gentx with PoE parameters. Considering this is run pre-genesis
+--generate-only flag should be set. Otherwise client will try to connect to non-existent node. Also pass in
+address instead of keyname to --from flag.
+
+Example:
+$ tgrade tx poe create-validator \
+	--amount 1000utgd
+	--from tgrade1n4kjhlrpapnpv0n0e3048ydftrjs9m6mm473jf \
+	--pubkey tgradevalconspub1zcjduepqu7xf85mmfyv5p9m8mc6wk0u0pcjwcpr9p8wsv4h96dhpxqyxs4uqv06vlq \
+	--home $APP_HOME \
+	--chain-id=tgrade-int \
+    --moniker="myvalidator" \
+    --details="..." \
+    --security-contact="..." \
+    --website="..." \
+	--generate-only`),
 	}
 
 	cmd.Flags().AddFlagSet(FlagSetPublicKey())
