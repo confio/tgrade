@@ -18,13 +18,12 @@ func TestGovProposal(t *testing.T) {
 	cli := NewTgradeCli(t, sut, verbose)
 	myKey := strings.Trim(cli.Keys("keys", "show", "-a", "node0"), "\n ")
 	t.Logf("key: %q", myKey)
+	myContractAddr := ContractBech32Address(1, 1)
 	commands := [][]string{
 		{
 			"wasm-genesis-message",
 			"store",
 			"x/poe/contract/tgrade_gov_reflect.wasm",
-			"--instantiate-everybody=true",
-			"--builder=foo/bar:latest",
 			fmt.Sprintf("--run-as=%s", myKey),
 		},
 		{
@@ -38,7 +37,7 @@ func TestGovProposal(t *testing.T) {
 		{
 			"wasm-genesis-flags",
 			"set-privileged",
-			"tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy",
+			myContractAddr,
 		},
 	}
 	sut.ModifyGenesisCLI(t, commands...)
@@ -47,13 +46,13 @@ func TestGovProposal(t *testing.T) {
 	qResult := cli.CustomQuery("q", "wasm", "list-privileged-by-type", "gov_proposal_executor")
 	contracts := gjson.Get(qResult, "contracts").Array()
 	require.Len(t, contracts, 1, qResult)
-	require.Equal(t, "tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy", contracts[0].String())
+	require.Equal(t, myContractAddr, contracts[0].String())
 	t.Log("got query result", qResult)
 
 	// when
 	t.Log("Send a proposal to be returned")
-	excecMsg := `{"proposal":{"title":"foo", "description":"bar", "proposal":{"demote_privileged_contract":{"contract":"tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy"}}}}`
-	txResult := cli.CustomCommand("tx", "wasm", "execute", "tgrade18vd8fpwxzck93qlwghaj6arh4p7c5n89hzs8hy", excecMsg, fmt.Sprintf("--from=%s", myKey), "--gas=1500000")
+	excecMsg := fmt.Sprintf(`{"proposal":{"title":"foo", "description":"bar", "proposal":{"demote_privileged_contract":{"contract":%q}}}}`, myContractAddr)
+	txResult := cli.CustomCommand("tx", "wasm", "execute", myContractAddr, excecMsg, fmt.Sprintf("--from=%s", myKey), "--gas=1500000")
 	RequireTxSuccess(t, txResult)
 
 	// then should not be privileged anymore

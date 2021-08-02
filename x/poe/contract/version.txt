@@ -1,1 +1,1 @@
-manual version build from 7e46fa8
+v0.3.0-rc1

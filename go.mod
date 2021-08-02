@@ -3,9 +3,9 @@ module github.com/confio/tgrade
 go 1.16
 
 require (
-	github.com/CosmWasm/wasmd v0.17.1-0.20210707083254-39a967ea38d7
-	github.com/CosmWasm/wasmvm v0.15.1
-	github.com/cosmos/cosmos-sdk v0.42.6
+	github.com/CosmWasm/wasmd v0.18.0-rc1.0.20210729071359-0f6f437b3862
+	github.com/CosmWasm/wasmvm v0.16.0-rc2
+	github.com/cosmos/cosmos-sdk v0.42.7
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/gofuzz v1.2.0
@@ -16,7 +16,7 @@ require (
 	github.com/rakyll/statik v0.1.7
 	github.com/regen-network/cosmos-proto v0.3.1
 	github.com/rs/zerolog v1.23.0
-	github.com/spf13/cast v1.3.1
+	github.com/spf13/cast v1.4.0
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0

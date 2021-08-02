@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/json"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
@@ -15,7 +14,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto"
 	"testing"
 )
 
@@ -202,9 +200,5 @@ func TestExportGenesis(t *testing.T) {
 
 // genContractAddress generates a contract address as wasmd keeper does
 func genContractAddress(codeID, instanceID uint64) sdk.AccAddress {
-	contractID := codeID<<32 + instanceID
-	addr := make([]byte, 20)
-	addr[0] = 'C'
-	binary.PutUvarint(addr[1:], contractID)
-	return sdk.AccAddress(crypto.AddressHash(addr))
+	return wasmkeeper.BuildContractAddress(codeID, instanceID)
 }

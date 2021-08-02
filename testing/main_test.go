@@ -5,7 +5,7 @@ package testing
 import (
 	"flag"
 	"fmt"
-	"github.com/confio/tgrade/x/twasm"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -123,5 +123,5 @@ func encodeBech32Addr(src []byte) string {
 
 // ContractBech32Address build a tgrade bech32 contract address
 func ContractBech32Address(codeID, instanceID uint64) string {
-	return encodeBech32Addr(twasm.ContractAddress(codeID, instanceID))
+	return encodeBech32Addr(wasmkeeper.BuildContractAddress(codeID, instanceID))
 }
