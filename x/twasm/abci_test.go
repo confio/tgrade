@@ -113,7 +113,7 @@ func TestBeginBlock(t *testing.T) {
 		},
 		"sudo return error - handled": {
 			setup: func(m *MockSudoer) {
-				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 					if contractAddress.Equals(myAddr) {
 						return nil, errors.New("test - ignore")
 					}
@@ -126,7 +126,7 @@ func TestBeginBlock(t *testing.T) {
 		},
 		"sudo panics - handled": {
 			setup: func(m *MockSudoer) {
-				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 					if contractAddress.Equals(myAddr) {
 						panic("testing")
 					}
@@ -209,7 +209,7 @@ func TestEndBlock(t *testing.T) {
 		},
 		"end block - sudo return error handled": {
 			setup: func(m *MockSudoer) {
-				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 					if contractAddress.Equals(myAddr) {
 						return nil, errors.New("test - ignore")
 					}
@@ -222,7 +222,7 @@ func TestEndBlock(t *testing.T) {
 		},
 		"end block - sudo panic handled": {
 			setup: func(m *MockSudoer) {
-				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 					if contractAddress.Equals(myAddr) {
 						panic("testing")
 					}
@@ -298,19 +298,19 @@ type tuple struct {
 	msg  []byte
 }
 
-func captureSudos(capturedSudoCalls *[]tuple) func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
-	return func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+func captureSudos(capturedSudoCalls *[]tuple) func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
+	return func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 		*capturedSudoCalls = append(*capturedSudoCalls, tuple{addr: contractAddress, msg: msg})
 		return nil, nil
 	}
 }
 
 type MockSudoer struct {
-	SudoFn                             func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
+	SudoFn                             func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
 	IteratePrivilegedContractsByTypeFn func(ctx sdk.Context, privilegeType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 
-func (m MockSudoer) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+func (m MockSudoer) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 	if m.SudoFn == nil {
 		panic("not expected to be called")
 	}

@@ -10,10 +10,10 @@ var _ wasmtypes.ContractOpsKeeper = &ContractOpsKeeperMock{}
 
 // ContractOpsKeeperMock implements wasmtypes.ContractOpsKeeper for testing purpose
 type ContractOpsKeeperMock struct {
-	CreateFn                   func(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, source string, builder string, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error)
+	CreateFn                   func(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error)
 	InstantiateFn              func(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins) (sdk.AccAddress, []byte, error)
-	ExecuteFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) (*sdk.Result, error)
-	MigrateFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte) (*sdk.Result, error)
+	ExecuteFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error)
+	MigrateFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte) ([]byte, error)
 	UpdateContractAdminFn      func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newAdmin sdk.AccAddress) error
 	ClearContractAdminFn       func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress) error
 	PinCodeFn                  func(ctx sdk.Context, codeID uint64) error
@@ -21,11 +21,11 @@ type ContractOpsKeeperMock struct {
 	SetContractInfoExtensionFn func(ctx sdk.Context, contract sdk.AccAddress, extra wasmtypes.ContractInfoExtension) error
 }
 
-func (m ContractOpsKeeperMock) Create(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, source string, builder string, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error) {
+func (m ContractOpsKeeperMock) Create(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error) {
 	if m.CreateFn == nil {
 		panic("not expected to be called")
 	}
-	return m.CreateFn(ctx, creator, wasmCode, source, builder, instantiateAccess)
+	return m.CreateFn(ctx, creator, wasmCode, instantiateAccess)
 }
 
 func (m ContractOpsKeeperMock) Instantiate(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins) (sdk.AccAddress, []byte, error) {
@@ -35,14 +35,14 @@ func (m ContractOpsKeeperMock) Instantiate(ctx sdk.Context, codeID uint64, creat
 	return m.InstantiateFn(ctx, codeID, creator, admin, initMsg, label, deposit)
 }
 
-func (m ContractOpsKeeperMock) Execute(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) (*sdk.Result, error) {
+func (m ContractOpsKeeperMock) Execute(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error) {
 	if m.ExecuteFn == nil {
 		panic("not expected to be called")
 	}
 	return m.ExecuteFn(ctx, contractAddress, caller, msg, coins)
 }
 
-func (m ContractOpsKeeperMock) Migrate(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte) (*sdk.Result, error) {
+func (m ContractOpsKeeperMock) Migrate(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte) ([]byte, error) {
 	if m.MigrateFn == nil {
 		panic("not expected to be called")
 	}
@@ -87,17 +87,15 @@ func (m ContractOpsKeeperMock) SetContractInfoExtension(ctx sdk.Context, contrac
 type CapturedCreateCalls struct {
 	Creator           sdk.AccAddress
 	WasmCode          []byte
-	Source            string
-	Builder           string
 	InstantiateAccess *wasmtypes.AccessConfig
 }
 
 // CaptureCreateFn records all calls in the returned slice
-func CaptureCreateFn() (func(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, source string, builder string, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error), *[]CapturedCreateCalls) {
+func CaptureCreateFn() (func(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error), *[]CapturedCreateCalls) {
 	var nextCodeID uint64
 	var captured []CapturedCreateCalls
-	return func(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, source string, builder string, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error) {
-		captured = append(captured, CapturedCreateCalls{Creator: creator, WasmCode: wasmCode, Source: source, Builder: builder, InstantiateAccess: instantiateAccess})
+	return func(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error) {
+		captured = append(captured, CapturedCreateCalls{Creator: creator, WasmCode: wasmCode, InstantiateAccess: instantiateAccess})
 		nextCodeID++
 		return nextCodeID, nil
 	}, &captured
@@ -133,9 +131,9 @@ type CapturedExecuteCalls struct {
 }
 
 // CaptureExecuteFn records all calls in the returned slice
-func CaptureExecuteFn() (func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) (*sdk.Result, error), *[]CapturedExecuteCalls) {
+func CaptureExecuteFn() (func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error), *[]CapturedExecuteCalls) {
 	var captured []CapturedExecuteCalls
-	return func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) (*sdk.Result, error) {
+	return func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error) {
 		captured = append(captured, CapturedExecuteCalls{ContractAddress: contractAddress, Caller: caller, Msg: msg, Coins: coins})
 		return nil, nil
 	}, &captured

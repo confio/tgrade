@@ -43,7 +43,7 @@ func TestSmokeTest(t *testing.T) {
 	l := sut.NewEventListener(t)
 	c, done := CaptureAllEventsConsumer(t)
 	contractAddr := ContractBech32Address(poeContractCount+1, poeContractCount+1)
-	query := fmt.Sprintf(`tm.event='Tx' AND wasm.contract_address='%s'`, contractAddr)
+	query := fmt.Sprintf(`tm.event='Tx' AND wasm._contract_address='%s'`, contractAddr)
 	t.Logf("Subscribe to events: %s", query)
 
 	cleanupFn := l.Subscribe(query, c)

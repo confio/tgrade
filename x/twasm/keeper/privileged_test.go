@@ -34,7 +34,7 @@ func TestSetPrivileged(t *testing.T) {
 					capturedPinChecksum = &checksum
 					return nil
 				}
-				mock.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64) (*wasmvmtypes.Response, uint64, error) {
+				mock.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 					capturedSudoChecksum = &codeID
 					capturedSudoMsg = sudoMsg
 					return &wasmvmtypes.Response{}, 0, nil
@@ -54,7 +54,7 @@ func TestSetPrivileged(t *testing.T) {
 				mock.PinFn = func(checksum cosmwasm.Checksum) error {
 					return nil
 				}
-				mock.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64) (*wasmvmtypes.Response, uint64, error) {
+				mock.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 					return nil, 0, errors.New("test, ignore")
 				}
 			},
@@ -112,7 +112,7 @@ func TestUnsetPrivileged(t *testing.T) {
 					capturedUnpinChecksum = &checksum
 					return nil
 				}
-				mock.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64) (*wasmvmtypes.Response, uint64, error) {
+				mock.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 					capturedSudoChecksum = &codeID
 					capturedSudoMsg = sudoMsg
 					return &wasmvmtypes.Response{}, 0, nil
@@ -124,7 +124,7 @@ func TestUnsetPrivileged(t *testing.T) {
 				mock.UnpinFn = func(checksum cosmwasm.Checksum) error {
 					return errors.New("test, ignore")
 				}
-				mock.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64) (*wasmvmtypes.Response, uint64, error) {
+				mock.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 					return &wasmvmtypes.Response{}, 0, nil
 				}
 			},
@@ -132,7 +132,7 @@ func TestUnsetPrivileged(t *testing.T) {
 		},
 		"sudo failed": {
 			setup: func(mock *wasmtesting.MockWasmer) {
-				mock.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64) (*wasmvmtypes.Response, uint64, error) {
+				mock.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 					return nil, 0, errors.New("test, ignore")
 				}
 			},
@@ -397,7 +397,7 @@ func TestRemovePrivilegedContractRegistration(t *testing.T) {
 func seedTestContract(t *testing.T, ctx sdk.Context, k *Keeper) (uint64, sdk.AccAddress) {
 	t.Helper()
 	creatorAddr := rand.Bytes(sdk.AddrLen)
-	codeID, err := k.contractKeeper.Create(ctx, creatorAddr, []byte{}, "", "", nil)
+	codeID, err := k.contractKeeper.Create(ctx, creatorAddr, []byte{}, nil)
 	require.NoError(t, err)
 	contractAddr, _, err := k.contractKeeper.Instantiate(ctx, codeID, creatorAddr, creatorAddr, nil, "", nil)
 	require.NoError(t, err)

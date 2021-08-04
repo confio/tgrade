@@ -30,9 +30,9 @@ func TestEndBlock(t *testing.T) {
 	}{
 		"valset update - empty response": {
 			setup: func(m *MockSudoer) {
-				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 					_, err := captureSudos(&capturedSudoCalls)(ctx, contractAddress, msg)
-					return &sdk.Result{}, err
+					return []byte{}, err
 				}
 				m.IteratePrivilegedContractsByTypeFn = endBlockTypeIterateContractsFn(t, nil, []sdk.AccAddress{myAddr})
 			},
@@ -41,11 +41,11 @@ func TestEndBlock(t *testing.T) {
 		},
 		"valset update - empty list": {
 			setup: func(m *MockSudoer) {
-				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 					captureSudos(&capturedSudoCalls)(ctx, contractAddress, msg)
 					bz, err := json.Marshal(&contract.EndWithValidatorUpdateResponse{})
 					require.NoError(t, err)
-					return &sdk.Result{Data: bz}, err
+					return bz, err
 				}
 				m.IteratePrivilegedContractsByTypeFn = endBlockTypeIterateContractsFn(t, nil, []sdk.AccAddress{myAddr})
 			},
@@ -54,7 +54,7 @@ func TestEndBlock(t *testing.T) {
 		},
 		"valset update - response list": {
 			setup: func(m *MockSudoer) {
-				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 					captureSudos(&capturedSudoCalls)(ctx, contractAddress, msg)
 					bz, err := json.Marshal(&contract.EndWithValidatorUpdateResponse{
 						Diffs: []contract.ValidatorUpdate{
@@ -62,7 +62,7 @@ func TestEndBlock(t *testing.T) {
 							{PubKey: contract.ValidatorPubkey{Ed25519: []byte("my other key")}, Power: 2}},
 					})
 					require.NoError(t, err)
-					return &sdk.Result{Data: bz}, err
+					return bz, err
 				}
 				m.IteratePrivilegedContractsByTypeFn = endBlockTypeIterateContractsFn(t, nil, []sdk.AccAddress{myAddr})
 			},
@@ -78,7 +78,7 @@ func TestEndBlock(t *testing.T) {
 		},
 		"valset update - panic not handled": {
 			setup: func(m *MockSudoer) {
-				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 					if contractAddress.Equals(myAddr) {
 						panic("testing")
 					}
@@ -153,19 +153,19 @@ type tuple struct {
 	msg  []byte
 }
 
-func captureSudos(capturedSudoCalls *[]tuple) func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
-	return func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+func captureSudos(capturedSudoCalls *[]tuple) func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
+	return func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 		*capturedSudoCalls = append(*capturedSudoCalls, tuple{addr: contractAddress, msg: msg})
 		return nil, nil
 	}
 }
 
 type MockSudoer struct {
-	SudoFn                             func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
+	SudoFn                             func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
 	IteratePrivilegedContractsByTypeFn func(ctx sdk.Context, privilegeType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 
-func (m MockSudoer) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error) {
+func (m MockSudoer) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 	if m.SudoFn == nil {
 		panic("not expected to be called")
 	}

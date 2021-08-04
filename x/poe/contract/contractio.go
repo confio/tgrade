@@ -12,12 +12,12 @@ import (
 
 // Sudoer with access to sudo method
 type Sudoer interface {
-	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) (*sdk.Result, error)
+	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
 }
 
 // Executor with access to excute method
 type Executor interface {
-	Execute(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) (*sdk.Result, error)
+	Execute(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error)
 }
 
 // RegisterValidator calls valset contract to register a new validator key and address
@@ -52,11 +52,11 @@ func CallEndBlockWithValidatorUpdate(ctx sdk.Context, contractAddr sdk.AccAddres
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "sudo")
 	}
-	if len(resp.Data) == 0 {
+	if len(resp) == 0 {
 		return nil, nil
 	}
 	var contractResult EndWithValidatorUpdateResponse
-	if err := json.Unmarshal(resp.Data, &contractResult); err != nil {
+	if err := json.Unmarshal(resp, &contractResult); err != nil {
 		return nil, sdkerrors.Wrap(err, "contract response")
 	}
 	if len(contractResult.Diffs) == 0 {

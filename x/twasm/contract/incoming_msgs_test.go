@@ -117,7 +117,7 @@ func TestGetProposalContent(t *testing.T) {
         "admin": "myAdminAddress",
         "code_id": 1,
         "funds": [{"denom": "ALX", "amount": "2"},{"denom": "BLX","amount": "3"}],
-        "init_msg": "e30=",
+        "msg": "e30=",
         "label": "testing",
         "run_as": "myRunAsAddress"
       }}}}`,
@@ -128,7 +128,7 @@ func TestGetProposalContent(t *testing.T) {
 				Admin:       "myAdminAddress",
 				CodeID:      1,
 				Label:       "testing",
-				InitMsg:     []byte("{}"),
+				Msg:         []byte("{}"),
 				Funds:       sdk.NewCoins(sdk.NewCoin("ALX", sdk.NewInt(2)), sdk.NewCoin("BLX", sdk.NewInt(3))),
 			},
 		},
@@ -140,7 +140,7 @@ func TestGetProposalContent(t *testing.T) {
       "migrate_contract": {
         "code_id": 1,
 		"contract": "myContractAddr",
-        "migrate_msg": "e30=",
+        "msg": "e30=",
         "run_as": "myRunAsAddress"
       }}}}`,
 			expGovProposal: &wasmtypes.MigrateContractProposal{
@@ -149,7 +149,7 @@ func TestGetProposalContent(t *testing.T) {
 				RunAs:       "myRunAsAddress",
 				Contract:    "myContractAddr",
 				CodeID:      1,
-				MigrateMsg:  []byte("{}"),
+				Msg:         []byte("{}"),
 			},
 		},
 		"set contract admin": {
