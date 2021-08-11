@@ -144,7 +144,7 @@ func TestInitGenesis(t *testing.T) {
 	mixerAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
 	require.NoError(t, err)
 
-	expConfig := &contract.ValsetConfigQueryResponse{
+	expConfig := &contract.ValsetConfigResponse{
 		Membership:    mixerAddr.String(),
 		MinWeight:     1,
 		MaxValidators: 100,
@@ -154,7 +154,6 @@ func TestInitGenesis(t *testing.T) {
 
 }
 
-// TODO: pull this into non-test code and add pagination
 func queryAllMembers(t *testing.T, ctx sdk.Context, k *twasmkeeper.Keeper, addr sdk.AccAddress) []contract.TG4Member {
 	members, err := contract.QueryGroupMembers(ctx, k, addr)
 	require.NoError(t, err)
