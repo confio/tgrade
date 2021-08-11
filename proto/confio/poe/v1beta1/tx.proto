@@ -36,26 +36,7 @@ message MsgCreateValidator {
 
   // Value defines the initial staking amount
   cosmos.base.v1beta1.Coin value = 7 [ (gogoproto.nullable) = false ];
-
-  ValidatorMetadata metadata = 8 [ (gogoproto.nullable) = false ];
 }
 
 // MsgCreateValidatorResponse defines the Msg/CreateValidator response type.
 message MsgCreateValidatorResponse {}
-
-message ValidatorMetadata {
-  option (gogoproto.equal) = false;
-  option (gogoproto.goproto_getters) = false;
-
-  // Validator moniker (required)
-  string moniker = 1;
-
-  string identity = 2;
-
-  string website = 3;
-
-  string security_contract = 4
-      [ (gogoproto.moretags) = "yaml:\"security_contract\"" ];
-
-  string details = 5;
-}

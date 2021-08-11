@@ -3,6 +3,7 @@ package contract
 import (
 	"encoding/json"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 	"sort"
 	"testing"
@@ -128,9 +129,11 @@ func asJson(t *testing.T, m interface{}) string {
 // TG4ValsetExecute Valset contract validator key registration
 // See https://github.com/confio/tgrade-contracts/blob/main/contracts/tgrade-valset/schema/execute_msg.json
 type TG4ValsetExecute struct {
-	RegisterValidatorKey RegisterValidatorKey `json:"register_validator_key"`
+	RegisterValidatorKey *RegisterValidatorKey     `json:"register_validator_key,omitempty"`
+	UpdateMetadata       *stakingtypes.Description `json:"update_metadata,omitempty"`
 }
 
 type RegisterValidatorKey struct {
-	PubKey ValidatorPubkey `json:"pubkey"`
+	PubKey   ValidatorPubkey          `json:"pubkey"`
+	Metadata stakingtypes.Description `json:"metadata"`
 }

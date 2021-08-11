@@ -87,6 +87,10 @@ func (msg MsgCreateValidator) ValidateBasic() error {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty description")
 	}
 
+	if len(msg.Description.Moniker) < 3 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "moniker must be at least 3 characters")
+	}
+
 	return nil
 }
 

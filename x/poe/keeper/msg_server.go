@@ -61,7 +61,7 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 		return nil, sdkerrors.Wrap(err, "delegator address")
 	}
 
-	err = contract.RegisterValidator(ctx, contractAddr, pk, delegatorAddress, m.contractKeeper)
+	err = contract.RegisterValidator(ctx, contractAddr, pk, delegatorAddress, msg.Description, m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "register validator")
 	}
