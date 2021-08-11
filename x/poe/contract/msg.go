@@ -129,12 +129,12 @@ func asJson(t *testing.T, m interface{}) string {
 // TG4ValsetExecute Valset contract validator key registration
 // See https://github.com/confio/tgrade-contracts/blob/main/contracts/tgrade-valset/schema/execute_msg.json
 type TG4ValsetExecute struct {
-	RegisterValidatorKey *RegisterValidatorKey     `json:"register_validator_key,omitempty"`
-	UpdateMetadata       *ValidatorMetadata `json:"update_metadata,omitempty"`
+	RegisterValidatorKey *RegisterValidatorKey `json:"register_validator_key,omitempty"`
+	UpdateMetadata       *ValidatorMetadata    `json:"update_metadata,omitempty"`
 }
 
 type RegisterValidatorKey struct {
-	PubKey   ValidatorPubkey          `json:"pubkey"`
+	PubKey   ValidatorPubkey   `json:"pubkey"`
 	Metadata ValidatorMetadata `json:"metadata"`
 }
 
@@ -154,7 +154,7 @@ type ValidatorMetadata struct {
 func MetadataFromDescription(description stakingtypes.Description) ValidatorMetadata {
 	return ValidatorMetadata{
 		Moniker:         description.Moniker,
-		Identity:         description.Identity,
+		Identity:        description.Identity,
 		Website:         description.Website,
 		SecurityContact: description.SecurityContact,
 		Details:         description.Details,
@@ -164,7 +164,7 @@ func MetadataFromDescription(description stakingtypes.Description) ValidatorMeta
 func (m ValidatorMetadata) ToDescription() stakingtypes.Description {
 	return stakingtypes.Description{
 		Moniker:         m.Moniker,
-		Identity:         m.Identity,
+		Identity:        m.Identity,
 		Website:         m.Website,
 		SecurityContact: m.SecurityContact,
 		Details:         m.Details,
