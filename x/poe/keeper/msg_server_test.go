@@ -90,8 +90,8 @@ func TestCreateValidator(t *testing.T) {
 			// and events emitted
 			require.NoError(t, gotErr)
 			require.Len(t, em.Events(), 2)
-			assert.Equal(t, types.EventTypeCreateValidator, em.Events()[0].Type)
-			assert.Equal(t, sdk.EventTypeMessage, em.Events()[1].Type)
+			assert.Equal(t, sdk.EventTypeMessage, em.Events()[0].Type)
+			assert.Equal(t, types.EventTypeCreateValidator, em.Events()[1].Type)
 		})
 	}
 

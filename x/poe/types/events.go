@@ -3,7 +3,10 @@ package types
 // staking module event types
 const (
 	EventTypeCreateValidator = "create_validator"
-	AttributeKeyValOperator  = "operator"
-	AttributeKeyPubKeyHex    = "pubkey"
-	AttributeValueCategory   = ModuleName
+	EventTypeUpdateValidator = "update_validator"
+
+	AttributeKeyValOperator = "operator"
+	AttributeKeyMoniker     = "moniker"
+	AttributeKeyPubKeyHex   = "pubkey"
+	AttributeValueCategory  = ModuleName
 )

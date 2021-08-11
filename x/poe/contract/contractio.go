@@ -2,7 +2,6 @@ package contract
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/confio/tgrade/x/poe/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -39,10 +38,22 @@ func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptoty
 		return sdkerrors.Wrap(err, "serialize payload msg")
 	}
 
-	fmt.Println(string(payloadBz))
+	_, err = k.Execute(ctx, contractAddr, delegatorAddress, payloadBz, nil)
+	return sdkerrors.Wrap(err, "execute contract: register validator")
+}
+
+// UpdateValidator calls valset contract to change validator's metadata
+func UpdateValidator(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, metadata stakingtypes.Description, k Executor) error {
+	updateValidator := TG4ValsetExecute{
+		UpdateMetadata: &metadata,
+	}
+	payloadBz, err := json.Marshal(&updateValidator)
+	if err != nil {
+		return sdkerrors.Wrap(err, "serialize payload msg")
+	}
 
 	_, err = k.Execute(ctx, contractAddr, delegatorAddress, payloadBz, nil)
-	return sdkerrors.Wrap(err, "execute contract")
+	return sdkerrors.Wrap(err, "execute contract: update validator")
 }
 
 // CallEndBlockWithValidatorUpdate calls valset contract for a validator diff

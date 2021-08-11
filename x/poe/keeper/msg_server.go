@@ -78,17 +78,55 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+			sdk.NewAttribute(sdk.AttributeKeySender, msg.DelegatorAddress),
+		),
+		sdk.NewEvent(
 			types.EventTypeCreateValidator,
 			sdk.NewAttribute(types.AttributeKeyValOperator, msg.DelegatorAddress),
+			sdk.NewAttribute(types.AttributeKeyMoniker, msg.Description.Moniker),
 			sdk.NewAttribute(types.AttributeKeyPubKeyHex, hex.EncodeToString(pk.Bytes())),
 			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Value.Amount.String()),
 		),
+	})
+
+	return &types.MsgCreateValidatorResponse{}, nil
+}
+
+func (m msgServer) UpdateValidator(goCtx context.Context, msg *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	if _, err := msg.Description.EnsureLength(); err != nil {
+		return nil, err
+	}
+
+	contractAddr, err := m.contractSource.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "valset")
+	}
+	delegatorAddress, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "delegator address")
+	}
+
+	err = contract.UpdateValidator(ctx, contractAddr, delegatorAddress, msg.Description, m.contractKeeper)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "register validator")
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
 			sdk.NewAttribute(sdk.AttributeKeySender, msg.DelegatorAddress),
 		),
+		sdk.NewEvent(
+			types.EventTypeUpdateValidator,
+			sdk.NewAttribute(types.AttributeKeyValOperator, msg.DelegatorAddress),
+			sdk.NewAttribute(types.AttributeKeyMoniker, msg.Description.Moniker),
+		),
 	})
 
-	return &types.MsgCreateValidatorResponse{}, nil
+	return &types.MsgUpdateValidatorResponse{}, nil
 }

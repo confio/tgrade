@@ -10,10 +10,12 @@ import (
 
 const (
 	TypeMsgCreateValidator = "create_validator"
+	TypeMsgUpdateValidator = "update_validator"
 )
 
 var (
 	_ sdk.Msg = &MsgCreateValidator{}
+	_ sdk.Msg = &MsgUpdateValidator{}
 )
 
 // NewMsgCreateValidator creates a new MsgCreateValidator instance.
@@ -98,4 +100,69 @@ func (msg MsgCreateValidator) ValidateBasic() error {
 func (msg MsgCreateValidator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 	var pubKey cryptotypes.PubKey
 	return unpacker.UnpackAny(msg.Pubkey, &pubKey)
+}
+
+// NewMsgUpdateValidator creates a new MsgUpdateValidator instance.
+// Delegator address and validator address are the same.
+func NewMsgUpdateValidator(
+	valAddr sdk.AccAddress,
+	description stakingtypes.Description,
+) *MsgUpdateValidator {
+	return &MsgUpdateValidator{
+		Description:      description,
+		DelegatorAddress: valAddr.String(),
+	}
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgUpdateValidator) Route() string { return RouterKey }
+
+// Type implements the sdk.Msg interface.
+func (msg MsgUpdateValidator) Type() string { return TypeMsgUpdateValidator }
+
+// GetSigners implements the sdk.Msg interface. It returns the address(es) that
+// must sign over msg.GetSignBytes().
+// If the validator address is not same as delegator's, then the validator must
+// sign the msg as well.
+func (msg MsgUpdateValidator) GetSigners() []sdk.AccAddress {
+	// delegator is first signer so delegator pays fees
+	delAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	if err != nil {
+		panic(err)
+	}
+	return []sdk.AccAddress{delAddr}
+}
+
+// GetSignBytes returns the message bytes to sign over.
+func (msg MsgUpdateValidator) GetSignBytes() []byte {
+	bz := ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgUpdateValidator) ValidateBasic() error {
+	// note that unmarshaling from bech32 ensures either empty or valid
+	delAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	if err != nil {
+		return err
+	}
+	if delAddr.Empty() {
+		return stakingtypes.ErrEmptyDelegatorAddr
+	}
+
+	if msg.Description == (stakingtypes.Description{}) {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty description")
+	}
+
+	if len(msg.Description.Moniker) < 3 {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "moniker must be at least 3 characters")
+	}
+
+	return nil
+}
+
+// UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
+func (msg MsgUpdateValidator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+	// Nothing to do
+	return nil
 }
