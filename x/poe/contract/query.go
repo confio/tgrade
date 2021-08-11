@@ -155,36 +155,61 @@ type TG4TotalWeightResponse struct {
 }
 
 // TODO: add pagination
-func QueryTG4MembersByWeight(ctx sdk.Context, k *twasmkeeper.Keeper, groupAddr sdk.AccAddress) ([]TG4Member, error) {
+func QueryTG4MembersByWeight(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress) ([]TG4Member, error) {
 	query := TG4Query{ListMembersByWeight: &ListMembersByWeightQuery{Limit: 30}}
 	var response TG4MemberListResponse
-	err := doQuery(ctx, k, groupAddr, query, &response)
+	err := doQuery(ctx, k, tg4Addr, query, &response)
 	return response.Members, err
 }
 
-func QueryTG4Members(ctx sdk.Context, k *twasmkeeper.Keeper, groupAddr sdk.AccAddress) ([]TG4Member, error) {
+func QueryTG4Members(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress) ([]TG4Member, error) {
 	query := TG4Query{ListMembers: &ListMembersQuery{Limit: 30}}
 	var response TG4MemberListResponse
-	err := doQuery(ctx, k, groupAddr, query, &response)
+	err := doQuery(ctx, k, tg4Addr, query, &response)
 	return response.Members, err
 }
 
 // TODO: expose at height (if we care)
 // Returns the weight of this member. (nil, nil) means not present
-func QueryTG4Member(ctx sdk.Context, k *twasmkeeper.Keeper, groupAddr sdk.AccAddress, member sdk.AccAddress) (*int, error) {
+func QueryTG4Member(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress, member sdk.AccAddress) (*int, error) {
 	query := TG4Query{Member: &MemberQuery{Addr: member.String()}}
 	var response TG4MemberResponse
-	err := doQuery(ctx, k, groupAddr, query, &response)
+	err := doQuery(ctx, k, tg4Addr, query, &response)
 	return response.Weight, err
 }
 
 // TODO: expose at height (if we care)
 // Returns the weight of this member. (nil, nil) means not present
-func QueryTG4TotalWeight(ctx sdk.Context, k *twasmkeeper.Keeper, groupAddr sdk.AccAddress) (int, error) {
+func QueryTG4TotalWeight(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress) (int, error) {
 	query := TG4Query{TotalWeight: &struct{}{}}
 	var response TG4TotalWeightResponse
-	err := doQuery(ctx, k, groupAddr, query, &response)
+	err := doQuery(ctx, k, tg4Addr, query, &response)
 	return response.Weight, err
+}
+
+// Some custom queries just for the tg4-stake contract
+type TG4StakeQuery struct {
+	UnbondingPeriod *struct{} `json:"unbonding_period,omitempty"`
+}
+
+type UnbondingPeriodResponse struct {
+	UnbondingPeriod Duration `json:"unbonding_period"`
+}
+
+// Measure time between multiple events
+// Exactly one of these must be non-zero
+type Duration struct {
+	// A number of blocks
+	Height int `json:"height,omitempty"`
+	// A number of seconds
+	Time int `json:"time,omitempty"`
+}
+
+func QueryStakingUnbondingPeriod(ctx sdk.Context, k *twasmkeeper.Keeper, stakeAddr sdk.AccAddress) (Duration, error) {
+	query := TG4StakeQuery{UnbondingPeriod: &struct{}{}}
+	var response UnbondingPeriodResponse
+	err := doQuery(ctx, k, stakeAddr, query, &response)
+	return response.UnbondingPeriod, err
 }
 
 func doQuery(ctx sdk.Context, k *twasmkeeper.Keeper, contractAddr sdk.AccAddress, query interface{}, result interface{}) error {
