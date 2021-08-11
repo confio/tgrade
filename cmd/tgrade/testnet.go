@@ -166,7 +166,6 @@ func InitTestnet(
 			nodeConfig.P2P.AllowDuplicateIP = true
 		}
 
-		fmt.Println("nodeDirPrefix", nodeDirPrefix)
 		nodeDirName := fmt.Sprintf("%s%d", nodeDirPrefix, i)
 		nodeDir := filepath.Join(outputDir, nodeDirName, nodeDaemonHome)
 		gentxsDir := filepath.Join(outputDir, "gentxs")
@@ -247,7 +246,7 @@ func InitTestnet(
 		genAccounts = append(genAccounts, authtypes.NewBaseAccount(addr, nil, 0, 0))
 
 		valTokens := sdk.TokensFromConsensusPower(100)
-		moniker := fmt.Sprintf("name-%s", nodeDirName)
+		moniker := fmt.Sprintf("moniker-%d", i)
 		createValMsg, err := poetypes.NewMsgCreateValidator(
 			addr,
 			valPubKeys[i],

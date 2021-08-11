@@ -112,7 +112,7 @@ func (m msgServer) UpdateValidator(goCtx context.Context, msg *types.MsgUpdateVa
 
 	err = contract.UpdateValidator(ctx, contractAddr, delegatorAddress, msg.Description, m.contractKeeper)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "register validator")
+		return nil, sdkerrors.Wrap(err, "update validator")
 	}
 
 	ctx.EventManager().EmitEvents(sdk.Events{

@@ -160,9 +160,3 @@ func (msg MsgUpdateValidator) ValidateBasic() error {
 
 	return nil
 }
-
-// UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (msg MsgUpdateValidator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
-	// Nothing to do
-	return nil
-}

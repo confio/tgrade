@@ -39,7 +39,7 @@ func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptoty
 	}
 
 	_, err = k.Execute(ctx, contractAddr, delegatorAddress, payloadBz, nil)
-	return sdkerrors.Wrap(err, "execute contract: register validator")
+	return sdkerrors.Wrap(err, "execute contract")
 }
 
 // UpdateValidator calls valset contract to change validator's metadata
@@ -53,7 +53,7 @@ func UpdateValidator(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddr
 	}
 
 	_, err = k.Execute(ctx, contractAddr, delegatorAddress, payloadBz, nil)
-	return sdkerrors.Wrap(err, "execute contract: update validator")
+	return sdkerrors.Wrap(err, "execute contract")
 }
 
 // CallEndBlockWithValidatorUpdate calls valset contract for a validator diff
