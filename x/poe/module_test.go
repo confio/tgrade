@@ -155,7 +155,7 @@ func TestInitGenesis(t *testing.T) {
 }
 
 func queryAllMembers(t *testing.T, ctx sdk.Context, k *twasmkeeper.Keeper, addr sdk.AccAddress) []contract.TG4Member {
-	members, err := contract.QueryGroupMembers(ctx, k, addr)
+	members, err := contract.QueryTG4MembersByWeight(ctx, k, addr)
 	require.NoError(t, err)
 	return members
 }
