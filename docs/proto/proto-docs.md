@@ -31,6 +31,8 @@
 - [confio/poe/v1beta1/tx.proto](#confio/poe/v1beta1/tx.proto)
     - [MsgCreateValidator](#confio.poe.v1beta1.MsgCreateValidator)
     - [MsgCreateValidatorResponse](#confio.poe.v1beta1.MsgCreateValidatorResponse)
+    - [MsgUpdateValidator](#confio.poe.v1beta1.MsgUpdateValidator)
+    - [MsgUpdateValidatorResponse](#confio.poe.v1beta1.MsgUpdateValidatorResponse)
   
     - [Msg](#confio.poe.v1beta1.Msg)
   
@@ -342,7 +344,33 @@ Based on the SDK staking.MsgCreateValidator
 <a name="confio.poe.v1beta1.MsgCreateValidatorResponse"></a>
 
 ### MsgCreateValidatorResponse
-MsgCreateValidatorResponse defines the Msg/CreateValidator response type.
+MsgCreateValidatorResponse defines the MsgCreateValidator response type.
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.MsgUpdateValidator"></a>
+
+### MsgUpdateValidator
+MsgCreateValidator defines a PoE message for updating validator metadata
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  | New Description meta data |
+| `delegator_address` | [string](#string) |  | DelegatorAddress is the bech32 address string Also know as "signer" in other messages |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.MsgUpdateValidatorResponse"></a>
+
+### MsgUpdateValidatorResponse
+MsgUpdateValidatorResponse defines the MsgUpdateValidator response type.
 
 
 
@@ -363,6 +391,7 @@ Msg defines the staking Msg service.
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
 | `CreateValidator` | [MsgCreateValidator](#confio.poe.v1beta1.MsgCreateValidator) | [MsgCreateValidatorResponse](#confio.poe.v1beta1.MsgCreateValidatorResponse) | CreateValidator defines a method for creating a new validator. | |
+| `UpdateValidator` | [MsgUpdateValidator](#confio.poe.v1beta1.MsgUpdateValidator) | [MsgUpdateValidatorResponse](#confio.poe.v1beta1.MsgUpdateValidatorResponse) | MsgCreateValidator defines a method for updating validator metadata | |
 
  <!-- end services -->
 
