@@ -31,6 +31,7 @@
 - [confio/poe/v1beta1/tx.proto](#confio/poe/v1beta1/tx.proto)
     - [MsgCreateValidator](#confio.poe.v1beta1.MsgCreateValidator)
     - [MsgCreateValidatorResponse](#confio.poe.v1beta1.MsgCreateValidatorResponse)
+    - [ValidatorMetadata](#confio.poe.v1beta1.ValidatorMetadata)
   
     - [Msg](#confio.poe.v1beta1.Msg)
   
@@ -333,6 +334,7 @@ Based on the SDK staking.MsgCreateValidator
 | `delegator_address` | [string](#string) |  | DelegatorAddress is the bech32 address string |
 | `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  | Pubkey public key |
 | `value` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | Value defines the initial staking amount |
+| `metadata` | [ValidatorMetadata](#confio.poe.v1beta1.ValidatorMetadata) |  |  |
 
 
 
@@ -343,6 +345,25 @@ Based on the SDK staking.MsgCreateValidator
 
 ### MsgCreateValidatorResponse
 MsgCreateValidatorResponse defines the Msg/CreateValidator response type.
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.ValidatorMetadata"></a>
+
+### ValidatorMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `moniker` | [string](#string) |  | Validator moniker (required) |
+| `identity` | [string](#string) |  |  |
+| `website` | [string](#string) |  |  |
+| `security_contract` | [string](#string) |  |  |
+| `details` | [string](#string) |  |  |
 
 
 
