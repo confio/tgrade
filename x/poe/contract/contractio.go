@@ -22,7 +22,7 @@ type Executor interface {
 }
 
 // RegisterValidator calls valset contract to register a new validator key and address
-func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptotypes.PubKey, delegatorAddress sdk.AccAddress, metadata stakingtypes.Description, k Executor) error {
+func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptotypes.PubKey, delegatorAddress sdk.AccAddress, description stakingtypes.Description, k Executor) error {
 	pub, err := NewValidatorPubkey(pk)
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptoty
 	registerValidator := TG4ValsetExecute{
 		RegisterValidatorKey: &RegisterValidatorKey{
 			PubKey:   pub,
-			Metadata: metadata,
+			Metadata: MetadataFromDescription(description),
 		},
 	}
 	payloadBz, err := json.Marshal(&registerValidator)
@@ -43,7 +43,8 @@ func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptoty
 }
 
 // UpdateValidator calls valset contract to change validator's metadata
-func UpdateValidator(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, metadata stakingtypes.Description, k Executor) error {
+func UpdateValidator(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, description stakingtypes.Description, k Executor) error {
+	metadata := MetadataFromDescription(description)
 	updateValidator := TG4ValsetExecute{
 		UpdateMetadata: &metadata,
 	}
