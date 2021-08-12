@@ -95,7 +95,6 @@ func QueryValidator(ctx sdk.Context, k *twasmkeeper.Keeper, valset sdk.AccAddres
 	return response.Validator, err
 }
 
-// TODO: add auto-pagination support
 func ListValidators(ctx sdk.Context, k *twasmkeeper.Keeper, valset sdk.AccAddress) ([]OperatorResponse, error) {
 	query := ValsetQuery{ListValidators: &ListValidatorsQuery{Limit: 30}}
 	var response ListValidatorsResponse
@@ -117,8 +116,9 @@ func SimulateActiveValidators(ctx sdk.Context, k *twasmkeeper.Keeper, valset sdk
 	return response.Validators, err
 }
 
-// These queries apply to all tg4 types - stake, group, and mixer
+// TG4Query applies to all tg4 types - stake, group, and mixer
 type TG4Query struct {
+	Admin               *struct{}                 `json:"admin,omitempty"`
 	TotalWeight         *struct{}                 `json:"total_weight,omitempty"`
 	ListMembers         *ListMembersQuery         `json:"list_members,omitempty"`
 	ListMembersByWeight *ListMembersByWeightQuery `json:"list_members_by_weight,omitempty"`
@@ -140,13 +140,17 @@ type MemberQuery struct {
 	AtHeight int    `json:"at_height,omitempty"`
 }
 
+type TG4AdminResponse struct {
+	Admin string `json:"admin,omitempty"`
+}
+
 // TG4MemberListResponse response to a list members query.
 type TG4MemberListResponse struct {
 	Members []TG4Member `json:"members"`
 }
 
 type TG4MemberResponse struct {
-	// nil means not a member, 0 means member with no voting power... this can be a very important distinction
+	// Weight nil means not a member, 0 means member with no voting power... this can be a very important distinction
 	Weight *int `json:"weight"`
 }
 
@@ -154,7 +158,6 @@ type TG4TotalWeightResponse struct {
 	Weight int `json:"weight"`
 }
 
-// TODO: add pagination
 func QueryTG4MembersByWeight(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress) ([]TG4Member, error) {
 	query := TG4Query{ListMembersByWeight: &ListMembersByWeightQuery{Limit: 30}}
 	var response TG4MemberListResponse
@@ -169,8 +172,7 @@ func QueryTG4Members(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddr
 	return response.Members, err
 }
 
-// TODO: expose at height (if we care)
-// Returns the weight of this member. (nil, nil) means not present
+// QueryTG4Member returns the weight of this member. (nil, nil) means not present, (&0, nil) means member with no votes
 func QueryTG4Member(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress, member sdk.AccAddress) (*int, error) {
 	query := TG4Query{Member: &MemberQuery{Addr: member.String()}}
 	var response TG4MemberResponse
@@ -178,8 +180,7 @@ func QueryTG4Member(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddre
 	return response.Weight, err
 }
 
-// TODO: expose at height (if we care)
-// Returns the weight of this member. (nil, nil) means not present
+// QueryTG4TotalWeight returns the weight of this member. (nil, nil) means not present
 func QueryTG4TotalWeight(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress) (int, error) {
 	query := TG4Query{TotalWeight: &struct{}{}}
 	var response TG4TotalWeightResponse
@@ -187,7 +188,22 @@ func QueryTG4TotalWeight(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.Acc
 	return response.Weight, err
 }
 
-// Some custom queries just for the tg4-stake contract
+// QueryTG4Admin returns admin of this contract, if any. Will return nil, err if no admin
+func QueryTG4Admin(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress) (sdk.AccAddress, error) {
+	query := TG4Query{Admin: &struct{}{}}
+	var response TG4AdminResponse
+	err := doQuery(ctx, k, tg4Addr, query, &response)
+	if err != nil {
+		return nil, err
+	}
+	if response.Admin == "" {
+		return nil, nil
+	}
+	return sdk.AccAddressFromBech32(response.Admin)
+}
+
+// TG4StakeQuery contains some custom queries for the tg4-stake contract.
+// You can also make any generic TG4Query on it.
 type TG4StakeQuery struct {
 	UnbondingPeriod *struct{} `json:"unbonding_period,omitempty"`
 }
@@ -196,12 +212,11 @@ type UnbondingPeriodResponse struct {
 	UnbondingPeriod Duration `json:"unbonding_period"`
 }
 
-// Measure time between multiple events
-// Exactly one of these must be non-zero
+// Duration measures time between multiple events. Exactly one of these must be non-zero
 type Duration struct {
-	// A number of blocks
+	// Height is the number of blocks that must pass
 	Height int `json:"height,omitempty"`
-	// A number of seconds
+	// Time is the number of seconds that must pass
 	Time int `json:"time,omitempty"`
 }
 
