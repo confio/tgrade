@@ -3,6 +3,7 @@ package contract
 import (
 	"encoding/json"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 	"sort"
 	"testing"
@@ -128,9 +129,45 @@ func asJson(t *testing.T, m interface{}) string {
 // TG4ValsetExecute Valset contract validator key registration
 // See https://github.com/confio/tgrade-contracts/blob/main/contracts/tgrade-valset/schema/execute_msg.json
 type TG4ValsetExecute struct {
-	RegisterValidatorKey RegisterValidatorKey `json:"register_validator_key"`
+	RegisterValidatorKey *RegisterValidatorKey `json:"register_validator_key,omitempty"`
+	UpdateMetadata       *ValidatorMetadata    `json:"update_metadata,omitempty"`
 }
 
 type RegisterValidatorKey struct {
-	PubKey ValidatorPubkey `json:"pubkey"`
+	PubKey   ValidatorPubkey   `json:"pubkey"`
+	Metadata ValidatorMetadata `json:"metadata"`
+}
+
+type ValidatorMetadata struct {
+	// moniker defines a human-readable name for the validator.
+	Moniker string `json:"moniker"`
+	// identity defines an optional identity signature (ex. UPort or Keybase).
+	Identity string `json:"identity,omitempty"`
+	// website defines an optional website link.
+	Website string `json:"website,omitempty"`
+	// security_contact defines an optional email for security contact.
+	SecurityContact string `json:"security_contact,omitempty"`
+	// details define other optional details.
+	Details string `json:"details,omitempty"`
+}
+
+func MetadataFromDescription(description stakingtypes.Description) ValidatorMetadata {
+	return ValidatorMetadata{
+		Moniker:         description.Moniker,
+		Identity:        description.Identity,
+		Website:         description.Website,
+		SecurityContact: description.SecurityContact,
+		Details:         description.Details,
+	}
+}
+
+func (m ValidatorMetadata) ToDescription() stakingtypes.Description {
+	return stakingtypes.Description{
+		Moniker:         m.Moniker,
+		Identity:        m.Identity,
+		Website:         m.Website,
+		SecurityContact: m.SecurityContact,
+		Details:         m.Details,
+	}
+
 }

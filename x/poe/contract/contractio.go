@@ -6,6 +6,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
@@ -21,17 +22,33 @@ type Executor interface {
 }
 
 // RegisterValidator calls valset contract to register a new validator key and address
-func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptotypes.PubKey, delegatorAddress sdk.AccAddress, k Executor) error {
+func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptotypes.PubKey, delegatorAddress sdk.AccAddress, description stakingtypes.Description, k Executor) error {
 	pub, err := NewValidatorPubkey(pk)
 	if err != nil {
 		return err
 	}
 	registerValidator := TG4ValsetExecute{
-		RegisterValidatorKey: RegisterValidatorKey{
-			PubKey: pub,
+		RegisterValidatorKey: &RegisterValidatorKey{
+			PubKey:   pub,
+			Metadata: MetadataFromDescription(description),
 		},
 	}
 	payloadBz, err := json.Marshal(&registerValidator)
+	if err != nil {
+		return sdkerrors.Wrap(err, "serialize payload msg")
+	}
+
+	_, err = k.Execute(ctx, contractAddr, delegatorAddress, payloadBz, nil)
+	return sdkerrors.Wrap(err, "execute contract")
+}
+
+// UpdateValidator calls valset contract to change validator's metadata
+func UpdateValidator(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, description stakingtypes.Description, k Executor) error {
+	metadata := MetadataFromDescription(description)
+	updateValidator := TG4ValsetExecute{
+		UpdateMetadata: &metadata,
+	}
+	payloadBz, err := json.Marshal(&updateValidator)
 	if err != nil {
 		return sdkerrors.Wrap(err, "serialize payload msg")
 	}

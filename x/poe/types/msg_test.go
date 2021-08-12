@@ -62,13 +62,14 @@ func TestMsgCreateValidator(t *testing.T) {
 		bond                                                       sdk.Coin
 		expectPass                                                 bool
 	}{
-		{"basic good", "a", "b", "c", "d", "e", valAddr1, pk1, coinPos, true},
-		{"partial description", "", "", "c", "", "", valAddr1, pk1, coinPos, true},
+		{"basic good", "hello", "b", "c", "d", "e", valAddr1, pk1, coinPos, true},
+		{"partial description", "hello", "", "c", "", "", valAddr1, pk1, coinPos, true},
+		{"short moniker", "a", "", "", "", "", valAddr1, pk1, coinPos, false},
 		{"empty description", "", "", "", "", "", valAddr1, pk1, coinPos, false},
-		{"empty address", "a", "b", "c", "d", "e", emptyAddr, pk1, coinPos, false},
-		{"empty pubkey", "a", "b", "c", "d", "e", valAddr1, emptyPubkey, coinPos, false},
-		{"empty bond", "a", "b", "c", "d", "e", valAddr1, pk1, coinZero, false},
-		{"nil bond", "a", "b", "c", "d", "e", valAddr1, pk1, sdk.Coin{}, false},
+		{"empty address", "hello", "b", "c", "d", "e", emptyAddr, pk1, coinPos, false},
+		{"empty pubkey", "hello", "b", "c", "d", "e", valAddr1, emptyPubkey, coinPos, false},
+		{"empty bond", "hello", "b", "c", "d", "e", valAddr1, pk1, coinZero, false},
+		{"nil bond", "hello", "b", "c", "d", "e", valAddr1, pk1, sdk.Coin{}, false},
 	}
 
 	for _, tc := range tests {

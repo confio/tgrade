@@ -137,30 +137,27 @@ func TestInitGenesis(t *testing.T) {
 	// and valset config
 	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	require.NoError(t, err)
-	res, err := example.TWasmKeeper.QuerySmart(ctx, addr, []byte(`{"config":{}}`))
+
+	gotValsetConfig, err := contract.QueryValsetConfig(ctx, example.TWasmKeeper, addr)
 	require.NoError(t, err)
 
-	var gotValsetConfig contract.ValsetConfigQueryResponse
-	require.NoError(t, json.Unmarshal(res, &gotValsetConfig))
-
-	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
+	mixerAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
 	require.NoError(t, err)
 
-	expConfig := contract.ValsetConfigQueryResponse{
-		Membership:    addr.String(),
+	expConfig := &contract.ValsetConfigResponse{
+		Membership:    mixerAddr.String(),
 		MinWeight:     1,
 		MaxValidators: 100,
 		Scaling:       0,
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)
+
 }
 
 func queryAllMembers(t *testing.T, ctx sdk.Context, k *twasmkeeper.Keeper, addr sdk.AccAddress) []contract.TG4Member {
-	res, err := k.QuerySmart(ctx, addr, []byte(`{"list_members_by_weight":{"limit":30}}`))
+	members, err := contract.QueryTG4MembersByWeight(ctx, k, addr)
 	require.NoError(t, err)
-	var gotMemberResponse contract.QueryTG4GroupResponse
-	require.NoError(t, json.Unmarshal(res, &gotMemberResponse))
-	return gotMemberResponse.Members
+	return members
 }
 
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose

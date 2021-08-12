@@ -74,6 +74,7 @@ var _ types.MsgServer = MsgServerMock{}
 
 type MsgServerMock struct {
 	CreateValidatorFn func(ctx context.Context, validator *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error)
+	UpdateValidatorFn func(ctx context.Context, validator *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error)
 }
 
 func (m MsgServerMock) CreateValidator(ctx context.Context, validator *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error) {
@@ -81,4 +82,11 @@ func (m MsgServerMock) CreateValidator(ctx context.Context, validator *types.Msg
 		panic("not expected to be called")
 	}
 	return m.CreateValidatorFn(ctx, validator)
+}
+
+func (m MsgServerMock) UpdateValidator(ctx context.Context, msg *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error) {
+	if m.UpdateValidatorFn == nil {
+		panic("not expected to be called")
+	}
+	return m.UpdateValidatorFn(ctx, msg)
 }

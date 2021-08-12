@@ -246,11 +246,13 @@ func InitTestnet(
 		genAccounts = append(genAccounts, authtypes.NewBaseAccount(addr, nil, 0, 0))
 
 		valTokens := sdk.TokensFromConsensusPower(100)
+		moniker := fmt.Sprintf("moniker-%d", i)
 		createValMsg, err := poetypes.NewMsgCreateValidator(
 			addr,
 			valPubKeys[i],
 			sdk.NewCoin(stakingToken, valTokens),
-			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
+			// moniker must be at least 3 chars. let's pad it to ensure
+			stakingtypes.NewDescription(moniker, "", "", "", ""),
 		)
 		if err != nil {
 			return err

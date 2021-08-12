@@ -14,6 +14,8 @@ option go_package = "github.com/confio/tgrade/x/poe/types";
 service Msg {
   // CreateValidator defines a method for creating a new validator.
   rpc CreateValidator(MsgCreateValidator) returns (MsgCreateValidatorResponse);
+  // MsgCreateValidator defines a method for updating validator metadata
+  rpc UpdateValidator(MsgUpdateValidator) returns (MsgUpdateValidatorResponse);
 }
 
 // MsgCreateValidator defines a PoE message for creating a new validator.
@@ -38,5 +40,23 @@ message MsgCreateValidator {
   cosmos.base.v1beta1.Coin value = 7 [ (gogoproto.nullable) = false ];
 }
 
-// MsgCreateValidatorResponse defines the Msg/CreateValidator response type.
+// MsgCreateValidatorResponse defines the MsgCreateValidator response type.
 message MsgCreateValidatorResponse {}
+
+// MsgCreateValidator defines a PoE message for updating validator metadata
+message MsgUpdateValidator {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // New Description meta data
+  cosmos.staking.v1beta1.Description description = 1
+      [ (gogoproto.nullable) = false ];
+
+  // DelegatorAddress is the bech32 address string
+  // Also know as "signer" in other messages
+  string delegator_address = 2
+      [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
+}
+
+// MsgUpdateValidatorResponse defines the MsgUpdateValidator response type.
+message MsgUpdateValidatorResponse {}
