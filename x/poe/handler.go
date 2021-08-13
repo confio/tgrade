@@ -9,8 +9,8 @@ import (
 )
 
 // NewHandler constructor
-func NewHandler(k keeper.ContractSource, contractKeeper wasmtypes.ContractOpsKeeper) sdk.Handler {
-	return newHandler(keeper.NewMsgServerImpl(k, contractKeeper))
+func NewHandler(k keeper.ContractSource, contractKeeper wasmtypes.ContractOpsKeeper, q types.SmartQuerier) sdk.Handler {
+	return newHandler(keeper.NewMsgServerImpl(k, contractKeeper, q))
 }
 
 // internal constructor for testing
@@ -22,7 +22,9 @@ func newHandler(msgServer types.MsgServer) sdk.Handler {
 		case *types.MsgCreateValidator:
 			res, err := msgServer.CreateValidator(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
-
+		case *types.MsgUpdateValidator:
+			res, err := msgServer.UpdateValidator(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
 		default:
 			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized %s message type: %T", types.ModuleName, msg)
 		}

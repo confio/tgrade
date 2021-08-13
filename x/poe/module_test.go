@@ -18,6 +18,60 @@ import (
 	"testing"
 )
 
+func TestInitGenesis(t *testing.T) {
+	// scenario:
+	// 			setup some genTX with random staking value
+	// 			add the operators to the engagement group
+	//			when init genesis is executed
+	// 			then validators should be found in valset diff
+	//			and contracts state as expected
+	ctx, example := keeper.CreateDefaultTestInput(t)
+	ctx = ctx.WithBlockHeight(0)
+	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
+	app := NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
+
+	const numValidators = 15
+	mutator, myValidators := withRandomValidators(t, ctx, example, numValidators)
+	gs := types.GenesisStateFixture(mutator)
+
+	// when
+	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
+	gotValset := app.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
+
+	// then valset diff matches
+	assert.Equal(t, valsetAsMap(myValidators.expValidatorSet()), valsetAsMap(gotValset)) // compare unordered
+
+	// and engagement group is setup as expected
+	addr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
+	require.NoError(t, err)
+	gotMembers := queryAllMembers(t, ctx, example.TWasmKeeper, addr)
+	assert.Equal(t, myValidators.expEngagementGroup(), gotMembers)
+
+	// and staking group setup as expected
+	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	gotMembers = queryAllMembers(t, ctx, example.TWasmKeeper, addr)
+	assert.Equal(t, myValidators.expStakingGroup(), gotMembers)
+
+	// and valset config
+	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	require.NoError(t, err)
+
+	gotValsetConfig, err := contract.QueryValsetConfig(ctx, example.TWasmKeeper, addr)
+	require.NoError(t, err)
+
+	mixerAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
+	require.NoError(t, err)
+
+	expConfig := &contract.ValsetConfigResponse{
+		Membership:    mixerAddr.String(),
+		MinWeight:     1,
+		MaxValidators: 100,
+		Scaling:       0,
+	}
+	assert.Equal(t, expConfig, gotValsetConfig)
+
+}
+
 type validators []validator
 
 type validator struct {
@@ -72,86 +126,37 @@ func (v validators) expStakingGroup() []contract.TG4Member {
 	return contract.SortByWeightDesc(r)
 }
 
-func TestInitGenesis(t *testing.T) {
-	// scenario:
-	// 			setup some genTX with random staking value
-	// 			add the operators to the engagement group
-	//			when init genesis is executed
-	// 			then validators should be found in valset diff
-	//			and contracts state as expected
-	ctx, example := keeper.CreateDefaultTestInput(t)
-	ctx = ctx.WithBlockHeight(0)
-	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	app := NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
+// return genesis mutator that adds the given mumber of validators to the genesis
+func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeepers, numValidators int) (func(m *types.GenesisState), validators) {
+	collectValidators := make(validators, numValidators)
+	return func(m *types.GenesisState) {
+		f := fuzz.New()
+		m.GenTxs = make([]json.RawMessage, numValidators)
+		m.Engagement = make([]types.TG4Member, numValidators)
+		for i := 0; i < numValidators; i++ {
+			var ( // power * engagement must be less than 10^18 (constraint is in the contract)
+				power      uint16
+				engagement uint16
+			)
+			f.NilChance(0).Fuzz(&power) // must be > 0 so that staked amount is > 0
+			f.Fuzz(&engagement)
 
-	const numValidators = 15
-	myValidators := make(validators, numValidators)
-	gs := types.GenesisStateFixture(
-		func(m *types.GenesisState) {
-			f := fuzz.New()
-			m.GenTxs = make([]json.RawMessage, numValidators)
-			m.Engagement = make([]types.TG4Member, numValidators)
-			for i := 0; i < numValidators; i++ {
-				var ( // power * engagement must be less than 10^18 (constraint is in the contract)
-					power      uint16
-					engagement uint16
-				)
-				f.NilChance(0).Fuzz(&power) // must be > 0 so that staked amount is > 0
-				f.Fuzz(&engagement)
-
-				genTx, opAddr, pubKey := types.RandomGenTX(t, uint32(power))
-				myValidators[i] = validator{
-					operatorAddr: opAddr,
-					pubKey:       pubKey,
-					stakedAmount: sdk.TokensFromConsensusPower(int64(power)).Uint64(),
-					engagement:   uint64(engagement),
-				}
-				m.GenTxs[i] = genTx
-				m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Weight: uint64(engagement)}
-				example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
-				example.BankKeeper.SetBalances(ctx, opAddr, sdk.NewCoins(
-					sdk.NewCoin(types.DefaultBondDenom, sdk.NewIntFromUint64(myValidators[i].stakedAmount)),
-				))
+			genTx, opAddr, pubKey := types.RandomGenTX(t, uint32(power))
+			stakedAmount := sdk.TokensFromConsensusPower(int64(power)).Uint64()
+			collectValidators[i] = validator{
+				operatorAddr: opAddr,
+				pubKey:       pubKey,
+				stakedAmount: stakedAmount,
+				engagement:   uint64(engagement),
 			}
-		},
-	)
-
-	// when
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
-	gotValset := app.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-
-	// then valset diff matches
-	assert.Equal(t, valsetAsMap(myValidators.expValidatorSet()), valsetAsMap(gotValset)) // compare unordered
-
-	// and engagement group is setup as expected
-	addr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
-	require.NoError(t, err)
-	gotMembers := queryAllMembers(t, ctx, example.TWasmKeeper, addr)
-	assert.Equal(t, myValidators.expEngagementGroup(), gotMembers)
-
-	// and staking group setup as expected
-	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
-	gotMembers = queryAllMembers(t, ctx, example.TWasmKeeper, addr)
-	assert.Equal(t, myValidators.expStakingGroup(), gotMembers)
-
-	// and valset config
-	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
-	require.NoError(t, err)
-
-	gotValsetConfig, err := contract.QueryValsetConfig(ctx, example.TWasmKeeper, addr)
-	require.NoError(t, err)
-
-	mixerAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
-	require.NoError(t, err)
-
-	expConfig := &contract.ValsetConfigResponse{
-		Membership:    mixerAddr.String(),
-		MinWeight:     1,
-		MaxValidators: 100,
-		Scaling:       0,
-	}
-	assert.Equal(t, expConfig, gotValsetConfig)
-
+			m.GenTxs[i] = genTx
+			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Weight: uint64(engagement)}
+			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
+			example.BankKeeper.SetBalances(ctx, opAddr, sdk.NewCoins(
+				sdk.NewCoin(types.DefaultBondDenom, sdk.NewIntFromUint64(stakedAmount)),
+			))
+		}
+	}, collectValidators
 }
 
 func queryAllMembers(t *testing.T, ctx sdk.Context, k *twasmkeeper.Keeper, addr sdk.AccAddress) []contract.TG4Member {
@@ -163,7 +168,7 @@ func queryAllMembers(t *testing.T, ctx sdk.Context, k *twasmkeeper.Keeper, addr 
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
 func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k keeper.Keeper, contractKeeper wasmtypes.ContractOpsKeeper, txDecoder sdk.TxDecoder) func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
 	t.Helper()
-	h := NewHandler(k, contractKeeper)
+	h := NewHandler(k, contractKeeper, nil)
 	return func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
 		genTx, err := txDecoder(tx.GetTx())
 		require.NoError(t, err)

@@ -140,6 +140,11 @@ func (c TgradeCli) QueryTotalSupply(denom string) int64 {
 	return gjson.Get(raw, "amount").Int()
 }
 
+// QueryValidator queries the validator for the given operator address. Returns json response
+func (c TgradeCli) QueryValidator(addr string) string {
+	return c.CustomQuery("q", "poe", "validator", addr)
+}
+
 // RequireTxSuccess require the received response to contain the success code
 func RequireTxSuccess(t *testing.T, got string) {
 	t.Helper()

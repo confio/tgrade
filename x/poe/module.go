@@ -16,10 +16,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
+	"sync"
 )
 
 var (
@@ -44,6 +47,8 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(amino *codec.LegacyAmino) {
 // RegisterInterfaces registers the module's interface types
 func (b AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	types.RegisterInterfaces(registry)
+	slashingtypes.RegisterInterfaces(registry)
+	stakingtypes.RegisterInterfaces(registry)
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the genutil
@@ -90,13 +95,14 @@ type AppModule struct {
 	twasmKeeper      twasmKeeper
 	contractKeeper   wasmtypes.ContractOpsKeeper
 	poeKeeper        keeper.Keeper
+	doOnce           sync.Once
 }
 
 // twasmKeeper subset of keeper to decouple from twasm module
 type twasmKeeper interface {
 	abciKeeper
-	QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
-	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
+	types.SmartQuerier
+	types.Sudoer
 	SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) error
 	HasPrivilegedContract(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error)
 }
@@ -123,7 +129,7 @@ func (am AppModule) RegisterInvariants(registry sdk.InvariantRegistry) {
 }
 
 func (am AppModule) Route() sdk.Route {
-	return sdk.NewRoute(types.RouterKey, NewHandler(am.poeKeeper, am.contractKeeper))
+	return sdk.NewRoute(types.RouterKey, NewHandler(am.poeKeeper, am.contractKeeper, am.twasmKeeper))
 }
 
 func (am AppModule) QuerierRoute() string {
@@ -135,21 +141,21 @@ func (am AppModule) LegacyQuerierHandler(amino *codec.LegacyAmino) sdk.Querier {
 }
 
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewGrpcQuerier(am.poeKeeper))
-	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.poeKeeper, am.contractKeeper))
+	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewGrpcQuerier(am.poeKeeper, am.twasmKeeper))
+	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.poeKeeper, am.contractKeeper, am.twasmKeeper))
 }
 
 func (am AppModule) BeginBlock(context sdk.Context, block abci.RequestBeginBlock) {
 }
 
 func (am AppModule) EndBlock(context sdk.Context, block abci.RequestEndBlock) []abci.ValidatorUpdate {
+	am.doOnce.Do(ClearEmbeddedContracts) // release memory
 	return EndBlocker(context, am.twasmKeeper)
 }
 
 // InitGenesis performs genesis initialization for the genutil module. It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data json.RawMessage) []abci.ValidatorUpdate {
-	defer clearEmbeddedContracts()
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	if len(genesisState.GenTxs) == 0 {

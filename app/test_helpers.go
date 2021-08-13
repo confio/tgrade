@@ -228,49 +228,49 @@ func createIncrementalAccounts(accNum int) []sdk.AccAddress {
 }
 
 // AddTestAddrsFromPubKeys adds the addresses into the TgradeApp providing only the public keys.
-func AddTestAddrsFromPubKeys(app *TgradeApp, ctx sdk.Context, pubKeys []cryptotypes.PubKey, accAmt sdk.Int) {
-	initCoins := sdk.NewCoins(sdk.NewCoin(app.stakingKeeper.BondDenom(ctx), accAmt))
-
-	setTotalSupply(app, ctx, accAmt, len(pubKeys))
-
-	// fill all the addresses with some coins, set the loose pool tokens simultaneously
-	for _, pubKey := range pubKeys {
-		saveAccount(app, ctx, sdk.AccAddress(pubKey.Address()), initCoins)
-	}
-}
-
-// setTotalSupply provides the total supply based on accAmt * totalAccounts.
-func setTotalSupply(app *TgradeApp, ctx sdk.Context, accAmt sdk.Int, totalAccounts int) {
-	totalSupply := sdk.NewCoins(sdk.NewCoin(app.stakingKeeper.BondDenom(ctx), accAmt.MulRaw(int64(totalAccounts))))
-	prevSupply := app.bankKeeper.GetSupply(ctx)
-	app.bankKeeper.SetSupply(ctx, banktypes.NewSupply(prevSupply.GetTotal().Add(totalSupply...)))
-}
-
-// AddTestAddrs constructs and returns accNum amount of accounts with an
-// initial balance of accAmt in random order
-func AddTestAddrs(app *TgradeApp, ctx sdk.Context, accNum int, accAmt sdk.Int) []sdk.AccAddress {
-	return addTestAddrs(app, ctx, accNum, accAmt, createRandomAccounts)
-}
+//func AddTestAddrsFromPubKeys(app *TgradeApp, ctx sdk.Context, pubKeys []cryptotypes.PubKey, accAmt sdk.Int) {
+//	initCoins := sdk.NewCoins(sdk.NewCoin(app.stakingKeeper.BondDenom(ctx), accAmt))
+//
+//	setTotalSupply(app, ctx, accAmt, len(pubKeys))
+//
+//	// fill all the addresses with some coins, set the loose pool tokens simultaneously
+//	for _, pubKey := range pubKeys {
+//		saveAccount(app, ctx, sdk.AccAddress(pubKey.Address()), initCoins)
+//	}
+//}
+//
+//// setTotalSupply provides the total supply based on accAmt * totalAccounts.
+//func setTotalSupply(app *TgradeApp, ctx sdk.Context, accAmt sdk.Int, totalAccounts int) {
+//	totalSupply := sdk.NewCoins(sdk.NewCoin(app.stakingKeeper.BondDenom(ctx), accAmt.MulRaw(int64(totalAccounts))))
+//	prevSupply := app.bankKeeper.GetSupply(ctx)
+//	app.bankKeeper.SetSupply(ctx, banktypes.NewSupply(prevSupply.GetTotal().Add(totalSupply...)))
+//}
 
 // AddTestAddrs constructs and returns accNum amount of accounts with an
 // initial balance of accAmt in random order
-func AddTestAddrsIncremental(app *TgradeApp, ctx sdk.Context, accNum int, accAmt sdk.Int) []sdk.AccAddress {
-	return addTestAddrs(app, ctx, accNum, accAmt, createIncrementalAccounts)
-}
+//func AddTestAddrs(app *TgradeApp, ctx sdk.Context, accNum int, accAmt sdk.Int) []sdk.AccAddress {
+//	return addTestAddrs(app, ctx, accNum, accAmt, createRandomAccounts)
+//}
 
-func addTestAddrs(app *TgradeApp, ctx sdk.Context, accNum int, accAmt sdk.Int, strategy GenerateAccountStrategy) []sdk.AccAddress {
-	testAddrs := strategy(accNum)
+// AddTestAddrs constructs and returns accNum amount of accounts with an
+// initial balance of accAmt in random order
+//func AddTestAddrsIncremental(app *TgradeApp, ctx sdk.Context, accNum int, accAmt sdk.Int) []sdk.AccAddress {
+//	return addTestAddrs(app, ctx, accNum, accAmt, createIncrementalAccounts)
+//}
 
-	initCoins := sdk.NewCoins(sdk.NewCoin(app.stakingKeeper.BondDenom(ctx), accAmt))
-	setTotalSupply(app, ctx, accAmt, accNum)
-
-	// fill all the addresses with some coins, set the loose pool tokens simultaneously
-	for _, addr := range testAddrs {
-		saveAccount(app, ctx, addr, initCoins)
-	}
-
-	return testAddrs
-}
+//func addTestAddrs(app *TgradeApp, ctx sdk.Context, accNum int, accAmt sdk.Int, strategy GenerateAccountStrategy) []sdk.AccAddress {
+//	testAddrs := strategy(accNum)
+//
+//	initCoins := sdk.NewCoins(sdk.NewCoin(app.stakingKeeper.BondDenom(ctx), accAmt))
+//	setTotalSupply(app, ctx, accAmt, accNum)
+//
+//	// fill all the addresses with some coins, set the loose pool tokens simultaneously
+//	for _, addr := range testAddrs {
+//		saveAccount(app, ctx, addr, initCoins)
+//	}
+//
+//	return testAddrs
+//}
 
 // saveAccount saves the provided account into the TgradeApp with balance based on initCoins.
 func saveAccount(app *TgradeApp, ctx sdk.Context, addr sdk.AccAddress, initCoins sdk.Coins) {

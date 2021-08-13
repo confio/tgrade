@@ -142,15 +142,19 @@ func (msg MsgUpdateValidator) GetSignBytes() []byte {
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgUpdateValidator) ValidateBasic() error {
 	// note that unmarshaling from bech32 ensures either empty or valid
-	delAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	_, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
 	if err != nil {
 		return err
 	}
-	if delAddr.Empty() {
-		return stakingtypes.ErrEmptyDelegatorAddr
-	}
 
-	if msg.Description == (stakingtypes.Description{}) {
+	if msg.Description == (stakingtypes.Description{}) ||
+		msg.Description == stakingtypes.NewDescription(
+			stakingtypes.DoNotModifyDesc,
+			stakingtypes.DoNotModifyDesc,
+			stakingtypes.DoNotModifyDesc,
+			stakingtypes.DoNotModifyDesc,
+			stakingtypes.DoNotModifyDesc,
+		) {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "empty description")
 	}
 

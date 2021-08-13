@@ -234,9 +234,9 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_PrivilegedContracts_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"twasm", "v1beta1", "contracts", "privileged"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_PrivilegedContracts_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"tgrade", "twasm", "v1beta1", "contracts", "privileged"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_Query_ContractsByPrivilegeType_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"twasm", "v1beta1", "contracts", "privilege", "privilege_type"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_ContractsByPrivilegeType_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"tgrade", "twasm", "v1beta1", "contracts", "privilege", "privilege_type"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (

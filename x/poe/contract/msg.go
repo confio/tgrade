@@ -101,20 +101,20 @@ func (m TG4StakeExecute) Json(t *testing.T) string {
 // ValsetInitMsg Valset contract init message
 // See https://github.com/confio/tgrade-contracts/tree/main/contracts/tgrade-valset
 type ValsetInitMsg struct {
-	Membership    string          `json:"membership"`
-	MinWeight     int             `json:"min_weight"`
-	MaxValidators int             `json:"max_validators"`
-	EpochLength   int             `json:"epoch_length"`
-	EpochReward   sdk.Coin        `json:"epoch_reward"`
-	InitialKeys   []ValsetInitKey `json:"initial_keys"`
-	Scaling       int             `json:"scaling,omitempty"`
+	Membership    string      `json:"membership"`
+	MinWeight     int         `json:"min_weight"`
+	MaxValidators int         `json:"max_validators"`
+	EpochLength   int         `json:"epoch_length"`
+	EpochReward   sdk.Coin    `json:"epoch_reward"`
+	InitialKeys   []Validator `json:"initial_keys"`
+	Scaling       int         `json:"scaling,omitempty"`
 }
 
 func (m ValsetInitMsg) Json(t *testing.T) string {
 	return asJson(t, m)
 }
 
-type ValsetInitKey struct {
+type Validator struct {
 	Operator        string          `json:"operator"`
 	ValidatorPubkey ValidatorPubkey `json:"validator_pubkey"`
 }

@@ -91,6 +91,13 @@ func TestProofOfEngagementSetup(t *testing.T) {
 		}
 	}
 	assert.True(t, distributed, "no tokens distributed")
+
+	// And when moniker updated
+	myAddr := cli.GetKeyAddr("node0")
+	txResult := cli.CustomCommand("tx", "poe", "edit-validator", "--moniker=newMoniker", "--from=node0")
+	RequireTxSuccess(t, txResult)
+	qResult = cli.QueryValidator(myAddr)
+	assert.Equal(t, "newMoniker", gjson.Get(qResult, "description.moniker").String())
 }
 
 func assertValidatorsUpdated(t *testing.T, sortedMember []testingcontracts.TG4Member, stakedAmounts []uint64, expValidators int) {

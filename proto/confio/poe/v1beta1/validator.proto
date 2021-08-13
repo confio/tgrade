@@ -1,0 +1,84 @@
+syntax = "proto3";
+package confio.poe.v1beta1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/staking/v1beta1/staking.proto";
+import "tendermint/types/types.proto";
+
+option go_package = "github.com/confio/tgrade/x/poe/types";
+
+// Validator defines a validator, together with the total amount of the
+// Validator's bond shares and their exchange rate to coins. Slashing results in
+// a decrease in the exchange rate, allowing correct calculation of future
+// undelegations without iterating over delegators. When coins are delegated to
+// this validator, the validator is credited with a delegation whose number of
+// bond shares is based on the amount of coins delegated divided by the current
+// exchange rate. Voting power can be calculated as total bonded shares
+// multiplied by exchange rate.
+message Validator {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  // operator_address defines the address of the validator's operator; bech
+  // encoded in JSON.
+  string operator_address = 1
+      [ (gogoproto.moretags) = "yaml:\"operator_address\"" ];
+  // consensus_pubkey is the consensus public key of the validator, as a
+  // Protobuf Any.
+  google.protobuf.Any consensus_pubkey = 2 [
+    (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey",
+    (gogoproto.moretags) = "yaml:\"consensus_pubkey\""
+  ];
+  // jailed defined whether the validator has been jailed from bonded status or
+  // not.
+  bool jailed = 3;
+  // status is the validator status (bonded/unbonding/unbonded).
+  BondStatus status = 4;
+  // tokens define the delegated tokens (incl. self-delegation).
+  string tokens = 5 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
+  ];
+  // delegator_shares defines total shares issued to a validator's delegators.
+  reserved 6;
+  // description defines the description terms for the validator.
+  cosmos.staking.v1beta1.Description description = 7
+      [ (gogoproto.nullable) = false ];
+  // unbonding_height defines, if unbonding, the height at which this validator
+  // has begun unbonding.
+  int64 unbonding_height = 8
+      [ (gogoproto.moretags) = "yaml:\"unbonding_height\"" ];
+  // unbonding_time defines, if unbonding, the min time for the validator to
+  // complete unbonding.
+  google.protobuf.Timestamp unbonding_time = 9 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdtime) = true,
+    (gogoproto.moretags) = "yaml:\"unbonding_time\""
+  ];
+  // commission defines the commission parameters.
+  reserved 10;
+  // min_self_delegation is the validator's self declared minimum self
+  // delegation.
+  reserved 11;
+}
+
+// BondStatus is the status of a validator.
+enum BondStatus {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // UNSPECIFIED defines an invalid validator status.
+  BOND_STATUS_UNSPECIFIED = 0
+      [ (gogoproto.enumvalue_customname) = "Unspecified" ];
+  // UNBONDED defines a validator that is not bonded.
+  BOND_STATUS_UNBONDED = 1 [ (gogoproto.enumvalue_customname) = "Unbonded" ];
+  // UNBONDING defines a validator that is unbonding.
+  BOND_STATUS_UNBONDING = 2 [ (gogoproto.enumvalue_customname) = "Unbonding" ];
+  // BONDED defines a validator that is bonded.
+  BOND_STATUS_BONDED = 3 [ (gogoproto.enumvalue_customname) = "Bonded" ];
+}

@@ -1,12 +1,26 @@
 # Testing
 
-Test framework for system tests. Uses:
+Test framework for system tests. 
+Starts and interacts with a (multi node) blockchain in Go.
+Supports
+* CLI
+* Servers
+* Events
+* RPC
 
+Uses:
+* testify
 * gjson
-
+* sjson
 Server and client side are executed on the host machine
 
-## Execute a single test
+## Developer
+### Test strategy
+System tests cover the full stack via cli and a running (multi node) network. They are more expensive (in terms of time/ cpu) 
+to run compared to unit or integration tests. 
+Therefore, we focus on the **critical path** and do not cover every condition.
+
+### Execute a single test
 
 ```sh
 go test -tags system_test -count=1 -v ./testing --run TestSmokeTest  -verbose

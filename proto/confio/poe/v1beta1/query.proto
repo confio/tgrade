@@ -5,6 +5,7 @@ import "cosmos/base/query/v1beta1/pagination.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "confio/poe/v1beta1/poe.proto";
+import "confio/poe/v1beta1/validator.proto";
 
 option go_package = "github.com/confio/tgrade/x/poe/types";
 
@@ -12,7 +13,17 @@ option go_package = "github.com/confio/tgrade/x/poe/types";
 service Query {
   rpc ContractAddress(QueryContractAddressRequest)
       returns (QueryContractAddressResponse) {
-    option (google.api.http).get = "/poe/v1beta1/contract/{contract_type}";
+    option (google.api.http).get =
+        "/tgrade/poe/v1beta1/contract/{contract_type}";
+  }
+  // Validators queries all validators that match the given status.
+  rpc Validators(QueryValidatorsRequest) returns (QueryValidatorsResponse) {
+    option (google.api.http).get = "/tgrade/poe/v1beta1/validators";
+  }
+  // Validator queries validator info for given validator address.
+  rpc Validator(QueryValidatorRequest) returns (QueryValidatorResponse) {
+    option (google.api.http).get =
+        "/tgrade/poe/v1beta1/validators/{validator_addr}";
   }
 }
 
@@ -29,3 +40,33 @@ message QueryContractAddressRequest {
 // QueryContractAddressRequest is the response type for the
 // Query/ContractAddress RPC method.
 message QueryContractAddressResponse { string address = 1; }
+
+// QueryValidatorsRequest is request type for Query/Validators RPC method.
+message QueryValidatorsRequest {
+  // status enables to query for validators matching a given status.
+  string status = 1;
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryValidatorsResponse is response type for the Query/Validators RPC method
+message QueryValidatorsResponse {
+  // validators contains all the queried validators.
+  repeated Validator validators = 1 [ (gogoproto.nullable) = false ];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryValidatorRequest is response type for the Query/Validator RPC method
+message QueryValidatorRequest {
+  // validator_addr defines the validator address to query for.
+  string validator_addr = 1;
+}
+
+// QueryValidatorResponse is response type for the Query/Validator RPC method
+message QueryValidatorResponse {
+  // validator defines the the validator info.
+  Validator validator = 1 [ (gogoproto.nullable) = false ];
+}

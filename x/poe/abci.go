@@ -12,7 +12,7 @@ import (
 )
 
 type abciKeeper interface {
-	contract.Sudoer
+	types.Sudoer
 	IteratePrivilegedContractsByType(ctx sdk.Context, privilegeType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 

@@ -44,7 +44,7 @@ func RandomAccAddress() sdk.AccAddress {
 }
 
 // RandomGenTX returns a signed genesis tx
-func RandomGenTX(t *testing.T, power uint32) (json.RawMessage, sdk.AccAddress, cryptotypes.PubKey) {
+func RandomGenTX(t *testing.T, power uint32, mutators ...func(*MsgCreateValidator)) (json.RawMessage, sdk.AccAddress, cryptotypes.PubKey) {
 	t.Helper()
 	nodeConfig := cfg.TestConfig()
 	nodeConfig.RootDir = t.TempDir()
@@ -70,6 +70,9 @@ func RandomGenTX(t *testing.T, power uint32) (json.RawMessage, sdk.AccAddress, c
 		stakingtypes.NewDescription("testing", "", "", "", ""),
 	)
 	require.NoError(t, err)
+	for _, m := range mutators {
+		m(createValMsg)
+	}
 	txConfig := MakeEncodingConfig(t).TxConfig
 	txBuilder := txConfig.NewTxBuilder()
 	err = txBuilder.SetMsgs(createValMsg)

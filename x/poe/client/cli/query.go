@@ -6,6 +6,8 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"sort"
@@ -22,6 +24,8 @@ func GetQueryCmd() *cobra.Command {
 	}
 	queryCmd.AddCommand(
 		GetCmdShowPoEContract(),
+		GetCmdQueryValidators(),
+		GetCmdQueryValidator(),
 	)
 	return queryCmd
 }
@@ -55,6 +59,91 @@ func GetCmdShowPoEContract() *cobra.Command {
 				return err
 			}
 			return clientCtx.PrintProto(res)
+		},
+	}
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+// GetCmdQueryValidators implements the query all validators command.
+func GetCmdQueryValidators() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "validators",
+		Short: "Query for all validators",
+		Args:  cobra.NoArgs,
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query details about all validators on a network.
+
+Example:
+$ %s query staking validators
+`,
+				version.AppName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+			_ = pageReq // todo (Alex): support pagination
+			result, err := queryClient.Validators(cmd.Context(), &types.QueryValidatorsRequest{
+				// Leaving status empty on purpose to query all validators.
+				//Pagination: pageReq,
+			})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(result)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	// flags.AddPaginationFlagsToCmd(cmd, "validators")
+	return cmd
+}
+
+// GetCmdQueryValidator implements the validator query command.
+func GetCmdQueryValidator() *cobra.Command {
+	bech32PrefixValAddr := sdk.GetConfig().GetBech32ValidatorAddrPrefix()
+
+	cmd := &cobra.Command{
+		Use:   "validator [operator-addr]",
+		Short: "Query a validator",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query details about an individual validator.
+
+Example:
+$ %s query poe validator %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+`,
+				version.AppName, bech32PrefixValAddr,
+			),
+		),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			addr, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+
+			params := &types.QueryValidatorRequest{ValidatorAddr: addr.String()}
+			res, err := queryClient.Validator(cmd.Context(), params)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(&res.Validator)
 		},
 	}
 	flags.AddQueryFlagsToCmd(cmd)

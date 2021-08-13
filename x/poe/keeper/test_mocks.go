@@ -3,6 +3,7 @@ package keeper
 import (
 	"github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"testing"
 )
 
 var _ ContractSource = ContractSourceMock{}
@@ -62,4 +63,35 @@ func CaptureSetPoEContractAddressFn() (func(ctx sdk.Context, ctype types.PoECont
 	return func(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress) {
 		r = append(r, CapturedPoEContractAddress{Ctype: ctype, ContractAddr: contractAddr})
 	}, &r
+}
+
+var _ types.SmartQuerier = SmartQuerierMock{}
+
+// SmartQuerierMock Mock queries to a contract
+type SmartQuerierMock struct {
+	QuerySmartFn func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
+}
+
+func (m SmartQuerierMock) QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+	if m.QuerySmartFn == nil {
+		panic("not expected to be called")
+	}
+	return m.QuerySmartFn(ctx, contractAddr, req)
+}
+
+// return matching type or fail
+func newContractSourceMock(t *testing.T, myValsetContract sdk.AccAddress, myStakingContract sdk.AccAddress) ContractSourceMock {
+	return ContractSourceMock{
+		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
+			switch ctype {
+			case types.PoEContractTypeValset:
+				return myValsetContract, nil
+			case types.PoEContractTypeStaking:
+				return myStakingContract, nil
+			default:
+				t.Fatalf("unexpected type: %s", ctype)
+				return nil, nil
+			}
+		},
+	}
 }

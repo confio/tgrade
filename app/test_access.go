@@ -9,7 +9,6 @@ import (
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	ibctransferkeeper "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/keeper"
 	ibckeeper "github.com/cosmos/cosmos-sdk/x/ibc/core/keeper"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 )
 
 type TestSupport struct {
@@ -42,10 +41,6 @@ func (s TestSupport) ScopeIBCKeeper() capabilitykeeper.ScopedKeeper {
 
 func (s TestSupport) ScopedTransferKeeper() capabilitykeeper.ScopedKeeper {
 	return s.app.scopedTransferKeeper
-}
-
-func (s TestSupport) StakingKeeper() stakingkeeper.Keeper {
-	return s.app.stakingKeeper
 }
 
 func (s TestSupport) BankKeeper() bankkeeper.Keeper {

@@ -11,7 +11,8 @@ option go_package = "github.com/confio/tgrade/x/globalfee/types";
 service Query {
   rpc MinimumGasPrices(QueryMinimumGasPricesRequest)
       returns (QueryMinimumGasPricesResponse) {
-    option (google.api.http).get = "/globalfee/v1beta1/minimum_gas_prices";
+    option (google.api.http).get =
+        "/tgrade/globalfee/v1beta1/minimum_gas_prices";
   }
 }
 
