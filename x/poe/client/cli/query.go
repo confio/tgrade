@@ -26,6 +26,7 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdShowPoEContract(),
 		GetCmdQueryValidators(),
 		GetCmdQueryValidator(),
+		GetCmdQueryUnbondingPeriod(),
 	)
 	return queryCmd
 }
@@ -54,6 +55,32 @@ func GetCmdShowPoEContract() *cobra.Command {
 				&types.QueryContractAddressRequest{
 					ContractType: cbt,
 				},
+			)
+			if err != nil {
+				return err
+			}
+			return clientCtx.PrintProto(res)
+		},
+	}
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+func GetCmdQueryUnbondingPeriod() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "unbonding-period",
+		Short: "Query the global unbonding period",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.UnbondingPeriod(
+				cmd.Context(),
+				&types.QueryUnbondingPeriodRequest{},
 			)
 			if err != nil {
 				return err

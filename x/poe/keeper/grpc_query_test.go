@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"testing"
+	"time"
 )
 
 func TestQueryContractAddress(t *testing.T) {
@@ -105,20 +106,30 @@ func TestQueryValidators(t *testing.T) {
 			}},
 			expErr: true,
 		},
-		//"not found": {
-		//	src: &types.QueryValidatorRequest{ValidatorAddr: myOperator.String()},
-		//	querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
-		//		return nil, nil
-		//	}},
-		//	expErr: true,
-		//},
-		//"contract returns error": {
-		//	src: &types.QueryValidatorRequest{ValidatorAddr: myOperator.String()},
-		//	querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
-		//		return nil, errors.New("testing")
-		//	}},
-		//	expErr: true,
-		//},
+		"empty result": {
+			src: &types.QueryValidatorsRequest{},
+			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				r := contract.ListValidatorsResponse{}
+				return json.Marshal(r)
+			}},
+			exp: &types.QueryValidatorsResponse{
+				Validators: []types.Validator{},
+			},
+		},
+		"nil result": {
+			src: &types.QueryValidatorsRequest{},
+			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				return nil, nil
+			}},
+			expErr: true,
+		},
+		"contract returns error": {
+			src: &types.QueryValidatorsRequest{},
+			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				return nil, errors.New("testing")
+			}},
+			expErr: true,
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
@@ -208,6 +219,69 @@ func TestQueryValidator(t *testing.T) {
 			// when
 			s := NewGrpcQuerier(contractSource, spec.querier)
 			gotRes, gotErr := s.Validator(ctx, spec.src)
+
+			// then
+			if spec.expErr {
+				assert.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+			assert.Equal(t, spec.exp, gotRes)
+		})
+	}
+}
+
+func TestQueryUnbondingPeriod(t *testing.T) {
+	var myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	contractSource := newContractSourceMock(t, nil, myStakingContract)
+
+	specs := map[string]struct {
+		src     *types.QueryUnbondingPeriodRequest
+		querier types.SmartQuerier
+		exp     *types.QueryUnbondingPeriodResponse
+		expErr  bool
+	}{
+		"all good": {
+			src: &types.QueryUnbondingPeriodRequest{},
+			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				return json.Marshal(contract.UnbondingPeriodResponse{
+					UnbondingPeriod: contract.Duration{Time: 1, Height: 2},
+				})
+			}},
+			exp: &types.QueryUnbondingPeriodResponse{
+				Time:   time.Second,
+				Height: 2,
+			},
+		},
+		"nil request": {
+			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				t.Fatalf("not expected to be called")
+				return nil, nil
+			}},
+			expErr: true,
+		},
+		"contract returns nil": {
+			src: &types.QueryUnbondingPeriodRequest{},
+			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				return nil, nil
+			}},
+			expErr: true,
+		},
+		"contract returns error": {
+			src: &types.QueryUnbondingPeriodRequest{},
+			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				return nil, errors.New("testing")
+			}},
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			ctx := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()))
+
+			// when
+			s := NewGrpcQuerier(contractSource, spec.querier)
+			gotRes, gotErr := s.UnbondingPeriod(ctx, spec.src)
 
 			// then
 			if spec.expErr {

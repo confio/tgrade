@@ -85,8 +85,14 @@ func newContractSourceMock(t *testing.T, myValsetContract sdk.AccAddress, myStak
 		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
 			switch ctype {
 			case types.PoEContractTypeValset:
+				if myValsetContract == nil {
+					t.Fatalf("unexpected call to %s", types.PoEContractTypeValset)
+				}
 				return myValsetContract, nil
 			case types.PoEContractTypeStaking:
+				if myStakingContract == nil {
+					t.Fatalf("unexpected call to %s", types.PoEContractTypeValset)
+				}
 				return myStakingContract, nil
 			default:
 				t.Fatalf("unexpected type: %s", ctype)

@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"time"
 )
 
 var _ types.QueryServer = &grpcQuerier{}
@@ -105,4 +106,28 @@ func (g grpcQuerier) Validator(c context.Context, req *types.QueryValidatorReque
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &types.QueryValidatorResponse{Validator: val}, nil
+}
+
+// UnbondingPeriod query the global unbonding period
+func (g grpcQuerier) UnbondingPeriod(c context.Context, request *types.QueryUnbondingPeriodRequest) (*types.QueryUnbondingPeriodResponse, error) {
+	if request == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+	contractAddr, err := g.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	switch {
+	case wasmtypes.ErrNotFound.Is(err):
+		return nil, status.Error(codes.NotFound, err.Error())
+	case err != nil:
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	rsp, err := contract.QueryStakingUnbondingPeriod(ctx, g.contractQuerier, contractAddr)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return &types.QueryUnbondingPeriodResponse{
+		Height: uint64(rsp.Height),
+		Time:   time.Duration(rsp.Time) * time.Second,
+	}, nil
 }

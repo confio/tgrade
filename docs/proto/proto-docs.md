@@ -30,6 +30,8 @@
 - [confio/poe/v1beta1/query.proto](#confio/poe/v1beta1/query.proto)
     - [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest)
     - [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse)
+    - [QueryUnbondingPeriodRequest](#confio.poe.v1beta1.QueryUnbondingPeriodRequest)
+    - [QueryUnbondingPeriodResponse](#confio.poe.v1beta1.QueryUnbondingPeriodResponse)
     - [QueryValidatorRequest](#confio.poe.v1beta1.QueryValidatorRequest)
     - [QueryValidatorResponse](#confio.poe.v1beta1.QueryValidatorResponse)
     - [QueryValidatorsRequest](#confio.poe.v1beta1.QueryValidatorsRequest)
@@ -364,10 +366,38 @@ Query/ContractAddress RPC method.
 
 
 
+<a name="confio.poe.v1beta1.QueryUnbondingPeriodRequest"></a>
+
+### QueryUnbondingPeriodRequest
+QueryUnbondingPeriodRequest is request type for the Query/UnbondingPeriod RPC
+method
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.QueryUnbondingPeriodResponse"></a>
+
+### QueryUnbondingPeriodResponse
+QueryUnbondingPeriodResponse is response type for the Query/UnbondingPeriod
+RPC method
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `time` | [google.protobuf.Duration](#google.protobuf.Duration) |  | Time is the time that must pass |
+| `height` | [uint64](#uint64) |  | Height is the number of blocks that must pass |
+
+
+
+
+
+
 <a name="confio.poe.v1beta1.QueryValidatorRequest"></a>
 
 ### QueryValidatorRequest
-QueryValidatorRequest is response type for the Query/Validator RPC method
+QueryValidatorRequest is request type for the Query/Validator RPC method
 
 
 | Field | Type | Label | Description |
@@ -439,9 +469,10 @@ Query defines the gRPC querier service.
 
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
-| `ContractAddress` | [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest) | [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse) |  | GET|/tgrade/poe/v1beta1/contract/{contract_type}|
+| `ContractAddress` | [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest) | [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse) | ContractAddress queries the address for one of the PoE contracts | GET|/tgrade/poe/v1beta1/contract/{contract_type}|
 | `Validators` | [QueryValidatorsRequest](#confio.poe.v1beta1.QueryValidatorsRequest) | [QueryValidatorsResponse](#confio.poe.v1beta1.QueryValidatorsResponse) | Validators queries all validators that match the given status. | GET|/tgrade/poe/v1beta1/validators|
 | `Validator` | [QueryValidatorRequest](#confio.poe.v1beta1.QueryValidatorRequest) | [QueryValidatorResponse](#confio.poe.v1beta1.QueryValidatorResponse) | Validator queries validator info for given validator address. | GET|/tgrade/poe/v1beta1/validators/{validator_addr}|
+| `UnbondingPeriod` | [QueryUnbondingPeriodRequest](#confio.poe.v1beta1.QueryUnbondingPeriodRequest) | [QueryUnbondingPeriodResponse](#confio.poe.v1beta1.QueryUnbondingPeriodResponse) | Validator queries validator info for given validator address. | GET|/tgrade/poe/v1beta1/staking/unbonding|
 
  <!-- end services -->
 

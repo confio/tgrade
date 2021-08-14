@@ -3,6 +3,7 @@ package confio.poe.v1beta1;
 
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
 import "google/api/annotations.proto";
 import "confio/poe/v1beta1/poe.proto";
 import "confio/poe/v1beta1/validator.proto";
@@ -11,19 +12,27 @@ option go_package = "github.com/confio/tgrade/x/poe/types";
 
 // Query defines the gRPC querier service.
 service Query {
+  // ContractAddress queries the address for one of the PoE contracts
   rpc ContractAddress(QueryContractAddressRequest)
       returns (QueryContractAddressResponse) {
     option (google.api.http).get =
         "/tgrade/poe/v1beta1/contract/{contract_type}";
   }
+
   // Validators queries all validators that match the given status.
   rpc Validators(QueryValidatorsRequest) returns (QueryValidatorsResponse) {
     option (google.api.http).get = "/tgrade/poe/v1beta1/validators";
   }
+
   // Validator queries validator info for given validator address.
   rpc Validator(QueryValidatorRequest) returns (QueryValidatorResponse) {
     option (google.api.http).get =
         "/tgrade/poe/v1beta1/validators/{validator_addr}";
+  }
+  // Validator queries validator info for given validator address.
+  rpc UnbondingPeriod(QueryUnbondingPeriodRequest)
+      returns (QueryUnbondingPeriodResponse) {
+    option (google.api.http).get = "/tgrade/poe/v1beta1/staking/unbonding";
   }
 }
 
@@ -59,7 +68,7 @@ message QueryValidatorsResponse {
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
-// QueryValidatorRequest is response type for the Query/Validator RPC method
+// QueryValidatorRequest is request type for the Query/Validator RPC method
 message QueryValidatorRequest {
   // validator_addr defines the validator address to query for.
   string validator_addr = 1;
@@ -69,4 +78,18 @@ message QueryValidatorRequest {
 message QueryValidatorResponse {
   // validator defines the the validator info.
   Validator validator = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryUnbondingPeriodRequest is request type for the Query/UnbondingPeriod RPC
+// method
+message QueryUnbondingPeriodRequest {}
+
+// QueryUnbondingPeriodResponse is response type for the Query/UnbondingPeriod
+// RPC method
+message QueryUnbondingPeriodResponse {
+  // Time is the time that must pass
+  google.protobuf.Duration time = 1
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  // Height is the number of blocks that must pass
+  uint64 height = 2;
 }

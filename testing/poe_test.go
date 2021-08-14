@@ -100,6 +100,39 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	assert.Equal(t, "newMoniker", gjson.Get(qResult, "description.moniker").String())
 }
 
+func TestPoEQueries(t *testing.T) {
+	sut.ResetChain(t)
+	cli := NewTgradeCli(t, sut, verbose)
+	sut.StartChain(t)
+	specs := map[string]struct {
+		query  []string
+		assert func(t *testing.T, qResult string)
+	}{
+		"unbonding period": {
+			query: []string{"q", "poe", "unbonding-period"},
+			assert: func(t *testing.T, qResult string) {
+				gotTime := gjson.Get(qResult, "time").String()
+				assert.Equal(t, "1814400s", gotTime)
+			},
+		},
+		"validators": {
+			query: []string{"q", "poe", "validators"},
+			assert: func(t *testing.T, qResult string) {
+				gotValidators := gjson.Get(qResult, "validators").Array()
+				assert.Greater(t, len(gotValidators), 0, gotValidators)
+				assert.NotEmpty(t, gjson.Get(gotValidators[0].String(), "description.moniker"), "moniker")
+			},
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			qResult := cli.CustomQuery(spec.query...)
+			spec.assert(t, qResult)
+			t.Logf(qResult)
+		})
+	}
+}
+
 func assertValidatorsUpdated(t *testing.T, sortedMember []testingcontracts.TG4Member, stakedAmounts []uint64, expValidators int) {
 	t.Helper()
 	v := sut.RPCClient(t).Validators()
