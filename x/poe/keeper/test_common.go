@@ -147,6 +147,7 @@ func createTestInput(
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(capabilitytypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
+	paramsKeeper.Subspace(types.ModuleName)
 
 	maccPerms := map[string][]string{ // module account permissions
 		authtypes.FeeCollectorName:  nil,
@@ -223,7 +224,8 @@ func createTestInput(
 	defaultParams := twasmtypes.DefaultParams()
 	twasmSubspace.SetParamSet(ctx, &defaultParams)
 
-	poeKeeper := NewKeeper(appCodec, keyPoE)
+	poeSubsp, _ := paramsKeeper.GetSubspace(types.ModuleName)
+	poeKeeper := NewKeeper(appCodec, keyPoE, poeSubsp)
 	router.AddRoute(sdk.NewRoute(twasmtypes.RouterKey, wasm.NewHandler(twasmKeeper.GetContractKeeper())))
 
 	keepers := TestKeepers{
@@ -270,6 +272,6 @@ func createMinTestInput(t *testing.T) (sdk.Context, simappparams.EncodingConfig,
 	}, false, log.NewNopLogger())
 
 	encodingConfig := types.MakeEncodingConfig(t)
-	k := NewKeeper(encodingConfig.Marshaler, keyPoe)
+	k := NewKeeper(encodingConfig.Marshaler, keyPoe, paramstypes.NewSubspace(nil, nil, nil, nil, types.ModuleName))
 	return ctx, encodingConfig, k
 }

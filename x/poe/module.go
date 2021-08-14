@@ -100,7 +100,7 @@ type AppModule struct {
 
 // twasmKeeper subset of keeper to decouple from twasm module
 type twasmKeeper interface {
-	abciKeeper
+	endBlockKeeper
 	types.SmartQuerier
 	types.Sudoer
 	SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) error
@@ -145,12 +145,13 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.poeKeeper, am.contractKeeper, am.twasmKeeper))
 }
 
-func (am AppModule) BeginBlock(context sdk.Context, block abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context, block abci.RequestBeginBlock) {
+	BeginBlocker(ctx, am.poeKeeper)
 }
 
-func (am AppModule) EndBlock(context sdk.Context, block abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx sdk.Context, block abci.RequestEndBlock) []abci.ValidatorUpdate {
 	am.doOnce.Do(ClearEmbeddedContracts) // release memory
-	return EndBlocker(context, am.twasmKeeper)
+	return EndBlocker(ctx, am.twasmKeeper)
 }
 
 // InitGenesis performs genesis initialization for the genutil module. It returns

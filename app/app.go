@@ -349,7 +349,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		govRouter,
 	)
 
-	app.poeKeeper = poekeeper.NewKeeper(appCodec, keys[poe.StoreKey])
+	app.poeKeeper = poekeeper.NewKeeper(appCodec, keys[poe.StoreKey], app.getSubspace(poe.ModuleName))
 	/****  Module Options ****/
 
 	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment
@@ -381,6 +381,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
+		poe.ModuleName,
 		upgradetypes.ModuleName,
 		evidencetypes.ModuleName, ibchost.ModuleName,
 		twasm.ModuleName,
@@ -600,6 +601,7 @@ func initParamsKeeper(appCodec codec.BinaryMarshaler, legacyAmino *codec.LegacyA
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(twasm.ModuleName)
 	paramsKeeper.Subspace(globalfee.ModuleName)
+	paramsKeeper.Subspace(poe.ModuleName)
 
 	return paramsKeeper
 }

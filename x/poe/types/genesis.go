@@ -16,6 +16,7 @@ func DefaultGenesisState() GenesisState {
 		SeedContracts:      true,
 		BondDenom:          DefaultBondDenom,
 		SystemAdminAddress: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),
+		Params:             DefaultParams(),
 	}
 }
 

@@ -10,7 +10,6 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	ibccoretypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"time"
@@ -23,7 +22,8 @@ var _ wasmtypes.DistributionKeeper = &StakingAdapter{}
 var _ wasmkeeper.ValidatorSetSource = &StakingAdapter{}
 var _ ibccoretypes.StakingKeeper = &StakingAdapter{}
 var _ evidencetypes.StakingKeeper = &StakingAdapter{}
-var _ slashingtypes.StakingKeeper = &StakingAdapter{}
+
+//var _ slashingtypes.StakingKeeper = &StakingAdapter{}
 var _ minttypes.StakingKeeper = &StakingAdapter{}
 var _ govtypes.StakingKeeper = &StakingAdapter{}
 

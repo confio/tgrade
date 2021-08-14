@@ -8,18 +8,23 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
 type Keeper struct {
-	marshaler codec.Marshaler
-	storeKey  sdk.StoreKey
+	marshaler  codec.Marshaler
+	storeKey   sdk.StoreKey
+	paramStore paramtypes.Subspace
 }
 
 // NewKeeper constructor
-func NewKeeper(marshaler codec.Marshaler, key sdk.StoreKey) Keeper {
-	return Keeper{marshaler: marshaler, storeKey: key}
+func NewKeeper(marshaler codec.Marshaler, key sdk.StoreKey, paramSpace paramtypes.Subspace) Keeper {
+	// set KeyTable if it has not already been set
+	if !paramSpace.HasKeyTable() {
+		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
+	}
+	return Keeper{marshaler: marshaler, storeKey: key, paramStore: paramSpace}
 }
 
 func (k Keeper) SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress) {
@@ -62,11 +67,6 @@ func (k Keeper) setPoESystemAdminAddress(ctx sdk.Context, admin sdk.AccAddress) 
 func (k Keeper) GetPoESystemAdminAddress(ctx sdk.Context) sdk.AccAddress {
 	store := ctx.KVStore(k.storeKey)
 	return store.Get(types.SystemAdminPrefix)
-}
-
-func (k Keeper) GetLastValidators(ctx sdk.Context) []stakingtypes.Validator {
-	panic("implement")
-	return nil
 }
 
 func ModuleLogger(ctx sdk.Context) log.Logger {

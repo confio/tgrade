@@ -24,3 +24,12 @@ enum PoEContractType {
       [ (gogoproto.enumvalue_customname) = "PoEContractTypeEngagement" ];
   MIXER = 4 [ (gogoproto.enumvalue_customname) = "PoEContractTypeMixer" ];
 }
+
+// Params defines the parameters for the staking module.
+message Params {
+  option (gogoproto.equal) = true;
+  option (gogoproto.goproto_stringer) = false;
+  // historical_entries is the number of historical entries to persist.
+  uint32 historical_entries = 4
+      [ (gogoproto.moretags) = "yaml:\"historical_entries\"" ];
+}
