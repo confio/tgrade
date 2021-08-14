@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"sort"
@@ -118,7 +119,7 @@ $ %s query staking validators
 				return err
 			}
 			_ = pageReq // todo (Alex): support pagination
-			result, err := queryClient.Validators(cmd.Context(), &types.QueryValidatorsRequest{
+			result, err := queryClient.Validators(cmd.Context(), &stakingtypes.QueryValidatorsRequest{
 				// Leaving status empty on purpose to query all validators.
 				//Pagination: pageReq,
 			})
@@ -164,7 +165,7 @@ $ %s query poe validator %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 				return err
 			}
 
-			params := &types.QueryValidatorRequest{ValidatorAddr: addr.String()}
+			params := &stakingtypes.QueryValidatorRequest{ValidatorAddr: addr.String()}
 			res, err := queryClient.Validator(cmd.Context(), params)
 			if err != nil {
 				return err

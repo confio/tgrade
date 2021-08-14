@@ -40,7 +40,7 @@ func TestListValidators(t *testing.T) {
 	sort.Slice(expValidators, func(i, j int) bool {
 		return expValidators[i].OperatorAddress < expValidators[j].OperatorAddress
 	})
-	gotValidators := make([]types.Validator, len(vals))
+	gotValidators := make([]stakingtypes.Validator, len(vals))
 	for i, v := range vals {
 		gotValidators[i], err = v.ToValidator()
 		require.NoError(t, err)
@@ -61,7 +61,7 @@ func TestGetValidator(t *testing.T) {
 
 	specs := map[string]struct {
 		operatorAddr string
-		expVal       types.Validator
+		expVal       stakingtypes.Validator
 		expEmpty     bool
 	}{
 		"query one validator": {
@@ -142,8 +142,8 @@ func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k keeper.Keeper, con
 }
 
 // return genesis mutator that adds the given mumber of validators to the genesis
-func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeepers, numValidators int) (func(m *types.GenesisState), []types.Validator) {
-	collectValidators := make([]types.Validator, numValidators)
+func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeepers, numValidators int) (func(m *types.GenesisState), []stakingtypes.Validator) {
+	collectValidators := make([]stakingtypes.Validator, numValidators)
 	return func(m *types.GenesisState) {
 		f := fuzz.New()
 		m.GenTxs = make([]json.RawMessage, numValidators)
@@ -166,7 +166,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			any, err := codectypes.NewAnyWithValue(pubKey)
 			require.NoError(t, err)
 			stakedAmount := sdk.TokensFromConsensusPower(int64(power)).Uint64()
-			collectValidators[i] = types.Validator{
+			collectValidators[i] = stakingtypes.Validator{
 				OperatorAddress: opAddr.String(),
 				ConsensusPubkey: any,
 				Description:     desc,

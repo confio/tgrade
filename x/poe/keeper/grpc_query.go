@@ -6,6 +6,7 @@ import (
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -36,7 +37,7 @@ func (g grpcQuerier) ContractAddress(c context.Context, request *types.QueryCont
 }
 
 // Validators query all validators
-func (g grpcQuerier) Validators(c context.Context, request *types.QueryValidatorsRequest) (*types.QueryValidatorsResponse, error) {
+func (g grpcQuerier) Validators(c context.Context, request *stakingtypes.QueryValidatorsRequest) (*stakingtypes.QueryValidatorsResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -58,20 +59,20 @@ func (g grpcQuerier) Validators(c context.Context, request *types.QueryValidator
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	vals := make([]types.Validator, len(valsRsp))
+	vals := make([]stakingtypes.Validator, len(valsRsp))
 	for i, v := range valsRsp {
 		vals[i], err = v.ToValidator()
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
-	return &types.QueryValidatorsResponse{
+	return &stakingtypes.QueryValidatorsResponse{
 		Validators: vals,
 	}, nil
 }
 
 // Validator queries validator info for given validator address
-func (g grpcQuerier) Validator(c context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
+func (g grpcQuerier) Validator(c context.Context, req *stakingtypes.QueryValidatorRequest) (*stakingtypes.QueryValidatorResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -105,7 +106,7 @@ func (g grpcQuerier) Validator(c context.Context, req *types.QueryValidatorReque
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return &types.QueryValidatorResponse{Validator: val}, nil
+	return &stakingtypes.QueryValidatorResponse{Validator: val}, nil
 }
 
 // UnbondingPeriod query the global unbonding period

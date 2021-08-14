@@ -10,6 +10,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -72,7 +73,7 @@ func TestQueryValidators(t *testing.T) {
 	contractSource := newContractSourceMock(t, myValsetContract, nil)
 
 	pubKey := ed25519.GenPrivKey().PubKey()
-	expValidator := types.ValidatorFixtureFixture(func(m *types.Validator) {
+	expValidator := types.ValidatorFixtureFixture(func(m *stakingtypes.Validator) {
 		pkAny, _ := codectypes.NewAnyWithValue(pubKey)
 		m.ConsensusPubkey = pkAny
 	})
@@ -87,16 +88,16 @@ func TestQueryValidators(t *testing.T) {
 		}})
 	}}
 	specs := map[string]struct {
-		src     *types.QueryValidatorsRequest
+		src     *stakingtypes.QueryValidatorsRequest
 		querier types.SmartQuerier
-		exp     *types.QueryValidatorsResponse
+		exp     *stakingtypes.QueryValidatorsResponse
 		expErr  bool
 	}{
 		"all good": {
-			src:     &types.QueryValidatorsRequest{},
+			src:     &stakingtypes.QueryValidatorsRequest{},
 			querier: querier,
-			exp: &types.QueryValidatorsResponse{
-				Validators: []types.Validator{expValidator},
+			exp: &stakingtypes.QueryValidatorsResponse{
+				Validators: []stakingtypes.Validator{expValidator},
 			},
 		},
 		"nil request": {
@@ -107,24 +108,24 @@ func TestQueryValidators(t *testing.T) {
 			expErr: true,
 		},
 		"empty result": {
-			src: &types.QueryValidatorsRequest{},
+			src: &stakingtypes.QueryValidatorsRequest{},
 			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				r := contract.ListValidatorsResponse{}
 				return json.Marshal(r)
 			}},
-			exp: &types.QueryValidatorsResponse{
-				Validators: []types.Validator{},
+			exp: &stakingtypes.QueryValidatorsResponse{
+				Validators: []stakingtypes.Validator{},
 			},
 		},
 		"nil result": {
-			src: &types.QueryValidatorsRequest{},
+			src: &stakingtypes.QueryValidatorsRequest{},
 			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				return nil, nil
 			}},
 			expErr: true,
 		},
 		"contract returns error": {
-			src: &types.QueryValidatorsRequest{},
+			src: &stakingtypes.QueryValidatorsRequest{},
 			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				return nil, errors.New("testing")
 			}},
@@ -157,7 +158,7 @@ func TestQueryValidator(t *testing.T) {
 	contractSource := newContractSourceMock(t, myValsetContract, nil)
 
 	pubKey := ed25519.GenPrivKey().PubKey()
-	expValidator := types.ValidatorFixtureFixture(func(m *types.Validator) {
+	expValidator := types.ValidatorFixtureFixture(func(m *stakingtypes.Validator) {
 		pkAny, _ := codectypes.NewAnyWithValue(pubKey)
 		m.ConsensusPubkey = pkAny
 	})
@@ -170,15 +171,15 @@ func TestQueryValidator(t *testing.T) {
 		}})
 	}}
 	specs := map[string]struct {
-		src     *types.QueryValidatorRequest
+		src     *stakingtypes.QueryValidatorRequest
 		querier types.SmartQuerier
-		exp     *types.QueryValidatorResponse
+		exp     *stakingtypes.QueryValidatorResponse
 		expErr  bool
 	}{
 		"all good": {
-			src:     &types.QueryValidatorRequest{ValidatorAddr: myOperator.String()},
+			src:     &stakingtypes.QueryValidatorRequest{ValidatorAddr: myOperator.String()},
 			querier: querier,
-			exp: &types.QueryValidatorResponse{
+			exp: &stakingtypes.QueryValidatorResponse{
 				Validator: expValidator,
 			},
 		},
@@ -190,7 +191,7 @@ func TestQueryValidator(t *testing.T) {
 			expErr: true,
 		},
 		"empty address": {
-			src: &types.QueryValidatorRequest{},
+			src: &stakingtypes.QueryValidatorRequest{},
 			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				t.Fatalf("not expected to be called")
 				return nil, nil
@@ -198,14 +199,14 @@ func TestQueryValidator(t *testing.T) {
 			expErr: true,
 		},
 		"not found": {
-			src: &types.QueryValidatorRequest{ValidatorAddr: myOperator.String()},
+			src: &stakingtypes.QueryValidatorRequest{ValidatorAddr: myOperator.String()},
 			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				return nil, nil
 			}},
 			expErr: true,
 		},
 		"contract returns error": {
-			src: &types.QueryValidatorRequest{ValidatorAddr: myOperator.String()},
+			src: &stakingtypes.QueryValidatorRequest{ValidatorAddr: myOperator.String()},
 			querier: SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				return nil, errors.New("testing")
 			}},

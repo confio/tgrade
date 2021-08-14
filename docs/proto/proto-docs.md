@@ -22,20 +22,11 @@
     - [PoEContract](#confio.poe.v1beta1.PoEContract)
     - [TG4Member](#confio.poe.v1beta1.TG4Member)
   
-- [confio/poe/v1beta1/validator.proto](#confio/poe/v1beta1/validator.proto)
-    - [Validator](#confio.poe.v1beta1.Validator)
-  
-    - [BondStatus](#confio.poe.v1beta1.BondStatus)
-  
 - [confio/poe/v1beta1/query.proto](#confio/poe/v1beta1/query.proto)
     - [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest)
     - [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse)
     - [QueryUnbondingPeriodRequest](#confio.poe.v1beta1.QueryUnbondingPeriodRequest)
     - [QueryUnbondingPeriodResponse](#confio.poe.v1beta1.QueryUnbondingPeriodResponse)
-    - [QueryValidatorRequest](#confio.poe.v1beta1.QueryValidatorRequest)
-    - [QueryValidatorResponse](#confio.poe.v1beta1.QueryValidatorResponse)
-    - [QueryValidatorsRequest](#confio.poe.v1beta1.QueryValidatorsRequest)
-    - [QueryValidatorsResponse](#confio.poe.v1beta1.QueryValidatorsResponse)
   
     - [Query](#confio.poe.v1beta1.Query)
   
@@ -268,65 +259,6 @@ TG4Member member of the Engagement group.
 
 
 
-<a name="confio/poe/v1beta1/validator.proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## confio/poe/v1beta1/validator.proto
-
-
-
-<a name="confio.poe.v1beta1.Validator"></a>
-
-### Validator
-Validator defines a validator, together with the total amount of the
-Validator's bond shares and their exchange rate to coins. Slashing results in
-a decrease in the exchange rate, allowing correct calculation of future
-undelegations without iterating over delegators. When coins are delegated to
-this validator, the validator is credited with a delegation whose number of
-bond shares is based on the amount of coins delegated divided by the current
-exchange rate. Voting power can be calculated as total bonded shares
-multiplied by exchange rate.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `operator_address` | [string](#string) |  | operator_address defines the address of the validator's operator; bech encoded in JSON. |
-| `consensus_pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  | consensus_pubkey is the consensus public key of the validator, as a Protobuf Any. |
-| `jailed` | [bool](#bool) |  | jailed defined whether the validator has been jailed from bonded status or not. |
-| `status` | [BondStatus](#confio.poe.v1beta1.BondStatus) |  | status is the validator status (bonded/unbonding/unbonded). |
-| `tokens` | [string](#string) |  | tokens define the delegated tokens (incl. self-delegation). |
-| `description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  | description defines the description terms for the validator. |
-| `unbonding_height` | [int64](#int64) |  | unbonding_height defines, if unbonding, the height at which this validator has begun unbonding. |
-| `unbonding_time` | [google.protobuf.Timestamp](#google.protobuf.Timestamp) |  | unbonding_time defines, if unbonding, the min time for the validator to complete unbonding. |
-
-
-
-
-
- <!-- end messages -->
-
-
-<a name="confio.poe.v1beta1.BondStatus"></a>
-
-### BondStatus
-BondStatus is the status of a validator.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| BOND_STATUS_UNSPECIFIED | 0 | UNSPECIFIED defines an invalid validator status. |
-| BOND_STATUS_UNBONDED | 1 | UNBONDED defines a validator that is not bonded. |
-| BOND_STATUS_UNBONDING | 2 | UNBONDING defines a validator that is unbonding. |
-| BOND_STATUS_BONDED | 3 | BONDED defines a validator that is bonded. |
-
-
- <!-- end enums -->
-
- <!-- end HasExtensions -->
-
- <!-- end services -->
-
-
-
 <a name="confio/poe/v1beta1/query.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -393,68 +325,6 @@ RPC method
 
 
 
-
-<a name="confio.poe.v1beta1.QueryValidatorRequest"></a>
-
-### QueryValidatorRequest
-QueryValidatorRequest is request type for the Query/Validator RPC method
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `validator_addr` | [string](#string) |  | validator_addr defines the validator address to query for. |
-
-
-
-
-
-
-<a name="confio.poe.v1beta1.QueryValidatorResponse"></a>
-
-### QueryValidatorResponse
-QueryValidatorResponse is response type for the Query/Validator RPC method
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `validator` | [Validator](#confio.poe.v1beta1.Validator) |  | validator defines the the validator info. |
-
-
-
-
-
-
-<a name="confio.poe.v1beta1.QueryValidatorsRequest"></a>
-
-### QueryValidatorsRequest
-QueryValidatorsRequest is request type for Query/Validators RPC method.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `status` | [string](#string) |  | status enables to query for validators matching a given status. |
-| `pagination` | [cosmos.base.query.v1beta1.PageRequest](#cosmos.base.query.v1beta1.PageRequest) |  | pagination defines an optional pagination for the request. |
-
-
-
-
-
-
-<a name="confio.poe.v1beta1.QueryValidatorsResponse"></a>
-
-### QueryValidatorsResponse
-QueryValidatorsResponse is response type for the Query/Validators RPC method
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| `validators` | [Validator](#confio.poe.v1beta1.Validator) | repeated | validators contains all the queried validators. |
-| `pagination` | [cosmos.base.query.v1beta1.PageResponse](#cosmos.base.query.v1beta1.PageResponse) |  | pagination defines the pagination in the response. |
-
-
-
-
-
  <!-- end messages -->
 
  <!-- end enums -->
@@ -470,8 +340,8 @@ Query defines the gRPC querier service.
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
 | `ContractAddress` | [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest) | [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse) | ContractAddress queries the address for one of the PoE contracts | GET|/tgrade/poe/v1beta1/contract/{contract_type}|
-| `Validators` | [QueryValidatorsRequest](#confio.poe.v1beta1.QueryValidatorsRequest) | [QueryValidatorsResponse](#confio.poe.v1beta1.QueryValidatorsResponse) | Validators queries all validators that match the given status. | GET|/tgrade/poe/v1beta1/validators|
-| `Validator` | [QueryValidatorRequest](#confio.poe.v1beta1.QueryValidatorRequest) | [QueryValidatorResponse](#confio.poe.v1beta1.QueryValidatorResponse) | Validator queries validator info for given validator address. | GET|/tgrade/poe/v1beta1/validators/{validator_addr}|
+| `Validators` | [.cosmos.staking.v1beta1.QueryValidatorsRequest](#cosmos.staking.v1beta1.QueryValidatorsRequest) | [.cosmos.staking.v1beta1.QueryValidatorsResponse](#cosmos.staking.v1beta1.QueryValidatorsResponse) | Validators queries all validators that match the given status. | GET|/tgrade/poe/v1beta1/validators|
+| `Validator` | [.cosmos.staking.v1beta1.QueryValidatorRequest](#cosmos.staking.v1beta1.QueryValidatorRequest) | [.cosmos.staking.v1beta1.QueryValidatorResponse](#cosmos.staking.v1beta1.QueryValidatorResponse) | Validator queries validator info for given validator address. | GET|/tgrade/poe/v1beta1/validators/{validator_addr}|
 | `UnbondingPeriod` | [QueryUnbondingPeriodRequest](#confio.poe.v1beta1.QueryUnbondingPeriodRequest) | [QueryUnbondingPeriodResponse](#confio.poe.v1beta1.QueryUnbondingPeriodResponse) | Validator queries validator info for given validator address. | GET|/tgrade/poe/v1beta1/staking/unbonding|
 
  <!-- end services -->

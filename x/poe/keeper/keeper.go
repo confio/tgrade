@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -16,6 +17,7 @@ type Keeper struct {
 	storeKey  sdk.StoreKey
 }
 
+// NewKeeper constructor
 func NewKeeper(marshaler codec.Marshaler, key sdk.StoreKey) Keeper {
 	return Keeper{marshaler: marshaler, storeKey: key}
 }
@@ -60,6 +62,11 @@ func (k Keeper) setPoESystemAdminAddress(ctx sdk.Context, admin sdk.AccAddress) 
 func (k Keeper) GetPoESystemAdminAddress(ctx sdk.Context) sdk.AccAddress {
 	store := ctx.KVStore(k.storeKey)
 	return store.Get(types.SystemAdminPrefix)
+}
+
+func (k Keeper) GetLastValidators(ctx sdk.Context) []stakingtypes.Validator {
+	panic("implement")
+	return nil
 }
 
 func ModuleLogger(ctx sdk.Context) log.Logger {

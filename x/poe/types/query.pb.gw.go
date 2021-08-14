@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 
+	types_3 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/golang/protobuf/descriptor"
 	"github.com/golang/protobuf/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -96,7 +97,7 @@ var (
 )
 
 func request_Query_Validators_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryValidatorsRequest
+	var protoReq types_3.QueryValidatorsRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -112,7 +113,7 @@ func request_Query_Validators_0(ctx context.Context, marshaler runtime.Marshaler
 }
 
 func local_request_Query_Validators_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryValidatorsRequest
+	var protoReq types_3.QueryValidatorsRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -128,7 +129,7 @@ func local_request_Query_Validators_0(ctx context.Context, marshaler runtime.Mar
 }
 
 func request_Query_Validator_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryValidatorRequest
+	var protoReq types_3.QueryValidatorRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -155,7 +156,7 @@ func request_Query_Validator_0(ctx context.Context, marshaler runtime.Marshaler,
 }
 
 func local_request_Query_Validator_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq QueryValidatorRequest
+	var protoReq types_3.QueryValidatorRequest
 	var metadata runtime.ServerMetadata
 
 	var (

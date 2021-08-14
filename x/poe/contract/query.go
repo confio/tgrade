@@ -9,6 +9,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // ValsetQuery will create many queries for the valset contract
@@ -59,17 +60,17 @@ type OperatorResponse struct {
 	Metadata ValidatorMetadata `json:"metadata"`
 }
 
-func (v OperatorResponse) ToValidator() (types.Validator, error) {
+func (v OperatorResponse) ToValidator() (stakingtypes.Validator, error) {
 	pubKey, err := toCosmosPubKey(v.Pubkey)
 	if err != nil {
-		return types.Validator{}, sdkerrors.Wrap(err, "convert to cosmos key")
+		return stakingtypes.Validator{}, sdkerrors.Wrap(err, "convert to cosmos key")
 	}
 	any, err := codectypes.NewAnyWithValue(pubKey)
 	if err != nil {
-		return types.Validator{}, sdkerrors.Wrap(err, "convert to any type")
+		return stakingtypes.Validator{}, sdkerrors.Wrap(err, "convert to any type")
 	}
 
-	return types.Validator{
+	return stakingtypes.Validator{
 		OperatorAddress: v.Operator,
 		ConsensusPubkey: any,
 		Description:     v.Metadata.ToDescription(),
