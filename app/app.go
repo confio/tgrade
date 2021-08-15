@@ -64,8 +64,6 @@ import (
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
@@ -136,7 +134,6 @@ var (
 		params.AppModuleBasic{},
 		twasm.AppModuleBasic{},
 		crisis.AppModuleBasic{},
-		//slashing.AppModuleBasic{},
 		ibc.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
@@ -187,7 +184,6 @@ type TgradeApp struct {
 	accountKeeper    authkeeper.AccountKeeper
 	bankKeeper       bankkeeper.Keeper
 	capabilityKeeper *capabilitykeeper.Keeper
-	slashingKeeper   slashingkeeper.Keeper
 	mintKeeper       mintkeeper.Keeper
 	govKeeper        govkeeper.Keeper
 	crisisKeeper     crisiskeeper.Keeper
@@ -224,7 +220,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 
 	keys := sdk.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey,
-		minttypes.StoreKey, slashingtypes.StoreKey,
+		minttypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		wasm.StoreKey, poe.StoreKey,
@@ -266,9 +262,6 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		appCodec, keys[minttypes.StoreKey], app.getSubspace(minttypes.ModuleName), stakingKeeper,
 		app.accountKeeper, app.bankKeeper, authtypes.FeeCollectorName,
 	)
-	app.slashingKeeper = slashingkeeper.NewKeeper(
-		appCodec, keys[slashingtypes.StoreKey], &stakingKeeper, app.getSubspace(slashingtypes.ModuleName),
-	)
 	app.crisisKeeper = crisiskeeper.NewKeeper(
 		app.getSubspace(crisistypes.ModuleName), invCheckPeriod, app.bankKeeper, authtypes.FeeCollectorName,
 	)
@@ -303,9 +296,10 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
 
+	slashingAdapter := poestakingadapter.SlashingAdapter{}
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
-		appCodec, keys[evidencetypes.StoreKey], stakingKeeper, app.slashingKeeper,
+		appCodec, keys[evidencetypes.StoreKey], stakingKeeper, slashingAdapter,
 	)
 	app.evidenceKeeper = *evidenceKeeper
 
@@ -317,7 +311,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	// if we want to allow any custom callbacks
 	supportedFeatures := "staking,stargate"
 
-	stakingAdapter := poestakingadapter.NewStakingAdapter(&app.poeKeeper, app.twasmKeeper.GetContractKeeper())
+	stakingAdapter := stakingKeeper
 	app.twasmKeeper = twasmkeeper.NewKeeper(
 		appCodec,
 		keys[twasm.StoreKey],
@@ -373,7 +367,6 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		crisis.NewAppModule(&app.crisisKeeper, skipGenesisInvariants),
 		gov.NewAppModule(appCodec, app.govKeeper, app.accountKeeper, app.bankKeeper),
 		mint.NewAppModule(appCodec, app.mintKeeper, app.accountKeeper),
-		//slashing.NewAppModule(appCodec, app.slashingKeeper, app.accountKeeper, app.bankKeeper, app.stakingKeeper),
 		upgrade.NewAppModule(app.upgradeKeeper),
 		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper),
 		evidence.NewAppModule(app.evidenceKeeper),
@@ -403,7 +396,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	// genesis phase. For example bank transfer, auth account check, staking, ...
 	app.mm.SetOrderInitGenesis(
 		capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName,
-		/*slashingtypes.ModuleName, */ govtypes.ModuleName, minttypes.ModuleName, crisistypes.ModuleName,
+		govtypes.ModuleName, minttypes.ModuleName, crisistypes.ModuleName,
 		ibchost.ModuleName, evidencetypes.ModuleName, ibctransfertypes.ModuleName,
 		// wasm after ibc transfer
 		twasm.ModuleName,
@@ -428,7 +421,6 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		capability.NewAppModule(appCodec, *app.capabilityKeeper),
 		gov.NewAppModule(appCodec, app.govKeeper, app.accountKeeper, app.bankKeeper),
 		mint.NewAppModule(appCodec, app.mintKeeper, app.accountKeeper),
-		//slashing.NewAppModule(appCodec, app.slashingKeeper, app.accountKeeper, app.bankKeeper, app.stakingKeeper),
 		params.NewAppModule(app.paramsKeeper),
 		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper),
 		evidence.NewAppModule(app.evidenceKeeper),
@@ -601,10 +593,7 @@ func initParamsKeeper(appCodec codec.BinaryMarshaler, legacyAmino *codec.LegacyA
 
 	paramsKeeper.Subspace(authtypes.ModuleName)
 	paramsKeeper.Subspace(banktypes.ModuleName)
-	//paramsKeeper.Subspace(stakingtypes.ModuleName)
 	paramsKeeper.Subspace(minttypes.ModuleName)
-	paramsKeeper.Subspace(distrtypes.ModuleName)
-	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govtypes.ParamKeyTable())
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
