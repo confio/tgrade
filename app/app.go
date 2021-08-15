@@ -269,7 +269,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 
 	// Create IBC Keeper
 	app.ibcKeeper = ibckeeper.NewKeeper(
-		appCodec, keys[ibchost.StoreKey], app.getSubspace(ibchost.ModuleName), stakingKeeper, scopedIBCKeeper,
+		appCodec, keys[ibchost.StoreKey], app.getSubspace(ibchost.ModuleName), &app.poeKeeper, scopedIBCKeeper,
 	)
 
 	twasmConfig, err := twasm.ReadWasmConfig(appOpts)
@@ -349,7 +349,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		govRouter,
 	)
 
-	app.poeKeeper = poekeeper.NewKeeper(appCodec, keys[poe.StoreKey], app.getSubspace(poe.ModuleName))
+	app.poeKeeper = poekeeper.NewKeeper(appCodec, keys[poe.StoreKey], app.getSubspace(poe.ModuleName), app.twasmKeeper)
 	/****  Module Options ****/
 
 	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment

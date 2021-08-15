@@ -225,7 +225,7 @@ func createTestInput(
 	twasmSubspace.SetParamSet(ctx, &defaultParams)
 
 	poeSubsp, _ := paramsKeeper.GetSubspace(types.ModuleName)
-	poeKeeper := NewKeeper(appCodec, keyPoE, poeSubsp)
+	poeKeeper := NewKeeper(appCodec, keyPoE, poeSubsp, twasmKeeper)
 	router.AddRoute(sdk.NewRoute(twasmtypes.RouterKey, wasm.NewHandler(twasmKeeper.GetContractKeeper())))
 
 	keepers := TestKeepers{
@@ -272,6 +272,6 @@ func createMinTestInput(t *testing.T) (sdk.Context, simappparams.EncodingConfig,
 	}, false, log.NewNopLogger())
 
 	encodingConfig := types.MakeEncodingConfig(t)
-	k := NewKeeper(encodingConfig.Marshaler, keyPoe, paramstypes.NewSubspace(nil, nil, nil, nil, types.ModuleName))
+	k := NewKeeper(encodingConfig.Marshaler, keyPoe, paramstypes.NewSubspace(nil, nil, nil, nil, types.ModuleName), nil)
 	return ctx, encodingConfig, k
 }

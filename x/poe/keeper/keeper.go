@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -10,21 +11,28 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/tendermint/tendermint/libs/log"
+	"time"
 )
 
 type Keeper struct {
-	marshaler  codec.Marshaler
-	storeKey   sdk.StoreKey
-	paramStore paramtypes.Subspace
+	marshaler       codec.Marshaler
+	storeKey        sdk.StoreKey
+	paramStore      paramtypes.Subspace
+	contractQuerier types.SmartQuerier
 }
 
 // NewKeeper constructor
-func NewKeeper(marshaler codec.Marshaler, key sdk.StoreKey, paramSpace paramtypes.Subspace) Keeper {
+func NewKeeper(marshaler codec.Marshaler, key sdk.StoreKey, paramSpace paramtypes.Subspace, contractQuerier types.SmartQuerier) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
-	return Keeper{marshaler: marshaler, storeKey: key, paramStore: paramSpace}
+	return Keeper{
+		marshaler:       marshaler,
+		storeKey:        key,
+		paramStore:      paramSpace,
+		contractQuerier: contractQuerier,
+	}
 }
 
 func (k Keeper) SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress) {
@@ -67,6 +75,20 @@ func (k Keeper) setPoESystemAdminAddress(ctx sdk.Context, admin sdk.AccAddress) 
 func (k Keeper) GetPoESystemAdminAddress(ctx sdk.Context) sdk.AccAddress {
 	store := ctx.KVStore(k.storeKey)
 	return store.Get(types.SystemAdminPrefix)
+}
+
+// UnbondingTime returns the unbonding period from the staking contract
+func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
+	contractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	if err != nil {
+		panic(fmt.Sprintf("get contract address: %s", err))
+	}
+
+	rsp, err := contract.QueryStakingUnbondingPeriod(ctx, k.contractQuerier, contractAddr)
+	if err != nil {
+		panic(fmt.Sprintf("query unponding period from %s: %s", contractAddr.String(), err))
+	}
+	return time.Duration(rsp.Time) * time.Second
 }
 
 func ModuleLogger(ctx sdk.Context) log.Logger {

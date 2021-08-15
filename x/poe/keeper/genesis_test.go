@@ -31,6 +31,7 @@ func TestInitGenesis(t *testing.T) {
 			},
 			),
 			expDeliveredGenTxCount: 1,
+			expParams:              types.DefaultParams(),
 		},
 		"deliver genTX failed": {
 			src: types.GenesisStateFixture(func(m *types.GenesisState) {

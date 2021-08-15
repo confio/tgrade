@@ -1,12 +1,15 @@
 package keeper
 
 import (
+	"encoding/json"
+	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
 	"testing"
+	"time"
 )
 
 func TestSetGetPoEContractAddress(t *testing.T) {
@@ -66,6 +69,7 @@ func TestSetGetPoESystemAdmin(t *testing.T) {
 	k.setPoESystemAdminAddress(ctx, myAddr)
 	assert.Equal(t, myAddr, k.GetPoESystemAdminAddress(ctx))
 }
+
 func TestIteratePoEContracts(t *testing.T) {
 	ctx, _, k := createMinTestInput(t)
 	storedTypes := make(map[types.PoEContractType]sdk.AccAddress)
@@ -85,4 +89,18 @@ func TestIteratePoEContracts(t *testing.T) {
 		return false
 	})
 	assert.Equal(t, storedTypes, readTypes)
+}
+
+func TestUnbondingTime(t *testing.T) {
+	ctx, _, k := createMinTestInput(t)
+	var myAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	k.SetPoEContractAddress(ctx, types.PoEContractTypeStaking, myAddr)
+
+	k.contractQuerier = SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+		require.Equal(t, myAddr, contractAddr)
+		return json.Marshal(contract.UnbondingPeriodResponse{
+			UnbondingPeriod: contract.Duration{Time: 60, Height: 2},
+		})
+	}}
+	assert.Equal(t, time.Minute, k.UnbondingTime(ctx))
 }

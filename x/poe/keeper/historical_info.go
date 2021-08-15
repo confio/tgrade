@@ -1,19 +1,15 @@
 package keeper
 
 import (
+	"fmt"
 	"github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibccoretypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"strconv"
-	"time"
 )
 
 var _ ibccoretypes.StakingKeeper = &Keeper{}
-
-func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
-	panic("implement me")
-}
 
 // GetHistoricalInfo gets the historical info at a given height
 func (k Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
@@ -44,10 +40,10 @@ func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 	store.Delete(key)
 }
 
-// IterateHistoricalInfo provides an interator over all stored HistoricalInfo
+// iterateHistoricalInfo provides an interator over all stored HistoricalInfo
 //  objects. For each HistoricalInfo object, cb will be called. If the cb returns
 // true, the iterator will close and stop.
-func (k Keeper) IterateHistoricalInfo(ctx sdk.Context, cb func(stakingtypes.HistoricalInfo) bool) {
+func (k Keeper) iterateHistoricalInfo(ctx sdk.Context, cb func(stakingtypes.HistoricalInfo) bool) {
 	store := ctx.KVStore(k.storeKey)
 
 	iterator := sdk.KVStorePrefixIterator(store, types.HistoricalInfoKey)
@@ -61,11 +57,11 @@ func (k Keeper) IterateHistoricalInfo(ctx sdk.Context, cb func(stakingtypes.Hist
 	}
 }
 
-// GetAllHistoricalInfo returns all stored HistoricalInfo objects.
-func (k Keeper) GetAllHistoricalInfo(ctx sdk.Context) []stakingtypes.HistoricalInfo {
+// getAllHistoricalInfo returns all stored HistoricalInfo objects.
+func (k Keeper) getAllHistoricalInfo(ctx sdk.Context) []stakingtypes.HistoricalInfo {
 	var infos []stakingtypes.HistoricalInfo
 
-	k.IterateHistoricalInfo(ctx, func(histInfo stakingtypes.HistoricalInfo) bool {
+	k.iterateHistoricalInfo(ctx, func(histInfo stakingtypes.HistoricalInfo) bool {
 		infos = append(infos, histInfo)
 		return false
 	})
@@ -85,6 +81,7 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	// Since the entries to be deleted are always in a continuous range, we can iterate
 	// over the historical entries starting from the most recent version to be pruned
 	// and then return at the first empty entry.
+	fmt.Printf("++ height: %d", ctx.BlockHeight())
 	for i := ctx.BlockHeight() - int64(entryNum); i >= 0; i-- {
 		_, found := k.GetHistoricalInfo(ctx, i)
 		if found {
