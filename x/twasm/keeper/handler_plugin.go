@@ -160,10 +160,10 @@ func (h TgradeHandler) handleMintToken(ctx sdk.Context, contractAddr sdk.AccAddr
 	}
 
 	return sdk.Events{sdk.NewEvent(
-		types.EventTypeRewards,
-		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+		types.EventTypeMintTokens,
+		sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
 		sdk.NewAttribute(sdk.AttributeKeyAmount, token.String()),
-		sdk.NewAttribute(types.AttributeKeyRewardRecipient, mint.RecipientAddr),
+		sdk.NewAttribute(types.AttributeKeyRecipient, mint.RecipientAddr),
 	)}, nil
 }
 

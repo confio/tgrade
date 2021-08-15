@@ -551,7 +551,7 @@ func TestHandleMintToken(t *testing.T) {
 			assert.Equal(t, (*capturedSentCoins)[0].coins, spec.expMintedCoins)
 			assert.Equal(t, (*capturedSentCoins)[0].recipientAddr, spec.expRecipient)
 			require.Len(t, gotEvts, 1)
-			assert.Equal(t, types.EventTypeRewards, gotEvts[0].Type)
+			assert.Equal(t, types.EventTypeMintTokens, gotEvts[0].Type)
 		})
 	}
 }
