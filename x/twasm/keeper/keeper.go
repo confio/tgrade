@@ -5,6 +5,7 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	"github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -64,7 +65,11 @@ func NewKeeper(
 		// append our custom message handler
 		NewTgradeHandler(cdc, &result, bankKeeper, govRouter),
 	)
-	var queryPlugins wasmkeeper.WasmVMQueryHandler = wasmkeeper.DefaultQueryPlugins(bankKeeper, stakingKeeper, distKeeper, channelKeeper, queryRouter, &result.Keeper)
+	queryPlugins := wasmkeeper.DefaultQueryPlugins(bankKeeper, stakingKeeper, distKeeper, channelKeeper, queryRouter, &result.Keeper)
+	// disable staking queries
+	queryPlugins.Staking = func(ctx sdk.Context, request *wasmvmtypes.StakingQuery) ([]byte, error) {
+		return nil, wasmvmtypes.UnsupportedRequest{Kind: "not supported"}
+	}
 
 	opts = append([]wasm.Option{
 		wasmkeeper.WithMessageHandler(handlerChain),
