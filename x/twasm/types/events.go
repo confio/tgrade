@@ -5,10 +5,10 @@ const (
 	EventTypeUnsetPrivileged   = "unset_privileged_contract"
 	EventTypeRegisterPrivilege = "register_privilege"
 	EventTypeReleasePrivilege  = "release_privilege"
-	EventTypeRewards           = "rewards"
+	EventTypeMintTokens        = "mint"
 )
 
 const ( // event attributes
-	AttributeKeyCallbackType    = "privilege_type"
-	AttributeKeyRewardRecipient = "recipient"
+	AttributeKeyCallbackType = "privilege_type"
+	AttributeKeyRecipient    = "recipient"
 )

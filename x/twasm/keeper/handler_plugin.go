@@ -41,29 +41,32 @@ func NewTgradeHandler(cdc codec.Marshaler, keeper tgradeKeeper, bankKeeper minte
 }
 
 // DispatchMsg handles wasmVM message for privileged contracts
-func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress, _ string, msg wasmvmtypes.CosmosMsg) (events []sdk.Event, data [][]byte, err error) {
+func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress, _ string, msg wasmvmtypes.CosmosMsg) ([]sdk.Event, [][]byte, error) {
 	if msg.Custom == nil {
 		return nil, nil, wasmtypes.ErrUnknownMsg
 	}
 	if !h.keeper.IsPrivileged(ctx, contractAddr) {
 		return nil, nil, wasmtypes.ErrUnknownMsg
 	}
+	em := sdk.NewEventManager()
+	ctx = ctx.WithEventManager(em)
 	var tMsg contract.TgradeMsg
 	if err := tMsg.UnmarshalWithAny(msg.Custom, h.cdc); err != nil {
 		return nil, nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 	switch {
 	case tMsg.Privilege != nil:
-		return nil, nil, h.handlePrivilege(ctx, contractAddr, tMsg.Privilege)
+		err := h.handlePrivilege(ctx, contractAddr, tMsg.Privilege)
+		return em.Events(), nil, err
 	case tMsg.ExecuteGovProposal != nil:
-		return nil, nil, h.handleGovProposalExecution(ctx, contractAddr, tMsg.ExecuteGovProposal)
+		err := h.handleGovProposalExecution(ctx, contractAddr, tMsg.ExecuteGovProposal)
+		return em.Events(), nil, err
 	case tMsg.MintTokens != nil:
 		evts, err := h.handleMintToken(ctx, contractAddr, tMsg.MintTokens)
-		return evts, nil, err
+		return append(evts, em.Events()...), nil, err
 	}
 
 	ModuleLogger(ctx).Info("unhandled message", "msg", msg)
-
 	return nil, nil, wasmtypes.ErrUnknownMsg
 }
 
@@ -160,10 +163,10 @@ func (h TgradeHandler) handleMintToken(ctx sdk.Context, contractAddr sdk.AccAddr
 	}
 
 	return sdk.Events{sdk.NewEvent(
-		types.EventTypeRewards,
-		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+		types.EventTypeMintTokens,
+		sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
 		sdk.NewAttribute(sdk.AttributeKeyAmount, token.String()),
-		sdk.NewAttribute(types.AttributeKeyRewardRecipient, mint.RecipientAddr),
+		sdk.NewAttribute(types.AttributeKeyRecipient, mint.RecipientAddr),
 	)}, nil
 }
 

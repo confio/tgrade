@@ -25,6 +25,7 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 		src                   wasmvmtypes.CosmosMsg
 		expErr                *sdkerrors.Error
 		expCapturedGovContent []govtypes.Content
+		expEvents             []sdk.Event
 	}{
 		"handle privilege msg": {
 			src: wasmvmtypes.CosmosMsg{
@@ -32,7 +33,9 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 			},
 			setup: func(m *handlerTgradeKeeperMock) {
 				noopRegisterHook(m)
+				m.GetContractInfoFn = emitCtxEventWithGetContractInfoFn(m.GetContractInfoFn, sdk.NewEvent("testing"))
 			},
+			expEvents: sdk.Events{sdk.NewEvent("testing")},
 		},
 		"handle execute gov proposal msg": {
 			src: wasmvmtypes.CosmosMsg{
@@ -45,8 +48,10 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 					details.AddRegisteredPrivilege(types.PrivilegeTypeGovProposalExecutor, 1)
 					require.NoError(t, info.SetExtension(&details))
 				})
+				m.GetContractInfoFn = emitCtxEventWithGetContractInfoFn(m.GetContractInfoFn, sdk.NewEvent("testing"))
 			},
 			expCapturedGovContent: []govtypes.Content{&govtypes.TextProposal{Title: "foo", Description: "bar"}},
+			expEvents:             sdk.Events{sdk.NewEvent("testing")},
 		},
 		"handle minter msg": {
 			src: wasmvmtypes.CosmosMsg{
@@ -60,6 +65,12 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 					require.NoError(t, info.SetExtension(&details))
 				})
 			},
+			expEvents: sdk.Events{sdk.NewEvent(
+				types.EventTypeMintTokens,
+				sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
+				sdk.NewAttribute(sdk.AttributeKeyAmount, "1utgd"),
+				sdk.NewAttribute(types.AttributeKeyRecipient, otherAddr.String()),
+			)},
 		},
 		"non custom msg rejected": {
 			src:    wasmvmtypes.CosmosMsg{},
@@ -93,11 +104,24 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
 			h := NewTgradeHandler(cdc, mock, minterMock, govRouter)
-			var ctx sdk.Context
-			_, _, gotErr := h.DispatchMsg(ctx, contractAddr, "", spec.src)
+			em := sdk.NewEventManager()
+			ctx := sdk.Context{}.WithEventManager(em)
+
+			// when
+			gotEvents, _, gotErr := h.DispatchMsg(ctx, contractAddr, "", spec.src)
+			// then
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
 			assert.Equal(t, spec.expCapturedGovContent, govRouter.captured)
+			assert.Equal(t, spec.expEvents, gotEvents)
+			assert.Empty(t, em.Events())
 		})
+	}
+}
+
+func emitCtxEventWithGetContractInfoFn(fn func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo, event sdk.Event) func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+	return func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+		ctx.EventManager().EmitEvent(event)
+		return fn(ctx, contractAddress)
 	}
 }
 
@@ -551,12 +575,12 @@ func TestHandleMintToken(t *testing.T) {
 			assert.Equal(t, (*capturedSentCoins)[0].coins, spec.expMintedCoins)
 			assert.Equal(t, (*capturedSentCoins)[0].recipientAddr, spec.expRecipient)
 			require.Len(t, gotEvts, 1)
-			assert.Equal(t, types.EventTypeRewards, gotEvts[0].Type)
+			assert.Equal(t, types.EventTypeMintTokens, gotEvts[0].Type)
 		})
 	}
 }
 
-// noopRegisterHook does nothing and but all methods for registration
+// noopRegisterHook provided method stubs for all methods for registration
 func noopRegisterHook(m *handlerTgradeKeeperMock, mutators ...func(*wasmtypes.ContractInfo)) {
 	m.IsPrivilegedFn = func(ctx sdk.Context, contract sdk.AccAddress) bool {
 		return true
