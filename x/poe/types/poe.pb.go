@@ -65,7 +65,7 @@ func (PoEContractType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_df6d9ea68813554a, []int{0}
 }
 
-// Params defines the parameters for the staking module.
+// Params defines the parameters for the PoE module.
 type Params struct {
 	// historical_entries is the number of historical entries to persist.
 	HistoricalEntries uint32 `protobuf:"varint,4,opt,name=historical_entries,json=historicalEntries,proto3" json:"historical_entries,omitempty" yaml:"historical_entries"`

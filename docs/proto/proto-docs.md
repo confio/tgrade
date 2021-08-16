@@ -172,7 +172,7 @@ Query defines the gRPC querier service.
 <a name="confio.poe.v1beta1.Params"></a>
 
 ### Params
-Params defines the parameters for the staking module.
+Params defines the parameters for the PoE module.
 
 
 | Field | Type | Label | Description |
