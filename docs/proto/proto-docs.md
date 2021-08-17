@@ -15,6 +15,8 @@
     - [Query](#confio.globalfee.v1beta1.Query)
   
 - [confio/poe/v1beta1/poe.proto](#confio/poe/v1beta1/poe.proto)
+    - [Params](#confio.poe.v1beta1.Params)
+  
     - [PoEContractType](#confio.poe.v1beta1.PoEContractType)
   
 - [confio/poe/v1beta1/genesis.proto](#confio/poe/v1beta1/genesis.proto)
@@ -166,6 +168,21 @@ Query defines the gRPC querier service.
 ## confio/poe/v1beta1/poe.proto
 
 
+
+<a name="confio.poe.v1beta1.Params"></a>
+
+### Params
+Params defines the parameters for the PoE module.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `historical_entries` | [uint32](#uint32) |  | historical_entries is the number of historical entries to persist. |
+
+
+
+
+
  <!-- end messages -->
 
 
@@ -206,6 +223,7 @@ GenesisState - initial state of module
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| `params` | [Params](#confio.poe.v1beta1.Params) |  | params defines all the parameter of the module |
 | `seed_contracts` | [bool](#bool) |  | SeedContracts when enabled stores and instantiates the Proof of Engagement contracts on the chain. |
 | `gen_txs` | [bytes](#bytes) | repeated | GenTxs defines the genesis transactions to create a validator. |
 | `system_admin_address` | [string](#string) |  | SystemAdminAddress single address that is set as admin for the PoE contracts in seed mode. |

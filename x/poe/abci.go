@@ -11,13 +11,13 @@ import (
 	"time"
 )
 
-type abciKeeper interface {
+type endBlockKeeper interface {
 	types.Sudoer
 	IteratePrivilegedContractsByType(ctx sdk.Context, privilegeType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 
 // EndBlocker calls the Valset contract for the validator diff.
-func EndBlocker(parentCtx sdk.Context, k abciKeeper) []abci.ValidatorUpdate {
+func EndBlocker(parentCtx sdk.Context, k endBlockKeeper) []abci.ValidatorUpdate {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 	logger := keeper.ModuleLogger(parentCtx)
 
@@ -39,4 +39,10 @@ func EndBlocker(parentCtx sdk.Context, k abciKeeper) []abci.ValidatorUpdate {
 		return true // stop at first contract
 	})
 	return diff
+}
+
+func BeginBlocker(ctx sdk.Context, k interface{ TrackHistoricalInfo(ctx sdk.Context) }) {
+	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
+
+	k.TrackHistoricalInfo(ctx)
 }

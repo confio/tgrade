@@ -22,6 +22,7 @@ func TestInitGenesis(t *testing.T) {
 		expErr                 bool
 		expDeliveredGenTxCount int
 		expContracts           []CapturedPoEContractAddress
+		expParams              types.Params
 	}{
 		"all good": {
 			src: types.GenesisStateFixture(func(m *types.GenesisState) {
@@ -30,6 +31,7 @@ func TestInitGenesis(t *testing.T) {
 			},
 			),
 			expDeliveredGenTxCount: 1,
+			expParams:              types.DefaultParams(),
 		},
 		"deliver genTX failed": {
 			src: types.GenesisStateFixture(func(m *types.GenesisState) {
@@ -50,10 +52,14 @@ func TestInitGenesis(t *testing.T) {
 			ctx := sdk.Context{}
 			cFn, capAddrs := CaptureSetPoEContractAddressFn()
 			var capturedAdminAddr sdk.AccAddress
+			var capaturedParams types.Params
 			m := PoEKeeperMock{
 				SetPoEContractAddressFn: cFn,
 				setPoESystemAdminAddressFn: func(ctx sdk.Context, admin sdk.AccAddress) {
 					capturedAdminAddr = admin
+				},
+				setParamsFn: func(ctx sdk.Context, params types.Params) {
+					capaturedParams = params
 				},
 			}
 			gotErr := InitGenesis(ctx, m, captureTx, spec.src, txConfig)
@@ -65,6 +71,7 @@ func TestInitGenesis(t *testing.T) {
 			assert.Len(t, capturedTxs, spec.expDeliveredGenTxCount)
 			assert.Equal(t, spec.expContracts, *capAddrs)
 			assert.Equal(t, spec.src.SystemAdminAddress, capturedAdminAddr.String())
+			assert.Equal(t, spec.expParams, capaturedParams)
 		})
 	}
 }

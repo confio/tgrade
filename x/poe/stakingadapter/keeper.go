@@ -8,12 +8,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/distribution/types"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	ibccoretypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"time"
 )
 
 // StakingAdapter connect to POE contract
@@ -21,9 +18,11 @@ import (
 var _ wasmtypes.StakingKeeper = &StakingAdapter{}
 var _ wasmtypes.DistributionKeeper = &StakingAdapter{}
 var _ wasmkeeper.ValidatorSetSource = &StakingAdapter{}
-var _ ibccoretypes.StakingKeeper = &StakingAdapter{}
+
+//var _ ibccoretypes.StakingKeeper = &StakingAdapter{}
 var _ evidencetypes.StakingKeeper = &StakingAdapter{}
-var _ slashingtypes.StakingKeeper = &StakingAdapter{}
+
+//var _ slashingtypes.StakingKeeper = &StakingAdapter{}
 var _ minttypes.StakingKeeper = &StakingAdapter{}
 var _ govtypes.StakingKeeper = &StakingAdapter{}
 
@@ -65,14 +64,6 @@ func (s StakingAdapter) HasReceivingRedelegation(ctx sdk.Context, delAddr sdk.Ac
 
 func (s StakingAdapter) DelegationRewards(c context.Context, req *types.QueryDelegationRewardsRequest) (*types.QueryDelegationRewardsResponse, error) {
 	return nil, nil
-}
-
-func (s StakingAdapter) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
-	panic("implement me")
-}
-
-func (s StakingAdapter) UnbondingTime(ctx sdk.Context) time.Duration {
-	panic("implement me")
 }
 
 func (s StakingAdapter) ValidatorByConsAddr(ctx sdk.Context, address sdk.ConsAddress) stakingtypes.ValidatorI {

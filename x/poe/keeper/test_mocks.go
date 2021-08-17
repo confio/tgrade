@@ -28,6 +28,14 @@ type PoEKeeperMock struct {
 	ContractSourceMock
 	SetPoEContractAddressFn    func(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
 	setPoESystemAdminAddressFn func(ctx sdk.Context, admin sdk.AccAddress)
+	setParamsFn                func(ctx sdk.Context, params types.Params)
+}
+
+func (m PoEKeeperMock) setParams(ctx sdk.Context, params types.Params) {
+	if m.setParamsFn == nil {
+		panic("not expected to be called")
+	}
+	m.setParamsFn(ctx, params)
 }
 
 func (m PoEKeeperMock) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {

@@ -15,6 +15,7 @@ type DeliverTxFn func(abci.RequestDeliverTx) abci.ResponseDeliverTx
 type initer interface {
 	SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
 	setPoESystemAdminAddress(ctx sdk.Context, admin sdk.AccAddress)
+	setParams(ctx sdk.Context, params types.Params)
 }
 
 // InitGenesis - initialize accounts and deliver genesis transactions
@@ -30,6 +31,7 @@ func InitGenesis(
 	//	addr, _ := sdk.AccAddressFromBech32(v.Address)
 	//	keeper.SetPoEContractAddress(ctx, v.ContractType, addr)
 	//}
+	keeper.setParams(ctx, genesisState.Params)
 	admin, err := sdk.AccAddressFromBech32(genesisState.SystemAdminAddress)
 	if err != nil {
 		return sdkerrors.Wrap(err, "admin")
