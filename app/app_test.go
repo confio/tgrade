@@ -6,7 +6,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	ibcclienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/tendermint/tendermint/libs/rand"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"os"
 	"testing"
 	"time"
@@ -22,7 +25,6 @@ import (
 var emptyWasmOpts []wasm.Option = nil
 
 func TestTgradeExport(t *testing.T) {
-	t.Skip("Alex, this is not implemented")
 	db := db.NewMemDB()
 	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, EmptyBaseAppOptions{}, emptyWasmOpts)
 	genesisState := NewDefaultGenesisState()
@@ -44,6 +46,8 @@ func TestTgradeExport(t *testing.T) {
 
 	// Making a new app object with the db, so that initchain hasn't been called
 	newGapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, EmptyBaseAppOptions{}, emptyWasmOpts)
+
+	t.Skip("Alex, export is not implemented")
 	_, err = newGapp.ExportAppStateAndValidators(false, []string{})
 	require.NoError(t, err, "ExportAppStateAndValidators should not have an error")
 }
@@ -118,4 +122,38 @@ func setGenesis(gapp *TgradeApp) error {
 
 	gapp.Commit()
 	return nil
+}
+
+func TestIBCKeeperLazyInitialization(t *testing.T) {
+	db := db.NewMemDB()
+	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, EmptyBaseAppOptions{}, emptyWasmOpts)
+	genesisState := NewDefaultGenesisState()
+
+	setupWithSingleValidatorGenTX(t, genesisState)
+
+	stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
+	require.NoError(t, err)
+
+	// Initialize the chain
+	gapp.InitChain(
+		abci.RequestInitChain{
+			Time:          time.Now().UTC(),
+			Validators:    []abci.ValidatorUpdate{},
+			AppStateBytes: stateBytes,
+		},
+	)
+	gapp.Commit()
+	// store some historic information
+	header := tmproto.Header{ChainID: "testing-1", Height: 2}
+	gapp.BaseApp.BeginBlock(abci.RequestBeginBlock{Header: header})
+	gapp.Commit()
+
+	ctx := gapp.BaseApp.NewContext(true, header)
+	height := ibcclienttypes.Height{RevisionNumber: 1, RevisionHeight: 2}
+
+	// when
+	state, found := gapp.ibcKeeper.ClientKeeper.GetSelfConsensusState(ctx, height)
+	// then
+	require.True(t, found)
+	assert.NotNil(t, state)
 }
