@@ -14,14 +14,14 @@ service Query {
   // PrivilegedContracts returns all privileged contracts
   rpc PrivilegedContracts(QueryPrivilegedContractsRequest)
       returns (QueryPrivilegedContractsResponse) {
-    option (google.api.http).get = "/twasm/v1beta1/contracts/privileged";
+    option (google.api.http).get = "/tgrade/twasm/v1beta1/contracts/privileged";
   }
   // ContractsByPrivilegeType returns all contracts that have registered for the
   // privilege type
   rpc ContractsByPrivilegeType(QueryContractsByPrivilegeTypeRequest)
       returns (QueryContractsByPrivilegeTypeResponse) {
     option (google.api.http).get =
-        "/twasm/v1beta1/contracts/privilege/{privilege_type}";
+        "/tgrade/twasm/v1beta1/contracts/privilege/{privilege_type}";
   }
 }
 

@@ -11,18 +11,8 @@ import (
 	"github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
-// Sudoer with access to sudo method
-type Sudoer interface {
-	Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
-}
-
-// Executor with access to excute method
-type Executor interface {
-	Execute(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error)
-}
-
 // RegisterValidator calls valset contract to register a new validator key and address
-func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptotypes.PubKey, delegatorAddress sdk.AccAddress, description stakingtypes.Description, k Executor) error {
+func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptotypes.PubKey, delegatorAddress sdk.AccAddress, description stakingtypes.Description, k types.Executor) error {
 	pub, err := NewValidatorPubkey(pk)
 	if err != nil {
 		return err
@@ -43,7 +33,7 @@ func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptoty
 }
 
 // UpdateValidator calls valset contract to change validator's metadata
-func UpdateValidator(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, description stakingtypes.Description, k Executor) error {
+func UpdateValidator(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, description stakingtypes.Description, k types.Executor) error {
 	metadata := MetadataFromDescription(description)
 	updateValidator := TG4ValsetExecute{
 		UpdateMetadata: &metadata,
@@ -58,7 +48,7 @@ func UpdateValidator(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddr
 }
 
 // CallEndBlockWithValidatorUpdate calls valset contract for a validator diff
-func CallEndBlockWithValidatorUpdate(ctx sdk.Context, contractAddr sdk.AccAddress, k Sudoer) ([]abci.ValidatorUpdate, error) {
+func CallEndBlockWithValidatorUpdate(ctx sdk.Context, contractAddr sdk.AccAddress, k types.Sudoer) ([]abci.ValidatorUpdate, error) {
 	sudoMsg := ValidatorUpdateSudoMsg{EndWithValidatorUpdate: &struct{}{}}
 	msgBz, err := json.Marshal(sudoMsg)
 	if err != nil {
@@ -82,7 +72,7 @@ func CallEndBlockWithValidatorUpdate(ctx sdk.Context, contractAddr sdk.AccAddres
 
 	result := make([]abci.ValidatorUpdate, len(contractResult.Diffs))
 	for i, v := range contractResult.Diffs {
-		pub, err := getPubKey(v.PubKey)
+		pub, err := convertToTendermintPubKey(v.PubKey)
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +84,7 @@ func CallEndBlockWithValidatorUpdate(ctx sdk.Context, contractAddr sdk.AccAddres
 	return result, nil
 }
 
-func getPubKey(key ValidatorPubkey) (crypto.PublicKey, error) {
+func convertToTendermintPubKey(key ValidatorPubkey) (crypto.PublicKey, error) {
 	switch {
 	case key.Ed25519 != nil:
 		return crypto.PublicKey{
@@ -114,7 +104,7 @@ func getPubKey(key ValidatorPubkey) (crypto.PublicKey, error) {
 }
 
 // BondTokens sends given amount to the staking contract to increase the bonded amount for the delegator
-func BondTokens(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, amount sdk.Coins, k Executor) error {
+func BondTokens(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, amount sdk.Coins, k types.Executor) error {
 	bondStake := TG4StakeExecute{
 		Bond: &struct{}{},
 	}

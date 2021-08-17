@@ -5,6 +5,7 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	"github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -53,6 +54,13 @@ func NewKeeper(
 	// configure wasm keeper via options
 
 	var handlerChain wasmkeeper.Messenger = wasmkeeper.NewMessageHandlerChain(
+		// disable staking messages
+		wasmkeeper.MessageHandlerFunc(func(ctx sdk.Context, contractAddr sdk.AccAddress, contractIBCPortID string, msg wasmvmtypes.CosmosMsg) (events []sdk.Event, data [][]byte, err error) {
+			if msg.Staking != nil {
+				return nil, nil, sdkerrors.Wrap(wasmtypes.ErrExecuteFailed, "not supported, yet")
+			}
+			return nil, nil, wasmtypes.ErrUnknownMsg
+		}),
 		wasmkeeper.NewDefaultMessageHandler(
 			router,
 			channelKeeper,
@@ -64,7 +72,11 @@ func NewKeeper(
 		// append our custom message handler
 		NewTgradeHandler(cdc, &result, bankKeeper, govRouter),
 	)
-	var queryPlugins wasmkeeper.WasmVMQueryHandler = wasmkeeper.DefaultQueryPlugins(bankKeeper, stakingKeeper, distKeeper, channelKeeper, queryRouter, &result.Keeper)
+	queryPlugins := wasmkeeper.DefaultQueryPlugins(bankKeeper, stakingKeeper, distKeeper, channelKeeper, queryRouter, &result.Keeper)
+	// disable staking queries
+	queryPlugins.Staking = func(ctx sdk.Context, request *wasmvmtypes.StakingQuery) ([]byte, error) {
+		return nil, wasmvmtypes.UnsupportedRequest{Kind: "not supported, yet"}
+	}
 
 	opts = append([]wasm.Option{
 		wasmkeeper.WithMessageHandler(handlerChain),

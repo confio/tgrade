@@ -27,8 +27,8 @@ var (
 	contractVersion []byte
 )
 
-// clearEmbeddedContracts release memory
-func clearEmbeddedContracts() {
+// ClearEmbeddedContracts release memory
+func ClearEmbeddedContracts() {
 	tg4Group = nil
 	tg4Stake = nil
 	tg4Mixer = nil
@@ -127,7 +127,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		MaxValidators: 100,
 		EpochLength:   1,
 		EpochReward:   sdk.NewCoin(gs.BondDenom, sdk.OneInt()),
-		InitialKeys:   []contract.ValsetInitKey{},
+		InitialKeys:   []contract.Validator{},
 	}
 	codeID, err = k.Create(ctx, creator, tgValset, &wasmtypes.AllowEverybody)
 	if err != nil {

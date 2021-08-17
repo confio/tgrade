@@ -20,5 +20,6 @@ for contract in tg4_group tgrade_gov_reflect tgrade_valset tg4_mixer tg4_stake; 
   # download the artifact
   curl -LJO -H 'Accept: application/octet-stream' -H "Authorization: token $GITHUB_API_TOKEN" "$asset_url"
 done
+
 rm -f version.txt
 echo "$tag" >version.txt

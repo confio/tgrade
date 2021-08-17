@@ -1,13 +1,13 @@
-package types_test
+package types
 
 import (
-	"github.com/confio/tgrade/x/poe/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -25,7 +25,7 @@ var (
 func TestMsgDecode(t *testing.T) {
 	registry := codectypes.NewInterfaceRegistry()
 	cryptocodec.RegisterInterfaces(registry)
-	types.RegisterInterfaces(registry)
+	RegisterInterfaces(registry)
 	cdc := codec.NewProtoCodec(registry)
 
 	// firstly we start testing the pubkey serialization
@@ -39,7 +39,7 @@ func TestMsgDecode(t *testing.T) {
 
 	// now let's try to serialize the whole message
 
-	msg, err := types.NewMsgCreateValidator(valAddr1, pk1, coinPos, stakingtypes.Description{})
+	msg, err := NewMsgCreateValidator(valAddr1, pk1, coinPos, stakingtypes.Description{})
 	require.NoError(t, err)
 	msgSerialized, err := cdc.MarshalInterface(msg)
 	require.NoError(t, err)
@@ -47,7 +47,7 @@ func TestMsgDecode(t *testing.T) {
 	var msgUnmarshaled sdk.Msg
 	err = cdc.UnmarshalInterface(msgSerialized, &msgUnmarshaled)
 	require.NoError(t, err)
-	msg2, ok := msgUnmarshaled.(*types.MsgCreateValidator)
+	msg2, ok := msgUnmarshaled.(*MsgCreateValidator)
 	require.True(t, ok)
 	require.True(t, msg.Value.IsEqual(msg2.Value))
 	require.True(t, msg.Pubkey.Equal(msg2.Pubkey))
@@ -74,12 +74,65 @@ func TestMsgCreateValidator(t *testing.T) {
 
 	for _, tc := range tests {
 		description := stakingtypes.NewDescription(tc.moniker, tc.identity, tc.website, tc.securityContact, tc.details)
-		msg, err := types.NewMsgCreateValidator(tc.delegatorAddr, tc.pubkey, tc.bond, description)
+		msg, err := NewMsgCreateValidator(tc.delegatorAddr, tc.pubkey, tc.bond, description)
 		require.NoError(t, err)
 		if tc.expectPass {
 			require.Nil(t, msg.ValidateBasic(), "test: %v", tc.name)
 		} else {
 			require.NotNil(t, msg.ValidateBasic(), "test: %v", tc.name)
 		}
+	}
+}
+
+func TestMsgUpdateValidatorValidateBasic(t *testing.T) {
+	specs := map[string]struct {
+		src    *MsgUpdateValidator
+		expErr bool
+	}{
+		"all good": {
+			src: MsgUpdateValidatorFixture(),
+		},
+		"empty description": {
+			src: MsgUpdateValidatorFixture(func(m *MsgUpdateValidator) {
+				m.Description = stakingtypes.Description{}
+			}),
+			expErr: true,
+		},
+		"do not modify description": {
+			src: MsgUpdateValidatorFixture(func(m *MsgUpdateValidator) {
+				m.Description = stakingtypes.NewDescription(
+					stakingtypes.DoNotModifyDesc,
+					stakingtypes.DoNotModifyDesc,
+					stakingtypes.DoNotModifyDesc,
+					stakingtypes.DoNotModifyDesc,
+					stakingtypes.DoNotModifyDesc,
+				)
+			}),
+			expErr: true,
+		},
+		"invalid address": {
+			src: MsgUpdateValidatorFixture(func(m *MsgUpdateValidator) {
+				m.DelegatorAddress = "notAValidAddress"
+			}),
+			expErr: true,
+		},
+		"empty address": {
+			src: MsgUpdateValidatorFixture(func(m *MsgUpdateValidator) {
+				bech32PrefixAccAddr := sdk.GetConfig().GetBech32AccountAddrPrefix()
+				bech32Addr, _ := bech32.ConvertAndEncode(bech32PrefixAccAddr, []byte{})
+				m.DelegatorAddress = bech32Addr
+			}),
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			gotErr := spec.src.ValidateBasic()
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+		})
 	}
 }

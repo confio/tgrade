@@ -40,10 +40,28 @@ func TestHandler(t *testing.T) {
 				Type: "foo",
 			}}},
 		},
-		"error returned": {
+		"MsgCreateValidator error returned": {
 			src: types.MsgCreateValidatorFixture(),
 			mock: MsgServerMock{
 				CreateValidatorFn: func(ctx context.Context, validator *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error) {
+					return nil, sdkerrors.ErrInvalidAddress
+				},
+			},
+			expErr: sdkerrors.ErrInvalidAddress,
+		},
+		"MsgUpdateValidator": {
+			src: types.MsgUpdateValidatorFixture(),
+			mock: MsgServerMock{
+				UpdateValidatorFn: func(ctx context.Context, validator *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error) {
+					return &types.MsgUpdateValidatorResponse{}, nil
+				},
+			},
+			expResult: &sdk.Result{Data: []byte{}, Events: []abcitypes.Event{}},
+		},
+		"MsgUpdateValidator error returned": {
+			src: types.MsgUpdateValidatorFixture(),
+			mock: MsgServerMock{
+				UpdateValidatorFn: func(ctx context.Context, validator *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error) {
 					return nil, sdkerrors.ErrInvalidAddress
 				},
 			},

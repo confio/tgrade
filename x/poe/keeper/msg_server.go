@@ -20,12 +20,13 @@ type ContractSource interface {
 type msgServer struct {
 	contractSource ContractSource
 	contractKeeper wasmtypes.ContractOpsKeeper
+	smartQuerier   types.SmartQuerier
 }
 
 // NewMsgServerImpl returns an implementation of the bank MsgServer interface
 // for the provided Keeper.
-func NewMsgServerImpl(poeKeeper ContractSource, contractKeeper wasmtypes.ContractOpsKeeper) types.MsgServer {
-	return &msgServer{contractSource: poeKeeper, contractKeeper: contractKeeper}
+func NewMsgServerImpl(poeKeeper ContractSource, contractKeeper wasmtypes.ContractOpsKeeper, q types.SmartQuerier) types.MsgServer {
+	return &msgServer{contractSource: poeKeeper, contractKeeper: contractKeeper, smartQuerier: q}
 }
 
 var _ types.MsgServer = msgServer{}
@@ -98,7 +99,7 @@ func (m msgServer) UpdateValidator(goCtx context.Context, msg *types.MsgUpdateVa
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	if _, err := msg.Description.EnsureLength(); err != nil {
-		return nil, err
+		return nil, sdkerrors.Wrap(err, "description")
 	}
 
 	contractAddr, err := m.contractSource.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
@@ -110,7 +111,24 @@ func (m msgServer) UpdateValidator(goCtx context.Context, msg *types.MsgUpdateVa
 		return nil, sdkerrors.Wrap(err, "delegator address")
 	}
 
-	err = contract.UpdateValidator(ctx, contractAddr, delegatorAddress, msg.Description, m.contractKeeper)
+	// client sends a diff. we need to query the old description and merge it
+	current, err := contract.QueryValidator(ctx, m.smartQuerier, contractAddr, delegatorAddress)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "query current description")
+	}
+	if current == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownAddress, "operator")
+	}
+	validator, err := current.ToValidator()
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "to validator")
+	}
+	newDescr, err := validator.Description.UpdateDescription(msg.Description)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "merge description")
+	}
+	// do the update
+	err = contract.UpdateValidator(ctx, contractAddr, delegatorAddress, newDescr, m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "update validator")
 	}

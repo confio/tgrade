@@ -22,6 +22,7 @@ import (
 var emptyWasmOpts []wasm.Option = nil
 
 func TestTgradeExport(t *testing.T) {
+	t.Skip("Alex, this is not implemented")
 	db := db.NewMemDB()
 	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, EmptyBaseAppOptions{}, emptyWasmOpts)
 	genesisState := NewDefaultGenesisState()

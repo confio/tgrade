@@ -34,6 +34,7 @@ func NewTxCmd() *cobra.Command {
 
 	poeTxCmd.AddCommand(
 		NewCreateValidatorCmd(),
+		NewEditValidatorCmd(),
 	)
 
 	return poeTxCmd
@@ -140,23 +141,61 @@ func NewBuildCreateValidatorMsg(clientCtx client.Context, txf tx.Factory, fs *fl
 	return txf, msg, nil
 }
 
+func NewEditValidatorCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "edit-validator",
+		Short: "edit an existing validator account",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			valAddr := clientCtx.GetFromAddress()
+			moniker, _ := cmd.Flags().GetString(FlagMoniker)
+			identity, _ := cmd.Flags().GetString(FlagIdentity)
+			website, _ := cmd.Flags().GetString(FlagWebsite)
+			security, _ := cmd.Flags().GetString(FlagSecurityContact)
+			details, _ := cmd.Flags().GetString(FlagDetails)
+			description := stakingtypes.NewDescription(moniker, identity, website, security, details)
+
+			msg := types.NewMsgUpdateValidator(valAddr, description)
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	cmd.Flags().AddFlagSet(flagSetValidatorDescription(stakingtypes.DoNotModifyDesc))
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
+
 // CreateValidatorMsgFlagSet Return the flagset, particular flags, and a description of defaults
 // this is anticipated to be used with the gen-tx
 func CreateValidatorMsgFlagSet(ipDefault string) (fs *flag.FlagSet, defaultsDesc string) {
 	fsCreateValidator := flag.NewFlagSet("", flag.ContinueOnError)
 	fsCreateValidator.String(FlagIP, ipDefault, "The node's public IP")
 	fsCreateValidator.String(FlagNodeID, "", "The node's NodeID")
-	fsCreateValidator.String(FlagMoniker, "", "The validator's (optional) moniker")
-	fsCreateValidator.String(FlagWebsite, "", "The validator's (optional) website")
-	fsCreateValidator.String(FlagSecurityContact, "", "The validator's (optional) security contact email")
-	fsCreateValidator.String(FlagDetails, "", "The validator's (optional) details")
-	fsCreateValidator.String(FlagIdentity, "", "The (optional) identity signature (ex. UPort or Keybase)")
+
+	fsCreateValidator.AddFlagSet(flagSetValidatorDescription(""))
 	fsCreateValidator.AddFlagSet(FlagSetAmount())
 	fsCreateValidator.AddFlagSet(FlagSetPublicKey())
 
 	defaultsDesc = fmt.Sprintf(`delegation amount: %s`, defaultAmount)
 
 	return fsCreateValidator, defaultsDesc
+}
+
+func flagSetValidatorDescription(defaultValue string) *flag.FlagSet {
+	fs := flag.NewFlagSet("", flag.ContinueOnError)
+	fs.String(FlagMoniker, defaultValue, "The validator's name")
+	fs.String(FlagIdentity, defaultValue, "The (optional) identity signature (ex. UPort or Keybase)")
+	fs.String(FlagWebsite, defaultValue, "The validator's (optional) website")
+	fs.String(FlagSecurityContact, defaultValue, "The validator's (optional) security contact email")
+	fs.String(FlagDetails, defaultValue, "The validator's (optional) details")
+	return fs
 }
 
 type TxCreateValidatorConfig struct {

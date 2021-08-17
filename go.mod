@@ -26,6 +26,7 @@ require (
 	github.com/tidwall/sjson v1.1.6
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.38.0
+	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 )
 

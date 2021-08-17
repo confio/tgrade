@@ -2,6 +2,8 @@ package keeper
 
 import (
 	"context"
+	"encoding/json"
+	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
 	wasmtesting "github.com/confio/tgrade/x/twasm/testing"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -12,8 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/rand"
 	types1 "github.com/tendermint/tendermint/proto/tendermint/types"
+	"strings"
 	"testing"
 )
 
@@ -21,6 +25,9 @@ func TestCreateValidator(t *testing.T) {
 	var myValsetContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 	var myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 	var myDelegatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+
+	contractSource := newContractSourceMock(t, myValsetContract, myStakingContract)
+
 	specs := map[string]struct {
 		src    *types.MsgCreateValidator
 		expErr *sdkerrors.Error
@@ -46,19 +53,6 @@ func TestCreateValidator(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			cm := ContractSourceMock{
-				GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
-					switch ctype {
-					case types.PoEContractTypeValset:
-						return myValsetContract, nil
-					case types.PoEContractTypeStaking:
-						return myStakingContract, nil
-					default:
-						t.Fatalf("unexpected type: %s", ctype)
-						return nil, nil
-					}
-				},
-			}
 			fn, execs := wasmtesting.CaptureExecuteFn()
 			km := &wasmtesting.ContractOpsKeeperMock{
 				ExecuteFn: fn,
@@ -68,7 +62,7 @@ func TestCreateValidator(t *testing.T) {
 				Validator: &types1.ValidatorParams{PubKeyTypes: []string{"ed25519"}}}))
 
 			// when
-			s := NewMsgServerImpl(cm, km)
+			s := NewMsgServerImpl(contractSource, km, nil)
 			gotRes, gotErr := s.CreateValidator(ctx, spec.src)
 
 			// then
@@ -79,7 +73,7 @@ func TestCreateValidator(t *testing.T) {
 			}
 			require.NoError(t, gotErr)
 			// and contract called
-			assert.Len(t, *execs, 2)
+			require.Len(t, *execs, 2)
 			assert.Equal(t, myValsetContract, (*execs)[0].ContractAddress)
 			assert.Equal(t, myDelegatorAddr, (*execs)[0].Caller)
 			assert.Nil(t, (*execs)[0].Coins)
@@ -94,5 +88,213 @@ func TestCreateValidator(t *testing.T) {
 			assert.Equal(t, types.EventTypeCreateValidator, em.Events()[1].Type)
 		})
 	}
+}
 
+func TestUpdateValidator(t *testing.T) {
+	var myValsetContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+
+	contractSource := newContractSourceMock(t, myValsetContract, myStakingContract)
+
+	desc := contract.MetadataFromDescription(stakingtypes.Description{
+		Moniker:         "myMoniker",
+		Identity:        "myIdentity",
+		Website:         "https://example.com",
+		SecurityContact: "myContact",
+		Details:         "myDetails",
+	})
+	querier := SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+		return json.Marshal(contract.ValidatorResponse{Validator: &contract.OperatorResponse{
+			Operator: RandomAddress(t).String(),
+			Pubkey:   contract.ValidatorPubkey{Ed25519: ed25519.GenPrivKey().PubKey().Bytes()},
+			Metadata: desc,
+		}})
+	}}
+	specs := map[string]struct {
+		src    *types.MsgUpdateValidator
+		exp    *contract.ValidatorMetadata
+		expErr *sdkerrors.Error
+	}{
+		"update all": {
+			src: types.MsgUpdateValidatorFixture(
+				func(m *types.MsgUpdateValidator) {
+					m.DelegatorAddress = myOperatorAddr.String()
+					m.Description = stakingtypes.NewDescription(
+						"otherMoniker",
+						"otherIdentity",
+						"https://otherWebsite",
+						"otherContact",
+						"otherDetails",
+					)
+				},
+			),
+			exp: &contract.ValidatorMetadata{
+				Moniker:         "otherMoniker",
+				Identity:        "otherIdentity",
+				Website:         "https://otherWebsite",
+				SecurityContact: "otherContact",
+				Details:         "otherDetails",
+			},
+		},
+		"partial update: moniker": {
+			src: types.MsgUpdateValidatorFixture(
+				func(m *types.MsgUpdateValidator) {
+					m.DelegatorAddress = myOperatorAddr.String()
+					m.Description = stakingtypes.NewDescription(
+						"otherMoniker",
+						stakingtypes.DoNotModifyDesc,
+						stakingtypes.DoNotModifyDesc,
+						stakingtypes.DoNotModifyDesc,
+						stakingtypes.DoNotModifyDesc,
+					)
+				},
+			),
+			exp: &contract.ValidatorMetadata{
+				Moniker:         "otherMoniker",
+				Identity:        "myIdentity",
+				Website:         "https://example.com",
+				SecurityContact: "myContact",
+				Details:         "myDetails",
+			},
+		},
+		"partial update: Identity": {
+			src: types.MsgUpdateValidatorFixture(
+				func(m *types.MsgUpdateValidator) {
+					m.DelegatorAddress = myOperatorAddr.String()
+					m.Description = stakingtypes.NewDescription(
+						stakingtypes.DoNotModifyDesc,
+						"otherIdentity",
+						stakingtypes.DoNotModifyDesc,
+						stakingtypes.DoNotModifyDesc,
+						stakingtypes.DoNotModifyDesc,
+					)
+				},
+			),
+			exp: &contract.ValidatorMetadata{
+				Moniker:         "myMoniker",
+				Identity:        "otherIdentity",
+				Website:         "https://example.com",
+				SecurityContact: "myContact",
+				Details:         "myDetails",
+			},
+		},
+		"partial update: Website": {
+			src: types.MsgUpdateValidatorFixture(
+				func(m *types.MsgUpdateValidator) {
+					m.DelegatorAddress = myOperatorAddr.String()
+					m.Description = stakingtypes.NewDescription(
+						stakingtypes.DoNotModifyDesc,
+						stakingtypes.DoNotModifyDesc,
+						"otherWebsite",
+						stakingtypes.DoNotModifyDesc,
+						stakingtypes.DoNotModifyDesc,
+					)
+				},
+			),
+			exp: &contract.ValidatorMetadata{
+				Moniker:         "myMoniker",
+				Identity:        "myIdentity",
+				Website:         "otherWebsite",
+				SecurityContact: "myContact",
+				Details:         "myDetails",
+			},
+		},
+		"partial update: Details": {
+			src: types.MsgUpdateValidatorFixture(
+				func(m *types.MsgUpdateValidator) {
+					m.DelegatorAddress = myOperatorAddr.String()
+					m.Description = stakingtypes.NewDescription(
+						stakingtypes.DoNotModifyDesc,
+						stakingtypes.DoNotModifyDesc,
+						stakingtypes.DoNotModifyDesc,
+						stakingtypes.DoNotModifyDesc,
+						"otherDetails",
+					)
+				},
+			),
+			exp: &contract.ValidatorMetadata{
+				Moniker:         "myMoniker",
+				Identity:        "myIdentity",
+				Website:         "https://example.com",
+				SecurityContact: "myContact",
+				Details:         "otherDetails",
+			},
+		},
+		"partial update: SecurityContact": {
+			src: types.MsgUpdateValidatorFixture(
+				func(m *types.MsgUpdateValidator) {
+					m.DelegatorAddress = myOperatorAddr.String()
+					m.Description = stakingtypes.NewDescription(
+						stakingtypes.DoNotModifyDesc,
+						stakingtypes.DoNotModifyDesc,
+						stakingtypes.DoNotModifyDesc,
+						"otherContact",
+						stakingtypes.DoNotModifyDesc,
+					)
+				},
+			),
+			exp: &contract.ValidatorMetadata{
+				Moniker:         "myMoniker",
+				Identity:        "myIdentity",
+				Website:         "https://example.com",
+				SecurityContact: "otherContact",
+				Details:         "myDetails",
+			},
+		},
+		"set empty values": {
+			src: types.MsgUpdateValidatorFixture(
+				func(m *types.MsgUpdateValidator) {
+					m.DelegatorAddress = myOperatorAddr.String()
+					m.Description = stakingtypes.NewDescription("otherMoniker", "", "", "", "")
+				},
+			),
+			exp: &contract.ValidatorMetadata{Moniker: "otherMoniker"},
+		},
+		"invalid description": {
+			src: types.MsgUpdateValidatorFixture(
+				func(m *types.MsgUpdateValidator) {
+					m.Description.Moniker = strings.Repeat("x", 71)
+				},
+			),
+			expErr: sdkerrors.ErrInvalidRequest,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			fn, execs := wasmtesting.CaptureExecuteFn()
+			km := &wasmtesting.ContractOpsKeeperMock{
+				ExecuteFn: fn,
+			}
+			em := sdk.NewEventManager()
+			ctx := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()).WithEventManager(em))
+
+			// when
+			s := NewMsgServerImpl(contractSource, km, querier)
+			gotRes, gotErr := s.UpdateValidator(ctx, spec.src)
+
+			// then
+			if spec.expErr != nil {
+				require.True(t, spec.expErr.Is(gotErr), "exp %v but got %#+v", spec.expErr, gotErr)
+				assert.Nil(t, gotRes)
+				return
+			}
+			require.NoError(t, gotErr)
+			// and contract called
+			assert.Len(t, *execs, 1)
+			assert.Equal(t, myValsetContract, (*execs)[0].ContractAddress)
+			assert.Equal(t, myOperatorAddr, (*execs)[0].Caller)
+			// ensure we pass the right data
+			var op contract.TG4ValsetExecute
+			require.NoError(t, json.Unmarshal((*execs)[0].Msg, &op))
+			assert.Equal(t, spec.exp, op.UpdateMetadata)
+			assert.Nil(t, (*execs)[0].Coins)
+
+			// and events emitted
+			require.NoError(t, gotErr)
+			require.Len(t, em.Events(), 2)
+			assert.Equal(t, sdk.EventTypeMessage, em.Events()[0].Type)
+			assert.Equal(t, types.EventTypeUpdateValidator, em.Events()[1].Type)
+		})
+	}
 }

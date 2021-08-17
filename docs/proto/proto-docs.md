@@ -25,6 +25,8 @@
 - [confio/poe/v1beta1/query.proto](#confio/poe/v1beta1/query.proto)
     - [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest)
     - [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse)
+    - [QueryUnbondingPeriodRequest](#confio.poe.v1beta1.QueryUnbondingPeriodRequest)
+    - [QueryUnbondingPeriodResponse](#confio.poe.v1beta1.QueryUnbondingPeriodResponse)
   
     - [Query](#confio.poe.v1beta1.Query)
   
@@ -152,7 +154,7 @@ Query defines the gRPC querier service.
 
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
-| `MinimumGasPrices` | [QueryMinimumGasPricesRequest](#confio.globalfee.v1beta1.QueryMinimumGasPricesRequest) | [QueryMinimumGasPricesResponse](#confio.globalfee.v1beta1.QueryMinimumGasPricesResponse) |  | GET|/globalfee/v1beta1/minimum_gas_prices|
+| `MinimumGasPrices` | [QueryMinimumGasPricesRequest](#confio.globalfee.v1beta1.QueryMinimumGasPricesRequest) | [QueryMinimumGasPricesResponse](#confio.globalfee.v1beta1.QueryMinimumGasPricesResponse) |  | GET|/tgrade/globalfee/v1beta1/minimum_gas_prices|
 
  <!-- end services -->
 
@@ -295,6 +297,34 @@ Query/ContractAddress RPC method.
 
 
 
+
+<a name="confio.poe.v1beta1.QueryUnbondingPeriodRequest"></a>
+
+### QueryUnbondingPeriodRequest
+QueryUnbondingPeriodRequest is request type for the Query/UnbondingPeriod RPC
+method
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.QueryUnbondingPeriodResponse"></a>
+
+### QueryUnbondingPeriodResponse
+QueryUnbondingPeriodResponse is response type for the Query/UnbondingPeriod
+RPC method
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `time` | [google.protobuf.Duration](#google.protobuf.Duration) |  | Time is the time that must pass |
+| `height` | [uint64](#uint64) |  | Height is the number of blocks that must pass |
+
+
+
+
+
  <!-- end messages -->
 
  <!-- end enums -->
@@ -309,7 +339,10 @@ Query defines the gRPC querier service.
 
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
-| `ContractAddress` | [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest) | [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse) |  | GET|/poe/v1beta1/contract/{contract_type}|
+| `ContractAddress` | [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest) | [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse) | ContractAddress queries the address for one of the PoE contracts | GET|/tgrade/poe/v1beta1/contract/{contract_type}|
+| `Validators` | [.cosmos.staking.v1beta1.QueryValidatorsRequest](#cosmos.staking.v1beta1.QueryValidatorsRequest) | [.cosmos.staking.v1beta1.QueryValidatorsResponse](#cosmos.staking.v1beta1.QueryValidatorsResponse) | Validators queries all validators that match the given status. | GET|/tgrade/poe/v1beta1/validators|
+| `Validator` | [.cosmos.staking.v1beta1.QueryValidatorRequest](#cosmos.staking.v1beta1.QueryValidatorRequest) | [.cosmos.staking.v1beta1.QueryValidatorResponse](#cosmos.staking.v1beta1.QueryValidatorResponse) | Validator queries validator info for given validator address. | GET|/tgrade/poe/v1beta1/validators/{validator_addr}|
+| `UnbondingPeriod` | [QueryUnbondingPeriodRequest](#confio.poe.v1beta1.QueryUnbondingPeriodRequest) | [QueryUnbondingPeriodResponse](#confio.poe.v1beta1.QueryUnbondingPeriodResponse) | Validator queries validator info for given validator address. | GET|/tgrade/poe/v1beta1/staking/unbonding|
 
  <!-- end services -->
 
@@ -607,8 +640,8 @@ Query provides defines the gRPC querier service
 
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
-| `PrivilegedContracts` | [QueryPrivilegedContractsRequest](#confio.twasm.v1beta1.QueryPrivilegedContractsRequest) | [QueryPrivilegedContractsResponse](#confio.twasm.v1beta1.QueryPrivilegedContractsResponse) | PrivilegedContracts returns all privileged contracts | GET|/twasm/v1beta1/contracts/privileged|
-| `ContractsByPrivilegeType` | [QueryContractsByPrivilegeTypeRequest](#confio.twasm.v1beta1.QueryContractsByPrivilegeTypeRequest) | [QueryContractsByPrivilegeTypeResponse](#confio.twasm.v1beta1.QueryContractsByPrivilegeTypeResponse) | ContractsByPrivilegeType returns all contracts that have registered for the privilege type | GET|/twasm/v1beta1/contracts/privilege/{privilege_type}|
+| `PrivilegedContracts` | [QueryPrivilegedContractsRequest](#confio.twasm.v1beta1.QueryPrivilegedContractsRequest) | [QueryPrivilegedContractsResponse](#confio.twasm.v1beta1.QueryPrivilegedContractsResponse) | PrivilegedContracts returns all privileged contracts | GET|/tgrade/twasm/v1beta1/contracts/privileged|
+| `ContractsByPrivilegeType` | [QueryContractsByPrivilegeTypeRequest](#confio.twasm.v1beta1.QueryContractsByPrivilegeTypeRequest) | [QueryContractsByPrivilegeTypeResponse](#confio.twasm.v1beta1.QueryContractsByPrivilegeTypeResponse) | ContractsByPrivilegeType returns all contracts that have registered for the privilege type | GET|/tgrade/twasm/v1beta1/contracts/privilege/{privilege_type}|
 
  <!-- end services -->
 

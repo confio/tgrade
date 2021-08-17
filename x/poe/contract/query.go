@@ -2,8 +2,14 @@ package contract
 
 import (
 	"encoding/json"
-	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
+	"github.com/confio/tgrade/x/poe/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	cryptosecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // ValsetQuery will create many queries for the valset contract
@@ -54,6 +60,34 @@ type OperatorResponse struct {
 	Metadata ValidatorMetadata `json:"metadata"`
 }
 
+func (v OperatorResponse) ToValidator() (stakingtypes.Validator, error) {
+	pubKey, err := toCosmosPubKey(v.Pubkey)
+	if err != nil {
+		return stakingtypes.Validator{}, sdkerrors.Wrap(err, "convert to cosmos key")
+	}
+	any, err := codectypes.NewAnyWithValue(pubKey)
+	if err != nil {
+		return stakingtypes.Validator{}, sdkerrors.Wrap(err, "convert to any type")
+	}
+
+	return stakingtypes.Validator{
+		OperatorAddress: v.Operator,
+		ConsensusPubkey: any,
+		Description:     v.Metadata.ToDescription(),
+	}, nil
+}
+
+func toCosmosPubKey(key ValidatorPubkey) (cryptotypes.PubKey, error) {
+	switch {
+	case key.Ed25519 != nil:
+		return &ed25519.PubKey{Key: key.Ed25519}, nil
+	case key.Secp256k1 != nil:
+		return &cryptosecp256k1.PubKey{Key: key.Secp256k1}, nil
+	default:
+		return nil, types.ErrValidatorPubKeyTypeNotSupported
+	}
+}
+
 type ValidatorInfo struct {
 	Operator        string          `json:"operator"`
 	ValidatorPubkey ValidatorPubkey `json:"validator_pubkey"`
@@ -74,42 +108,42 @@ type ListActiveValidatorsResponse struct {
 
 type SimulateActiveValidatorsResponse = ListActiveValidatorsResponse
 
-func QueryValsetConfig(ctx sdk.Context, k *twasmkeeper.Keeper, valset sdk.AccAddress) (*ValsetConfigResponse, error) {
+func QueryValsetConfig(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress) (*ValsetConfigResponse, error) {
 	query := ValsetQuery{Config: &struct{}{}}
 	var response ValsetConfigResponse
 	err := doQuery(ctx, k, valset, query, &response)
 	return &response, err
 }
 
-func QueryValsetEpoch(ctx sdk.Context, k *twasmkeeper.Keeper, valset sdk.AccAddress) (*ValsetEpochResponse, error) {
+func QueryValsetEpoch(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress) (*ValsetEpochResponse, error) {
 	query := ValsetQuery{Epoch: &struct{}{}}
 	var response ValsetEpochResponse
 	err := doQuery(ctx, k, valset, query, &response)
 	return &response, err
 }
 
-func QueryValidator(ctx sdk.Context, k *twasmkeeper.Keeper, valset sdk.AccAddress, operator sdk.AccAddress) (*OperatorResponse, error) {
+func QueryValidator(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress, operator sdk.AccAddress) (*OperatorResponse, error) {
 	query := ValsetQuery{Validator: &ValidatorQuery{Operator: operator.String()}}
 	var response ValidatorResponse
 	err := doQuery(ctx, k, valset, query, &response)
 	return response.Validator, err
 }
 
-func ListValidators(ctx sdk.Context, k *twasmkeeper.Keeper, valset sdk.AccAddress) ([]OperatorResponse, error) {
+func ListValidators(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress) ([]OperatorResponse, error) {
 	query := ValsetQuery{ListValidators: &ListValidatorsQuery{Limit: 30}}
 	var response ListValidatorsResponse
 	err := doQuery(ctx, k, valset, query, &response)
 	return response.Validators, err
 }
 
-func ListActiveValidators(ctx sdk.Context, k *twasmkeeper.Keeper, valset sdk.AccAddress) ([]ValidatorInfo, error) {
+func ListActiveValidators(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress) ([]ValidatorInfo, error) {
 	query := ValsetQuery{ListActiveValidators: &struct{}{}}
 	var response ListActiveValidatorsResponse
 	err := doQuery(ctx, k, valset, query, &response)
 	return response.Validators, err
 }
 
-func SimulateActiveValidators(ctx sdk.Context, k *twasmkeeper.Keeper, valset sdk.AccAddress) ([]ValidatorInfo, error) {
+func SimulateActiveValidators(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress) ([]ValidatorInfo, error) {
 	query := ValsetQuery{SimulateActiveValidators: &struct{}{}}
 	var response ListActiveValidatorsResponse
 	err := doQuery(ctx, k, valset, query, &response)
@@ -158,14 +192,14 @@ type TG4TotalWeightResponse struct {
 	Weight int `json:"weight"`
 }
 
-func QueryTG4MembersByWeight(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress) ([]TG4Member, error) {
+func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress) ([]TG4Member, error) {
 	query := TG4Query{ListMembersByWeight: &ListMembersByWeightQuery{Limit: 30}}
 	var response TG4MemberListResponse
 	err := doQuery(ctx, k, tg4Addr, query, &response)
 	return response.Members, err
 }
 
-func QueryTG4Members(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress) ([]TG4Member, error) {
+func QueryTG4Members(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress) ([]TG4Member, error) {
 	query := TG4Query{ListMembers: &ListMembersQuery{Limit: 30}}
 	var response TG4MemberListResponse
 	err := doQuery(ctx, k, tg4Addr, query, &response)
@@ -173,7 +207,7 @@ func QueryTG4Members(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddr
 }
 
 // QueryTG4Member returns the weight of this member. (nil, nil) means not present, (&0, nil) means member with no votes
-func QueryTG4Member(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress, member sdk.AccAddress) (*int, error) {
+func QueryTG4Member(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, member sdk.AccAddress) (*int, error) {
 	query := TG4Query{Member: &MemberQuery{Addr: member.String()}}
 	var response TG4MemberResponse
 	err := doQuery(ctx, k, tg4Addr, query, &response)
@@ -181,7 +215,7 @@ func QueryTG4Member(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddre
 }
 
 // QueryTG4TotalWeight returns the weight of this member. (nil, nil) means not present
-func QueryTG4TotalWeight(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress) (int, error) {
+func QueryTG4TotalWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress) (int, error) {
 	query := TG4Query{TotalWeight: &struct{}{}}
 	var response TG4TotalWeightResponse
 	err := doQuery(ctx, k, tg4Addr, query, &response)
@@ -189,7 +223,7 @@ func QueryTG4TotalWeight(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.Acc
 }
 
 // QueryTG4Admin returns admin of this contract, if any. Will return nil, err if no admin
-func QueryTG4Admin(ctx sdk.Context, k *twasmkeeper.Keeper, tg4Addr sdk.AccAddress) (sdk.AccAddress, error) {
+func QueryTG4Admin(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress) (sdk.AccAddress, error) {
 	query := TG4Query{Admin: &struct{}{}}
 	var response TG4AdminResponse
 	err := doQuery(ctx, k, tg4Addr, query, &response)
@@ -220,14 +254,14 @@ type Duration struct {
 	Time int `json:"time,omitempty"`
 }
 
-func QueryStakingUnbondingPeriod(ctx sdk.Context, k *twasmkeeper.Keeper, stakeAddr sdk.AccAddress) (Duration, error) {
+func QueryStakingUnbondingPeriod(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.AccAddress) (Duration, error) {
 	query := TG4StakeQuery{UnbondingPeriod: &struct{}{}}
 	var response UnbondingPeriodResponse
 	err := doQuery(ctx, k, stakeAddr, query, &response)
 	return response.UnbondingPeriod, err
 }
 
-func doQuery(ctx sdk.Context, k *twasmkeeper.Keeper, contractAddr sdk.AccAddress, query interface{}, result interface{}) error {
+func doQuery(ctx sdk.Context, k types.SmartQuerier, contractAddr sdk.AccAddress, query interface{}, result interface{}) error {
 	bz, err := json.Marshal(query)
 	if err != nil {
 		return err

@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestGetPubKey(t *testing.T) {
+func TestConvertToTendermintPubKey(t *testing.T) {
 	var (
 		ed25519pubkeybz   = ed25519.GenPrivKey().PubKey().Bytes()
 		secp256k1pubkeybz = secp256k1.GenPrivKey().PubKey().Bytes()
@@ -39,7 +39,7 @@ func TestGetPubKey(t *testing.T) {
 		}}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			gotRes, gotErr := getPubKey(spec.src)
+			gotRes, gotErr := convertToTendermintPubKey(spec.src)
 			if spec.expErr {
 				require.Error(t, gotErr)
 				return
