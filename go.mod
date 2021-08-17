@@ -3,7 +3,7 @@ module github.com/confio/tgrade
 go 1.16
 
 require (
-	github.com/CosmWasm/wasmd v0.18.0-rc3
+	github.com/CosmWasm/wasmd v0.18.0
 	github.com/CosmWasm/wasmvm v0.16.0
 	github.com/cosmos/cosmos-sdk v0.42.9
 	github.com/gogo/protobuf v1.3.3
@@ -26,7 +26,7 @@ require (
 	github.com/tidwall/sjson v1.1.6
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 	google.golang.org/grpc v1.38.0
-	google.golang.org/protobuf v1.26.0 // indirect
+	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
