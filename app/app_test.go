@@ -135,16 +135,17 @@ func TestIBCKeeperLazyInitialization(t *testing.T) {
 	require.NoError(t, err)
 
 	// Initialize the chain
+	now := time.Now().UTC()
 	gapp.InitChain(
 		abci.RequestInitChain{
-			Time:          time.Now().UTC(),
+			Time:          now,
 			Validators:    []abci.ValidatorUpdate{},
 			AppStateBytes: stateBytes,
 		},
 	)
 	gapp.Commit()
 	// store some historic information
-	header := tmproto.Header{ChainID: "testing-1", Height: 2}
+	header := tmproto.Header{ChainID: "testing-1", Height: 2, Time: now, AppHash: []byte("myAppHash")}
 	gapp.BaseApp.BeginBlock(abci.RequestBeginBlock{Header: header})
 	gapp.Commit()
 
@@ -152,8 +153,10 @@ func TestIBCKeeperLazyInitialization(t *testing.T) {
 	height := ibcclienttypes.Height{RevisionNumber: 1, RevisionHeight: 2}
 
 	// when
+	// https://github.com/cosmos/cosmos-sdk/blob/v0.42.9/x/ibc/core/02-client/keeper/keeper.go#L252
 	state, found := gapp.ibcKeeper.ClientKeeper.GetSelfConsensusState(ctx, height)
 	// then
 	require.True(t, found)
-	assert.NotNil(t, state)
+	assert.Equal(t, []byte("myAppHash"), state.GetRoot().GetHash())
+	assert.Equal(t, uint64(now.UnixNano()), state.GetTimestamp())
 }
