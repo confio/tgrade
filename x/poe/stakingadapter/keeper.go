@@ -44,7 +44,7 @@ func (s StakingAdapter) BondDenom(ctx sdk.Context) (res string) {
 }
 
 func (s StakingAdapter) GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool) {
-	log(ctx, "BondDenom")
+	log(ctx, "GetValidator")
 	return validator, false
 }
 
@@ -54,17 +54,19 @@ func (s StakingAdapter) GetBondedValidatorsByPower(ctx sdk.Context) []stakingtyp
 }
 
 func (s StakingAdapter) GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation {
+	// todo: return self delegation of validator
 	log(ctx, "GetAllDelegatorDelegations")
 	return nil
 }
 
 func (s StakingAdapter) GetDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (delegation stakingtypes.Delegation, found bool) {
+	// todo: handle for validator operator's self delegation
 	log(ctx, "GetDelegation")
 	return
 }
 
 func (s StakingAdapter) HasReceivingRedelegation(ctx sdk.Context, delAddr sdk.AccAddress, valDstAddr sdk.ValAddress) bool {
-	log(ctx, "HasReceivingRedelegation")
+	// not supported
 	return false
 }
 
@@ -105,6 +107,7 @@ func (s StakingAdapter) Unjail(ctx sdk.Context, address sdk.ConsAddress) {
 }
 
 func (s StakingAdapter) Delegation(ctx sdk.Context, address sdk.AccAddress, address2 sdk.ValAddress) stakingtypes.DelegationI {
+	// todo: handle for validator operator's self delegation
 	log(ctx, "Delegation")
 	return nil
 }
@@ -134,6 +137,7 @@ func (s2 StakingAdapter) TotalBondedTokens(ctx sdk.Context) sdk.Int {
 }
 
 func (s2 StakingAdapter) IterateDelegations(ctx sdk.Context, delegator sdk.AccAddress, fn func(index int64, delegation stakingtypes.DelegationI) (stop bool)) {
+	// todo: handle for validators self delegations
 	log(ctx, "IterateDelegations")
 }
 
