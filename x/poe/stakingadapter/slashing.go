@@ -11,34 +11,38 @@ var _ evidencetypes.SlashingKeeper = &SlashingAdapter{}
 
 type SlashingAdapter struct{}
 
-func (s SlashingAdapter) GetPubkey(context sdk.Context, address cryptotypes.Address) (cryptotypes.PubKey, error) {
-	panic("implement me")
+func (s SlashingAdapter) GetPubkey(ctx sdk.Context, address cryptotypes.Address) (cryptotypes.PubKey, error) {
+	log(ctx, "GetPubkey")
+	return nil, ErrNotImplemented
 }
 
-func (s SlashingAdapter) IsTombstoned(context sdk.Context, address sdk.ConsAddress) bool {
-	panic("implement me")
+func (s SlashingAdapter) IsTombstoned(ctx sdk.Context, address sdk.ConsAddress) bool {
+	log(ctx, "IsTombstoned")
+	return false
 }
 
-func (s SlashingAdapter) HasValidatorSigningInfo(context sdk.Context, address sdk.ConsAddress) bool {
-	panic("implement me")
+func (s SlashingAdapter) HasValidatorSigningInfo(ctx sdk.Context, address sdk.ConsAddress) bool {
+	log(ctx, "HasValidatorSigningInfo")
+	return false
 }
 
-func (s SlashingAdapter) Tombstone(context sdk.Context, address sdk.ConsAddress) {
-	panic("implement me")
+func (s SlashingAdapter) Tombstone(ctx sdk.Context, address sdk.ConsAddress) {
+	log(ctx, "Tombstone")
 }
 
-func (s SlashingAdapter) Slash(context sdk.Context, address sdk.ConsAddress, dec sdk.Dec, i int64, i2 int64) {
-	panic("implement me")
+func (s SlashingAdapter) Slash(ctx sdk.Context, address sdk.ConsAddress, dec sdk.Dec, i int64, i2 int64) {
+	log(ctx, "Slash")
 }
 
-func (s SlashingAdapter) SlashFractionDoubleSign(context sdk.Context) sdk.Dec {
-	panic("implement me")
+func (s SlashingAdapter) SlashFractionDoubleSign(ctx sdk.Context) sdk.Dec {
+	log(ctx, "SlashFractionDoubleSign")
+	return sdk.ZeroDec()
 }
 
-func (s SlashingAdapter) Jail(context sdk.Context, address sdk.ConsAddress) {
-	panic("implement me")
+func (s SlashingAdapter) Jail(ctx sdk.Context, address sdk.ConsAddress) {
+	log(ctx, "Jail")
 }
 
-func (s SlashingAdapter) JailUntil(context sdk.Context, address sdk.ConsAddress, time time.Time) {
-	panic("implement me")
+func (s SlashingAdapter) JailUntil(ctx sdk.Context, address sdk.ConsAddress, time time.Time) {
+	log(ctx, "JailUntil")
 }
