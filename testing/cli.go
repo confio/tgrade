@@ -1,6 +1,9 @@
 package testing
 
 import (
+	"github.com/confio/tgrade/app"
+	"github.com/cosmos/cosmos-sdk/client/rpc"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
@@ -17,6 +20,7 @@ type TgradeCli struct {
 	chainID     string
 	homeDir     string
 	Debug       bool
+	amino       *codec.LegacyAmino
 }
 
 func NewTgradeCli(t *testing.T, sut *SystemUnderTest, verbose bool) *TgradeCli {
@@ -24,7 +28,7 @@ func NewTgradeCli(t *testing.T, sut *SystemUnderTest, verbose bool) *TgradeCli {
 }
 
 func NewTgradeCliX(t *testing.T, nodeAddress string, chainID string, homeDir string, debug bool) *TgradeCli {
-	return &TgradeCli{t: t, nodeAddress: nodeAddress, chainID: chainID, homeDir: homeDir, Debug: debug}
+	return &TgradeCli{t: t, nodeAddress: nodeAddress, chainID: chainID, homeDir: homeDir, Debug: debug, amino: app.MakeEncodingConfig().Amino}
 }
 
 func (c TgradeCli) CustomCommand(args ...string) string {
@@ -111,11 +115,13 @@ func (c TgradeCli) GetKeyAddr(name string) string {
 const defaultSrcAddr = "node0"
 
 // FundAddress sends the token amount to the destination address
-func (c TgradeCli) FundAddress(t *testing.T, destAddr, amount string) string {
-	require.NotEmpty(t, destAddr)
-	require.NotEmpty(t, amount)
+func (c TgradeCli) FundAddress(destAddr, amount string) string {
+	require.NotEmpty(c.t, destAddr)
+	require.NotEmpty(c.t, amount)
 	cmd := []string{"tx", "send", defaultSrcAddr, destAddr, amount}
-	return c.run(c.withTXFlags(cmd...))
+	rsp := c.run(c.withTXFlags(cmd...))
+	RequireTxSuccess(c.t, rsp)
+	return rsp
 }
 
 // QueryBalances queries all balances for an account. Returns json response
@@ -143,6 +149,15 @@ func (c TgradeCli) QueryTotalSupply(denom string) int64 {
 // QueryValidator queries the validator for the given operator address. Returns json response
 func (c TgradeCli) QueryValidator(addr string) string {
 	return c.CustomQuery("q", "poe", "validator", addr)
+}
+
+func (c TgradeCli) GetTendermintValidatorSet() rpc.ResultValidatorsOutput {
+	args := []string{"q", "tendermint-validator-set"}
+	got := c.run(c.withChainFlags(args...))
+
+	var res rpc.ResultValidatorsOutput
+	require.NoError(c.t, c.amino.UnmarshalJSON([]byte(got), &res), got)
+	return res
 }
 
 // RequireTxSuccess require the received response to contain the success code
