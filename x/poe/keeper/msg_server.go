@@ -11,22 +11,26 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-// ContractSource is a subset of the keeper
-type ContractSource interface {
-	GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error)
+// PoEKeeper is a subset of the keeper
+type PoEKeeper interface {
+	ContractSource
+	SetValidatorInitialEngagementPoints(ctx sdk.Context, address sdk.AccAddress, value sdk.Coin) error
 }
+
 type msgServer struct {
-	contractSource ContractSource
+	keeper         PoEKeeper
 	contractKeeper wasmtypes.ContractOpsKeeper
-	smartQuerier   types.SmartQuerier
+	twasmKeeper    TwasmKeeper
 }
 
 // NewMsgServerImpl returns an implementation of the bank MsgServer interface
 // for the provided Keeper.
-func NewMsgServerImpl(poeKeeper ContractSource, contractKeeper wasmtypes.ContractOpsKeeper, q types.SmartQuerier) types.MsgServer {
-	return &msgServer{contractSource: poeKeeper, contractKeeper: contractKeeper, smartQuerier: q}
+func NewMsgServerImpl(poeKeeper PoEKeeper, contractKeeper wasmtypes.ContractOpsKeeper, twasmKeeper TwasmKeeper) types.MsgServer {
+	return &msgServer{keeper: poeKeeper, contractKeeper: contractKeeper, twasmKeeper: twasmKeeper}
 }
 
 var _ types.MsgServer = msgServer{}
@@ -53,30 +57,29 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 		}
 	}
 
-	contractAddr, err := m.contractSource.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	valsetContractAddr, err := m.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "valset")
 	}
-	delegatorAddress, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	operatorAddress, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "delegator address")
 	}
 
-	err = contract.RegisterValidator(ctx, contractAddr, pk, delegatorAddress, msg.Description, m.contractKeeper)
+	err = contract.RegisterValidator(ctx, valsetContractAddr, pk, operatorAddress, msg.Description, m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "register validator")
 	}
 	// delegate
-	contractAddr, err = m.contractSource.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	stakingContractAddr, err := m.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "staking")
 	}
 
-	err = contract.BondTokens(ctx, contractAddr, delegatorAddress, sdk.NewCoins(msg.Value), m.contractKeeper)
+	err = contract.BondTokens(ctx, stakingContractAddr, operatorAddress, sdk.NewCoins(msg.Value), m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "self delegation validator")
 	}
-
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
@@ -91,7 +94,9 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Value.Amount.String()),
 		),
 	})
-
+	if err := m.keeper.SetValidatorInitialEngagementPoints(ctx, operatorAddress, msg.Value); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	return &types.MsgCreateValidatorResponse{}, nil
 }
 
@@ -102,7 +107,7 @@ func (m msgServer) UpdateValidator(goCtx context.Context, msg *types.MsgUpdateVa
 		return nil, sdkerrors.Wrap(err, "description")
 	}
 
-	contractAddr, err := m.contractSource.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	contractAddr, err := m.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "valset")
 	}
@@ -112,7 +117,7 @@ func (m msgServer) UpdateValidator(goCtx context.Context, msg *types.MsgUpdateVa
 	}
 
 	// client sends a diff. we need to query the old description and merge it
-	current, err := contract.QueryValidator(ctx, m.smartQuerier, contractAddr, delegatorAddress)
+	current, err := contract.QueryValidator(ctx, m.twasmKeeper, contractAddr, delegatorAddress)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "query current description")
 	}

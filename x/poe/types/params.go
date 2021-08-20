@@ -2,6 +2,8 @@ package types
 
 import (
 	"fmt"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	yaml "gopkg.in/yaml.v2"
 
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -13,11 +15,14 @@ const (
 	// DefaultHistoricalEntries entries is 10000. Apps that don't use IBC can ignore this
 	// value by not adding the staking module to the application module manager's
 	// SetOrderBeginBlockers.
-	DefaultHistoricalEntries uint32 = 10000
+	DefaultHistoricalEntries                uint32 = 10000
+	DefaultInitialValidatorEngagementPoints uint64 = 1
 )
 
 var (
-	KeyHistoricalEntries = []byte("HistoricalEntries")
+	KeyHistoricalEntries          = []byte("HistoricalEntries")
+	KeyInitialValEngagementPoints = []byte("InitialValidatorEngagementPoints")
+	KeyMinDelegationAmounts       = []byte("MinDelegationAmounts")
 )
 
 var _ paramtypes.ParamSet = (*Params)(nil)
@@ -28,16 +33,20 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(historicalEntries uint32) Params {
+func NewParams(historicalEntries uint32, engagementPoints uint64, min sdk.Coins) Params {
 	return Params{
-		HistoricalEntries: historicalEntries,
+		HistoricalEntries:          historicalEntries,
+		InitialValEngagementPoints: engagementPoints,
+		MinDelegationAmounts:       min,
 	}
 }
 
 // ParamSetPairs Implements params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(KeyHistoricalEntries, &p.HistoricalEntries, validateHistoricalEntries),
+		paramtypes.NewParamSetPair(KeyHistoricalEntries, &p.HistoricalEntries, validateUint32),
+		paramtypes.NewParamSetPair(KeyInitialValEngagementPoints, &p.InitialValEngagementPoints, validateUint64),
+		paramtypes.NewParamSetPair(KeyMinDelegationAmounts, &p.MinDelegationAmounts, validateSDKCoins),
 	}
 }
 
@@ -45,6 +54,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 func DefaultParams() Params {
 	return NewParams(
 		DefaultHistoricalEntries,
+		DefaultInitialValidatorEngagementPoints,
+		sdk.Coins{},
 	)
 }
 
@@ -56,14 +67,28 @@ func (p Params) String() string {
 
 // Validate validate a set of params
 func (p Params) Validate() error {
-	return nil
+	return sdkerrors.Wrap(p.MinDelegationAmounts.Validate(), "min delegation amounts")
 }
 
-func validateHistoricalEntries(i interface{}) error {
+func validateUint64(i interface{}) error {
+	_, ok := i.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return nil
+}
+func validateUint32(i interface{}) error {
 	_, ok := i.(uint32)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
-
 	return nil
+}
+
+func validateSDKCoins(i interface{}) error {
+	c, ok := i.(sdk.Coins)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return c.Validate()
 }

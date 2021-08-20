@@ -96,7 +96,7 @@ func TestUnbondingTime(t *testing.T) {
 	var myAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 	k.SetPoEContractAddress(ctx, types.PoEContractTypeStaking, myAddr)
 
-	k.contractQuerier = SmartQuerierMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+	k.twasmKeeper = TwasmKeeperMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 		require.Equal(t, myAddr, contractAddr)
 		return json.Marshal(contract.UnbondingPeriodResponse{
 			UnbondingPeriod: contract.Duration{Time: 60, Height: 2},

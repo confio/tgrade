@@ -14,6 +14,11 @@ import (
 
 var _ types.QueryServer = &grpcQuerier{}
 
+// ContractSource subset of poe keeper
+type ContractSource interface {
+	GetPoEContractAddress(sdk.Context, types.PoEContractType) (sdk.AccAddress, error)
+}
+
 type grpcQuerier struct {
 	keeper          ContractSource
 	contractQuerier types.SmartQuerier
