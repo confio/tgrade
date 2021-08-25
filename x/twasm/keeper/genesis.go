@@ -62,6 +62,17 @@ func InitGenesis(
 		}
 	}
 
+	// cache requested contracts
+	for i, a := range data.PinnedContractAddresses {
+		addr, err := sdk.AccAddressFromBech32(a)
+		if err != nil {
+			return nil, sdkerrors.Wrapf(err, "pinned contract: %d", i)
+		}
+		if err := keeper.SetPinned(ctx, addr); err != nil {
+			return nil, sdkerrors.Wrapf(err, "set pinned flag for contract %s", a)
+		}
+	}
+
 	// sanity check that we do not have a callback imported without a privileged flag missing
 	if len(importedCallbackContracts) != 0 {
 		return nil, sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "unprivileged contracts with system callbacks: %#v", importedCallbackContracts)

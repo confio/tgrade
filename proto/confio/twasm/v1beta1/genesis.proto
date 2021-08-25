@@ -16,4 +16,7 @@ message GenesisState {
 
   repeated string privileged_contract_addresses = 2
       [ (gogoproto.jsontag) = "privileged_contract_addresses,omitempty" ];
+
+  repeated string pinned_contract_addresses = 3
+      [ (gogoproto.jsontag) = "pinned_contract_addresses,omitempty" ];
 }
