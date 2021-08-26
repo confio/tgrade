@@ -6,6 +6,8 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // RegisterLegacyAminoCodec registers the necessary x/poe interfaces and concrete types
@@ -21,6 +23,8 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&MsgCreateValidator{},
 		&MsgUpdateValidator{},
 	)
+	stakingtypes.RegisterInterfaces(registry)
+	slashingtypes.RegisterInterfaces(registry)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
