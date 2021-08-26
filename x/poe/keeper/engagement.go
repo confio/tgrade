@@ -53,5 +53,6 @@ func (k Keeper) SetValidatorInitialEngagementPoints(ctx sdk.Context, opAddr sdk.
 	if currentPoints >= newPoints {
 		return nil
 	}
-	return sdkerrors.Wrap(k.setEngagementPoints(ctx, opAddr, newPoints), "set engagement points")
+	err = k.setEngagementPoints(ctx, opAddr, newPoints)
+	return sdkerrors.Wrap(err, "set engagement points")
 }
