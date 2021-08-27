@@ -62,6 +62,13 @@ func InitGenesis(
 		}
 	}
 
+	// cache requested contracts
+	for _, codeID := range data.PinnedCodeIDs {
+		if err := keeper.contractKeeper.PinCode(ctx, codeID); err != nil {
+			return nil, sdkerrors.Wrapf(err, "pin code with ID %d", codeID)
+		}
+	}
+
 	// sanity check that we do not have a callback imported without a privileged flag missing
 	if len(importedCallbackContracts) != 0 {
 		return nil, sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "unprivileged contracts with system callbacks: %#v", importedCallbackContracts)

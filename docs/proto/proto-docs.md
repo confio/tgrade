@@ -512,6 +512,7 @@ TgradeContractDetails is a custom extension to the wasmd ContractInfo
 | ----- | ---- | ----- | ----------- |
 | `wasm` | [cosmwasm.wasm.v1beta1.GenesisState](#cosmwasm.wasm.v1beta1.GenesisState) |  |  |
 | `privileged_contract_addresses` | [string](#string) | repeated |  |
+| `pinned_code_ids` | [uint64](#uint64) | repeated |  |
 
 
 
