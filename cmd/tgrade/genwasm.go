@@ -38,6 +38,7 @@ func GenesisWasmFlagsCmd(defaultNodeHome string) *cobra.Command {
 	genIO := cli.NewGenesisIO()
 	txCmd.AddCommand(
 		cli.GenesisSetPrivileged(defaultNodeHome, genIO),
+		cli.GenesisSetPinned(defaultNodeHome, genIO),
 	)
 	return txCmd
 
