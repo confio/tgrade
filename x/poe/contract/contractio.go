@@ -84,6 +84,23 @@ func CallEndBlockWithValidatorUpdate(ctx sdk.Context, contractAddr sdk.AccAddres
 	return result, nil
 }
 
+// UnbondDelegation unbond the given amount from the operators self delegation
+// Amount must be in bonding token denom
+func UnbondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, amount sdk.Int, k types.Executor) error {
+	if amount.IsNil() || amount.IsZero() || amount.IsNegative() || !amount.IsInt64() {
+		return sdkerrors.Wrap(types.ErrInvalid, "amount")
+	}
+	msg := TG4StakeExecute{Unbond: &Unbond{Tokens: amount}}
+	msgBz, err := json.Marshal(msg)
+	if err != nil {
+		return sdkerrors.Wrap(err, "TG4StakeExecute message")
+	}
+
+	_, err = k.Execute(ctx, contractAddr, delegatorAddress, msgBz, nil)
+	return sdkerrors.Wrap(err, "execute staking contract")
+}
+
+
 // SetEngagementPoints set engagement points  If the member already exists, its weight will be reset to the weight sent here
 func SetEngagementPoints(ctx sdk.Context, contractAddr sdk.AccAddress, k types.Sudoer, opAddr sdk.AccAddress, points uint64) error {
 	msg := TG4GroupSudoMsg{

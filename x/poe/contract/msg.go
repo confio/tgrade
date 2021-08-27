@@ -90,14 +90,6 @@ type UnbodingPeriod struct {
 	TimeInSec uint64 `json:"time,omitempty"`
 }
 
-type TG4StakeExecute struct {
-	Bond *struct{} `json:"bond,omitempty"`
-}
-
-func (m TG4StakeExecute) Json(t *testing.T) string {
-	return asJson(t, m)
-}
-
 // TG4GroupSudoMsg TG4 group sudo message
 // See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-group/schema/sudo_msg.json
 type TG4GroupSudoMsg struct {
@@ -180,4 +172,17 @@ func (m ValidatorMetadata) ToDescription() stakingtypes.Description {
 		Details:         m.Details,
 	}
 
+}
+
+// TG4StakeExecute staking contract execute messages
+// See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-stake/schema/execute_msg.json
+type TG4StakeExecute struct {
+	Bond   *struct{} `json:"bond,omitempty"`
+	Unbond *Unbond   `json:"unbond,omitempty"`
+}
+
+// Unbond will start the unbonding process for the given number of tokens. The sender immediately loses weight from these tokens, and can claim them back to his wallet after `unbonding_period`",
+type Unbond struct {
+	// Tokens are the amount to unbond
+	Tokens sdk.Int `json:"tokens"`
 }

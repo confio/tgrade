@@ -20,13 +20,14 @@ func NewLegacySlashingGRPCQuerier(keeper Keeper, contractQuerier types.SmartQuer
 	return &legacySlashingGRPCQuerier{keeper: keeper, contractQuerier: contractQuerier}
 }
 
+// SigningInfo legacy support for cosmos-sdk signing info. Note that not all field are available on tgrade
 func (g legacySlashingGRPCQuerier) SigningInfo(c context.Context, req *slashingtypes.QuerySigningInfoRequest) (*slashingtypes.QuerySigningInfoResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 	valAddr, err := sdk.AccAddressFromBech32(req.ConsAddress)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, "validator address")
 	}
 	return &slashingtypes.QuerySigningInfoResponse{
 		ValSigningInfo: slashingtypes.ValidatorSigningInfo{
@@ -39,11 +40,13 @@ func (g legacySlashingGRPCQuerier) SigningInfo(c context.Context, req *slashingt
 	}, nil
 }
 
+// SigningInfos is not supported and will return unimplemented error
 func (g legacySlashingGRPCQuerier) SigningInfos(c context.Context, req *slashingtypes.QuerySigningInfosRequest) (*slashingtypes.QuerySigningInfosResponse, error) {
 	logNotImplemented(sdk.UnwrapSDKContext(c), "SigningInfos")
 	return nil, status.Error(codes.Unimplemented, "not available, yet")
 }
 
+// Params is not supported. Method returns default slashing module params.
 func (g legacySlashingGRPCQuerier) Params(c context.Context, request *slashingtypes.QueryParamsRequest) (*slashingtypes.QueryParamsResponse, error) {
 	return &slashingtypes.QueryParamsResponse{
 		Params: slashingtypes.Params{

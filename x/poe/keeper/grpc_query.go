@@ -41,7 +41,7 @@ func (g grpcQuerier) ContractAddress(c context.Context, request *types.QueryCont
 	return &types.QueryContractAddressResponse{Address: addr.String()}, nil
 }
 
-// Validators query all validators
+// Validators query all validators that match the given status.
 func (g grpcQuerier) Validators(c context.Context, request *stakingtypes.QueryValidatorsRequest) (*stakingtypes.QueryValidatorsResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -49,14 +49,14 @@ func (g grpcQuerier) Validators(c context.Context, request *stakingtypes.QueryVa
 
 	ctx := sdk.UnwrapSDKContext(c)
 	addr, err := g.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
-	switch {
-	case wasmtypes.ErrNotFound.Is(err):
-		return nil, status.Error(codes.NotFound, err.Error())
-	case err != nil:
+	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if request.Pagination != nil {
 		return nil, status.Error(codes.Unimplemented, "pagination not supported, yet")
+	}
+	if request.Status != "" {
+		return nil, status.Error(codes.Unimplemented, "status not supported, yet")
 	}
 
 	valsRsp, err := contract.ListValidators(ctx, g.contractQuerier, addr)
@@ -76,7 +76,8 @@ func (g grpcQuerier) Validators(c context.Context, request *stakingtypes.QueryVa
 	}, nil
 }
 
-// Validator queries validator info for given validator address
+// Validator queries validator info for a given validator address.
+// returns NotFound error code when none exists for the given address
 func (g grpcQuerier) Validator(c context.Context, req *stakingtypes.QueryValidatorRequest) (*stakingtypes.QueryValidatorResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -93,10 +94,7 @@ func (g grpcQuerier) Validator(c context.Context, req *stakingtypes.QueryValidat
 
 	ctx := sdk.UnwrapSDKContext(c)
 	contractAddr, err := g.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
-	switch {
-	case wasmtypes.ErrNotFound.Is(err):
-		return nil, status.Error(codes.NotFound, err.Error())
-	case err != nil:
+	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -121,10 +119,7 @@ func (g grpcQuerier) UnbondingPeriod(c context.Context, request *types.QueryUnbo
 	}
 	ctx := sdk.UnwrapSDKContext(c)
 	contractAddr, err := g.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
-	switch {
-	case wasmtypes.ErrNotFound.Is(err):
-		return nil, status.Error(codes.NotFound, err.Error())
-	case err != nil:
+	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
