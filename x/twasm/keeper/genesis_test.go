@@ -3,6 +3,8 @@ package keeper
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"testing"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
@@ -14,7 +16,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestInitGenesis(t *testing.T) {
@@ -37,6 +38,16 @@ func TestInitGenesis(t *testing.T) {
 		expCallbackReg []registeredCallback
 		expErr         bool
 	}{
+		"pin WASM code": {
+			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
+				state.Wasm.Codes = append(state.Wasm.Codes,
+					wasmtypes.CodeFixture(func(c *wasmtypes.Code) { c.CodeID = 5 }),
+					wasmtypes.CodeFixture(func(c *wasmtypes.Code) { c.CodeID = 7 }),
+				)
+				state.PinnedCodeIDs = []uint64{5, 7}
+			}),
+			wasmvm: noopMock,
+		},
 		"privileged contract": {
 			state:  types.GenesisStateFixture(t),
 			wasmvm: noopMock,
@@ -133,6 +144,10 @@ func TestInitGenesis(t *testing.T) {
 				codeInfo := k.GetContractInfo(ctx, addr)
 				assert.True(t, k.IsPinnedCode(ctx, codeInfo.CodeID))
 			}
+			for _, id := range spec.state.PinnedCodeIDs {
+				assert.True(t, k.IsPinnedCode(ctx, id))
+			}
+
 			var allCallbacks int
 			for _, n := range types.AllPrivilegeTypeNames() {
 				cb := *types.PrivilegeTypeFrom(n)

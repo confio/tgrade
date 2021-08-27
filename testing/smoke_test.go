@@ -4,11 +4,12 @@ package testing
 
 import (
 	"fmt"
+	"strconv"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
-	"strconv"
-	"testing"
 )
 
 func TestSmokeTest(t *testing.T) {
