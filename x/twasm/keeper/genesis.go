@@ -63,13 +63,9 @@ func InitGenesis(
 	}
 
 	// cache requested contracts
-	for i, a := range data.PinnedContractAddresses {
-		addr, err := sdk.AccAddressFromBech32(a)
-		if err != nil {
-			return nil, sdkerrors.Wrapf(err, "pinned contract: %d", i)
-		}
-		if err := keeper.SetPinned(ctx, addr); err != nil {
-			return nil, sdkerrors.Wrapf(err, "set pinned flag for contract %s", a)
+	for _, codeID := range data.PinnedCodeIDs {
+		if err := keeper.contractKeeper.PinCode(ctx, codeID); err != nil {
+			return nil, sdkerrors.Wrapf(err, "pin code with ID %d", codeID)
 		}
 	}
 
