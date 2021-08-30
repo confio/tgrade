@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	"github.com/confio/tgrade/app"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -21,7 +22,15 @@ import (
 var sut *SystemUnderTest
 var verbose bool
 
+func init() {
+	config := sdk.GetConfig()
+	config.SetBech32PrefixForAccount(app.Bech32PrefixAccAddr, app.Bech32PrefixAccPub)
+	config.SetBech32PrefixForValidator(app.Bech32PrefixValAddr, app.Bech32PrefixValPub)
+	config.SetBech32PrefixForConsensusNode(app.Bech32PrefixConsAddr, app.Bech32PrefixConsPub)
+}
+
 func TestMain(m *testing.M) {
+
 	rebuild := flag.Bool("rebuild", false, "rebuild artifacts")
 	waitTime := flag.Duration("wait-time", defaultWaitTime, "time to wait for chain events")
 	nodesCount := flag.Int("nodes-count", 4, "number of nodes in the cluster")
@@ -30,7 +39,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	// fail fast on most common setup issue
-	requireEnoughFileHandlers(*nodesCount)
+	requireEnoughFileHandlers(*nodesCount + 1) // +1 as tests may start another node
 
 	dir, err := os.Getwd()
 	if err != nil {

@@ -177,7 +177,9 @@ Params defines the parameters for the PoE module.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `historical_entries` | [uint32](#uint32) |  | historical_entries is the number of historical entries to persist. |
+| `historical_entries` | [uint32](#uint32) |  | HistoricalEntries is the number of historical entries to persist. |
+| `initial_val_engagement_points` | [uint64](#uint64) |  | InitialValEngagementPoints defines the number of engagement for any new validator joining post genesis |
+| `min_delegation_amounts` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) | repeated | MinDelegationAmount defines the minimum amount a post genesis validator needs to self delegate to receive any engagement points. One must be exceeded. No minimum condition set when empty. |
 
 
 

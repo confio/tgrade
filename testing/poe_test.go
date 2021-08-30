@@ -3,12 +3,15 @@
 package testing
 
 import (
+	"encoding/json"
 	"fmt"
 	testingcontracts "github.com/confio/tgrade/x/poe/contract"
+	poetypes "github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"math"
 	"path/filepath"
 	"testing"
@@ -70,9 +73,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	t.Log("got execution result", eResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
-	// wait for update manifests in valset (epoch has completed)
-	time.Sleep(time.Second)
-	sut.AwaitNextBlock(t)
+	awaitValsetEpochCompleted(t)
 
 	// then validator set is updated
 	// with unengaged validator removed
@@ -98,6 +99,44 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	RequireTxSuccess(t, txResult)
 	qResult = cli.QueryValidator(myAddr)
 	assert.Equal(t, "newMoniker", gjson.Get(qResult, "description.moniker").String())
+}
+
+func TestPoEAddPostGenesisValidator(t *testing.T) {
+	// Scenario:
+	// given a running chain
+	// when a create-validator message is submitted with self delegation amount > min
+	// then the validator gets engagement points automatically
+	// and is added to the active validator set
+	sut.ResetChain(t)
+	cli := NewTgradeCli(t, sut, verbose)
+	sut.ModifyGenesisJson(t,
+		SetPoEParamsMutator(t, poetypes.NewParams(100, 10, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(5))))),
+	)
+	sut.StartChain(t)
+
+	newNode := sut.AddFullnode(t)
+	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
+	opAddr := cli.AddKey("newOperator")
+	cli.FundAddress(opAddr, "1000utgd")
+	newPubKey, pubKeyAddr := loadValidatorPubKey(t, filepath.Join(workDir, sut.nodePath(sut.nodesCount-1), "config", "priv_validator_key.json"))
+	// when
+	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd",
+		"--pubkey="+pubKeyAddr, "--from=newOperator")
+	RequireTxSuccess(t, txResult)
+	// wait for msg execution
+	sut.AwaitNextBlock(t)
+	awaitValsetEpochCompleted(t)
+
+	// then
+	valResult := cli.GetTendermintValidatorSet()
+	var found bool
+	for _, v := range valResult.Validators {
+		if v.PubKey.Equals(newPubKey) {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "not in validator set : %#v", valResult)
 }
 
 func TestPoEQueries(t *testing.T) {
@@ -142,4 +181,22 @@ func assertValidatorsUpdated(t *testing.T, sortedMember []testingcontracts.TG4Me
 		expWeight := int64(math.Sqrt(float64(sortedMember[i].Weight * stakedAmounts[i]))) // function implemented in mixer
 		assert.Equal(t, expWeight, v[i].VotingPower, "address: %s", encodeBech32Addr(v[i].Address.Bytes()))
 	}
+}
+
+// SetPoEParams set in genesis
+func SetPoEParamsMutator(t *testing.T, params poetypes.Params) GenesisMutator {
+	return func(genesis []byte) []byte {
+		t.Helper()
+		val, err := json.Marshal(params)
+		require.NoError(t, err)
+		state, err := sjson.SetRawBytes(genesis, "app_state.poe.params", val)
+		require.NoError(t, err)
+		return state
+	}
+}
+
+func awaitValsetEpochCompleted(t *testing.T) {
+	// wait for update manifests in valset (epoch has completed)
+	time.Sleep(time.Second)
+	sut.AwaitNextBlock(t)
 }

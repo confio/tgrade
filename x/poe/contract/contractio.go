@@ -84,6 +84,20 @@ func CallEndBlockWithValidatorUpdate(ctx sdk.Context, contractAddr sdk.AccAddres
 	return result, nil
 }
 
+// SetEngagementPoints set engagement points  If the member already exists, its weight will be reset to the weight sent here
+func SetEngagementPoints(ctx sdk.Context, contractAddr sdk.AccAddress, k types.Sudoer, opAddr sdk.AccAddress, points uint64) error {
+	msg := TG4GroupSudoMsg{
+		UpdateMember: &TG4GroupSudoUpdateMember{Member: TG4Member{Addr: opAddr.String(), Weight: points}},
+	}
+	msgBz, err := json.Marshal(msg)
+	if err != nil {
+		return sdkerrors.Wrap(err, "tg4 group sudo msg")
+	}
+
+	_, err = k.Sudo(ctx, contractAddr, msgBz)
+	return sdkerrors.Wrap(err, "sudo")
+}
+
 func convertToTendermintPubKey(key ValidatorPubkey) (crypto.PublicKey, error) {
 	switch {
 	case key.Ed25519 != nil:

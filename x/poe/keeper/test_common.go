@@ -260,18 +260,27 @@ func RandomAddress(_ *testing.T) sdk.AccAddress {
 
 // createMinTestInput minimum integration test setup for this package
 func createMinTestInput(t *testing.T) (sdk.Context, simappparams.EncodingConfig, Keeper) {
-	keyPoe := sdk.NewKVStoreKey(types.StoreKey)
+	var (
+		keyPoe     = sdk.NewKVStoreKey(types.StoreKey)
+		keyParams  = sdk.NewKVStoreKey(paramstypes.StoreKey)
+		tkeyParams = sdk.NewTransientStoreKey(paramstypes.TStoreKey)
+	)
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
 	ms.MountStoreWithDB(keyPoe, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(keyParams, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(tkeyParams, sdk.StoreTypeTransient, db)
+
 	require.NoError(t, ms.LoadLatestVersion())
+	encodingConfig := types.MakeEncodingConfig(t)
+
+	paramsKeeper := paramskeeper.NewKeeper(encodingConfig.Marshaler, encodingConfig.Amino, keyParams, tkeyParams)
 
 	ctx := sdk.NewContext(ms, tmproto.Header{
 		Height: 1234567,
 		Time:   time.Date(2020, time.April, 22, 12, 0, 0, 0, time.UTC),
 	}, false, log.NewNopLogger())
 
-	encodingConfig := types.MakeEncodingConfig(t)
-	k := NewKeeper(encodingConfig.Marshaler, keyPoe, paramstypes.NewSubspace(nil, nil, nil, nil, types.ModuleName), nil)
+	k := NewKeeper(encodingConfig.Marshaler, keyPoe, paramsKeeper.Subspace(types.ModuleName), nil)
 	return ctx, encodingConfig, k
 }

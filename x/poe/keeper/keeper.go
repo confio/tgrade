@@ -14,24 +14,29 @@ import (
 	"time"
 )
 
+type TwasmKeeper interface {
+	types.SmartQuerier
+	types.Sudoer
+}
+
 type Keeper struct {
-	marshaler       codec.Marshaler
-	storeKey        sdk.StoreKey
-	paramStore      paramtypes.Subspace
-	contractQuerier types.SmartQuerier
+	marshaler   codec.Marshaler
+	storeKey    sdk.StoreKey
+	paramStore  paramtypes.Subspace
+	twasmKeeper TwasmKeeper
 }
 
 // NewKeeper constructor
-func NewKeeper(marshaler codec.Marshaler, key sdk.StoreKey, paramSpace paramtypes.Subspace, contractQuerier types.SmartQuerier) Keeper {
+func NewKeeper(marshaler codec.Marshaler, key sdk.StoreKey, paramSpace paramtypes.Subspace, twasmK TwasmKeeper) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 	return Keeper{
-		marshaler:       marshaler,
-		storeKey:        key,
-		paramStore:      paramSpace,
-		contractQuerier: contractQuerier,
+		marshaler:   marshaler,
+		storeKey:    key,
+		paramStore:  paramSpace,
+		twasmKeeper: twasmK,
 	}
 }
 
@@ -84,7 +89,7 @@ func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
 		panic(fmt.Sprintf("get contract address: %s", err))
 	}
 
-	rsp, err := contract.QueryStakingUnbondingPeriod(ctx, k.contractQuerier, contractAddr)
+	rsp, err := contract.QueryStakingUnbondingPeriod(ctx, k.twasmKeeper, contractAddr)
 	if err != nil {
 		panic(fmt.Sprintf("query unponding period from %s: %s", contractAddr.String(), err))
 	}

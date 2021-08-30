@@ -98,6 +98,16 @@ func (m TG4StakeExecute) Json(t *testing.T) string {
 	return asJson(t, m)
 }
 
+// TG4GroupSudoMsg TG4 group sudo message
+// See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-group/schema/sudo_msg.json
+type TG4GroupSudoMsg struct {
+	UpdateMember *TG4GroupSudoUpdateMember `json:"update_member,omitempty"`
+}
+
+type TG4GroupSudoUpdateMember struct {
+	Member TG4Member `json:"member"`
+}
+
 // ValsetInitMsg Valset contract init message
 // See https://github.com/confio/tgrade-contracts/tree/main/contracts/tgrade-valset
 type ValsetInitMsg struct {

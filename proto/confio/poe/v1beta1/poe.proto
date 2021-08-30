@@ -29,7 +29,19 @@ enum PoEContractType {
 message Params {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_stringer) = false;
-  // historical_entries is the number of historical entries to persist.
-  uint32 historical_entries = 4
+  // HistoricalEntries is the number of historical entries to persist.
+  uint32 historical_entries = 1
       [ (gogoproto.moretags) = "yaml:\"historical_entries\"" ];
+  // InitialValEngagementPoints defines the number of engagement for any new
+  // validator joining post genesis
+  uint64 initial_val_engagement_points = 2
+      [ (gogoproto.moretags) = "yaml:\"initial_val_engagement_points\"" ];
+  // MinDelegationAmount defines the minimum amount a post genesis validator
+  // needs to self delegate to receive any engagement points. One must be
+  // exceeded. No minimum condition set when empty.
+  repeated cosmos.base.v1beta1.Coin min_delegation_amounts = 3 [
+    (gogoproto.moretags) = "yaml:\"min_delegation_amounts\"",
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
 }

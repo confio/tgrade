@@ -9,8 +9,8 @@ import (
 )
 
 // NewHandler constructor
-func NewHandler(k keeper.ContractSource, contractKeeper wasmtypes.ContractOpsKeeper, q types.SmartQuerier) sdk.Handler {
-	return newHandler(keeper.NewMsgServerImpl(k, contractKeeper, q))
+func NewHandler(k keeper.PoEKeeper, contractKeeper wasmtypes.ContractOpsKeeper, tk keeper.TwasmKeeper) sdk.Handler {
+	return newHandler(keeper.NewMsgServerImpl(k, contractKeeper, tk))
 }
 
 // internal constructor for testing

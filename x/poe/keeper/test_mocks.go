@@ -6,29 +6,15 @@ import (
 	"testing"
 )
 
-var _ ContractSource = ContractSourceMock{}
-
-// ContractSourceMock implements ContractSource interface for testing purpose.
-// Subset of Keeper
-type ContractSourceMock struct {
-	GetPoEContractAddressFn func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error)
-}
-
-func (m ContractSourceMock) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
-	if m.GetPoEContractAddressFn == nil {
-		panic("not expected to be called")
-	}
-	return m.GetPoEContractAddressFn(ctx, ctype)
-}
-
-var _ initer = PoEKeeperMock{}
+var _ PoEKeeper = PoEKeeperMock{}
 
 // PoEKeeperMock mocks Keeper methods
 type PoEKeeperMock struct {
-	ContractSourceMock
-	SetPoEContractAddressFn    func(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
-	setPoESystemAdminAddressFn func(ctx sdk.Context, admin sdk.AccAddress)
-	setParamsFn                func(ctx sdk.Context, params types.Params)
+	GetPoEContractAddressFn               func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error)
+	SetValidatorInitialEngagementPointsFn func(ctx sdk.Context, address sdk.AccAddress, value sdk.Coin) error
+	SetPoEContractAddressFn               func(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
+	setPoESystemAdminAddressFn            func(ctx sdk.Context, admin sdk.AccAddress)
+	setParamsFn                           func(ctx sdk.Context, params types.Params)
 }
 
 func (m PoEKeeperMock) setParams(ctx sdk.Context, params types.Params) {
@@ -87,25 +73,58 @@ func (m SmartQuerierMock) QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddres
 	return m.QuerySmartFn(ctx, contractAddr, req)
 }
 
-// return matching type or fail
-func newContractSourceMock(t *testing.T, myValsetContract sdk.AccAddress, myStakingContract sdk.AccAddress) ContractSourceMock {
-	return ContractSourceMock{
-		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
-			switch ctype {
-			case types.PoEContractTypeValset:
-				if myValsetContract == nil {
-					t.Fatalf("unexpected call to %s", types.PoEContractTypeValset)
-				}
-				return myValsetContract, nil
-			case types.PoEContractTypeStaking:
-				if myStakingContract == nil {
-					t.Fatalf("unexpected call to %s", types.PoEContractTypeValset)
-				}
-				return myStakingContract, nil
-			default:
-				t.Fatalf("unexpected type: %s", ctype)
-				return nil, nil
-			}
-		},
+func (m PoEKeeperMock) SetValidatorInitialEngagementPoints(ctx sdk.Context, opAddr sdk.AccAddress, points sdk.Coin) error {
+	if m.SetValidatorInitialEngagementPointsFn == nil {
+		panic("not expected to be called")
 	}
+	return m.SetValidatorInitialEngagementPointsFn(ctx, opAddr, points)
+}
+
+// return matching type or fail
+func newContractSourceMock(t *testing.T, myValsetContract sdk.AccAddress, myStakingContract sdk.AccAddress) PoEKeeperMock {
+	return PoEKeeperMock{
+		GetPoEContractAddressFn: SwitchPoEContractAddressFn(t, myValsetContract, myStakingContract),
+	}
+}
+
+func SwitchPoEContractAddressFn(t *testing.T, myValsetContract sdk.AccAddress, myStakingContract sdk.AccAddress) func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
+	return func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
+		switch ctype {
+		case types.PoEContractTypeValset:
+			if myValsetContract == nil {
+				t.Fatalf("unexpected call to %s", types.PoEContractTypeValset)
+			}
+			return myValsetContract, nil
+		case types.PoEContractTypeStaking:
+			if myStakingContract == nil {
+				t.Fatalf("unexpected call to %s", types.PoEContractTypeValset)
+			}
+			return myStakingContract, nil
+		default:
+			t.Fatalf("unexpected type: %s", ctype)
+			return nil, nil
+		}
+	}
+}
+
+var _ TwasmKeeper = TwasmKeeperMock{}
+
+// TwasmKeeperMock mock smart queries and sudo calls
+type TwasmKeeperMock struct {
+	QuerySmartFn func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
+	SudoFn       func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
+}
+
+func (m TwasmKeeperMock) QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+	if m.QuerySmartFn == nil {
+		panic("not expected to be called")
+	}
+	return m.QuerySmartFn(ctx, contractAddr, req)
+}
+
+func (m TwasmKeeperMock) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
+	if m.SudoFn == nil {
+		panic("not expected to be called")
+	}
+	return m.SudoFn(ctx, contractAddress, msg)
 }

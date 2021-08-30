@@ -6,6 +6,7 @@ import (
 	"container/ring"
 	"context"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/sync"
 	client "github.com/tendermint/tendermint/rpc/client/http"
@@ -27,32 +28,33 @@ var workDir string
 
 // SystemUnderTest blockchain provisioning
 type SystemUnderTest struct {
-	blockListener *EventListener
-	currentHeight int64
-	chainID       string
-	outputDir     string
-	blockTime     time.Duration
-	rpcAddr       string
-	nodesCount    int
-	minGasPrice   string
-	cleanupFn     []CleanupFn
-	outBuff       *ring.Ring
-	errBuff       *ring.Ring
-	out           io.Writer
-	verbose       bool
+	blockListener     *EventListener
+	currentHeight     int64
+	chainID           string
+	outputDir         string
+	blockTime         time.Duration
+	rpcAddr           string
+	initialNodesCount int
+	nodesCount        int
+	minGasPrice       string
+	cleanupFn         []CleanupFn
+	outBuff           *ring.Ring
+	errBuff           *ring.Ring
+	out               io.Writer
+	verbose           bool
 }
 
 func NewSystemUnderTest(verbose bool, nodesCount int, blockTime time.Duration) *SystemUnderTest {
 	return &SystemUnderTest{
-		chainID:    "testing",
-		outputDir:  "./testnet",
-		blockTime:  blockTime,
-		rpcAddr:    "tcp://localhost:26657",
-		nodesCount: nodesCount,
-		outBuff:    ring.New(100),
-		errBuff:    ring.New(100),
-		out:        os.Stdout,
-		verbose:    verbose,
+		chainID:           "testing",
+		outputDir:         "./testnet",
+		blockTime:         blockTime,
+		rpcAddr:           "tcp://localhost:26657",
+		initialNodesCount: nodesCount,
+		outBuff:           ring.New(100),
+		errBuff:           ring.New(100),
+		out:               os.Stdout,
+		verbose:           verbose,
 	}
 }
 
@@ -65,7 +67,7 @@ func (s *SystemUnderTest) SetupChain() {
 		"testnet",
 		"--chain-id=" + s.chainID,
 		"--output-dir=" + s.outputDir,
-		"--v=" + strconv.Itoa(s.nodesCount),
+		"--v=" + strconv.Itoa(s.initialNodesCount),
 		"--keyring-backend=test",
 		"--commit-timeout=" + s.blockTime.String(),
 		"--minimum-gas-prices=" + s.minGasPrice,
@@ -102,7 +104,7 @@ func (s *SystemUnderTest) StartChain(t *testing.T) {
 	s.Log("Start chain\n")
 	s.forEachNodesExecAsync(t, "start", "--trace", "--log_level=info")
 
-	s.awaitChainUp(t)
+	s.AwaitNodeUp(t, s.rpcAddr)
 
 	t.Log("Start new block listener")
 	s.blockListener = NewEventListener(t, s.rpcAddr)
@@ -155,19 +157,19 @@ func appendToBuf(r io.Reader, b *ring.Ring, stop <-chan struct{}) {
 	}
 }
 
-// awaitChainUp ensures the chain is running
-func (s *SystemUnderTest) awaitChainUp(t *testing.T) {
+// AwaitNodeUp ensures the node is running
+func (s *SystemUnderTest) AwaitNodeUp(t *testing.T, rpcAddr string) {
 	t.Helper()
-	t.Log("Await chain starts")
+	t.Logf("Await node is up: %s", rpcAddr)
 	timeout := defaultWaitTime
 	ctx, done := context.WithTimeout(context.Background(), timeout)
 	defer done()
 
 	started := make(chan struct{})
 	go func() { // query for a non empty block on status page
-		t.Logf("Checking node status: %s\n", s.rpcAddr)
+		t.Logf("Checking node status: %s\n", rpcAddr)
 		for {
-			con, err := client.New(s.rpcAddr, "/websocket")
+			con, err := client.New(rpcAddr, "/websocket")
 			if err != nil || con.Start() != nil {
 				time.Sleep(time.Second)
 				continue
@@ -187,7 +189,7 @@ func (s *SystemUnderTest) awaitChainUp(t *testing.T) {
 	case <-ctx.Done():
 		require.NoError(t, ctx.Err())
 	case <-time.NewTimer(timeout).C:
-		t.Fatalf("timeout waiting for chain start: %s", timeout)
+		t.Fatalf("timeout waiting for node start: %s", timeout)
 	}
 }
 
@@ -275,7 +277,13 @@ func (s *SystemUnderTest) ResetChain(t *testing.T) {
 	}
 	s.Log(string(out))
 
-	// reset all nodes
+	// remove all additional nodes
+	for i := s.initialNodesCount; i < s.nodesCount; i++ {
+		os.Remove(s.nodePath(i))
+	}
+	s.nodesCount = s.initialNodesCount
+
+	// reset all validataor nodes
 	s.ForEachNodeExecAndWait(t, []string{"unsafe-reset-all"})
 	s.withEachNodeHome(func(i int, home string) {
 		os.Remove(filepath.Join(workDir, home, "wasm"))
@@ -326,14 +334,18 @@ func (s *SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
 	require.NoError(t, err)
 
 	s.withEachNodeHome(func(i int, home string) {
-		out, err := os.Create(filepath.Join(workDir, home, "config", "genesis.json"))
-		require.NoError(t, err)
-		defer out.Close()
-
-		_, err = io.Copy(out, bytes.NewReader(buf.Bytes()))
-		require.NoError(t, err)
-		require.NoError(t, out.Close())
+		saveGenesis(t, home, buf.Bytes())
 	})
+}
+
+func saveGenesis(t *testing.T, home string, content []byte) {
+	out, err := os.Create(filepath.Join(workDir, home, "config", "genesis.json"))
+	require.NoError(t, err)
+	defer out.Close()
+
+	_, err = io.Copy(out, bytes.NewReader(content))
+	require.NoError(t, err)
+	require.NoError(t, out.Close())
 }
 
 // ForEachNodeExecAndWait runs the given tgrade commands for all cluster nodes synchronously
@@ -413,12 +425,15 @@ func (s SystemUnderTest) AllPeers(t *testing.T) []string {
 func (s SystemUnderTest) AllNodes(t *testing.T) []Node {
 	result := make([]Node, s.nodesCount)
 	outs := s.ForEachNodeExecAndWait(t, []string{"tendermint", "show-node-id"})
+	ip, err := server.ExternalIP()
+	require.NoError(t, err)
+
 	for i, out := range outs {
 		result[i] = Node{
-			ID:      out[0],
-			IP:      "127.0.0.1",
-			RPCPort: 25567 + i,
-			P2PPort: 15566 + i,
+			ID:      strings.TrimSpace(out[0]),
+			IP:      ip,
+			RPCPort: 25567 + i, // as defined in testnet command
+			P2PPort: 16656 + i, // as defined in testnet command
 		}
 	}
 	return result
@@ -427,6 +442,58 @@ func (s SystemUnderTest) AllNodes(t *testing.T) []Node {
 func (s *SystemUnderTest) resetBuffers() {
 	s.outBuff = ring.New(100)
 	s.errBuff = ring.New(100)
+}
+
+// AddFullnode starts a new fullnode that connects to the existing chain but is not a validator.
+func (s *SystemUnderTest) AddFullnode(t *testing.T) Node {
+	s.nodesCount++
+	nodeNumber := s.nodesCount - 1
+	nodePath := s.nodePath(nodeNumber)
+	// prepare new node
+	moniker := fmt.Sprintf("node%d", nodeNumber)
+	args := []string{"init", moniker, "--home", nodePath}
+	s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
+	cmd := exec.Command(
+		locateExecutable("tgrade"),
+		args...,
+	)
+	cmd.Dir = workDir
+	s.watchLogs(nodeNumber, cmd)
+	require.NoError(t, cmd.Run(), "node %d", nodeNumber)
+	saveGenesis(t, nodePath, []byte(s.ReadGenesisJson(t)))
+
+	// quick hack: copy config and overwrite by start params
+	configFile := filepath.Join(workDir, nodePath, "config", "config.toml")
+	_ = os.Remove(configFile)
+	_, err := copyFile(filepath.Join(workDir, s.nodePath(0), "config", "config.toml"), configFile)
+	require.NoError(t, err)
+
+	// start node
+	allNodes := s.AllNodes(t)
+	node := allNodes[len(allNodes)-1]
+	var peers []string
+	for _, n := range allNodes[0 : len(allNodes)-1] {
+		peers = append(peers, n.PeerAddr())
+	}
+	args = []string{
+		"start",
+		"--p2p.persistent_peers=" + strings.Join(peers, ","),
+		fmt.Sprintf("--p2p.laddr=tcp://localhost:%d", node.P2PPort),
+		fmt.Sprintf("--rpc.laddr=tcp://localhost:%d", node.RPCPort),
+		fmt.Sprintf("--grpc.address=localhost:%d", 9090+nodeNumber),
+		"--moniker=" + moniker,
+		"--trace", "--log_level=info",
+		"--home", nodePath,
+	}
+	s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
+	cmd = exec.Command(
+		locateExecutable("tgrade"),
+		args...,
+	)
+	cmd.Dir = workDir
+	s.watchLogs(nodeNumber, cmd)
+	require.NoError(t, cmd.Start(), "node %d", nodeNumber)
+	return node
 }
 
 // NewEventListener constructor for Eventlistener with system rpc address
@@ -442,7 +509,7 @@ type Node struct {
 }
 
 func (n Node) PeerAddr() string {
-	return fmt.Sprintf("%s@%s:%d", n.ID, n.IP, n.RPCPort)
+	return fmt.Sprintf("%s@%s:%d", n.ID, n.IP, n.P2PPort)
 }
 
 // locateExecutable looks up the binary on the OS path.

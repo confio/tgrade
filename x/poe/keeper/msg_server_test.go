@@ -22,23 +22,35 @@ import (
 )
 
 func TestCreateValidator(t *testing.T) {
-	var myValsetContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
-	var myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
-	var myDelegatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
-
-	contractSource := newContractSourceMock(t, myValsetContract, myStakingContract)
+	var (
+		myValsetContract  sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+		myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+		myOperatorAddr    sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	)
+	var capturedOpAddr sdk.AccAddress
+	var capturedSelfDelegation *sdk.Coin
+	poeKeeperMock := PoEKeeperMock{
+		GetPoEContractAddressFn: SwitchPoEContractAddressFn(t, myValsetContract, myStakingContract),
+		SetValidatorInitialEngagementPointsFn: func(ctx sdk.Context, opAdr sdk.AccAddress, selfDelegation sdk.Coin) error {
+			capturedOpAddr = opAdr
+			capturedSelfDelegation = &selfDelegation
+			return nil
+		},
+	}
 
 	specs := map[string]struct {
-		src    *types.MsgCreateValidator
-		expErr *sdkerrors.Error
+		src               *types.MsgCreateValidator
+		expSelfDelegation *sdk.Coin
+		expErr            *sdkerrors.Error
 	}{
 		"all good": {
 			src: types.MsgCreateValidatorFixture(
 				func(m *types.MsgCreateValidator) {
-					m.DelegatorAddress = myDelegatorAddr.String()
+					m.DelegatorAddress = myOperatorAddr.String()
 					m.Value = sdk.NewInt64Coin(types.DefaultBondDenom, 1)
 				},
 			),
+			expSelfDelegation: &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.NewInt(1)},
 		},
 		"invalid algo": {
 			src: types.MsgCreateValidatorFixture(
@@ -62,7 +74,7 @@ func TestCreateValidator(t *testing.T) {
 				Validator: &types1.ValidatorParams{PubKeyTypes: []string{"ed25519"}}}))
 
 			// when
-			s := NewMsgServerImpl(contractSource, km, nil)
+			s := NewMsgServerImpl(poeKeeperMock, km, nil)
 			gotRes, gotErr := s.CreateValidator(ctx, spec.src)
 
 			// then
@@ -75,11 +87,14 @@ func TestCreateValidator(t *testing.T) {
 			// and contract called
 			require.Len(t, *execs, 2)
 			assert.Equal(t, myValsetContract, (*execs)[0].ContractAddress)
-			assert.Equal(t, myDelegatorAddr, (*execs)[0].Caller)
+			assert.Equal(t, myOperatorAddr, (*execs)[0].Caller)
 			assert.Nil(t, (*execs)[0].Coins)
 			assert.Equal(t, myStakingContract, (*execs)[1].ContractAddress)
-			assert.Equal(t, myDelegatorAddr, (*execs)[1].Caller)
+			assert.Equal(t, myOperatorAddr, (*execs)[1].Caller)
 			assert.Equal(t, sdk.NewCoins(sdk.NewInt64Coin(types.DefaultBondDenom, 1)), (*execs)[1].Coins)
+
+			assert.Equal(t, myOperatorAddr, capturedOpAddr)
+			assert.Equal(t, spec.expSelfDelegation, capturedSelfDelegation)
 
 			// and events emitted
 			require.NoError(t, gotErr)
@@ -92,10 +107,14 @@ func TestCreateValidator(t *testing.T) {
 
 func TestUpdateValidator(t *testing.T) {
 	var myValsetContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
-	var myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 
-	contractSource := newContractSourceMock(t, myValsetContract, myStakingContract)
+	poeKeeperMock := PoEKeeperMock{
+		GetPoEContractAddressFn: SwitchPoEContractAddressFn(t, myValsetContract, nil),
+		SetValidatorInitialEngagementPointsFn: func(ctx sdk.Context, address sdk.AccAddress, value sdk.Coin) error {
+			return nil
+		},
+	}
 
 	desc := contract.MetadataFromDescription(stakingtypes.Description{
 		Moniker:         "myMoniker",
@@ -104,7 +123,7 @@ func TestUpdateValidator(t *testing.T) {
 		SecurityContact: "myContact",
 		Details:         "myDetails",
 	})
-	querier := SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+	querier := TwasmKeeperMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 		return json.Marshal(contract.ValidatorResponse{Validator: &contract.OperatorResponse{
 			Operator: RandomAddress(t).String(),
 			Pubkey:   contract.ValidatorPubkey{Ed25519: ed25519.GenPrivKey().PubKey().Bytes()},
@@ -270,7 +289,7 @@ func TestUpdateValidator(t *testing.T) {
 			ctx := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()).WithEventManager(em))
 
 			// when
-			s := NewMsgServerImpl(contractSource, km, querier)
+			s := NewMsgServerImpl(poeKeeperMock, km, querier)
 			gotRes, gotErr := s.UpdateValidator(ctx, spec.src)
 
 			// then

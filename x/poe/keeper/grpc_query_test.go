@@ -54,7 +54,7 @@ func TestQueryContractAddress(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			q := NewGrpcQuerier(ContractSourceMock{GetPoEContractAddressFn: spec.mockFn}, nil)
+			q := NewGrpcQuerier(PoEKeeperMock{GetPoEContractAddressFn: spec.mockFn}, nil)
 			ctx := sdk.Context{}.WithContext(context.Background())
 			gotRes, gotErr := q.ContractAddress(sdk.WrapSDKContext(ctx), &spec.srcMsg)
 			if spec.expErrCode != 0 {
