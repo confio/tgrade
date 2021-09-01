@@ -6,6 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sort"
+	"strings"
+
 	"github.com/confio/tgrade/x/poe/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -14,12 +21,6 @@ import (
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	cfg "github.com/tendermint/tendermint/config"
 	tmtypes "github.com/tendermint/tendermint/types"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"runtime"
-	"sort"
-	"strings"
 )
 
 // AddGenTxsToGenesisFile collects and adds the gentx to the app state
@@ -120,6 +121,7 @@ func collectTxs(cdc codec.JSONMarshaler, txJSONDecoder sdk.TxDecoder, moniker, g
 		}
 
 		// get the genTx
+		// #nosec G304
 		jsonRawTx, err := ioutil.ReadFile(filepath.Join(genTxsDir, fo.Name()))
 		if err != nil {
 			return appGenTxs, persistentPeers, err
