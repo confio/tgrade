@@ -1,16 +1,17 @@
 package testing
 
 import (
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+
 	"github.com/confio/tgrade/app"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"testing"
 )
 
 // TgradeCli wraps the command line interface
@@ -33,28 +34,34 @@ func NewTgradeCliX(t *testing.T, nodeAddress string, chainID string, homeDir str
 
 func (c TgradeCli) CustomCommand(args ...string) string {
 	args = c.withTXFlags(args...)
-	return c.run(args)
+	return c.mustRun(args)
 }
 
 func (c TgradeCli) Keys(args ...string) string {
 	args = c.withKeyringFlags(args...)
-	return c.run(args)
+	return c.mustRun(args)
 }
 
 func (c TgradeCli) CustomQuery(args ...string) string {
 	args = c.withQueryFlags(args...)
-	return c.run(args)
+	return c.mustRun(args)
 }
 
-func (c TgradeCli) run(args []string) string {
+func (c TgradeCli) mustRun(args []string) string {
+	out, err := c.Run(args...)
+	require.NoError(c.t, err, out)
+	return out
+}
+
+// Run executes a tgrade command. Combined stdout and stderr is returned.
+func (c TgradeCli) Run(args ...string) (string, error) {
 	if c.Debug {
 		c.t.Logf("+++ running `tgrade %s`", strings.Join(args, " "))
 	}
 	cmd := exec.Command(locateExecutable("tgrade"), args...)
 	cmd.Dir = workDir
 	out, err := cmd.CombinedOutput()
-	require.NoError(c.t, err, string(out))
-	return string(out)
+	return string(out), err
 }
 
 func (c TgradeCli) withQueryFlags(args ...string) []string {
@@ -91,13 +98,13 @@ func (c TgradeCli) Execute(contractAddr, msg, from string, amount ...sdk.Coin) s
 	if len(amount) != 0 {
 		cmd = append(cmd, "--amount", sdk.NewCoins(amount...).String())
 	}
-	return c.run(c.withTXFlags(cmd...))
+	return c.mustRun(c.withTXFlags(cmd...))
 }
 
 // AddKey add key to default keyring. Returns address
 func (c TgradeCli) AddKey(name string) string {
 	cmd := c.withKeyringFlags("keys", "add", name, "--no-backup", "--output", "json")
-	out := c.run(cmd)
+	out := c.mustRun(cmd)
 	addr := gjson.Get(out, "address").String()
 	require.NotEmpty(c.t, addr, "got %q", out)
 	return addr
@@ -106,7 +113,7 @@ func (c TgradeCli) AddKey(name string) string {
 // GetKeyAddr returns address
 func (c TgradeCli) GetKeyAddr(name string) string {
 	cmd := c.withKeyringFlags("keys", "show", name, "-a")
-	out := c.run(cmd)
+	out := c.mustRun(cmd)
 	addr := strings.Trim(out, "\n")
 	require.NotEmpty(c.t, addr, "got %q", out)
 	return addr
@@ -119,7 +126,7 @@ func (c TgradeCli) FundAddress(destAddr, amount string) string {
 	require.NotEmpty(c.t, destAddr)
 	require.NotEmpty(c.t, amount)
 	cmd := []string{"tx", "send", defaultSrcAddr, destAddr, amount}
-	rsp := c.run(c.withTXFlags(cmd...))
+	rsp := c.mustRun(c.withTXFlags(cmd...))
 	RequireTxSuccess(c.t, rsp)
 	return rsp
 }
@@ -153,7 +160,7 @@ func (c TgradeCli) QueryValidator(addr string) string {
 
 func (c TgradeCli) GetTendermintValidatorSet() rpc.ResultValidatorsOutput {
 	args := []string{"q", "tendermint-validator-set"}
-	got := c.run(c.withChainFlags(args...))
+	got := c.mustRun(c.withChainFlags(args...))
 
 	var res rpc.ResultValidatorsOutput
 	require.NoError(c.t, c.amino.UnmarshalJSON([]byte(got), &res), got)

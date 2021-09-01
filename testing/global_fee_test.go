@@ -4,11 +4,12 @@ package testing
 
 import (
 	"encoding/json"
+	"testing"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"testing"
 )
 
 func TestGlobalFee(t *testing.T) {
@@ -50,4 +51,19 @@ func SetGlobalMinFee(t *testing.T, fees ...sdk.DecCoin) GenesisMutator {
 		require.NoError(t, err)
 		return state
 	}
+}
+
+func TestGlobalHighFee(t *testing.T) {
+	sut.ResetChain(t)
+	sut.StartChain(t)
+	cli := NewTgradeCli(t, sut, verbose)
+	const anyContract = "testing/contract/hackatom.wasm.gzip"
+
+	out, err := cli.Run("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1500000", "--fees=50001utgd")
+	require.Error(t, err, "high fee must result in an error")
+	require.Contains(t, out, "value above safe max", "Certain output message is expected, got %q", out)
+
+	// Unknown currency is ignored.
+	txResult := cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1500000", "--fees=50001node0token")
+	RequireTxSuccess(t, txResult)
 }

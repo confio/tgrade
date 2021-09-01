@@ -2,10 +2,12 @@ package main
 
 import (
 	"errors"
-	"github.com/confio/tgrade/x/poe/client/cli"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/confio/tgrade/x/poe/client/cli"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
@@ -67,6 +69,9 @@ func NewRootCmd() (*cobra.Command, app.EncodingConfig) {
 				return err
 			}
 
+			if err := ensureNoHighGas(cmd); err != nil {
+				return fmt.Errorf("high gas: %w", err)
+			}
 			return server.InterceptConfigsPreRunHandler(cmd)
 		},
 	}
@@ -74,6 +79,36 @@ func NewRootCmd() (*cobra.Command, app.EncodingConfig) {
 	initRootCmd(rootCmd, encodingConfig)
 
 	return rootCmd, encodingConfig
+}
+
+// ensureNoHighGas traverse cobra flags and check those related to gas fee. If
+// any of provided fee values exceeds an arbitrary safe max value, error is
+// returned.
+// Because in order to evaluate how high the fee is we must understand its
+// currency, only utgd tokens are considered.
+func ensureNoHighGas(cmd *cobra.Command) error {
+	const safeMaxFee = 50_000
+	gasFlags := []string{
+		flags.FlagFees,
+		flags.FlagGasPrices,
+		flags.FlagGasAdjustment,
+	}
+
+	flagSet := cmd.Flags()
+	for _, flagName := range gasFlags {
+		feesStr, err := flagSet.GetString(flagName)
+		if err != nil {
+			continue
+		}
+		fee, err := sdk.ParseCoinsNormalized(feesStr)
+		if err != nil {
+			return fmt.Errorf("parse %s flag coin: %w", flagName, err)
+		}
+		if fee.AmountOf("utgd").GTE(sdk.NewInt(safeMaxFee)) {
+			return fmt.Errorf("%s flag value above safe max %d", flagName, safeMaxFee)
+		}
+	}
+	return nil
 }
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig app.EncodingConfig) {
