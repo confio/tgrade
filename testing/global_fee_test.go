@@ -1,3 +1,4 @@
+//go:build system_test
 // +build system_test
 
 package testing
