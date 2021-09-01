@@ -3,6 +3,7 @@ package globalfee
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/confio/tgrade/x/globalfee/client/cli"
 	"github.com/confio/tgrade/x/globalfee/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -54,7 +55,7 @@ func (a AppModuleBasic) RegisterRESTRoutes(context client.Context, router *mux.R
 }
 
 func (a AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	_ = types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 }
 
 func (a AppModuleBasic) GetTxCmd() *cobra.Command {
