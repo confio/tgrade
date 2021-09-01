@@ -5,13 +5,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/confio/tgrade/x/poe/types"
-	"github.com/cosmos/cosmos-sdk/codec"
-	bankexported "github.com/cosmos/cosmos-sdk/x/bank/exported"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/confio/tgrade/x/poe/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	bankexported "github.com/cosmos/cosmos-sdk/x/bank/exported"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -240,7 +241,7 @@ func writeSignedGenTx(clientCtx client.Context, outputDocument string, tx sdk.Tx
 	if err != nil {
 		return err
 	}
-	defer outputFile.Close()
+	defer func() { _ = outputFile.Close() }()
 
 	json, err := clientCtx.TxConfig.TxJSONEncoder()(tx)
 	if err != nil {
