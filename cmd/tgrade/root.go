@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"github.com/confio/tgrade/x/poe/client/cli"
+	"github.com/confio/tgrade/x/twasm/tracing"
 	"io"
 	"os"
 	"path/filepath"
@@ -107,6 +108,8 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig app.EncodingConfig) {
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
 	wasm.AddModuleInitFlags(startCmd)
+	tracing.AddModuleInitFlags(startCmd)
+	tracing.RunWithTracer(startCmd)
 }
 
 func queryCommand() *cobra.Command {

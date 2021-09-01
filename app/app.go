@@ -3,12 +3,14 @@ package app
 import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmclient "github.com/CosmWasm/wasmd/x/wasm/client"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/confio/tgrade/x/globalfee"
 	"github.com/confio/tgrade/x/poe"
 	poekeeper "github.com/confio/tgrade/x/poe/keeper"
 	poestakingadapter "github.com/confio/tgrade/x/poe/stakingadapter"
 	"github.com/confio/tgrade/x/twasm"
 	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
+	"github.com/confio/tgrade/x/twasm/tracing"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -207,7 +209,18 @@ type TgradeApp struct {
 }
 
 // NewTgradeApp returns a reference to an initialized TgradeApp.
-func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool, homePath string, invCheckPeriod uint, appOpts servertypes.AppOptions, wasmOpts []wasm.Option, baseAppOptions ...func(*baseapp.BaseApp)) *TgradeApp {
+func NewTgradeApp(
+	logger log.Logger,
+	db dbm.DB,
+	traceStore io.Writer,
+	loadLatest bool,
+	skipUpgradeHeights map[int64]bool,
+	homePath string,
+	invCheckPeriod uint,
+	appOpts servertypes.AppOptions,
+	wasmOpts []wasm.Option,
+	baseAppOptions ...func(*baseapp.BaseApp),
+) *TgradeApp {
 
 	encodingConfig := MakeEncodingConfig()
 	appCodec, legacyAmino := encodingConfig.Marshaler, encodingConfig.Amino
@@ -238,6 +251,12 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		tkeys:             tkeys,
 		memKeys:           memKeys,
 	}
+
+	if err := tracing.ReadTracerConfig(appOpts); err != nil {
+		panic("error while reading tracer config: " + err.Error())
+	}
+	router := tracing.NewTraceRouter(app.Router())
+	app.SetRouter(router)
 
 	app.paramsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 
@@ -271,14 +290,13 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	app.ibcKeeper = ibckeeper.NewKeeper(
 		appCodec, keys[ibchost.StoreKey], app.getSubspace(ibchost.ModuleName), &app.poeKeeper, scopedIBCKeeper,
 	)
-
 	twasmConfig, err := twasm.ReadWasmConfig(appOpts)
 	if err != nil {
 		panic("error while reading wasm config: " + err.Error())
 	}
 
 	// register the proposal types
-	govRouter := govtypes.NewRouter()
+	govRouter := tracing.NewTraceGovRouter(govtypes.NewRouter())
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.paramsKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.upgradeKeeper)).
@@ -305,13 +323,13 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 
 	wasmDir := filepath.Join(homePath, "wasm")
 
-	router := app.Router()
-
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
 	supportedFeatures := "staking,stargate"
 
 	stakingAdapter := stakingKeeper
+	wasmOpts = append(wasmOpts, wasmkeeper.WithMessageHandlerDecorator(tracing.TraceMessageHandlerDecorator(app.appCodec)),
+		wasmkeeper.WithQueryHandlerDecorator(tracing.TraceQueryDecorator))
 	app.twasmKeeper = twasmkeeper.NewKeeper(
 		appCodec,
 		keys[twasm.StoreKey],
@@ -335,7 +353,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 
 	govRouter.AddRoute(twasm.RouterKey, twasmkeeper.NewProposalHandler(app.twasmKeeper))
 
-	var ibcHandler porttypes.IBCModule = wasm.NewIBCHandler(app.twasmKeeper, app.ibcKeeper.ChannelKeeper)
+	var ibcHandler porttypes.IBCModule = tracing.NewTraceIBCHandler(wasm.NewIBCHandler(app.twasmKeeper, app.ibcKeeper.ChannelKeeper))
 	ibcRouter.AddRoute(twasm.ModuleName, ibcHandler)
 	app.ibcKeeper.SetRouter(ibcRouter)
 
@@ -406,7 +424,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	)
 
 	app.mm.RegisterInvariants(&app.crisisKeeper)
-	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
+	app.mm.RegisterRoutes(router, app.QueryRouter(), encodingConfig.Amino)
 	app.mm.RegisterServices(module.NewConfigurator(app.MsgServiceRouter(), app.GRPCQueryRouter()))
 
 	// add test gRPC service for testing gRPC queries in isolation
@@ -438,14 +456,14 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
-	app.SetBeginBlocker(app.BeginBlocker)
+	app.SetBeginBlocker(tracing.BeginBlockTracer(app.BeginBlocker))
 
-	anteHandler := globalfee.NewAnteHandler(
+	anteHandler := tracing.NewTraceAnteHandler(globalfee.NewAnteHandler(
 		app.accountKeeper, app.bankKeeper, authante.DefaultSigVerificationGasConsumer,
 		encodingConfig.TxConfig.SignModeHandler(), app.getSubspace(globalfee.ModuleName),
-	)
+	))
 	app.SetAnteHandler(anteHandler)
-	app.SetEndBlocker(app.EndBlocker)
+	app.SetEndBlocker(tracing.EndBlockTracer(app.EndBlocker))
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
