@@ -99,10 +99,10 @@ func (s *SystemUnderTest) SetupChain() {
 	}
 }
 
-func (s *SystemUnderTest) StartChain(t *testing.T) {
+func (s *SystemUnderTest) StartChain(t *testing.T, xargs ...string) {
 	t.Helper()
 	s.Log("Start chain\n")
-	s.forEachNodesExecAsync(t, "start", "--trace", "--log_level=info")
+	s.forEachNodesExecAsync(t, append([]string{"start", "--trace", "--log_level=info"}, xargs...)...)
 
 	s.AwaitNodeUp(t, s.rpcAddr)
 

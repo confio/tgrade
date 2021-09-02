@@ -1,3 +1,4 @@
+//go:build system_test
 // +build system_test
 
 package testing
@@ -6,7 +7,6 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
-	"strings"
 	"testing"
 )
 
@@ -16,7 +16,8 @@ import (
 func TestGovProposal(t *testing.T) {
 	sut.ResetChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
-	myKey := strings.Trim(cli.Keys("keys", "show", "-a", "node0"), "\n ")
+	myKey := cli.GetKeyAddr("node0")
+	require.NotEmpty(t, myKey)
 	t.Logf("key: %q", myKey)
 	myContractAddr := ContractBech32Address(1, 1)
 	commands := [][]string{
