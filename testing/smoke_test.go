@@ -19,7 +19,7 @@ func TestSmokeTest(t *testing.T) {
 	// instantiate contract
 	// watch for an event
 	sut.ResetChain(t)
-	sut.StartChain(t)
+	sut.StartChain(t, "--twasm.open-tracing")
 
 	cli := NewTgradeCli(t, sut, verbose)
 	t.Log("List keys")

@@ -27,6 +27,7 @@ const (
 	logWasmMsgResult      = "raw_wasm_message_result"
 	logRawWasmQuery       = "raw_wasm_query"
 	logRawWasmQueryResult = "raw_wasm_query_result"
+	logRawEvents          = "raw_events"
 )
 
 var _ wasmkeeper.Messenger = TraceMessageHandler{}
@@ -63,7 +64,9 @@ func (h TraceMessageHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAd
 		span.LogFields(log.Error(err))
 	} else {
 		addTagsFromEvents(span, events)
-		span.LogFields(log.Object(logWasmMsgResult, data), log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.Object(logWasmMsgResult, data))
+		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.String(logRawEvents, serializeEvents(events)))
 	}
 	return events, data, err
 }
@@ -272,4 +275,9 @@ func addTagsFromEvents(span opentracing.Span, events sdk.Events) {
 			}
 		}
 	}
+}
+
+func serializeEvents(events sdk.Events) string {
+	bz, _ := json.Marshal(events)
+	return string(bz)
 }

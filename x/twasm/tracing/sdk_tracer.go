@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/store/tracekv"
@@ -63,7 +64,9 @@ func (v TraceRouter) Route(ctx sdk.Context, path string) sdk.Handler {
 			span.LogFields(log.Error(err))
 		} else {
 			addTagsFromEvents(span, result.GetEvents())
+			span.LogFields(log.Object(logWasmMsgResult, result.Data))
 			span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+			span.LogFields(log.String(logRawEvents, serializeTMEvents(result.Events)))
 		}
 		return result, err
 	}
@@ -79,8 +82,11 @@ func BeginBlockTracer(other sdk.BeginBlocker) sdk.BeginBlocker {
 		span.SetTag(tagBlockHeight, req.Header.Height)
 		defer span.Finish()
 		ms := NewTracingMultiStore(ctx.MultiStore())
-		result := other(ctx.WithContext(goCtx).WithMultiStore(ms), req)
+		em := sdk.NewEventManager()
+		result := other(ctx.WithContext(goCtx).WithMultiStore(ms).WithEventManager(em), req)
 		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.String(logRawEvents, serializeEvents(em.Events())))
+		ctx.EventManager().EmitEvents(em.Events())
 		return result
 	}
 }
@@ -95,9 +101,12 @@ func EndBlockTracer(other sdk.EndBlocker) sdk.EndBlocker {
 		span.SetTag(tagBlockHeight, req.Height)
 		defer span.Finish()
 		ms := NewTracingMultiStore(ctx.MultiStore())
-		result := other(ctx.WithContext(goCtx).WithMultiStore(ms), req)
-		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		em := sdk.NewEventManager()
+		result := other(ctx.WithContext(goCtx).WithMultiStore(ms).WithEventManager(em), req)
 		span.LogFields(log.Object(logValsetDiff, result))
+		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.String(logRawEvents, serializeEvents(em.Events())))
+		ctx.EventManager().EmitEvents(em.Events())
 		return result
 	}
 }
@@ -143,12 +152,15 @@ func (t TraceGovRouter) GetRoute(path string) (h govtypes.Handler) {
 			SetTag(tagSDKMsgType, fmt.Sprintf("%T", content))
 
 		ms := NewTracingMultiStore(ctx.MultiStore())
-		err := realHandler(ctx.WithContext(goCtx).WithMultiStore(ms), content)
+		em := sdk.NewEventManager()
+		err := realHandler(ctx.WithContext(goCtx).WithMultiStore(ms).WithEventManager(em), content)
 		if err != nil {
 			span.LogFields(log.Error(err))
 		} else {
 			span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+			span.LogFields(log.String(logRawEvents, serializeEvents(em.Events())))
 		}
+		ctx.EventManager().EmitEvents(em.Events())
 		return err
 	}
 }
@@ -182,7 +194,18 @@ func (t TraceIBCHandler) OnChanOpenInit(
 	}
 	span, goCtx := opentracing.StartSpanFromContext(ctx.Context(), "ibc_chan_open_init")
 	defer span.Finish()
-	return t.other.OnChanOpenInit(ctx.WithContext(goCtx), order, connectionHops, portID, channelID, channelCap, counterparty, version)
+
+	ms := NewTracingMultiStore(ctx.MultiStore())
+	em := sdk.NewEventManager()
+	err := t.other.OnChanOpenInit(ctx.WithContext(goCtx).WithMultiStore(ms).WithEventManager(em), order, connectionHops, portID, channelID, channelCap, counterparty, version)
+	if err != nil {
+		span.LogFields(log.Error(err))
+	} else {
+		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.String(logRawEvents, serializeEvents(em.Events())))
+	}
+	ctx.EventManager().EmitEvents(em.Events())
+	return err
 }
 
 func (t TraceIBCHandler) OnChanOpenTry(
@@ -200,7 +223,18 @@ func (t TraceIBCHandler) OnChanOpenTry(
 	span, goCtx := opentracing.StartSpanFromContext(ctx.Context(), "ibc_chan_open_try")
 	defer span.Finish()
 	span.SetTag(tagModule, types.ModuleName)
-	return t.other.OnChanOpenTry(ctx.WithContext(goCtx), order, connectionHops, portID, channelID, channelCap, counterparty, version, counterpartyVersion)
+
+	ms := NewTracingMultiStore(ctx.MultiStore())
+	em := sdk.NewEventManager()
+	err := t.other.OnChanOpenTry(ctx.WithContext(goCtx).WithMultiStore(ms).WithEventManager(em), order, connectionHops, portID, channelID, channelCap, counterparty, version, counterpartyVersion)
+	if err != nil {
+		span.LogFields(log.Error(err))
+	} else {
+		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.String(logRawEvents, serializeEvents(em.Events())))
+	}
+	ctx.EventManager().EmitEvents(em.Events())
+	return err
 }
 
 func (t TraceIBCHandler) OnChanOpenAck(
@@ -214,7 +248,18 @@ func (t TraceIBCHandler) OnChanOpenAck(
 	span, goCtx := opentracing.StartSpanFromContext(ctx.Context(), "ibc_chan_open_ack")
 	defer span.Finish()
 	span.SetTag(tagModule, types.ModuleName)
-	return t.other.OnChanOpenAck(ctx.WithContext(goCtx), portID, channelID, counterpartyVersion)
+
+	ms := NewTracingMultiStore(ctx.MultiStore())
+	em := sdk.NewEventManager()
+	err := t.other.OnChanOpenAck(ctx.WithContext(goCtx).WithMultiStore(ms).WithEventManager(em), portID, channelID, counterpartyVersion)
+	if err != nil {
+		span.LogFields(log.Error(err))
+	} else {
+		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.String(logRawEvents, serializeEvents(em.Events())))
+	}
+	ctx.EventManager().EmitEvents(em.Events())
+	return err
 }
 
 func (t TraceIBCHandler) OnChanOpenConfirm(ctx sdk.Context, portID, channelID string) error {
@@ -224,7 +269,18 @@ func (t TraceIBCHandler) OnChanOpenConfirm(ctx sdk.Context, portID, channelID st
 	span, goCtx := opentracing.StartSpanFromContext(ctx.Context(), "ibc_chan_open_confirm")
 	defer span.Finish()
 	span.SetTag(tagModule, types.ModuleName)
-	return t.other.OnChanOpenConfirm(ctx.WithContext(goCtx), portID, channelID)
+
+	ms := NewTracingMultiStore(ctx.MultiStore())
+	em := sdk.NewEventManager()
+	err := t.other.OnChanOpenConfirm(ctx.WithContext(goCtx).WithMultiStore(ms).WithEventManager(em), portID, channelID)
+	if err != nil {
+		span.LogFields(log.Error(err))
+	} else {
+		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.String(logRawEvents, serializeEvents(em.Events())))
+	}
+	ctx.EventManager().EmitEvents(em.Events())
+	return err
 }
 
 func (t TraceIBCHandler) OnChanCloseInit(ctx sdk.Context, portID, channelID string) error {
@@ -234,7 +290,18 @@ func (t TraceIBCHandler) OnChanCloseInit(ctx sdk.Context, portID, channelID stri
 	span, goCtx := opentracing.StartSpanFromContext(ctx.Context(), "ibc_chan_close_init")
 	defer span.Finish()
 	span.SetTag(tagModule, types.ModuleName)
-	return t.other.OnChanCloseInit(ctx.WithContext(goCtx), portID, channelID)
+
+	ms := NewTracingMultiStore(ctx.MultiStore())
+	em := sdk.NewEventManager()
+	err := t.other.OnChanCloseInit(ctx.WithContext(goCtx).WithMultiStore(ms).WithEventManager(em), portID, channelID)
+	if err != nil {
+		span.LogFields(log.Error(err))
+	} else {
+		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.String(logRawEvents, serializeEvents(em.Events())))
+	}
+	ctx.EventManager().EmitEvents(em.Events())
+	return err
 }
 
 func (t TraceIBCHandler) OnChanCloseConfirm(ctx sdk.Context, portID, channelID string) error {
@@ -244,7 +311,18 @@ func (t TraceIBCHandler) OnChanCloseConfirm(ctx sdk.Context, portID, channelID s
 	span, goCtx := opentracing.StartSpanFromContext(ctx.Context(), "ibc_chan_close_confirm")
 	defer span.Finish()
 	span.SetTag(tagModule, types.ModuleName)
-	return t.other.OnChanCloseConfirm(ctx.WithContext(goCtx), portID, channelID)
+
+	ms := NewTracingMultiStore(ctx.MultiStore())
+	em := sdk.NewEventManager()
+	err := t.other.OnChanCloseConfirm(ctx.WithContext(goCtx).WithMultiStore(ms).WithEventManager(em), portID, channelID)
+	if err != nil {
+		span.LogFields(log.Error(err))
+	} else {
+		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.String(logRawEvents, serializeEvents(em.Events())))
+	}
+	ctx.EventManager().EmitEvents(em.Events())
+	return err
 }
 
 func (t TraceIBCHandler) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet) (*sdk.Result, []byte, error) {
@@ -253,7 +331,15 @@ func (t TraceIBCHandler) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packe
 	}
 	span, goCtx := opentracing.StartSpanFromContext(ctx.Context(), "ibc_chan_recv_packet")
 	defer span.Finish()
-	return t.other.OnRecvPacket(ctx.WithContext(goCtx), packet)
+	ms := NewTracingMultiStore(ctx.MultiStore())
+	result, i, err := t.other.OnRecvPacket(ctx.WithContext(goCtx).WithMultiStore(ms), packet)
+	if err != nil {
+		span.LogFields(log.Error(err))
+	} else {
+		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.String(logRawEvents, serializeEvents(result.GetEvents())))
+	}
+	return result, i, err
 }
 
 func (t TraceIBCHandler) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte) (*sdk.Result, error) {
@@ -262,7 +348,15 @@ func (t TraceIBCHandler) OnAcknowledgementPacket(ctx sdk.Context, packet channel
 	}
 	span, goCtx := opentracing.StartSpanFromContext(ctx.Context(), "ibc_chan_ack_packet")
 	defer span.Finish()
-	return t.other.OnAcknowledgementPacket(ctx.WithContext(goCtx), packet, acknowledgement)
+	ms := NewTracingMultiStore(ctx.MultiStore())
+	result, err := t.other.OnAcknowledgementPacket(ctx.WithContext(goCtx).WithMultiStore(ms), packet, acknowledgement)
+	if err != nil {
+		span.LogFields(log.Error(err))
+	} else {
+		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.String(logRawEvents, serializeEvents(result.GetEvents())))
+	}
+	return result, err
 }
 
 func (t TraceIBCHandler) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet) (*sdk.Result, error) {
@@ -271,7 +365,15 @@ func (t TraceIBCHandler) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Pa
 	}
 	span, goCtx := opentracing.StartSpanFromContext(ctx.Context(), "ibc_chan_timeout_packet")
 	defer span.Finish()
-	return t.other.OnTimeoutPacket(ctx.WithContext(goCtx), packet)
+	ms := NewTracingMultiStore(ctx.MultiStore())
+	result, err := t.other.OnTimeoutPacket(ctx.WithContext(goCtx).WithMultiStore(ms), packet)
+	if err != nil {
+		span.LogFields(log.Error(err))
+	} else {
+		span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+		span.LogFields(log.String(logRawEvents, serializeEvents(result.GetEvents())))
+	}
+	return result, err
 }
 
 // NewTraceAnteHandler decorates the ante handler with tracing functionality
@@ -290,12 +392,15 @@ func NewTraceAnteHandler(other sdk.AnteHandler) sdk.AnteHandler {
 			span.SetTag(tagSDKMsgType, fmt.Sprintf("%T", msg))
 		}
 		ms := NewTracingMultiStore(ctx.MultiStore())
-		newCtx, err := other(ctx.WithContext(goCtx).WithMultiStore(ms), tx, simulate)
+		em := sdk.NewEventManager()
+		newCtx, err := other(ctx.WithContext(goCtx).WithMultiStore(ms).WithEventManager(em), tx, simulate)
 		if err != nil {
 			span.LogFields(log.Error(err))
 		} else {
 			span.LogFields(log.String(logRawStoreIO, ms.buf.String()))
+			span.LogFields(log.String(logRawEvents, serializeEvents(em.Events())))
 		}
+		ctx.EventManager().EmitEvents(em.Events())
 		return newCtx, err
 	}
 }
@@ -317,4 +422,9 @@ func (t *tracingMultiStore) GetStore(k sdk.StoreKey) sdk.Store {
 
 func (t *tracingMultiStore) GetKVStore(k sdk.StoreKey) sdk.KVStore {
 	return tracekv.NewStore(t.MultiStore.GetKVStore(k), &t.buf, nil)
+}
+
+func serializeTMEvents(events []abci.Event) string {
+	bz, _ := json.Marshal(events)
+	return string(bz)
 }
