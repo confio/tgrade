@@ -53,7 +53,7 @@ func NewKeeper(
 	}
 	// configure wasm keeper via options
 
-	handlerChainOpt := wasmkeeper.WithMessageHandlerDecorator(func(nested wasmkeeper.Messenger) wasmkeeper.Messenger {
+	extMessageHandlerOpt := wasmkeeper.WithMessageHandlerDecorator(func(nested wasmkeeper.Messenger) wasmkeeper.Messenger {
 		return wasmkeeper.NewMessageHandlerChain(
 			// disable staking messages
 			wasmkeeper.MessageHandlerFunc(func(ctx sdk.Context, contractAddr sdk.AccAddress, contractIBCPortID string, msg wasmvmtypes.CosmosMsg) (events []sdk.Event, data [][]byte, err error) {
@@ -67,7 +67,7 @@ func NewKeeper(
 			NewTgradeHandler(cdc, &result, bankKeeper, govRouter),
 		)
 	})
-	queryChainOpt := wasmkeeper.WithQueryHandlerDecorator(func(nested wasmkeeper.WasmVMQueryHandler) wasmkeeper.WasmVMQueryHandler {
+	extQueryHandlerOpt := wasmkeeper.WithQueryHandlerDecorator(func(nested wasmkeeper.WasmVMQueryHandler) wasmkeeper.WasmVMQueryHandler {
 		return wasmkeeper.WasmVMQueryHandlerFn(func(ctx sdk.Context, caller sdk.AccAddress, request wasmvmtypes.QueryRequest) ([]byte, error) {
 			if request.Staking != nil {
 				return nil, wasmvmtypes.UnsupportedRequest{Kind: "not supported, yet"}
@@ -76,8 +76,8 @@ func NewKeeper(
 		})
 	})
 	opts = append([]wasm.Option{
-		handlerChainOpt,
-		queryChainOpt,
+		extMessageHandlerOpt,
+		extQueryHandlerOpt,
 	}, opts...)
 
 	result.Keeper = wasmkeeper.NewKeeper(
