@@ -34,20 +34,21 @@ func NewTgradeCliX(t *testing.T, nodeAddress string, chainID string, homeDir str
 
 func (c TgradeCli) CustomCommand(args ...string) string {
 	args = c.withTXFlags(args...)
-	return c.mustRun(args)
+	return c.MustRun(args)
 }
 
 func (c TgradeCli) Keys(args ...string) string {
 	args = c.withKeyringFlags(args...)
-	return c.mustRun(args)
+	return c.MustRun(args)
 }
 
 func (c TgradeCli) CustomQuery(args ...string) string {
 	args = c.withQueryFlags(args...)
-	return c.mustRun(args)
+	return c.MustRun(args)
 }
 
-func (c TgradeCli) mustRun(args []string) string {
+// MustRun executes a tgrade command ensures successful result. Panics on error.
+func (c TgradeCli) MustRun(args []string) string {
 	out, err := c.Run(args...)
 	require.NoError(c.t, err, out)
 	return out
@@ -98,13 +99,13 @@ func (c TgradeCli) Execute(contractAddr, msg, from string, amount ...sdk.Coin) s
 	if len(amount) != 0 {
 		cmd = append(cmd, "--amount", sdk.NewCoins(amount...).String())
 	}
-	return c.mustRun(c.withTXFlags(cmd...))
+	return c.MustRun(c.withTXFlags(cmd...))
 }
 
 // AddKey add key to default keyring. Returns address
 func (c TgradeCli) AddKey(name string) string {
 	cmd := c.withKeyringFlags("keys", "add", name, "--no-backup", "--output", "json")
-	out := c.mustRun(cmd)
+	out := c.MustRun(cmd)
 	addr := gjson.Get(out, "address").String()
 	require.NotEmpty(c.t, addr, "got %q", out)
 	return addr
@@ -113,7 +114,7 @@ func (c TgradeCli) AddKey(name string) string {
 // GetKeyAddr returns address
 func (c TgradeCli) GetKeyAddr(name string) string {
 	cmd := c.withKeyringFlags("keys", "show", name, "-a")
-	out := c.mustRun(cmd)
+	out := c.MustRun(cmd)
 	addr := strings.Trim(out, "\n")
 	require.NotEmpty(c.t, addr, "got %q", out)
 	return addr
@@ -126,7 +127,7 @@ func (c TgradeCli) FundAddress(destAddr, amount string) string {
 	require.NotEmpty(c.t, destAddr)
 	require.NotEmpty(c.t, amount)
 	cmd := []string{"tx", "send", defaultSrcAddr, destAddr, amount}
-	rsp := c.mustRun(c.withTXFlags(cmd...))
+	rsp := c.MustRun(c.withTXFlags(cmd...))
 	RequireTxSuccess(c.t, rsp)
 	return rsp
 }
@@ -160,7 +161,7 @@ func (c TgradeCli) QueryValidator(addr string) string {
 
 func (c TgradeCli) GetTendermintValidatorSet() rpc.ResultValidatorsOutput {
 	args := []string{"q", "tendermint-validator-set"}
-	got := c.mustRun(c.withChainFlags(args...))
+	got := c.MustRun(c.withChainFlags(args...))
 
 	var res rpc.ResultValidatorsOutput
 	require.NoError(c.t, c.amino.UnmarshalJSON([]byte(got), &res), got)

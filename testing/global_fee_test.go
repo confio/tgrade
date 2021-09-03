@@ -59,7 +59,7 @@ func TestGlobalHighFee(t *testing.T) {
 	cli := NewTgradeCli(t, sut, verbose)
 	const anyContract = "testing/contract/hackatom.wasm.gzip"
 
-	out, err := cli.Run("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1500000", "--fees=50001utgd")
+	out, err := cli.Run("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1500000", "--fees=50000000001utgd")
 	require.Error(t, err, "high fee must result in an error")
 	require.Contains(t, out, "value above safe max", "Certain output message is expected, got %q", out)
 

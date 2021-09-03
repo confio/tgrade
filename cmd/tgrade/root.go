@@ -86,26 +86,24 @@ func NewRootCmd() (*cobra.Command, app.EncodingConfig) {
 // returned.
 // Because in order to evaluate how high the fee is we must understand its
 // currency, only utgd tokens are considered.
+//
+// case 1: fixed fee => fees(flag)
+// case 2: fixed gas => gas(flag) * gas-price(flag)
+// case 3: gas flag auto; simulation executed in read only => amount-of-gas * gas-adjustment(flag) * gas-price(flag)
+//
+// Currently only case 1 is implemented.
 func ensureNoHighGas(cmd *cobra.Command) error {
-	const safeMaxFee = 50_000
-	gasFlags := []string{
-		flags.FlagFees,
-		flags.FlagGasPrices,
-		flags.FlagGasAdjustment,
-	}
+	safeMaxFee := sdk.NewInt(50_000_000_000)
 
 	flagSet := cmd.Flags()
-	for _, flagName := range gasFlags {
-		feesStr, err := flagSet.GetString(flagName)
+
+	if feeStr, err := flagSet.GetString(flags.FlagFees); err == nil {
+		fee, err := sdk.ParseCoinsNormalized(feeStr)
 		if err != nil {
-			continue
+			return fmt.Errorf("parse %s flag coin: %w", flags.FlagFees, err)
 		}
-		fee, err := sdk.ParseCoinsNormalized(feesStr)
-		if err != nil {
-			return fmt.Errorf("parse %s flag coin: %w", flagName, err)
-		}
-		if fee.AmountOf("utgd").GTE(sdk.NewInt(safeMaxFee)) {
-			return fmt.Errorf("%s flag value above safe max %d", flagName, safeMaxFee)
+		if fee.AmountOf("utgd").GT(safeMaxFee) {
+			return fmt.Errorf("%s flag value above safe max %d", flags.FlagFees, safeMaxFee.Uint64())
 		}
 	}
 	return nil
