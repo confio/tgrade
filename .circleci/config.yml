@@ -103,6 +103,16 @@ jobs:
       - store_artifacts:
           path: /tmp/logs
 
+  simulations:
+    executor: golang
+    parallelism: 1
+    steps:
+      - checkout
+      - run:
+          name: Run simulations
+          command: |
+            make test-sim-multi-seed-short
+
   upload-coverage:
     executor: golang
     steps:
@@ -203,7 +213,6 @@ workflows:
       - test-system:
           requires:
             - setup-dependencies
-#          filters:
-#            branches:
-#              only:
-#                - main
+      - simulations:
+          requires:
+            - setup-dependencies

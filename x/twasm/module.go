@@ -7,13 +7,13 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/confio/tgrade/x/twasm/client/cli"
 	"github.com/confio/tgrade/x/twasm/keeper"
+	"github.com/confio/tgrade/x/twasm/simulation"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"math/rand"
 
 	wasmcli "github.com/CosmWasm/wasmd/x/wasm/client/cli"
 	wasmrest "github.com/CosmWasm/wasmd/x/wasm/client/rest"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	wasmsimuliation "github.com/CosmWasm/wasmd/x/wasm/simulation"
 	"github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -171,7 +171,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, b abci.RequestEndBlock) []abci.Val
 
 // GenerateGenesisState creates a randomized GenState of the bank module.
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
-	wasmsimuliation.RandomizedGenState(simState)
+	simulation.RandomizedGenState(simState)
 }
 
 // ProposalContents doesn't return any content functions for governance proposals.
@@ -181,7 +181,8 @@ func (AppModule) ProposalContents(simState module.SimulationState) []simtypes.We
 
 // RandomizedParams creates randomized bank param changes for the simulator.
 func (am AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
-	return wasmsimuliation.ParamChanges(r, am.cdc)
+	//return simulation.ParamChanges(r, am.cdc)
+	return nil
 }
 
 // RegisterStoreDecoder registers a decoder for supply module's types

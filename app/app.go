@@ -39,8 +39,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	crisiskeeper "github.com/cosmos/cosmos-sdk/x/crisis/keeper"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	distr "github.com/cosmos/cosmos-sdk/x/distribution"
-	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/evidence"
 	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
@@ -124,12 +122,8 @@ var (
 		poe.AppModuleBasic{},
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
-		//staking.AppModuleBasic{},
-		mint.AppModuleBasic{},
-		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic(
-			append(wasmclient.ProposalHandlers, paramsclient.ProposalHandler, distrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler)...,
-		// todo (Alex): this and others: remove gov proposal logic except for gov router used by tgrade handler plugin
+			append(wasmclient.ProposalHandlers, paramsclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler)...,
 		),
 		params.AppModuleBasic{},
 		twasm.AppModuleBasic{},
@@ -359,7 +353,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.mm = module.NewManager(
-		poe.NewAppModule(app.poeKeeper, &app.twasmKeeper, app.BaseApp.DeliverTx, encodingConfig.TxConfig, app.twasmKeeper.GetContractKeeper()),
+		poe.NewAppModule(app.appCodec, app.poeKeeper, &app.twasmKeeper, app.BaseApp.DeliverTx, encodingConfig.TxConfig, app.twasmKeeper.GetContractKeeper()),
 		auth.NewAppModule(appCodec, app.accountKeeper, authsims.RandomGenesisAccounts),
 		vesting.NewAppModule(app.accountKeeper, app.bankKeeper),
 		bank.NewAppModule(appCodec, app.bankKeeper, app.accountKeeper),
@@ -420,10 +414,9 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		auth.NewAppModule(appCodec, app.accountKeeper, authsims.RandomGenesisAccounts),
 		bank.NewAppModule(appCodec, app.bankKeeper, app.accountKeeper),
 		capability.NewAppModule(appCodec, *app.capabilityKeeper),
-		gov.NewAppModule(appCodec, app.govKeeper, app.accountKeeper, app.bankKeeper),
-		mint.NewAppModule(appCodec, app.mintKeeper, app.accountKeeper),
 		params.NewAppModule(app.paramsKeeper),
 		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper),
+		poe.NewAppModule(app.appCodec, app.poeKeeper, &app.twasmKeeper, app.BaseApp.DeliverTx, encodingConfig.TxConfig, app.twasmKeeper.GetContractKeeper()),
 		evidence.NewAppModule(app.evidenceKeeper),
 		ibc.NewAppModule(app.ibcKeeper),
 		transferModule,

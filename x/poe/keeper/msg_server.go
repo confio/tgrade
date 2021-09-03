@@ -13,6 +13,7 @@ import (
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"time"
 )
 
 // PoEKeeper is a subset of the keeper
@@ -56,6 +57,28 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 			)
 		}
 	}
+
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// Waiting for https://github.com/cosmos/cosmos-sdk/issues/10075
+	if ctx.BlockTime().UnixNano() < 1 {
+		ctx = ctx.WithBlockTime(time.Now().UTC())
+	}
+
+	// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
 
 	valsetContractAddr, err := m.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	if err != nil {

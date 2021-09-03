@@ -8,6 +8,7 @@ import (
 	"github.com/confio/tgrade/x/poe/client/cli"
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
+	"github.com/confio/tgrade/x/poe/simulation"
 	"github.com/confio/tgrade/x/poe/types"
 	twasmtypes "github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -16,13 +17,16 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
+	"math/rand"
 	"sync"
+	"time"
 )
 
 var (
@@ -90,6 +94,7 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule implements an application module for the genutil module.
 type AppModule struct {
 	AppModuleBasic
+	cdc              codec.Marshaler
 	deliverTx        DeliverTxfn
 	txEncodingConfig client.TxEncodingConfig
 	twasmKeeper      twasmKeeper
@@ -109,6 +114,7 @@ type twasmKeeper interface {
 
 // NewAppModule creates a new AppModule object
 func NewAppModule(
+	cdc codec.Marshaler,
 	poeKeeper keeper.Keeper,
 	twasmKeeper twasmKeeper,
 	deliverTx DeliverTxfn,
@@ -122,6 +128,7 @@ func NewAppModule(
 		poeKeeper:        poeKeeper,
 		deliverTx:        deliverTx,
 		txEncodingConfig: txEncodingConfig,
+		cdc:              cdc,
 	}
 }
 
@@ -157,6 +164,25 @@ func (am AppModule) EndBlock(ctx sdk.Context, block abci.RequestEndBlock) []abci
 // InitGenesis performs genesis initialization for the genutil module. It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data json.RawMessage) []abci.ValidatorUpdate {
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// Waiting for https://github.com/cosmos/cosmos-sdk/issues/10075
+	ctx = ctx.WithBlockTime(time.Now().UTC())
+	// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	if len(genesisState.GenTxs) == 0 {
@@ -204,4 +230,32 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data j
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONMarshaler) json.RawMessage {
 	gs := keeper.ExportGenesis(ctx, am.poeKeeper)
 	return cdc.MustMarshalJSON(gs)
+}
+
+// ____________________________________________________________________________
+
+// AppModuleSimulation functions
+
+// GenerateGenesisState creates a randomized GenState of the PoE module.
+func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
+	simulation.RandomizedGenState(simState)
+}
+
+// ProposalContents doesn't return any content functions for governance proposals.
+func (AppModule) ProposalContents(simState module.SimulationState) []simtypes.WeightedProposalContent {
+	return nil
+}
+
+// RandomizedParams creates randomized PoE param changes for the simulator.
+func (AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
+	return nil
+}
+
+// RegisterStoreDecoder registers a decoder for PoE module's types
+func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
+}
+
+// WeightedOperations returns the all the PoE module operations with their respective weights.
+func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
+	return []simtypes.WeightedOperation{}
 }

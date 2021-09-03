@@ -21,6 +21,26 @@ func EndBlocker(parentCtx sdk.Context, k endBlockKeeper) []abci.ValidatorUpdate 
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 	logger := keeper.ModuleLogger(parentCtx)
 
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// Waiting for https://github.com/cosmos/cosmos-sdk/issues/10075
+	if parentCtx.BlockTime().UnixNano() < 1 {
+		parentCtx = parentCtx.WithBlockTime(time.Now().UTC())
+	}
+	// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
+	// DO NOT MERGE!!!!!!!!!!!!!!!!!
 	var diff []abci.ValidatorUpdate
 	// allow validator set updates for this group only
 	k.IteratePrivilegedContractsByType(parentCtx, twasmtypes.PrivilegeTypeValidatorSetUpdate, func(pos uint8, contractAddr sdk.AccAddress) bool {

@@ -23,7 +23,7 @@ func TestListValidators(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example := keeper.CreateDefaultTestInput(t)
 	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
+	module := poe.NewAppModule(example.EncodingConfig.Marshaler, example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
 
 	mutator, expValidators := withRandomValidators(t, ctx, example, 3)
 	gs := types.GenesisStateFixture(mutator)
@@ -52,7 +52,7 @@ func TestGetValidator(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example := keeper.CreateDefaultTestInput(t)
 	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
+	module := poe.NewAppModule(example.EncodingConfig.Marshaler, example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
 
 	mutator, expValidators := withRandomValidators(t, ctx, example, 2)
 	gs := types.GenesisStateFixture(mutator)
@@ -106,7 +106,7 @@ func TestQueryUnbondingPeriod(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example := keeper.CreateDefaultTestInput(t)
 	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
+	module := poe.NewAppModule(example.EncodingConfig.Marshaler, example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
 
 	mutator, _ := withRandomValidators(t, ctx, example, 1)
 	gs := types.GenesisStateFixture(mutator)
