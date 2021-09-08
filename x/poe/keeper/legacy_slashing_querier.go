@@ -47,7 +47,7 @@ func (g legacySlashingGRPCQuerier) SigningInfos(c context.Context, req *slashing
 }
 
 // Params is not supported. Method returns default slashing module params.
-func (g legacySlashingGRPCQuerier) Params(c context.Context, request *slashingtypes.QueryParamsRequest) (*slashingtypes.QueryParamsResponse, error) {
+func (g legacySlashingGRPCQuerier) Params(c context.Context, req *slashingtypes.QueryParamsRequest) (*slashingtypes.QueryParamsResponse, error) {
 	return &slashingtypes.QueryParamsResponse{
 		Params: slashingtypes.Params{
 			SignedBlocksWindow:      0,

@@ -16,6 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/gorilla/mux"
@@ -150,6 +151,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	// support cosmos query path
 	stakingtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacyStakingGRPCQuerier(am.poeKeeper, am.twasmKeeper))
 	slashingtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacySlashingGRPCQuerier(am.poeKeeper, am.twasmKeeper))
+	distributiontypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacyDistributionGRPCQuerier(am.poeKeeper, am.twasmKeeper))
 }
 
 func (am AppModule) BeginBlock(ctx sdk.Context, block abci.RequestBeginBlock) {
