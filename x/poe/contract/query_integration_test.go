@@ -129,6 +129,35 @@ func TestQueryUnbondingPeriod(t *testing.T) {
 	assert.Equal(t, contract.Duration{Time: configuredTime}, res)
 }
 
+func TestQueryValsetConfig(t *testing.T) {
+	// setup contracts and seed some data
+	ctx, example := keeper.CreateDefaultTestInput(t)
+	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
+	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
+
+	mutator, _ := withRandomValidators(t, ctx, example, 1)
+	gs := types.GenesisStateFixture(mutator)
+	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
+	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
+
+	valsetContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	require.NoError(t, err)
+	mixerContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
+	require.NoError(t, err)
+
+	// when
+	res, err := contract.QueryValsetConfig(ctx, example.TWasmKeeper, valsetContractAddr)
+
+	// then
+	expConfig := &contract.ValsetConfigResponse{
+		Membership:    mixerContractAddr.String(),
+		MinWeight:     1,
+		MaxValidators: 100,
+		Scaling:       0,
+	}
+	assert.Equal(t, expConfig, res)
+}
+
 func TestQueryValidatorSelfDelegation(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example := keeper.CreateDefaultTestInput(t)

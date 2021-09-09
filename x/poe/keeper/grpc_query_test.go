@@ -73,7 +73,7 @@ func TestQueryValidators(t *testing.T) {
 	contractSource := newContractSourceMock(t, myValsetContract, nil)
 
 	pubKey := ed25519.GenPrivKey().PubKey()
-	expValidator := types.ValidatorFixtureFixture(func(m *stakingtypes.Validator) {
+	expValidator := types.ValidatorFixture(func(m *stakingtypes.Validator) {
 		pkAny, _ := codectypes.NewAnyWithValue(pubKey)
 		m.ConsensusPubkey = pkAny
 	})
@@ -158,7 +158,7 @@ func TestQueryValidator(t *testing.T) {
 	contractSource := newContractSourceMock(t, myValsetContract, nil)
 
 	pubKey := ed25519.GenPrivKey().PubKey()
-	expValidator := types.ValidatorFixtureFixture(func(m *stakingtypes.Validator) {
+	expValidator := types.ValidatorFixture(func(m *stakingtypes.Validator) {
 		pkAny, _ := codectypes.NewAnyWithValue(pubKey)
 		m.ConsensusPubkey = pkAny
 	})
