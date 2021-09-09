@@ -46,5 +46,11 @@ func (g legacySlashingGRPCQuerier) SigningInfos(c context.Context, req *slashing
 
 func (g legacySlashingGRPCQuerier) Params(c context.Context, request *slashingtypes.QueryParamsRequest) (*slashingtypes.QueryParamsResponse, error) {
 	return &slashingtypes.QueryParamsResponse{
-		Params: slashingtypes.DefaultParams()}, nil
+		Params: slashingtypes.Params{
+			SignedBlocksWindow:      0,
+			MinSignedPerWindow:      sdk.ZeroDec(),
+			DowntimeJailDuration:    0,
+			SlashFractionDoubleSign: sdk.ZeroDec(),
+			SlashFractionDowntime:   sdk.ZeroDec(),
+		}}, nil
 }
