@@ -62,6 +62,7 @@ func ValidatorFixture(mutators ...func(m *stakingtypes.Validator)) stakingtypes.
 		ConsensusPubkey: pkAny,
 		Description:     desc,
 		DelegatorShares: sdk.OneDec(),
+		Status:          stakingtypes.Bonded,
 	}
 
 	for _, m := range mutators {

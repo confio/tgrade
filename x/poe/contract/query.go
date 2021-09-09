@@ -75,6 +75,7 @@ func (v OperatorResponse) ToValidator() (stakingtypes.Validator, error) {
 		ConsensusPubkey: any,
 		Description:     v.Metadata.ToDescription(),
 		DelegatorShares: sdk.OneDec(),
+		Status:          stakingtypes.Bonded,
 	}, nil
 }
 
