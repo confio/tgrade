@@ -75,6 +75,9 @@ func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the genutil module.
 func (b AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, serveMux *runtime.ServeMux) {
 	types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(clientCtx))
+	// support cosmos queries
+	slashingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, slashingtypes.NewQueryClient(clientCtx))
+	stakingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, stakingtypes.NewQueryClient(clientCtx))
 }
 
 // GetTxCmd returns no root tx command for the genutil module.
@@ -143,6 +146,10 @@ func (am AppModule) LegacyQuerierHandler(amino *codec.LegacyAmino) sdk.Querier {
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewGrpcQuerier(am.poeKeeper, am.twasmKeeper))
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.poeKeeper, am.contractKeeper, am.twasmKeeper))
+
+	// support cosmos query path
+	stakingtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacyStakingGRPCQuerier(am.poeKeeper, am.twasmKeeper))
+	slashingtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacySlashingGRPCQuerier(am.poeKeeper, am.twasmKeeper))
 }
 
 func (am AppModule) BeginBlock(ctx sdk.Context, block abci.RequestBeginBlock) {
