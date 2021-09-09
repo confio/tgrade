@@ -302,7 +302,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			any, err := codectypes.NewAnyWithValue(pubKey)
 			require.NoError(t, err)
 			stakedAmount := sdk.TokensFromConsensusPower(int64(power))
-			collectValidators[i] = types.ValidatorFixtureFixture(func(m *stakingtypes.Validator) {
+			collectValidators[i] = types.ValidatorFixture(func(m *stakingtypes.Validator) {
 				m.OperatorAddress = opAddr.String()
 				m.ConsensusPubkey = any
 				m.Description = desc

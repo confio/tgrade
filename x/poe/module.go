@@ -79,6 +79,7 @@ func (b AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, serv
 	// support cosmos queries
 	slashingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, slashingtypes.NewQueryClient(clientCtx))
 	stakingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, stakingtypes.NewQueryClient(clientCtx))
+	distributiontypes.RegisterQueryHandlerClient(context.Background(), serveMux, distributiontypes.NewQueryClient(clientCtx))
 }
 
 // GetTxCmd returns no root tx command for the genutil module.

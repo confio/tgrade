@@ -100,7 +100,6 @@ func UnbondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAdd
 	return sdkerrors.Wrap(err, "execute staking contract")
 }
 
-
 // SetEngagementPoints set engagement points  If the member already exists, its weight will be reset to the weight sent here
 func SetEngagementPoints(ctx sdk.Context, contractAddr sdk.AccAddress, k types.Sudoer, opAddr sdk.AccAddress, points uint64) error {
 	msg := TG4GroupSudoMsg{

@@ -17,7 +17,7 @@ type legacyDistributionGRPCQuerier struct {
 	queryServer types.QueryServer
 }
 
-func NewLegacyDistributionGRPCQuerier(keeper Keeper, contractQuerier types.SmartQuerier) *legacyDistributionGRPCQuerier {
+func NewLegacyDistributionGRPCQuerier(keeper ContractSource, contractQuerier types.SmartQuerier) *legacyDistributionGRPCQuerier {
 	return &legacyDistributionGRPCQuerier{keeper: keeper, queryServer: NewGrpcQuerier(keeper, contractQuerier)}
 }
 
@@ -27,6 +27,9 @@ func (q legacyDistributionGRPCQuerier) ValidatorOutstandingRewards(c context.Con
 	}
 	if req.ValidatorAddress == "" {
 		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
+	}
+	if _, err := sdk.AccAddressFromBech32(req.ValidatorAddress); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "delegator address invalid")
 	}
 
 	return &distributiontypes.QueryValidatorOutstandingRewardsResponse{
@@ -41,6 +44,9 @@ func (q legacyDistributionGRPCQuerier) ValidatorCommission(c context.Context, re
 	if req.ValidatorAddress == "" {
 		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
 	}
+	if _, err := sdk.AccAddressFromBech32(req.ValidatorAddress); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "delegator address invalid")
+	}
 
 	return &distributiontypes.QueryValidatorCommissionResponse{
 		Commission: distributiontypes.ValidatorAccumulatedCommission{},
@@ -54,6 +60,9 @@ func (q legacyDistributionGRPCQuerier) ValidatorSlashes(c context.Context, req *
 	if req.ValidatorAddress == "" {
 		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
 	}
+	if _, err := sdk.AccAddressFromBech32(req.ValidatorAddress); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "delegator address invalid")
+	}
 
 	return &distributiontypes.QueryValidatorSlashesResponse{}, nil
 }
@@ -65,6 +74,9 @@ func (q legacyDistributionGRPCQuerier) DelegationRewards(c context.Context, req 
 	if req.DelegatorAddress == "" {
 		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
 	}
+	if _, err := sdk.AccAddressFromBech32(req.ValidatorAddress); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "delegator address invalid")
+	}
 
 	return &distributiontypes.QueryDelegationRewardsResponse{}, nil
 }
@@ -75,6 +87,9 @@ func (q legacyDistributionGRPCQuerier) DelegationTotalRewards(c context.Context,
 	}
 	if req.DelegatorAddress == "" {
 		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
+	}
+	if _, err := sdk.AccAddressFromBech32(req.DelegatorAddress); err != nil {
+		return nil, status.Error(codes.InvalidArgument, "delegator address invalid")
 	}
 
 	return &distributiontypes.QueryDelegationTotalRewardsResponse{}, nil
@@ -124,7 +139,11 @@ func (q legacyDistributionGRPCQuerier) CommunityPool(c context.Context, req *dis
 
 // Params is not supported. Method returns default distribution module params.
 func (q legacyDistributionGRPCQuerier) Params(c context.Context, req *distributiontypes.QueryParamsRequest) (*distributiontypes.QueryParamsResponse, error) {
-	logNotImplemented(sdk.UnwrapSDKContext(c), "params")
 	return &distributiontypes.QueryParamsResponse{
-		Params: distributiontypes.DefaultParams()}, nil
+		Params: distributiontypes.Params{
+			CommunityTax:        sdk.ZeroDec(),
+			BaseProposerReward:  sdk.ZeroDec(),
+			BonusProposerReward: sdk.ZeroDec(),
+			WithdrawAddrEnabled: false,
+		}}, nil
 }
