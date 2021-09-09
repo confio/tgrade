@@ -74,6 +74,7 @@ func (v OperatorResponse) ToValidator() (stakingtypes.Validator, error) {
 		OperatorAddress: v.Operator,
 		ConsensusPubkey: any,
 		Description:     v.Metadata.ToDescription(),
+		DelegatorShares: sdk.OneDec(),
 	}, nil
 }
 
@@ -239,7 +240,29 @@ func QueryTG4Admin(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress
 // TG4StakeQuery contains some custom queries for the tg4-stake contract.
 // You can also make any generic TG4Query on it.
 type TG4StakeQuery struct {
-	UnbondingPeriod *struct{} `json:"unbonding_period,omitempty"`
+	UnbondingPeriod *struct{}            `json:"unbonding_period,omitempty"`
+	Claims          *TG4StakeClaimsQuery `json:"claims,omitempty"`
+}
+
+type TG4StakeClaimsQuery struct {
+	Address string `json:"address"`
+}
+type TG4StakeClaimsResponse struct {
+	Claims []TG4StakeClaim `json:"claims"`
+}
+type TG4StakeClaim struct {
+	Amount    sdk.Int    `json:"amount"`
+	ReleaseAt Expiration `json:"release_at"`
+}
+
+// Expiration represents a point in time when some event happens.
+type Expiration struct {
+	// AtHeight will expire when `env.block.height` >= height
+	AtHeight *uint64 `json:"at_height,omitempty"`
+	// AtTime will expire when `env.block.time` >= time
+	// A point in time in nanosecond precision.
+	AtTime *uint64   `json:"at_time,string,omitempty"`
+	Never  *struct{} `json:"never,omitempty"`
 }
 
 type UnbondingPeriodResponse struct {
@@ -254,11 +277,20 @@ type Duration struct {
 	Time int `json:"time,omitempty"`
 }
 
+// QueryStakingUnbondingPeriod query the unbonding period from PoE staking contract
 func QueryStakingUnbondingPeriod(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.AccAddress) (Duration, error) {
 	query := TG4StakeQuery{UnbondingPeriod: &struct{}{}}
 	var response UnbondingPeriodResponse
 	err := doQuery(ctx, k, stakeAddr, query, &response)
 	return response.UnbondingPeriod, err
+}
+
+// QueryStakingUnbonding query PoE staking contract for unbonded self delegations
+func QueryStakingUnbonding(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.AccAddress, opAddr sdk.AccAddress) (TG4StakeClaimsResponse, error) {
+	query := TG4StakeQuery{Claims: &TG4StakeClaimsQuery{Address: opAddr.String()}}
+	var response TG4StakeClaimsResponse
+	err := doQuery(ctx, k, stakeAddr, query, &response)
+	return response, err
 }
 
 func doQuery(ctx sdk.Context, k types.SmartQuerier, contractAddr sdk.AccAddress, query interface{}, result interface{}) error {

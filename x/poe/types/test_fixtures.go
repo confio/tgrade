@@ -45,7 +45,7 @@ func GenesisStateFixture(mutators ...func(m *GenesisState)) GenesisState {
 	return r
 }
 
-func ValidatorFixtureFixture(mutators ...func(m *stakingtypes.Validator)) stakingtypes.Validator {
+func ValidatorFixture(mutators ...func(m *stakingtypes.Validator)) stakingtypes.Validator {
 	pkAny, err := codectypes.NewAnyWithValue(ed25519.GenPrivKey().PubKey())
 	if err != nil {
 		panic(fmt.Sprintf("failed to encode any type: %s", err.Error()))
@@ -61,6 +61,7 @@ func ValidatorFixtureFixture(mutators ...func(m *stakingtypes.Validator)) stakin
 		OperatorAddress: RandomAccAddress().String(),
 		ConsensusPubkey: pkAny,
 		Description:     desc,
+		DelegatorShares: sdk.OneDec(),
 	}
 
 	for _, m := range mutators {

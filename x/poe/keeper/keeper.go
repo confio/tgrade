@@ -96,6 +96,10 @@ func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
 	return time.Duration(rsp.Time) * time.Second
 }
 
+func (k Keeper) GetBondDenom(ctx sdk.Context) string {
+	return "utgd"
+}
+
 func ModuleLogger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }

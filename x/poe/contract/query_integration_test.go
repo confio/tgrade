@@ -17,6 +17,7 @@ import (
 	"github.com/tendermint/tendermint/libs/rand"
 	"sort"
 	"testing"
+	"time"
 )
 
 func TestListValidators(t *testing.T) {
@@ -27,6 +28,8 @@ func TestListValidators(t *testing.T) {
 
 	mutator, expValidators := withRandomValidators(t, ctx, example, 3)
 	gs := types.GenesisStateFixture(mutator)
+	expValidators = resetTokenAmount(expValidators)
+
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
 
@@ -56,6 +59,8 @@ func TestGetValidator(t *testing.T) {
 
 	mutator, expValidators := withRandomValidators(t, ctx, example, 2)
 	gs := types.GenesisStateFixture(mutator)
+	expValidators = resetTokenAmount(expValidators)
+
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
 
@@ -124,6 +129,137 @@ func TestQueryUnbondingPeriod(t *testing.T) {
 	assert.Equal(t, contract.Duration{Time: configuredTime}, res)
 }
 
+func TestQueryValsetConfig(t *testing.T) {
+	// setup contracts and seed some data
+	ctx, example := keeper.CreateDefaultTestInput(t)
+	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
+	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
+
+	mutator, _ := withRandomValidators(t, ctx, example, 1)
+	gs := types.GenesisStateFixture(mutator)
+	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
+	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
+
+	valsetContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	require.NoError(t, err)
+	mixerContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
+	require.NoError(t, err)
+
+	// when
+	res, err := contract.QueryValsetConfig(ctx, example.TWasmKeeper, valsetContractAddr)
+
+	// then
+	expConfig := &contract.ValsetConfigResponse{
+		Membership:    mixerContractAddr.String(),
+		MinWeight:     1,
+		MaxValidators: 100,
+		Scaling:       0,
+	}
+	assert.Equal(t, expConfig, res)
+}
+
+func TestQueryValidatorSelfDelegation(t *testing.T) {
+	// setup contracts and seed some data
+	ctx, example := keeper.CreateDefaultTestInput(t)
+	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
+	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
+
+	mutator, vals := withRandomValidators(t, ctx, example, 1)
+	gs := types.GenesisStateFixture(mutator)
+	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
+	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
+
+	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	require.NoError(t, err)
+	opAddr, err := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
+	require.NoError(t, err)
+	selfDelegation := int(vals[0].Tokens.Uint64())
+	specs := map[string]struct {
+		srcOpAddr sdk.AccAddress
+		expAmount *int
+	}{
+		"found": {
+			opAddr,
+			&selfDelegation,
+		},
+		"unknown": {
+			srcOpAddr: rand.Bytes(sdk.AddrLen),
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			// when
+			res, err := contract.QueryTG4Member(ctx, example.TWasmKeeper, contractAddr, spec.srcOpAddr)
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, spec.expAmount, res)
+		})
+	}
+}
+
+func TestQueryValidatorUnboding(t *testing.T) {
+	// setup contracts and seed some data
+	ctx, example := keeper.CreateDefaultTestInput(t)
+	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
+	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
+
+	mutator, vals := withRandomValidators(t, ctx, example, 2)
+	gs := types.GenesisStateFixture(mutator)
+	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
+	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
+
+	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	require.NoError(t, err)
+	op1Addr, err := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
+	require.NoError(t, err)
+
+	// unbond some tokens for operator 1
+	now := time.Now().UTC()
+	ctx = ctx.WithBlockTime(now)
+	unbondedAmount := sdk.NewInt(10)
+	contract.UnbondDelegation(ctx, contractAddr, op1Addr, unbondedAmount, example.TWasmKeeper.GetContractKeeper())
+
+	op2Addr, err := sdk.AccAddressFromBech32(vals[1].OperatorAddress)
+	require.NoError(t, err)
+	unbodingPeriod, err := contract.QueryStakingUnbondingPeriod(ctx, example.TWasmKeeper, contractAddr)
+	require.NoError(t, err)
+	expectedReleaseTime := uint64(now.Add(time.Duration(unbodingPeriod.Time) * time.Second).UnixNano())
+	specs := map[string]struct {
+		srcOpAddr sdk.AccAddress
+		expResult contract.TG4StakeClaimsResponse
+	}{
+		"unbondings": {
+			srcOpAddr: op1Addr,
+			expResult: contract.TG4StakeClaimsResponse{Claims: []contract.TG4StakeClaim{
+				{
+					Amount: sdk.NewInt(10),
+					ReleaseAt: contract.Expiration{
+						AtTime: &expectedReleaseTime,
+					},
+				},
+			}},
+		},
+		"no unbondings with existing operator": {
+			srcOpAddr: op2Addr,
+			expResult: contract.TG4StakeClaimsResponse{Claims: []contract.TG4StakeClaim{}},
+		},
+		"unknown operator": {
+			srcOpAddr: rand.Bytes(sdk.AddrLen),
+			expResult: contract.TG4StakeClaimsResponse{Claims: []contract.TG4StakeClaim{}},
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			// when
+			gotRes, gotErr := contract.QueryStakingUnbonding(ctx, example.TWasmKeeper, contractAddr, spec.srcOpAddr)
+			// then
+			require.NoError(t, gotErr)
+			require.NotNil(t, gotRes)
+			assert.Equal(t, spec.expResult, gotRes)
+		})
+	}
+}
+
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
 func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k keeper.Keeper, contractKeeper wasmtypes.ContractOpsKeeper, txDecoder sdk.TxDecoder) func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
 	t.Helper()
@@ -165,18 +301,28 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			})
 			any, err := codectypes.NewAnyWithValue(pubKey)
 			require.NoError(t, err)
-			stakedAmount := sdk.TokensFromConsensusPower(int64(power)).Uint64()
+			stakedAmount := sdk.TokensFromConsensusPower(int64(power))
 			collectValidators[i] = stakingtypes.Validator{
 				OperatorAddress: opAddr.String(),
 				ConsensusPubkey: any,
 				Description:     desc,
+				Tokens:          stakedAmount,
+				DelegatorShares: sdk.OneDec(),
 			}
 			m.GenTxs[i] = genTx
 			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Weight: uint64(engagement)}
 			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
 			example.BankKeeper.SetBalances(ctx, opAddr, sdk.NewCoins(
-				sdk.NewCoin(types.DefaultBondDenom, sdk.NewIntFromUint64(stakedAmount)),
+				sdk.NewCoin(types.DefaultBondDenom, stakedAmount),
 			))
 		}
 	}, collectValidators
+}
+
+func resetTokenAmount(validators []stakingtypes.Validator) []stakingtypes.Validator {
+	for i, v := range validators {
+		v.Tokens = sdk.Int{}
+		validators[i] = v
+	}
+	return validators
 }
