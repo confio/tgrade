@@ -56,12 +56,12 @@ func (q legacyStakingGRPCQuerier) ValidatorDelegations(c context.Context, req *s
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	contractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	stakingContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	amount, err := contract.QueryTG4Member(ctx, q.contractQuerier, contractAddr, opAddr)
+	amount, err := contract.QueryTG4Member(ctx, q.contractQuerier, stakingContractAddr, opAddr)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -95,35 +95,40 @@ func (q legacyStakingGRPCQuerier) ValidatorUnbondingDelegations(c context.Contex
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	contractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	stakingContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	res, err := contract.QueryStakingUnbonding(ctx, q.contractQuerier, contractAddr, opAddr)
+	res, err := contract.QueryStakingUnbonding(ctx, q.contractQuerier, stakingContractAddr, opAddr)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	result := stakingtypes.QueryValidatorUnbondingDelegationsResponse{UnbondingResponses: []stakingtypes.UnbondingDelegation{
-		{DelegatorAddress: req.ValidatorAddr, ValidatorAddress: req.ValidatorAddr},
-	}}
+
 	// add all unbonded amounts
+	var unbodings []stakingtypes.UnbondingDelegationEntry
 	for _, v := range res.Claims {
 		var compl time.Time
 		switch {
-		case !v.ReleaseAt.AtTime.IsZero():
-			compl = time.Unix(0, v.ReleaseAt.AtTime.Int64()).UTC()
+		case v.ReleaseAt.AtTime != nil:
+			compl = time.Unix(0, int64(*v.ReleaseAt.AtTime)).UTC()
 		case v.ReleaseAt.Never != nil:
 			compl = neverReleasedDelegation
 		case v.ReleaseAt.AtHeight != nil:
 			// unhandled
 		}
-		result.UnbondingResponses[0].Entries = append(result.UnbondingResponses[0].Entries,
-			stakingtypes.UnbondingDelegationEntry{
-				CompletionTime: compl,
-				Balance:        v.Amount,
-			})
+		unbodings = append(unbodings, stakingtypes.UnbondingDelegationEntry{
+			CompletionTime: compl,
+			Balance:        v.Amount,
+		})
 	}
-	return &result, nil
+	result := &stakingtypes.QueryValidatorUnbondingDelegationsResponse{UnbondingResponses: []stakingtypes.UnbondingDelegation{
+		{
+			DelegatorAddress: req.ValidatorAddr,
+			ValidatorAddress: req.ValidatorAddr,
+			Entries:          unbodings,
+		},
+	}}
+	return result, nil
 }
 
 // Delegation legacy support for querying the delegate info for a given validator delegator pair
@@ -137,7 +142,7 @@ func (q legacyStakingGRPCQuerier) Delegation(c context.Context, req *stakingtype
 		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
 	}
 	if req.ValidatorAddr == "" {
-		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
+		return nil, status.Error(codes.InvalidArgument, "validator address cannot be empty")
 	}
 
 	if req.ValidatorAddr != req.DelegatorAddr { // return early on impossible case
@@ -173,7 +178,7 @@ func (q legacyStakingGRPCQuerier) UnbondingDelegation(c context.Context, req *st
 		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
 	}
 	if req.ValidatorAddr == "" {
-		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
+		return nil, status.Error(codes.InvalidArgument, "validator address cannot be empty")
 	}
 
 	if req.ValidatorAddr != req.DelegatorAddr { // return early on impossible case
@@ -301,15 +306,23 @@ func (q legacyStakingGRPCQuerier) Params(c context.Context, req *stakingtypes.Qu
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
-
 	ctx := sdk.UnwrapSDKContext(c)
+	valsetContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	valsetConfig, err := contract.QueryValsetConfig(ctx, q.contractQuerier, valsetContractAddr)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	return &stakingtypes.QueryParamsResponse{
 		Params: stakingtypes.Params{
 			UnbondingTime:     q.keeper.UnbondingTime(ctx),
-			MaxValidators:     100,
+			MaxValidators:     uint32(valsetConfig.MaxValidators),
 			MaxEntries:        0,
 			HistoricalEntries: q.keeper.HistoricalEntries(ctx),
-			BondDenom:         "utgd",
+			BondDenom:         q.keeper.GetBondDenom(ctx),
 		},
 	}, nil
 }

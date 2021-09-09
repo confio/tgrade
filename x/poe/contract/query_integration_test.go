@@ -194,8 +194,7 @@ func TestQueryValidatorUnboding(t *testing.T) {
 	require.NoError(t, err)
 	unbodingPeriod, err := contract.QueryStakingUnbondingPeriod(ctx, example.TWasmKeeper, contractAddr)
 	require.NoError(t, err)
-	expectedReleaseTime := now.Add(time.Duration(unbodingPeriod.Time) * time.Second)
-
+	expectedReleaseTime := uint64(now.Add(time.Duration(unbodingPeriod.Time) * time.Second).UnixNano())
 	specs := map[string]struct {
 		srcOpAddr sdk.AccAddress
 		expResult contract.TG4StakeClaimsResponse
@@ -206,7 +205,7 @@ func TestQueryValidatorUnboding(t *testing.T) {
 				{
 					Amount: sdk.NewInt(10),
 					ReleaseAt: contract.Expiration{
-						AtTime: sdk.NewInt(expectedReleaseTime.UnixNano()),
+						AtTime: &expectedReleaseTime,
 					},
 				},
 			}},

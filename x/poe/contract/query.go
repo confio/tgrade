@@ -261,7 +261,7 @@ type Expiration struct {
 	AtHeight *uint64 `json:"at_height,omitempty"`
 	// AtTime will expire when `env.block.time` >= time
 	// A point in time in nanosecond precision.
-	AtTime sdk.Int   `json:"at_time,omitempty"`
+	AtTime *uint64   `json:"at_time,string,omitempty"`
 	Never  *struct{} `json:"never,omitempty"`
 }
 

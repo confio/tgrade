@@ -108,10 +108,11 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 		"one delegation": {
 			src: &stakingtypes.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
 			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				var myExpTime = uint64(anyTime.UnixNano())
 				return json.Marshal(contract.TG4StakeClaimsResponse{
 					Claims: []contract.TG4StakeClaim{{
 						Amount:    sdk.NewInt(10),
-						ReleaseAt: contract.Expiration{AtTime: sdk.NewInt(anyTime.UnixNano())},
+						ReleaseAt: contract.Expiration{AtTime: &myExpTime},
 					},
 					},
 				})
@@ -130,13 +131,15 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 		"multiple delegations": {
 			src: &stakingtypes.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
 			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				var myExp = uint64(anyTime.UnixNano())
+				var myOtherExp = uint64(anyTime.Add(time.Minute).UnixNano())
 				return json.Marshal(contract.TG4StakeClaimsResponse{
 					Claims: []contract.TG4StakeClaim{{
 						Amount:    sdk.NewInt(10),
-						ReleaseAt: contract.Expiration{AtTime: sdk.NewInt(anyTime.UnixNano())},
+						ReleaseAt: contract.Expiration{AtTime: &myExp},
 					}, {
 						Amount:    sdk.NewInt(11),
-						ReleaseAt: contract.Expiration{AtTime: sdk.NewInt(anyTime.Add(time.Minute).UnixNano())},
+						ReleaseAt: contract.Expiration{AtTime: &myOtherExp},
 					},
 					},
 				})
@@ -237,4 +240,40 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 
 		})
 	}
+}
+
+func TestStakingParams(t *testing.T) {
+	var myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+
+	keeperMock := StakingQuerierKeeperMock{
+		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
+			require.Equal(t, types.PoEContractTypeValset, ctype)
+			return myStakingContract, nil
+		},
+		GetBondDenomFn:  func(ctx sdk.Context) string { return "utgd" },
+		UnbondingTimeFn: func(ctx sdk.Context) time.Duration { return time.Hour },
+		HistoricalEntriesFn: func(ctx sdk.Context) uint32 {
+			return 1
+		},
+	}
+	smartQuerier := SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+		return json.Marshal(contract.ValsetConfigResponse{
+			MaxValidators: 2,
+		})
+	}}
+	q := NewLegacyStakingGRPCQuerier(keeperMock, smartQuerier)
+	ctx := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()))
+	gotRes, gotErr := q.Params(ctx, &stakingtypes.QueryParamsRequest{})
+	require.NoError(t, gotErr)
+	exp := &stakingtypes.QueryParamsResponse{
+		Params: stakingtypes.Params{
+			UnbondingTime:     time.Hour,
+			MaxValidators:     2,
+			MaxEntries:        0,
+			HistoricalEntries: 1,
+			BondDenom:         "utgd",
+		},
+	}
+	assert.Equal(t, exp, gotRes)
+
 }
