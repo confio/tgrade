@@ -27,6 +27,8 @@ func TestListValidators(t *testing.T) {
 
 	mutator, expValidators := withRandomValidators(t, ctx, example, 3)
 	gs := types.GenesisStateFixture(mutator)
+	expValidators = resetTokenAmount(expValidators)
+
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
 
@@ -56,6 +58,8 @@ func TestGetValidator(t *testing.T) {
 
 	mutator, expValidators := withRandomValidators(t, ctx, example, 2)
 	gs := types.GenesisStateFixture(mutator)
+	expValidators = resetTokenAmount(expValidators)
+
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
 
@@ -165,18 +169,29 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			})
 			any, err := codectypes.NewAnyWithValue(pubKey)
 			require.NoError(t, err)
-			stakedAmount := sdk.TokensFromConsensusPower(int64(power)).Uint64()
-			collectValidators[i] = stakingtypes.Validator{
-				OperatorAddress: opAddr.String(),
-				ConsensusPubkey: any,
-				Description:     desc,
-			}
+			stakedAmount := sdk.TokensFromConsensusPower(int64(power))
+			collectValidators[i] = types.ValidatorFixtureFixture(func(m *stakingtypes.Validator) {
+				m.OperatorAddress = opAddr.String()
+				m.ConsensusPubkey = any
+				m.Description = desc
+				m.Tokens = stakedAmount
+				m.DelegatorShares = sdk.OneDec()
+			})
+
 			m.GenTxs[i] = genTx
 			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Weight: uint64(engagement)}
 			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
 			example.BankKeeper.SetBalances(ctx, opAddr, sdk.NewCoins(
-				sdk.NewCoin(types.DefaultBondDenom, sdk.NewIntFromUint64(stakedAmount)),
+				sdk.NewCoin(types.DefaultBondDenom, stakedAmount),
 			))
 		}
 	}, collectValidators
+}
+
+func resetTokenAmount(validators []stakingtypes.Validator) []stakingtypes.Validator {
+	for i, v := range validators {
+		v.Tokens = sdk.Int{}
+		validators[i] = v
+	}
+	return validators
 }

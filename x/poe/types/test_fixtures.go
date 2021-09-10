@@ -61,6 +61,8 @@ func ValidatorFixtureFixture(mutators ...func(m *stakingtypes.Validator)) stakin
 		OperatorAddress: RandomAccAddress().String(),
 		ConsensusPubkey: pkAny,
 		Description:     desc,
+		DelegatorShares: sdk.OneDec(),
+		Status:          stakingtypes.Bonded,
 	}
 
 	for _, m := range mutators {
