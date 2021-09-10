@@ -15,6 +15,8 @@ import (
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgCreateValidator{}, "tgrade/MsgCreateValidator", nil)
 	cdc.RegisterConcrete(&MsgUpdateValidator{}, "tgrade/MsgUpdateValidator", nil)
+	cdc.RegisterConcrete(&MsgDelegate{}, "tgrade/MsgDelegate", nil)
+	cdc.RegisterConcrete(&MsgUndelegate{}, "tgrade/MsgUndelegate", nil)
 }
 
 // RegisterInterfaces registers the x/poe interfaces types with the interface registry
@@ -22,6 +24,8 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgCreateValidator{},
 		&MsgUpdateValidator{},
+		&MsgDelegate{},
+		&MsgUndelegate{},
 	)
 	stakingtypes.RegisterInterfaces(registry)
 	slashingtypes.RegisterInterfaces(registry)

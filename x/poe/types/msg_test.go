@@ -136,3 +136,49 @@ func TestMsgUpdateValidatorValidateBasic(t *testing.T) {
 		})
 	}
 }
+
+func TestMsgDelegate(t *testing.T) {
+	tests := []struct {
+		name          string
+		delegatorAddr sdk.AccAddress
+		bond          sdk.Coin
+		expectPass    bool
+	}{
+		{"basic good", sdk.AccAddress(valAddr1), coinPos, true},
+		{"empty delegator", sdk.AccAddress(emptyAddr), coinPos, false},
+		{"empty bond", sdk.AccAddress(valAddr1), coinZero, false},
+		{"nil bold", sdk.AccAddress(valAddr1), sdk.Coin{}, false},
+	}
+	for _, tc := range tests {
+		msg := NewMsgDelegate(tc.delegatorAddr, tc.bond)
+		if tc.expectPass {
+			require.Nil(t, msg.ValidateBasic(), "test: %v", tc.name)
+		} else {
+			require.NotNil(t, msg.ValidateBasic(), "test: %v", tc.name)
+		}
+	}
+}
+
+// test ValidateBasic for MsgUnbond
+func TestMsgUndelegate(t *testing.T) {
+	tests := []struct {
+		name          string
+		delegatorAddr sdk.AccAddress
+		amount        sdk.Coin
+		expectPass    bool
+	}{
+		{"regular", sdk.AccAddress(valAddr1), sdk.NewInt64Coin(sdk.DefaultBondDenom, 1), true},
+		{"zero amount", sdk.AccAddress(valAddr1), sdk.NewInt64Coin(sdk.DefaultBondDenom, 0), false},
+		{"nil amount", sdk.AccAddress(valAddr1), sdk.Coin{}, false},
+		{"empty delegator", sdk.AccAddress(emptyAddr), sdk.NewInt64Coin(sdk.DefaultBondDenom, 1), false},
+	}
+
+	for _, tc := range tests {
+		msg := NewMsgUndelegate(tc.delegatorAddr, tc.amount)
+		if tc.expectPass {
+			require.Nil(t, msg.ValidateBasic(), "test: %v", tc.name)
+		} else {
+			require.NotNil(t, msg.ValidateBasic(), "test: %v", tc.name)
+		}
+	}
+}

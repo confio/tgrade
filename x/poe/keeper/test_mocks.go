@@ -17,6 +17,7 @@ type PoEKeeperMock struct {
 	SetPoEContractAddressFn               func(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
 	setPoESystemAdminAddressFn            func(ctx sdk.Context, admin sdk.AccAddress)
 	setParamsFn                           func(ctx sdk.Context, params types.Params)
+	GetBondDenomFn                        func(ctx sdk.Context) string
 }
 
 func (m PoEKeeperMock) setParams(ctx sdk.Context, params types.Params) {
@@ -45,6 +46,13 @@ func (m PoEKeeperMock) setPoESystemAdminAddress(ctx sdk.Context, admin sdk.AccAd
 		panic("not expected to be called")
 	}
 	m.setPoESystemAdminAddressFn(ctx, admin)
+}
+
+func (m PoEKeeperMock) GetBondDenom(ctx sdk.Context) string {
+	if m.GetBondDenomFn == nil {
+		panic("not expected to be called")
+	}
+	return m.GetBondDenomFn(ctx)
 }
 
 // CapturedPoEContractAddress data type

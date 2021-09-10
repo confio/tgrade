@@ -91,15 +91,17 @@ func TestHandler(t *testing.T) {
 var _ types.MsgServer = MsgServerMock{}
 
 type MsgServerMock struct {
-	CreateValidatorFn func(ctx context.Context, validator *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error)
-	UpdateValidatorFn func(ctx context.Context, validator *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error)
+	CreateValidatorFn func(ctx context.Context, msg *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error)
+	UpdateValidatorFn func(ctx context.Context, msg *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error)
+	DelegateFn        func(ctx context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error)
+	UndelegateFn      func(ctx context.Context, msg *types.MsgUndelegate) (*types.MsgUndelegateResponse, error)
 }
 
-func (m MsgServerMock) CreateValidator(ctx context.Context, validator *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error) {
+func (m MsgServerMock) CreateValidator(ctx context.Context, msg *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error) {
 	if m.CreateValidatorFn == nil {
 		panic("not expected to be called")
 	}
-	return m.CreateValidatorFn(ctx, validator)
+	return m.CreateValidatorFn(ctx, msg)
 }
 
 func (m MsgServerMock) UpdateValidator(ctx context.Context, msg *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error) {
@@ -107,4 +109,18 @@ func (m MsgServerMock) UpdateValidator(ctx context.Context, msg *types.MsgUpdate
 		panic("not expected to be called")
 	}
 	return m.UpdateValidatorFn(ctx, msg)
+}
+
+func (m MsgServerMock) Delegate(ctx context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error) {
+	if m.DelegateFn == nil {
+		panic("not expected to be called")
+	}
+	return m.DelegateFn(ctx, msg)
+}
+
+func (m MsgServerMock) Undelegate(ctx context.Context, msg *types.MsgUndelegate) (*types.MsgUndelegateResponse, error) {
+	if m.UndelegateFn == nil {
+		panic("not expected to be called")
+	}
+	return m.UndelegateFn(ctx, msg)
 }

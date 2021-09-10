@@ -35,6 +35,10 @@
 - [confio/poe/v1beta1/tx.proto](#confio/poe/v1beta1/tx.proto)
     - [MsgCreateValidator](#confio.poe.v1beta1.MsgCreateValidator)
     - [MsgCreateValidatorResponse](#confio.poe.v1beta1.MsgCreateValidatorResponse)
+    - [MsgDelegate](#confio.poe.v1beta1.MsgDelegate)
+    - [MsgDelegateResponse](#confio.poe.v1beta1.MsgDelegateResponse)
+    - [MsgUndelegate](#confio.poe.v1beta1.MsgUndelegate)
+    - [MsgUndelegateResponse](#confio.poe.v1beta1.MsgUndelegateResponse)
     - [MsgUpdateValidator](#confio.poe.v1beta1.MsgUpdateValidator)
     - [MsgUpdateValidatorResponse](#confio.poe.v1beta1.MsgUpdateValidatorResponse)
   
@@ -404,6 +408,65 @@ MsgCreateValidatorResponse defines the MsgCreateValidator response type.
 
 
 
+<a name="confio.poe.v1beta1.MsgDelegate"></a>
+
+### MsgDelegate
+MsgDelegate defines a SDK message for performing a self delegation of coins
+by a node operator
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `delegator_address` | [string](#string) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.MsgDelegateResponse"></a>
+
+### MsgDelegateResponse
+MsgDelegateResponse defines the Msg/Delegate response type.
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.MsgUndelegate"></a>
+
+### MsgUndelegate
+MsgUndelegate defines a SDK message for performing an undelegation from a
+node operator
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `delegator_address` | [string](#string) |  |  |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.MsgUndelegateResponse"></a>
+
+### MsgUndelegateResponse
+MsgUndelegateResponse defines the Msg/Undelegate response type.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `completion_time` | [google.protobuf.Timestamp](#google.protobuf.Timestamp) |  |  |
+
+
+
+
+
+
 <a name="confio.poe.v1beta1.MsgUpdateValidator"></a>
 
 ### MsgUpdateValidator
@@ -445,6 +508,8 @@ Msg defines the staking Msg service.
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
 | `CreateValidator` | [MsgCreateValidator](#confio.poe.v1beta1.MsgCreateValidator) | [MsgCreateValidatorResponse](#confio.poe.v1beta1.MsgCreateValidatorResponse) | CreateValidator defines a method for creating a new validator. | |
 | `UpdateValidator` | [MsgUpdateValidator](#confio.poe.v1beta1.MsgUpdateValidator) | [MsgUpdateValidatorResponse](#confio.poe.v1beta1.MsgUpdateValidatorResponse) | MsgCreateValidator defines a method for updating validator metadata | |
+| `Delegate` | [MsgDelegate](#confio.poe.v1beta1.MsgDelegate) | [MsgDelegateResponse](#confio.poe.v1beta1.MsgDelegateResponse) | Delegate defines a method for performing a self delegation of coins by a node operator | |
+| `Undelegate` | [MsgUndelegate](#confio.poe.v1beta1.MsgUndelegate) | [MsgUndelegateResponse](#confio.poe.v1beta1.MsgUndelegateResponse) | Undelegate defines a method for performing an undelegation from a node operator | |
 
  <!-- end services -->
 

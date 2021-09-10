@@ -11,6 +11,8 @@ import (
 const (
 	TypeMsgCreateValidator = "create_validator"
 	TypeMsgUpdateValidator = "update_validator"
+	TypeMsgUndelegate      = "begin_unbonding"
+	TypeMsgDelegate        = "delegate"
 )
 
 var (
@@ -160,6 +162,90 @@ func (msg MsgUpdateValidator) ValidateBasic() error {
 
 	if len(msg.Description.Moniker) < 3 {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "moniker must be at least 3 characters")
+	}
+
+	return nil
+}
+
+// NewMsgDelegate constructor
+func NewMsgDelegate(delAddr sdk.AccAddress, amount sdk.Coin) *MsgDelegate {
+	return &MsgDelegate{
+		DelegatorAddress: delAddr.String(),
+		Amount:           amount,
+	}
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgDelegate) Route() string { return RouterKey }
+
+// Type implements the sdk.Msg interface.
+func (msg MsgDelegate) Type() string { return TypeMsgDelegate }
+
+// GetSigners implements the sdk.Msg interface.
+func (msg MsgDelegate) GetSigners() []sdk.AccAddress {
+	delAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	if err != nil {
+		panic(err)
+	}
+	return []sdk.AccAddress{delAddr}
+}
+
+// GetSignBytes implements the sdk.Msg interface.
+func (msg MsgDelegate) GetSignBytes() []byte {
+	bz := ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgDelegate) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.DelegatorAddress); err != nil {
+		return sdkerrors.Wrap(ErrEmpty, "delegator address")
+	}
+
+	if !msg.Amount.IsValid() || !msg.Amount.Amount.IsPositive() {
+		return sdkerrors.Wrap(ErrInvalid, "delegation amount")
+	}
+
+	return nil
+}
+
+// NewMsgUndelegate constructor
+func NewMsgUndelegate(delAddr sdk.AccAddress, amount sdk.Coin) *MsgUndelegate {
+	return &MsgUndelegate{
+		DelegatorAddress: delAddr.String(),
+		Amount:           amount,
+	}
+}
+
+// Route implements the sdk.Msg interface.
+func (msg MsgUndelegate) Route() string { return RouterKey }
+
+// Type implements the sdk.Msg interface.
+func (msg MsgUndelegate) Type() string { return TypeMsgUndelegate }
+
+// GetSigners implements the sdk.Msg interface.
+func (msg MsgUndelegate) GetSigners() []sdk.AccAddress {
+	delAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	if err != nil {
+		panic(err)
+	}
+	return []sdk.AccAddress{delAddr}
+}
+
+// GetSignBytes implements the sdk.Msg interface.
+func (msg MsgUndelegate) GetSignBytes() []byte {
+	bz := ModuleCdc.MustMarshalJSON(&msg)
+	return sdk.MustSortJSON(bz)
+}
+
+// ValidateBasic implements the sdk.Msg interface.
+func (msg MsgUndelegate) ValidateBasic() error {
+	if _, err := sdk.AccAddressFromBech32(msg.DelegatorAddress); err != nil {
+		return sdkerrors.Wrap(ErrEmpty, "delegator address")
+	}
+
+	if !msg.Amount.IsValid() || !msg.Amount.Amount.IsPositive() {
+		return sdkerrors.Wrap(ErrInvalid, "delegation amount")
 	}
 
 	return nil
