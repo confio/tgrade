@@ -146,10 +146,10 @@ func (q legacyStakingGRPCQuerier) Delegation(c context.Context, req *stakingtype
 	}
 
 	if req.ValidatorAddr != req.DelegatorAddr { // return early on impossible case
-		return nil, status.Errorf(
+		return nil, status.Error(
 			codes.NotFound,
-			"delegation with delegator %s not found for validator %s",
-			req.DelegatorAddr, req.ValidatorAddr)
+			"delegation with delegator not found",
+		)
 
 	}
 	qr, err := q.ValidatorDelegations(c, &stakingtypes.QueryValidatorDelegationsRequest{ValidatorAddr: req.ValidatorAddr})
@@ -157,10 +157,10 @@ func (q legacyStakingGRPCQuerier) Delegation(c context.Context, req *stakingtype
 		return nil, err
 	}
 	if n := len(qr.DelegationResponses); n == 0 {
-		return nil, status.Errorf(
+		return nil, status.Error(
 			codes.NotFound,
-			"delegation with delegator %s not found for validator %s",
-			req.DelegatorAddr, req.ValidatorAddr)
+			"delegation for delegator not found",
+		)
 	}
 	return &stakingtypes.QueryDelegationResponse{
 		DelegationResponse: &qr.DelegationResponses[0],
@@ -195,8 +195,8 @@ func (q legacyStakingGRPCQuerier) UnbondingDelegation(c context.Context, req *st
 	if n := len(qr.UnbondingResponses); n == 0 {
 		return nil, status.Errorf(
 			codes.NotFound,
-			"delegation with delegator %s not found for validator %s",
-			req.DelegatorAddr, req.ValidatorAddr)
+			"delegation for delegator not found",
+		)
 	}
 	return &stakingtypes.QueryUnbondingDelegationResponse{
 		Unbond: qr.UnbondingResponses[0],

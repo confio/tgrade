@@ -47,16 +47,17 @@ func (g grpcQuerier) Validators(c context.Context, request *stakingtypes.QueryVa
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
-	addr, err := g.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
 	if request.Pagination != nil {
 		return nil, status.Error(codes.Unimplemented, "pagination not supported, yet")
 	}
 	if request.Status != "" {
 		return nil, status.Error(codes.Unimplemented, "status not supported, yet")
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+	addr, err := g.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	valsRsp, err := contract.ListValidators(ctx, g.contractQuerier, addr)

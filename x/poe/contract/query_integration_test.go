@@ -302,13 +302,14 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			any, err := codectypes.NewAnyWithValue(pubKey)
 			require.NoError(t, err)
 			stakedAmount := sdk.TokensFromConsensusPower(int64(power))
-			collectValidators[i] = stakingtypes.Validator{
-				OperatorAddress: opAddr.String(),
-				ConsensusPubkey: any,
-				Description:     desc,
-				Tokens:          stakedAmount,
-				DelegatorShares: sdk.OneDec(),
-			}
+			collectValidators[i] = types.ValidatorFixture(func(m *stakingtypes.Validator) {
+				m.OperatorAddress = opAddr.String()
+				m.ConsensusPubkey = any
+				m.Description = desc
+				m.Tokens = stakedAmount
+				m.DelegatorShares = sdk.OneDec()
+			})
+
 			m.GenTxs[i] = genTx
 			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Weight: uint64(engagement)}
 			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)

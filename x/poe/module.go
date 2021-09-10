@@ -16,6 +16,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/gorilla/mux"
@@ -78,6 +79,7 @@ func (b AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, serv
 	// support cosmos queries
 	slashingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, slashingtypes.NewQueryClient(clientCtx))
 	stakingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, stakingtypes.NewQueryClient(clientCtx))
+	distributiontypes.RegisterQueryHandlerClient(context.Background(), serveMux, distributiontypes.NewQueryClient(clientCtx))
 }
 
 // GetTxCmd returns no root tx command for the genutil module.
@@ -150,6 +152,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	// support cosmos query path
 	stakingtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacyStakingGRPCQuerier(am.poeKeeper, am.twasmKeeper))
 	slashingtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacySlashingGRPCQuerier(am.poeKeeper, am.twasmKeeper))
+	distributiontypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacyDistributionGRPCQuerier(am.poeKeeper, am.twasmKeeper))
 }
 
 func (am AppModule) BeginBlock(ctx sdk.Context, block abci.RequestBeginBlock) {
