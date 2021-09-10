@@ -49,7 +49,7 @@ func TestDelegatorValidators(t *testing.T) {
 			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				return json.Marshal(contract.ValidatorResponse{})
 			}},
-			expErr: true,
+			exp: &distributiontypes.QueryDelegatorValidatorsResponse{Validators: []string{}},
 		},
 		"error": {
 			src: &distributiontypes.QueryDelegatorValidatorsRequest{DelegatorAddress: myOperatorAddr.String()},

@@ -103,13 +103,19 @@ func (q legacyDistributionGRPCQuerier) DelegatorValidators(c context.Context, re
 		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
 	}
 
+	var validators []string
 	res, err := q.queryServer.Validator(c, &stakingtypes.QueryValidatorRequest{ValidatorAddr: req.DelegatorAddress})
-	if err != nil {
+	switch {
+	case err == nil:
+		validators = []string{res.Validator.OperatorAddress}
+	case status.Code(err) == codes.NotFound:
+		validators = []string{}
+	default:
 		return nil, err
 	}
 
 	return &distributiontypes.QueryDelegatorValidatorsResponse{
-		Validators: []string{res.Validator.OperatorAddress},
+		Validators: validators,
 	}, nil
 }
 
