@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/CosmWasm/wasmd v0.18.1-0.20210901073821-4e242e082c59
-	github.com/CosmWasm/wasmvm v0.16.0
+	github.com/CosmWasm/wasmvm v0.16.1
 	github.com/cosmos/cosmos-sdk v0.42.9
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
