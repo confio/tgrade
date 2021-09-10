@@ -3,8 +3,7 @@ version: 2.1
 executors:
   golang:
     docker:
-      - image: circleci/golang:1.16
-#        user: root # for local testing: https://github.com/CircleCI-Public/circleci-cli/issues/291
+      - image: cimg/go:1.16
     working_directory: /go/src/github.com/confio/tgrade
 
 commands:
