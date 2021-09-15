@@ -164,6 +164,27 @@ jobs:
             docker login --password-stdin -u "$DOCKER_USER" \<<<"$DOCKER_PASS"
             docker push "confio/tgrade:${CIRCLE_TAG}"
             docker logout
+  gosec:
+    executor: golang
+    parallelism: 1
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - go-mod-v1-{{ checksum "go.sum" }}
+      - run:
+          name: Install gosec
+          command: |
+            go get -u github.com/securego/gosec/v2/cmd/gosec
+      - run:
+          name: Run gosec on modified files
+          command: |
+            mkdir -p /tmp/report
+            pkgs=$(for x in $(git diff --name-only main | grep '.go' );do dirname $x;done)
+            gosec -fmt=json -out=/tmp/report/gosec_results.json -exclude-dir=testing  -exclude-dir=contrib  -exclude-dir=proto -exclude-dir=third_party -exclude-dir=docs $(echo $pkgs | sort --unique | tr '\n' ' ' )
+      - store_artifacts:
+          path: /tmp/report
+
 
 workflows:
   version: 2
@@ -203,7 +224,6 @@ workflows:
       - test-system:
           requires:
             - setup-dependencies
-#          filters:
-#            branches:
-#              only:
-#                - main
+      - gosec:
+          requires:
+            - setup-dependencies
