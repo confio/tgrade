@@ -140,6 +140,27 @@ func TestPoEAddPostGenesisValidator(t *testing.T) {
 	assert.True(t, found, "not in validator set : %#v", valResult)
 }
 
+func TestPoEUnbond(t *testing.T) {
+	// Scenario:
+	// given a running chain
+	// when a create-validator message is submitted with self delegation amount > min
+	// then the validator gets engagement points automatically
+	// and is added to the active validator set
+	sut.ResetChain(t)
+	sut.StartChain(t)
+	cli := NewTgradeCli(t, sut, verbose)
+
+	// when
+	txResult := cli.CustomCommand("tx", "poe", "self-delegate", "1000utgd", "--from=node0")
+	RequireTxSuccess(t, txResult)
+	// wait for msg execution
+	sut.AwaitNextBlock(t)
+	awaitValsetEpochCompleted(t)
+
+	// then
+	//assert.True(t, found, "not in validator set : %#v", valResult)
+}
+
 func TestPoEQueries(t *testing.T) {
 	sut.ResetChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
