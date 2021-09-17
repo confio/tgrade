@@ -5,13 +5,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/confio/tgrade/x/poe/types"
-	"github.com/cosmos/cosmos-sdk/codec"
-	bankexported "github.com/cosmos/cosmos-sdk/x/bank/exported"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/confio/tgrade/x/poe/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	bankexported "github.com/cosmos/cosmos-sdk/x/bank/exported"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -235,11 +236,12 @@ func readUnsignedGenTxFile(clientCtx client.Context, r io.Reader) (sdk.Tx, error
 }
 
 func writeSignedGenTx(clientCtx client.Context, outputDocument string, tx sdk.Tx) error {
+	// #nosec G304 G302 file inclusion, file permission
 	outputFile, err := os.OpenFile(outputDocument, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
-	defer outputFile.Close()
+	defer func() { _ = outputFile.Close() }()
 
 	json, err := clientCtx.TxConfig.TxJSONEncoder()(tx)
 	if err != nil {

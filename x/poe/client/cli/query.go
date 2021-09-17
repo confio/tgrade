@@ -3,6 +3,9 @@ package cli
 import (
 	"encoding/base64"
 	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/confio/tgrade/x/poe/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -11,8 +14,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
-	"sort"
-	"strings"
 )
 
 func GetQueryCmd() *cobra.Command {
@@ -200,6 +201,8 @@ func withPageKeyDecoded(flagSet *flag.FlagSet) *flag.FlagSet {
 	if err != nil {
 		panic(err.Error())
 	}
-	flagSet.Set(flags.FlagPageKey, string(raw))
+	if err := flagSet.Set(flags.FlagPageKey, string(raw)); err != nil {
+		panic(err.Error())
+	}
 	return flagSet
 }

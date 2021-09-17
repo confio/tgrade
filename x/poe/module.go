@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/confio/tgrade/x/poe/client/cli"
 	"github.com/confio/tgrade/x/poe/contract"
@@ -23,7 +25,6 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"sync"
 )
 
 var (
@@ -75,11 +76,11 @@ func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the genutil module.
 func (b AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, serveMux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(clientCtx))
+	_ = types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(clientCtx))
 	// support cosmos queries
-	slashingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, slashingtypes.NewQueryClient(clientCtx))
-	stakingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, stakingtypes.NewQueryClient(clientCtx))
-	distributiontypes.RegisterQueryHandlerClient(context.Background(), serveMux, distributiontypes.NewQueryClient(clientCtx))
+	_ = slashingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, slashingtypes.NewQueryClient(clientCtx))
+	_ = stakingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, stakingtypes.NewQueryClient(clientCtx))
+	_ = distributiontypes.RegisterQueryHandlerClient(context.Background(), serveMux, distributiontypes.NewQueryClient(clientCtx))
 }
 
 // GetTxCmd returns no root tx command for the genutil module.
