@@ -181,7 +181,7 @@ jobs:
           command: |
             mkdir -p /tmp/report
             pkgs=$(for x in $(git diff --name-only main | grep '.go' );do dirname $x;done)
-            gosec -fmt=json -out=/tmp/report/gosec_results.json -exclude-dir=testing  -exclude-dir=contrib  -exclude-dir=proto -exclude-dir=third_party -exclude-dir=docs $(echo $pkgs | sort --unique | tr '\n' ' ' )
+            [[ -z "$pkg" ]] || gosec -fmt=json -out=/tmp/report/gosec_results.json -exclude-dir=testing  -exclude-dir=contrib  -exclude-dir=proto -exclude-dir=third_party -exclude-dir=docs $(echo $pkgs | sort --unique | tr '\n' ' ' )
       - store_artifacts:
           path: /tmp/report
 
