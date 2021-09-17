@@ -180,7 +180,7 @@ jobs:
           name: Run gosec on modified files
           command: |
             mkdir -p /tmp/report
-            pkgs=$(for x in $(git diff --name-only main | grep '.go' );do dirname $x;done)
+            pkgs=$(for x in $(git diff --name-only main | grep '.go' | grep -v "testing/");do dirname $x;done)
             [[ -z "$pkg" ]] || gosec -fmt=json -out=/tmp/report/gosec_results.json -exclude-dir=testing  -exclude-dir=contrib  -exclude-dir=proto -exclude-dir=third_party -exclude-dir=docs $(echo $pkgs | sort --unique | tr '\n' ' ' )
       - store_artifacts:
           path: /tmp/report
