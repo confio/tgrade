@@ -42,6 +42,7 @@ type SystemUnderTest struct {
 	errBuff           *ring.Ring
 	out               io.Writer
 	verbose           bool
+	ChainStarted      bool
 }
 
 func NewSystemUnderTest(verbose bool, nodesCount int, blockTime time.Duration) *SystemUnderTest {
@@ -102,6 +103,7 @@ func (s *SystemUnderTest) SetupChain() {
 func (s *SystemUnderTest) StartChain(t *testing.T, xargs ...string) {
 	t.Helper()
 	s.Log("Start chain\n")
+	s.ChainStarted = true
 	s.forEachNodesExecAsync(t, append([]string{"start", "--trace", "--log_level=info"}, xargs...)...)
 
 	s.AwaitNodeUp(t, s.rpcAddr)
@@ -195,17 +197,31 @@ func (s *SystemUnderTest) AwaitNodeUp(t *testing.T, rpcAddr string) {
 
 // StopChain stops the system under test and executes all registered cleanup callbacks
 func (s *SystemUnderTest) StopChain() {
-	s.Log("Stop chain")
+	s.Log("Stop chain\n")
+	if !s.ChainStarted {
+		return
+	}
+
 	for _, c := range s.cleanupFn {
 		c()
 	}
 	s.cleanupFn = nil
+	// send SIGTERM
 	cmd := exec.Command(locateExecutable("pkill"), "-15", "tgrade")
 	cmd.Dir = workDir
-	_, err := cmd.CombinedOutput()
-	if err != nil {
+	if _, err := cmd.CombinedOutput(); err != nil {
 		s.Logf("failed to stop chain: %s\n", err)
 	}
+	time.Sleep(200 * time.Millisecond)
+
+	// send SIGKILL
+	cmd = exec.Command(locateExecutable("pkill"), "-9", "tgrade")
+	cmd.Dir = workDir
+	if _, err := cmd.CombinedOutput(); err != nil {
+		s.Logf("failed to kill process: %s\n", err)
+	}
+
+	s.ChainStarted = false
 }
 
 // PrintBuffer prints the chain logs to the console
@@ -268,14 +284,6 @@ func (s *SystemUnderTest) ResetChain(t *testing.T) {
 	restoreOriginalGenesis(t, *s)
 	restoreOriginalKeyring(t, *s)
 	s.resetBuffers()
-
-	cmd := exec.Command(locateExecutable("pkill"), "tgrade")
-	cmd.Dir = workDir
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		s.Logf("failed to kill process: %s", err)
-	}
-	s.Log(string(out))
 
 	// remove all additional nodes
 	for i := s.initialNodesCount; i < s.nodesCount; i++ {
