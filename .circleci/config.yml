@@ -100,9 +100,10 @@ jobs:
           name: Build and run system tests
           command: |
             make test-system
+            mkdir -p /tmp/logs
+            copy testnet/*.out /tmp/logs
       - store_artifacts:
           path: /tmp/logs
-
   upload-coverage:
     executor: golang
     steps:
