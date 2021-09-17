@@ -6,6 +6,7 @@ import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 import "google/api/annotations.proto";
 import "confio/poe/v1beta1/poe.proto";
+import "cosmos/base/v1beta1/coin.proto";
 import "cosmos/staking/v1beta1/staking.proto";
 import "cosmos/staking/v1beta1/query.proto";
 
@@ -35,7 +36,28 @@ service Query {
   // Validator queries validator info for given validator address.
   rpc UnbondingPeriod(QueryUnbondingPeriodRequest)
       returns (QueryUnbondingPeriodResponse) {
-    option (google.api.http).get = "/tgrade/poe/v1beta1/staking/unbonding";
+    option (google.api.http).get = "/tgrade/poe/v1beta1/unbonding";
+  }
+
+  // ValidatorDelegation queries self delegated amount for given validator.
+  rpc ValidatorDelegation(QueryValidatorDelegationRequest)
+      returns (QueryValidatorDelegationResponse) {
+    option (google.api.http).get =
+        "/poe/tgrade/v1beta1/validators/{validator_addr}/delegation";
+  }
+
+  // ValidatorUnbondingDelegations queries unbonding delegations of a validator.
+  rpc ValidatorUnbondingDelegations(QueryValidatorUnbondingDelegationsRequest)
+      returns (QueryValidatorUnbondingDelegationsResponse) {
+    option (google.api.http).get = "/tgrade/poe/v1beta1/validators/"
+                                   "{validator_addr}/unbonding_delegations";
+  }
+
+  // HistoricalInfo queries the historical info for given height.
+  rpc HistoricalInfo(cosmos.staking.v1beta1.QueryHistoricalInfoRequest)
+      returns (cosmos.staking.v1beta1.QueryHistoricalInfoResponse) {
+    option (google.api.http).get =
+        "/tgrade/poe/v1beta1/historical_info/{height}";
   }
 }
 
@@ -65,4 +87,37 @@ message QueryUnbondingPeriodResponse {
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
   // Height is the number of blocks that must pass
   uint64 height = 2;
+}
+
+// QueryValidatorDelegationRequest is request type for the
+// Query/ValidatorDelegation RPC method
+message QueryValidatorDelegationRequest {
+  // validator_addr defines the validator address to query for.
+  string validator_addr = 1;
+}
+
+// QueryValidatorDelegationResponse is response type for the
+// Query/ValidatorDelegation RPC method
+message QueryValidatorDelegationResponse {
+  cosmos.base.v1beta1.Coin balance = 1 [ (gogoproto.nullable) = false ];
+}
+
+// QueryValidatorUnbondingDelegationsRequest is required type for the
+// Query/ValidatorUnbondingDelegations RPC method
+message QueryValidatorUnbondingDelegationsRequest {
+  // validator_addr defines the validator address to query for.
+  string validator_addr = 1;
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryValidatorUnbondingDelegationsResponse is response type for the
+// Query/ValidatorUnbondingDelegations RPC method.
+message QueryValidatorUnbondingDelegationsResponse {
+  repeated cosmos.staking.v1beta1.UnbondingDelegationEntry entries = 1
+      [ (gogoproto.nullable) = false ]; // unbonding delegation entries
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }

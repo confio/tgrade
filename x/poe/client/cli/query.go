@@ -1,11 +1,8 @@
 package cli
 
 import (
-	"encoding/base64"
+	"context"
 	"fmt"
-	"sort"
-	"strings"
-
 	"github.com/confio/tgrade/x/poe/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -13,7 +10,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/spf13/cobra"
-	flag "github.com/spf13/pflag"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 func GetQueryCmd() *cobra.Command {
@@ -28,7 +27,10 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdShowPoEContract(),
 		GetCmdQueryValidators(),
 		GetCmdQueryValidator(),
+		GetCmdQueryValidatorDelegation(),
+		GetCmdQueryValidatorUnbondingDelegations(),
 		GetCmdQueryUnbondingPeriod(),
+		GetCmdQueryHistoricalInfo(),
 	)
 	return queryCmd
 }
@@ -104,7 +106,7 @@ func GetCmdQueryValidators() *cobra.Command {
 			fmt.Sprintf(`Query details about all validators on a network.
 
 Example:
-$ %s query staking validators
+$ %s query poe validators
 `,
 				version.AppName,
 			),
@@ -191,18 +193,146 @@ func allPoEContractTypes() string {
 	return strings.Join(r, ", ")
 }
 
-// sdk ReadPageRequest expects binary but we encoded to base64 in our marshaller
-func withPageKeyDecoded(flagSet *flag.FlagSet) *flag.FlagSet {
-	encoded, err := flagSet.GetString(flags.FlagPageKey)
-	if err != nil {
-		panic(err.Error())
+// GetCmdQueryHistoricalInfo implements the historical info query command
+func GetCmdQueryHistoricalInfo() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "historical-info [height]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Query historical info at given height",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query historical info at given height.
+
+Example:
+$ %s query poe historical-info 5
+`,
+				version.AppName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			height, err := strconv.ParseInt(args[0], 10, 64)
+			if err != nil || height < 0 {
+				return fmt.Errorf("height argument provided must be a non-negative-integer: %v", err)
+			}
+
+			params := &stakingtypes.QueryHistoricalInfoRequest{Height: height}
+			res, err := queryClient.HistoricalInfo(context.Background(), params)
+
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res.Hist)
+		},
 	}
-	raw, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		panic(err.Error())
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// GetCmdQueryValidatorDelegation implements the command to query the
+// self delegation of a specific validator.
+func GetCmdQueryValidatorDelegation() *cobra.Command {
+	bech32PrefixValAddr := sdk.GetConfig().GetBech32ValidatorAddrPrefix()
+
+	cmd := &cobra.Command{
+		Use:   "self-delegation [validator-addr]",
+		Short: "Query the delegation made by one validator",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query delegations on an individual validator.
+
+Example:
+$ %s query poe self-delegation %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+`,
+				version.AppName, bech32PrefixValAddr,
+			),
+		),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			valAddr, err := sdk.ValAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+
+			params := &types.QueryValidatorDelegationRequest{
+				ValidatorAddr: valAddr.String(),
+			}
+
+			res, err := queryClient.ValidatorDelegation(context.Background(), params)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
 	}
-	if err := flagSet.Set(flags.FlagPageKey, string(raw)); err != nil {
-		panic(err.Error())
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+// GetCmdQueryValidatorUnbondingDelegations implements the query all unbonding delegatations from a validator command.
+func GetCmdQueryValidatorUnbondingDelegations() *cobra.Command {
+	bech32PrefixValAddr := sdk.GetConfig().GetBech32ValidatorAddrPrefix()
+
+	cmd := &cobra.Command{
+		Use:   "unbonding-delegations [validator-addr]",
+		Short: "Query all unbonding delegations from a validator",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query delegations that are unbonding _from_ a validator.
+
+Example:
+$ %s query poe unbonding-delegations %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+`,
+				version.AppName, bech32PrefixValAddr,
+			),
+		),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			valAddr, err := sdk.ValAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			params := &types.QueryValidatorUnbondingDelegationsRequest{
+				ValidatorAddr: valAddr.String(),
+				Pagination:    pageReq,
+			}
+
+			res, err := queryClient.ValidatorUnbondingDelegations(context.Background(), params)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
 	}
-	return flagSet
+
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "unbonding delegations")
+
+	return cmd
 }

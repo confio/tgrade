@@ -9,6 +9,7 @@ import (
 )
 
 var _ PoEKeeper = PoEKeeperMock{}
+var _ stakingQuerierKeeper = PoEKeeperMock{}
 
 // PoEKeeperMock mocks Keeper methods
 type PoEKeeperMock struct {
@@ -18,6 +19,9 @@ type PoEKeeperMock struct {
 	setPoESystemAdminAddressFn            func(ctx sdk.Context, admin sdk.AccAddress)
 	setParamsFn                           func(ctx sdk.Context, params types.Params)
 	GetBondDenomFn                        func(ctx sdk.Context) string
+	HistoricalEntriesFn                   func(ctx sdk.Context) uint32
+	UnbondingTimeFn                       func(ctx sdk.Context) time.Duration
+	GetHistoricalInfoFn                   func(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool)
 }
 
 func (m PoEKeeperMock) setParams(ctx sdk.Context, params types.Params) {
@@ -53,6 +57,26 @@ func (m PoEKeeperMock) GetBondDenom(ctx sdk.Context) string {
 		panic("not expected to be called")
 	}
 	return m.GetBondDenomFn(ctx)
+}
+func (m PoEKeeperMock) HistoricalEntries(ctx sdk.Context) uint32 {
+	if m.HistoricalEntriesFn == nil {
+		panic("not expected to be called")
+	}
+	return m.HistoricalEntriesFn(ctx)
+}
+
+func (m PoEKeeperMock) UnbondingTime(ctx sdk.Context) time.Duration {
+	if m.UnbondingTimeFn == nil {
+		panic("not expected to be called")
+	}
+	return m.UnbondingTimeFn(ctx)
+}
+
+func (m PoEKeeperMock) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
+	if m.GetHistoricalInfoFn == nil {
+		panic("not expected to be called")
+	}
+	return m.GetHistoricalInfoFn(ctx, height)
 }
 
 // CapturedPoEContractAddress data type
@@ -137,49 +161,4 @@ func (m TwasmKeeperMock) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, m
 		panic("not expected to be called")
 	}
 	return m.SudoFn(ctx, contractAddress, msg)
-}
-
-var _ stakingQuerierKeeper = StakingQuerierKeeperMock{}
-
-type StakingQuerierKeeperMock struct {
-	GetPoEContractAddressFn func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error)
-	GetBondDenomFn          func(ctx sdk.Context) string
-	HistoricalEntriesFn     func(ctx sdk.Context) uint32
-	UnbondingTimeFn         func(ctx sdk.Context) time.Duration
-	GetHistoricalInfoFn     func(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool)
-}
-
-func (m StakingQuerierKeeperMock) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
-	if m.GetPoEContractAddressFn == nil {
-		panic("not expected to be called")
-	}
-	return m.GetPoEContractAddressFn(ctx, ctype)
-}
-
-func (m StakingQuerierKeeperMock) GetBondDenom(ctx sdk.Context) string {
-	if m.GetBondDenomFn == nil {
-		panic("not expected to be called")
-	}
-	return m.GetBondDenomFn(ctx)
-}
-
-func (m StakingQuerierKeeperMock) HistoricalEntries(ctx sdk.Context) uint32 {
-	if m.HistoricalEntriesFn == nil {
-		panic("not expected to be called")
-	}
-	return m.HistoricalEntriesFn(ctx)
-}
-
-func (m StakingQuerierKeeperMock) UnbondingTime(ctx sdk.Context) time.Duration {
-	if m.UnbondingTimeFn == nil {
-		panic("not expected to be called")
-	}
-	return m.UnbondingTimeFn(ctx)
-}
-
-func (m StakingQuerierKeeperMock) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
-	if m.GetHistoricalInfoFn == nil {
-		panic("not expected to be called")
-	}
-	return m.GetHistoricalInfoFn(ctx, height)
 }

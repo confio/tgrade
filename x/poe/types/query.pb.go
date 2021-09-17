@@ -6,8 +6,9 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	_ "github.com/cosmos/cosmos-sdk/types/query"
-	types "github.com/cosmos/cosmos-sdk/x/staking/types"
+	types "github.com/cosmos/cosmos-sdk/types"
+	query "github.com/cosmos/cosmos-sdk/types/query"
+	types1 "github.com/cosmos/cosmos-sdk/x/staking/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
 	proto "github.com/gogo/protobuf/proto"
@@ -215,53 +216,286 @@ func (m *QueryUnbondingPeriodResponse) GetHeight() uint64 {
 	return 0
 }
 
+// QueryValidatorDelegationRequest is request type for the
+// Query/ValidatorDelegation RPC method
+type QueryValidatorDelegationRequest struct {
+	// validator_addr defines the validator address to query for.
+	ValidatorAddr string `protobuf:"bytes,1,opt,name=validator_addr,json=validatorAddr,proto3" json:"validator_addr,omitempty"`
+}
+
+func (m *QueryValidatorDelegationRequest) Reset()         { *m = QueryValidatorDelegationRequest{} }
+func (m *QueryValidatorDelegationRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryValidatorDelegationRequest) ProtoMessage()    {}
+func (*QueryValidatorDelegationRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_55a2242dcc0e0cfb, []int{4}
+}
+func (m *QueryValidatorDelegationRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryValidatorDelegationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryValidatorDelegationRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryValidatorDelegationRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryValidatorDelegationRequest.Merge(m, src)
+}
+func (m *QueryValidatorDelegationRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryValidatorDelegationRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryValidatorDelegationRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryValidatorDelegationRequest proto.InternalMessageInfo
+
+func (m *QueryValidatorDelegationRequest) GetValidatorAddr() string {
+	if m != nil {
+		return m.ValidatorAddr
+	}
+	return ""
+}
+
+// QueryValidatorDelegationResponse is response type for the
+// Query/ValidatorDelegation RPC method
+type QueryValidatorDelegationResponse struct {
+	Balance types.Coin `protobuf:"bytes,1,opt,name=balance,proto3" json:"balance"`
+}
+
+func (m *QueryValidatorDelegationResponse) Reset()         { *m = QueryValidatorDelegationResponse{} }
+func (m *QueryValidatorDelegationResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryValidatorDelegationResponse) ProtoMessage()    {}
+func (*QueryValidatorDelegationResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_55a2242dcc0e0cfb, []int{5}
+}
+func (m *QueryValidatorDelegationResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryValidatorDelegationResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryValidatorDelegationResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryValidatorDelegationResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryValidatorDelegationResponse.Merge(m, src)
+}
+func (m *QueryValidatorDelegationResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryValidatorDelegationResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryValidatorDelegationResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryValidatorDelegationResponse proto.InternalMessageInfo
+
+func (m *QueryValidatorDelegationResponse) GetBalance() types.Coin {
+	if m != nil {
+		return m.Balance
+	}
+	return types.Coin{}
+}
+
+// QueryValidatorUnbondingDelegationsRequest is required type for the
+// Query/ValidatorUnbondingDelegations RPC method
+type QueryValidatorUnbondingDelegationsRequest struct {
+	// validator_addr defines the validator address to query for.
+	ValidatorAddr string `protobuf:"bytes,1,opt,name=validator_addr,json=validatorAddr,proto3" json:"validator_addr,omitempty"`
+	// pagination defines an optional pagination for the request.
+	Pagination *query.PageRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryValidatorUnbondingDelegationsRequest) Reset() {
+	*m = QueryValidatorUnbondingDelegationsRequest{}
+}
+func (m *QueryValidatorUnbondingDelegationsRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryValidatorUnbondingDelegationsRequest) ProtoMessage() {}
+func (*QueryValidatorUnbondingDelegationsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_55a2242dcc0e0cfb, []int{6}
+}
+func (m *QueryValidatorUnbondingDelegationsRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryValidatorUnbondingDelegationsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryValidatorUnbondingDelegationsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryValidatorUnbondingDelegationsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryValidatorUnbondingDelegationsRequest.Merge(m, src)
+}
+func (m *QueryValidatorUnbondingDelegationsRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryValidatorUnbondingDelegationsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryValidatorUnbondingDelegationsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryValidatorUnbondingDelegationsRequest proto.InternalMessageInfo
+
+func (m *QueryValidatorUnbondingDelegationsRequest) GetValidatorAddr() string {
+	if m != nil {
+		return m.ValidatorAddr
+	}
+	return ""
+}
+
+func (m *QueryValidatorUnbondingDelegationsRequest) GetPagination() *query.PageRequest {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
+// QueryValidatorUnbondingDelegationsResponse is response type for the
+// Query/ValidatorUnbondingDelegations RPC method.
+type QueryValidatorUnbondingDelegationsResponse struct {
+	Entries []types1.UnbondingDelegationEntry `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries"`
+	// pagination defines the pagination in the response.
+	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (m *QueryValidatorUnbondingDelegationsResponse) Reset() {
+	*m = QueryValidatorUnbondingDelegationsResponse{}
+}
+func (m *QueryValidatorUnbondingDelegationsResponse) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryValidatorUnbondingDelegationsResponse) ProtoMessage() {}
+func (*QueryValidatorUnbondingDelegationsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_55a2242dcc0e0cfb, []int{7}
+}
+func (m *QueryValidatorUnbondingDelegationsResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryValidatorUnbondingDelegationsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryValidatorUnbondingDelegationsResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryValidatorUnbondingDelegationsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryValidatorUnbondingDelegationsResponse.Merge(m, src)
+}
+func (m *QueryValidatorUnbondingDelegationsResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryValidatorUnbondingDelegationsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryValidatorUnbondingDelegationsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryValidatorUnbondingDelegationsResponse proto.InternalMessageInfo
+
+func (m *QueryValidatorUnbondingDelegationsResponse) GetEntries() []types1.UnbondingDelegationEntry {
+	if m != nil {
+		return m.Entries
+	}
+	return nil
+}
+
+func (m *QueryValidatorUnbondingDelegationsResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*QueryContractAddressRequest)(nil), "confio.poe.v1beta1.QueryContractAddressRequest")
 	proto.RegisterType((*QueryContractAddressResponse)(nil), "confio.poe.v1beta1.QueryContractAddressResponse")
 	proto.RegisterType((*QueryUnbondingPeriodRequest)(nil), "confio.poe.v1beta1.QueryUnbondingPeriodRequest")
 	proto.RegisterType((*QueryUnbondingPeriodResponse)(nil), "confio.poe.v1beta1.QueryUnbondingPeriodResponse")
+	proto.RegisterType((*QueryValidatorDelegationRequest)(nil), "confio.poe.v1beta1.QueryValidatorDelegationRequest")
+	proto.RegisterType((*QueryValidatorDelegationResponse)(nil), "confio.poe.v1beta1.QueryValidatorDelegationResponse")
+	proto.RegisterType((*QueryValidatorUnbondingDelegationsRequest)(nil), "confio.poe.v1beta1.QueryValidatorUnbondingDelegationsRequest")
+	proto.RegisterType((*QueryValidatorUnbondingDelegationsResponse)(nil), "confio.poe.v1beta1.QueryValidatorUnbondingDelegationsResponse")
 }
 
 func init() { proto.RegisterFile("confio/poe/v1beta1/query.proto", fileDescriptor_55a2242dcc0e0cfb) }
 
 var fileDescriptor_55a2242dcc0e0cfb = []byte{
-	// 569 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x94, 0x4f, 0x6b, 0x13, 0x4f,
-	0x18, 0xc7, 0x77, 0x4b, 0xdb, 0x5f, 0x3b, 0x3f, 0xb5, 0x30, 0x88, 0xc4, 0x58, 0x37, 0x61, 0xad,
-	0x5a, 0xc4, 0xce, 0x98, 0x28, 0x54, 0x3c, 0x08, 0x56, 0x05, 0x8f, 0x35, 0xa8, 0x07, 0x2f, 0x65,
-	0x76, 0x77, 0xba, 0x59, 0x6c, 0xe6, 0xd9, 0xec, 0xcc, 0x16, 0x43, 0xe9, 0xc5, 0x93, 0x47, 0x41,
-	0x84, 0x1e, 0x0b, 0xde, 0x7c, 0x25, 0x3d, 0x16, 0xbc, 0x78, 0x52, 0x49, 0x3c, 0xf8, 0x32, 0x64,
-	0x67, 0x67, 0xd3, 0xa4, 0xdd, 0x86, 0xdc, 0xe6, 0xd9, 0xe7, 0xdf, 0x67, 0x9e, 0xe7, 0x3b, 0x8b,
-	0x1c, 0x1f, 0xc4, 0x76, 0x04, 0x34, 0x06, 0x4e, 0x77, 0x1b, 0x1e, 0x57, 0xac, 0x41, 0xbb, 0x29,
-	0x4f, 0x7a, 0x24, 0x4e, 0x40, 0x01, 0xc6, 0xb9, 0x9f, 0xc4, 0xc0, 0x89, 0xf1, 0x57, 0xef, 0xf8,
-	0x20, 0x3b, 0x20, 0xa9, 0xc7, 0x24, 0xcf, 0x83, 0x87, 0xa9, 0x31, 0x0b, 0x23, 0xc1, 0x54, 0x04,
-	0x22, 0xcf, 0xaf, 0x5e, 0x0e, 0x21, 0x04, 0x7d, 0xa4, 0xd9, 0xc9, 0x7c, 0x75, 0x42, 0x80, 0x70,
-	0x87, 0x53, 0x6d, 0x79, 0xe9, 0x36, 0x0d, 0xd2, 0x64, 0x34, 0x6b, 0xd9, 0xf8, 0x59, 0x1c, 0x51,
-	0x26, 0x04, 0x28, 0xed, 0x94, 0x85, 0xb7, 0x84, 0x39, 0xe3, 0xcb, 0xbd, 0x2b, 0x86, 0x4e, 0x2a,
-	0xf6, 0x2e, 0x12, 0xe1, 0x30, 0xc2, 0xd8, 0x26, 0xca, 0x3d, 0x27, 0x6a, 0xe4, 0xee, 0x6e, 0x17,
-	0x5d, 0x7b, 0x99, 0x99, 0x4f, 0x41, 0xa8, 0x84, 0xf9, 0xea, 0x49, 0x10, 0x24, 0x5c, 0xca, 0x16,
-	0xef, 0xa6, 0x5c, 0x2a, 0xfc, 0x02, 0x5d, 0xf4, 0x8d, 0x67, 0x4b, 0xf5, 0x62, 0x5e, 0xb1, 0xeb,
-	0xf6, 0xea, 0xa5, 0xe6, 0x0d, 0x72, 0x76, 0x64, 0x64, 0x13, 0x9e, 0x17, 0x55, 0x5e, 0xf5, 0x62,
-	0xde, 0xba, 0xe0, 0x8f, 0x58, 0x8f, 0x16, 0x3e, 0x1e, 0xd6, 0xac, 0xbf, 0x87, 0x35, 0xcb, 0x7d,
-	0x88, 0x96, 0xcb, 0x5b, 0xca, 0x18, 0x84, 0xe4, 0xb8, 0x82, 0xfe, 0x63, 0xf9, 0x27, 0xdd, 0x6d,
-	0xb1, 0x55, 0x98, 0xee, 0x75, 0x03, 0xfb, 0x5a, 0x78, 0x20, 0x82, 0x48, 0x84, 0x9b, 0x3c, 0x89,
-	0x20, 0x30, 0xb0, 0x2e, 0x98, 0xc2, 0x67, 0xdc, 0xa6, 0xf0, 0x3a, 0x9a, 0x55, 0x51, 0x27, 0xbf,
-	0xc3, 0xff, 0xcd, 0xab, 0x24, 0x5f, 0x00, 0x29, 0x16, 0x44, 0x9e, 0x99, 0x05, 0x6d, 0x2c, 0x1c,
-	0xfd, 0xac, 0x59, 0x07, 0xbf, 0x6a, 0x76, 0x4b, 0x27, 0xe0, 0x2b, 0x68, 0xbe, 0xcd, 0xa3, 0xb0,
-	0xad, 0x2a, 0x33, 0x75, 0x7b, 0x75, 0xb6, 0x65, 0xac, 0xe6, 0xc1, 0x1c, 0x9a, 0xd3, 0x1d, 0xf1,
-	0x37, 0x1b, 0x2d, 0x9d, 0xba, 0x0f, 0xa6, 0x65, 0x43, 0x9a, 0x30, 0xec, 0xea, 0xbd, 0xe9, 0x13,
-	0xf2, 0x1b, 0xb9, 0x0f, 0x3e, 0x7c, 0xff, 0xf3, 0x79, 0x86, 0xe0, 0xbb, 0x54, 0x85, 0x09, 0x0b,
-	0xf8, 0x98, 0x5c, 0x8a, 0xf1, 0xd3, 0xbd, 0xb1, 0x15, 0xee, 0xe3, 0x2f, 0x36, 0x42, 0x6f, 0xd8,
-	0x4e, 0x14, 0x30, 0x05, 0x89, 0xc4, 0x84, 0xe4, 0x3a, 0x21, 0x85, 0x7a, 0xc6, 0x5a, 0x9f, 0x04,
-	0x16, 0x98, 0x74, 0xea, 0x78, 0x43, 0x79, 0x4b, 0x53, 0xd6, 0xb1, 0x53, 0x46, 0xb9, 0x7b, 0x02,
-	0xf2, 0xd5, 0x46, 0x8b, 0xc3, 0x74, 0xbc, 0x36, 0x5d, 0x9b, 0x82, 0x8a, 0x4c, 0x1b, 0x6e, 0xa0,
-	0xd6, 0x35, 0x54, 0x03, 0xd3, 0xc9, 0x50, 0x74, 0x6f, 0x78, 0xde, 0xca, 0x64, 0xb8, 0x9f, 0x51,
-	0x2e, 0x9d, 0x52, 0xd8, 0x84, 0x55, 0x97, 0x4b, 0x75, 0xc2, 0xaa, 0xcf, 0x11, 0xaf, 0xbb, 0xa6,
-	0x79, 0x6f, 0xe3, 0x9b, 0x65, 0xbc, 0xc5, 0x0b, 0x4f, 0x8b, 0xe4, 0x8d, 0xc7, 0x47, 0x7d, 0xc7,
-	0x3e, 0xee, 0x3b, 0xf6, 0xef, 0xbe, 0x63, 0x7f, 0x1a, 0x38, 0xd6, 0xf1, 0xc0, 0xb1, 0x7e, 0x0c,
-	0x1c, 0xeb, 0xed, 0x4a, 0x18, 0xa9, 0x76, 0xea, 0x11, 0x1f, 0x3a, 0xd4, 0xfc, 0x64, 0x4c, 0xc5,
-	0xf7, 0xba, 0x66, 0xa6, 0x11, 0xe9, 0xcd, 0xeb, 0x57, 0x71, 0xff, 0x5f, 0x00, 0x00, 0x00, 0xff,
-	0xff, 0x4f, 0xe2, 0xc9, 0x54, 0x3c, 0x05, 0x00, 0x00,
+	// 843 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x96, 0xcd, 0x4f, 0x33, 0x45,
+	0x18, 0xc0, 0x3b, 0x88, 0x7c, 0x0c, 0x02, 0xc9, 0x68, 0x0c, 0x56, 0xd8, 0x36, 0x2b, 0x20, 0x12,
+	0xdd, 0x81, 0x42, 0x82, 0x12, 0x25, 0xb1, 0x80, 0xe0, 0xc1, 0x04, 0x1b, 0xf5, 0x60, 0x62, 0x9a,
+	0xe9, 0xee, 0x74, 0x3b, 0xb1, 0xcc, 0x2c, 0xbb, 0x53, 0x62, 0x43, 0xb8, 0x78, 0xf2, 0x68, 0x62,
+	0x4c, 0x8c, 0x5e, 0x48, 0xbc, 0x79, 0xf1, 0x9f, 0x30, 0x91, 0x23, 0x89, 0x17, 0x4f, 0x6a, 0xc0,
+	0x83, 0x17, 0xff, 0x80, 0xf7, 0xf6, 0x66, 0x67, 0x67, 0xb6, 0x2d, 0x6c, 0x4b, 0xfb, 0xde, 0x3a,
+	0xf3, 0x7c, 0xfd, 0x9e, 0x8f, 0x79, 0xb6, 0xd0, 0x72, 0x05, 0xaf, 0x33, 0x81, 0x03, 0x41, 0xf1,
+	0xf9, 0x66, 0x8d, 0x4a, 0xb2, 0x89, 0xcf, 0x5a, 0x34, 0x6c, 0x3b, 0x41, 0x28, 0xa4, 0x40, 0x28,
+	0x91, 0x3b, 0x81, 0xa0, 0x8e, 0x96, 0xe7, 0xd7, 0x5d, 0x11, 0x9d, 0x8a, 0x08, 0xd7, 0x48, 0x44,
+	0x13, 0xe5, 0xd4, 0x34, 0x20, 0x3e, 0xe3, 0x44, 0x32, 0xc1, 0x13, 0xfb, 0xfc, 0x4b, 0xbe, 0xf0,
+	0x85, 0xfa, 0x89, 0xe3, 0x5f, 0xfa, 0xd6, 0xf2, 0x85, 0xf0, 0x9b, 0x14, 0xab, 0x53, 0xad, 0x55,
+	0xc7, 0x5e, 0x2b, 0xec, 0xb6, 0x5a, 0xd4, 0x72, 0x12, 0x30, 0x4c, 0x38, 0x17, 0x52, 0x09, 0x23,
+	0x23, 0xcd, 0x60, 0x8e, 0xf9, 0xb4, 0xef, 0x6e, 0x3a, 0x23, 0x76, 0x05, 0x33, 0xbe, 0x97, 0xb5,
+	0x3c, 0x92, 0xe4, 0x4b, 0xc6, 0xfd, 0x54, 0x45, 0x9f, 0xb5, 0x96, 0xdd, 0x47, 0xab, 0xab, 0x36,
+	0xf6, 0x19, 0x7c, 0xf5, 0xe3, 0xf8, 0xb8, 0x2f, 0xb8, 0x0c, 0x89, 0x2b, 0xdf, 0xf7, 0xbc, 0x90,
+	0x46, 0x51, 0x85, 0x9e, 0xb5, 0x68, 0x24, 0xd1, 0x31, 0x9c, 0x75, 0xb5, 0xa4, 0x2a, 0xdb, 0x01,
+	0x5d, 0x00, 0x45, 0xb0, 0x36, 0x57, 0x7a, 0xcd, 0x79, 0x58, 0x52, 0xe7, 0x44, 0x1c, 0x1a, 0x2f,
+	0x9f, 0xb4, 0x03, 0x5a, 0x79, 0xc1, 0xed, 0x3a, 0xed, 0x4e, 0x7d, 0x73, 0x55, 0xc8, 0xfd, 0x77,
+	0x55, 0xc8, 0xd9, 0x6f, 0xc3, 0xc5, 0xec, 0x90, 0x51, 0x20, 0x78, 0x44, 0xd1, 0x02, 0x9c, 0x24,
+	0xc9, 0x95, 0x8a, 0x36, 0x5d, 0x31, 0x47, 0x7b, 0x49, 0xc3, 0x7e, 0xca, 0x6b, 0x82, 0x7b, 0x8c,
+	0xfb, 0x27, 0x34, 0x64, 0xc2, 0xd3, 0xb0, 0xb6, 0xd0, 0x8e, 0x1f, 0x88, 0xb5, 0xe3, 0x1d, 0x38,
+	0x2e, 0xd9, 0x69, 0x92, 0xc3, 0x4c, 0xe9, 0x15, 0x27, 0x69, 0x90, 0x63, 0x1a, 0xe8, 0x1c, 0xe8,
+	0x06, 0x96, 0xa7, 0xae, 0xff, 0x2a, 0xe4, 0x7e, 0xf8, 0xbb, 0x00, 0x2a, 0xca, 0x00, 0xbd, 0x0c,
+	0x27, 0x1a, 0x94, 0xf9, 0x0d, 0xb9, 0x30, 0x56, 0x04, 0x6b, 0xe3, 0x15, 0x7d, 0xb2, 0x8f, 0x61,
+	0x41, 0x05, 0xfc, 0x8c, 0x34, 0x99, 0x47, 0xa4, 0x08, 0x0f, 0x68, 0x93, 0xfa, 0xca, 0x87, 0x29,
+	0xe0, 0x0a, 0x9c, 0x3b, 0x37, 0xd2, 0x6a, 0x9c, 0x87, 0xce, 0x69, 0x36, 0xbd, 0x8d, 0xd3, 0xb7,
+	0xbf, 0x80, 0xc5, 0xfe, 0x9e, 0x34, 0xfe, 0x3b, 0x70, 0xb2, 0x46, 0x9a, 0x84, 0xbb, 0x9d, 0x0c,
+	0x92, 0x06, 0x3b, 0xf1, 0x98, 0xa4, 0x6d, 0xd8, 0x17, 0x8c, 0x97, 0xc7, 0xe3, 0x0c, 0x2a, 0x46,
+	0xdf, 0xfe, 0x11, 0xc0, 0x37, 0x7a, 0xfd, 0xa7, 0x35, 0xea, 0x04, 0x8a, 0x46, 0x63, 0x46, 0x1f,
+	0x40, 0xd8, 0x79, 0x2a, 0xaa, 0x32, 0x33, 0xa5, 0xd5, 0x1e, 0xa4, 0x64, 0xd0, 0xd2, 0xf9, 0x20,
+	0x3e, 0xd5, 0x21, 0x2a, 0x5d, 0x96, 0xf6, 0xef, 0x00, 0xae, 0x0f, 0x03, 0xa7, 0xcb, 0x70, 0x02,
+	0x27, 0x29, 0x97, 0x21, 0xa3, 0xf1, 0x78, 0x3c, 0xb7, 0x36, 0x53, 0xda, 0x30, 0x31, 0xcd, 0xf4,
+	0x9b, 0x80, 0x19, 0x6e, 0x0e, 0xb9, 0x0c, 0xdb, 0xa6, 0x3a, 0xda, 0x0d, 0x3a, 0xca, 0x48, 0xe4,
+	0xf5, 0x47, 0x13, 0x49, 0x70, 0xba, 0x33, 0x29, 0x3d, 0x99, 0x86, 0xcf, 0xab, 0x4c, 0xd0, 0x2f,
+	0x00, 0xce, 0xdf, 0x9b, 0x6f, 0x84, 0xb3, 0x1e, 0xcd, 0x80, 0xc7, 0x97, 0xdf, 0x18, 0xde, 0x20,
+	0x81, 0xb1, 0xb7, 0xbf, 0xfe, 0xe3, 0xdf, 0xef, 0xc6, 0x1c, 0xf4, 0x26, 0x96, 0x7e, 0x48, 0x3c,
+	0xda, 0xb3, 0x5e, 0xcc, 0x73, 0xc4, 0x17, 0x3d, 0x4f, 0xfa, 0x12, 0x7d, 0x0f, 0x20, 0x4c, 0x6b,
+	0x1f, 0x21, 0xa7, 0x5f, 0x3d, 0x7b, 0x9b, 0x94, 0x62, 0xe2, 0xa1, 0xf5, 0x35, 0xe5, 0xaa, 0xa2,
+	0x2c, 0x22, 0x2b, 0x8b, 0xf2, 0xbc, 0x03, 0xf2, 0x33, 0x80, 0xd3, 0xa9, 0x39, 0x7a, 0x6b, 0xb8,
+	0x30, 0x86, 0xca, 0x19, 0x56, 0x5d, 0x43, 0xed, 0x28, 0xa8, 0x4d, 0x84, 0x07, 0x43, 0xe1, 0x8b,
+	0xde, 0xa7, 0x71, 0x89, 0x7e, 0x02, 0x70, 0xfe, 0xde, 0xc6, 0x19, 0xd0, 0xea, 0xec, 0xd5, 0x35,
+	0xa0, 0xd5, 0x7d, 0x96, 0x99, 0xbd, 0xa2, 0x78, 0x0b, 0x68, 0x29, 0x8b, 0xb7, 0x65, 0x8c, 0xd0,
+	0x6f, 0x00, 0xbe, 0x98, 0xb1, 0x54, 0xd0, 0x56, 0xdf, 0x80, 0xfd, 0x97, 0x59, 0x7e, 0x7b, 0x34,
+	0x23, 0x4d, 0x5a, 0x56, 0xa4, 0xef, 0xa2, 0x5d, 0x85, 0xa8, 0x69, 0x87, 0xa8, 0x2c, 0xf6, 0x3a,
+	0xb8, 0xff, 0x03, 0xb8, 0x34, 0x70, 0x3d, 0xa0, 0xf7, 0x1e, 0x67, 0x1b, 0xb0, 0xf3, 0xf2, 0x7b,
+	0xcf, 0x6a, 0xae, 0x93, 0xfc, 0x48, 0x25, 0x79, 0x84, 0x0e, 0x47, 0x1c, 0x9f, 0x4e, 0xab, 0xaa,
+	0x5e, 0x57, 0x36, 0xbf, 0x02, 0x38, 0x77, 0xcc, 0x22, 0x29, 0x42, 0xe6, 0x92, 0xe6, 0x87, 0xbc,
+	0x2e, 0x50, 0x69, 0xe0, 0x40, 0xf7, 0x2a, 0x9b, 0xac, 0xb6, 0x46, 0xb2, 0x19, 0x66, 0x89, 0x34,
+	0x52, 0x9b, 0x2a, 0xe3, 0x75, 0x81, 0x2f, 0x92, 0x4f, 0xe1, 0x65, 0x79, 0xef, 0xfa, 0xd6, 0x02,
+	0x37, 0xb7, 0x16, 0xf8, 0xe7, 0xd6, 0x02, 0xdf, 0xde, 0x59, 0xb9, 0x9b, 0x3b, 0x2b, 0xf7, 0xe7,
+	0x9d, 0x95, 0xfb, 0x7c, 0xd9, 0x67, 0xb2, 0xd1, 0xaa, 0x39, 0xae, 0x38, 0xc5, 0xfa, 0x5f, 0x8f,
+	0x76, 0xfc, 0x55, 0x32, 0x11, 0xed, 0x80, 0x46, 0xb5, 0x09, 0xf5, 0x19, 0xde, 0x7a, 0x1a, 0x00,
+	0x00, 0xff, 0xff, 0xd8, 0xb4, 0xb1, 0x0c, 0xcd, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -279,11 +513,17 @@ type QueryClient interface {
 	// ContractAddress queries the address for one of the PoE contracts
 	ContractAddress(ctx context.Context, in *QueryContractAddressRequest, opts ...grpc.CallOption) (*QueryContractAddressResponse, error)
 	// Validators queries all validators that match the given status.
-	Validators(ctx context.Context, in *types.QueryValidatorsRequest, opts ...grpc.CallOption) (*types.QueryValidatorsResponse, error)
+	Validators(ctx context.Context, in *types1.QueryValidatorsRequest, opts ...grpc.CallOption) (*types1.QueryValidatorsResponse, error)
 	// Validator queries validator info for given validator address.
-	Validator(ctx context.Context, in *types.QueryValidatorRequest, opts ...grpc.CallOption) (*types.QueryValidatorResponse, error)
+	Validator(ctx context.Context, in *types1.QueryValidatorRequest, opts ...grpc.CallOption) (*types1.QueryValidatorResponse, error)
 	// Validator queries validator info for given validator address.
 	UnbondingPeriod(ctx context.Context, in *QueryUnbondingPeriodRequest, opts ...grpc.CallOption) (*QueryUnbondingPeriodResponse, error)
+	// ValidatorDelegation queries self delegated amount for given validator.
+	ValidatorDelegation(ctx context.Context, in *QueryValidatorDelegationRequest, opts ...grpc.CallOption) (*QueryValidatorDelegationResponse, error)
+	// ValidatorUnbondingDelegations queries unbonding delegations of a validator.
+	ValidatorUnbondingDelegations(ctx context.Context, in *QueryValidatorUnbondingDelegationsRequest, opts ...grpc.CallOption) (*QueryValidatorUnbondingDelegationsResponse, error)
+	// HistoricalInfo queries the historical info for given height.
+	HistoricalInfo(ctx context.Context, in *types1.QueryHistoricalInfoRequest, opts ...grpc.CallOption) (*types1.QueryHistoricalInfoResponse, error)
 }
 
 type queryClient struct {
@@ -303,8 +543,8 @@ func (c *queryClient) ContractAddress(ctx context.Context, in *QueryContractAddr
 	return out, nil
 }
 
-func (c *queryClient) Validators(ctx context.Context, in *types.QueryValidatorsRequest, opts ...grpc.CallOption) (*types.QueryValidatorsResponse, error) {
-	out := new(types.QueryValidatorsResponse)
+func (c *queryClient) Validators(ctx context.Context, in *types1.QueryValidatorsRequest, opts ...grpc.CallOption) (*types1.QueryValidatorsResponse, error) {
+	out := new(types1.QueryValidatorsResponse)
 	err := c.cc.Invoke(ctx, "/confio.poe.v1beta1.Query/Validators", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -312,8 +552,8 @@ func (c *queryClient) Validators(ctx context.Context, in *types.QueryValidatorsR
 	return out, nil
 }
 
-func (c *queryClient) Validator(ctx context.Context, in *types.QueryValidatorRequest, opts ...grpc.CallOption) (*types.QueryValidatorResponse, error) {
-	out := new(types.QueryValidatorResponse)
+func (c *queryClient) Validator(ctx context.Context, in *types1.QueryValidatorRequest, opts ...grpc.CallOption) (*types1.QueryValidatorResponse, error) {
+	out := new(types1.QueryValidatorResponse)
 	err := c.cc.Invoke(ctx, "/confio.poe.v1beta1.Query/Validator", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -330,16 +570,49 @@ func (c *queryClient) UnbondingPeriod(ctx context.Context, in *QueryUnbondingPer
 	return out, nil
 }
 
+func (c *queryClient) ValidatorDelegation(ctx context.Context, in *QueryValidatorDelegationRequest, opts ...grpc.CallOption) (*QueryValidatorDelegationResponse, error) {
+	out := new(QueryValidatorDelegationResponse)
+	err := c.cc.Invoke(ctx, "/confio.poe.v1beta1.Query/ValidatorDelegation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) ValidatorUnbondingDelegations(ctx context.Context, in *QueryValidatorUnbondingDelegationsRequest, opts ...grpc.CallOption) (*QueryValidatorUnbondingDelegationsResponse, error) {
+	out := new(QueryValidatorUnbondingDelegationsResponse)
+	err := c.cc.Invoke(ctx, "/confio.poe.v1beta1.Query/ValidatorUnbondingDelegations", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) HistoricalInfo(ctx context.Context, in *types1.QueryHistoricalInfoRequest, opts ...grpc.CallOption) (*types1.QueryHistoricalInfoResponse, error) {
+	out := new(types1.QueryHistoricalInfoResponse)
+	err := c.cc.Invoke(ctx, "/confio.poe.v1beta1.Query/HistoricalInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// ContractAddress queries the address for one of the PoE contracts
 	ContractAddress(context.Context, *QueryContractAddressRequest) (*QueryContractAddressResponse, error)
 	// Validators queries all validators that match the given status.
-	Validators(context.Context, *types.QueryValidatorsRequest) (*types.QueryValidatorsResponse, error)
+	Validators(context.Context, *types1.QueryValidatorsRequest) (*types1.QueryValidatorsResponse, error)
 	// Validator queries validator info for given validator address.
-	Validator(context.Context, *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error)
+	Validator(context.Context, *types1.QueryValidatorRequest) (*types1.QueryValidatorResponse, error)
 	// Validator queries validator info for given validator address.
 	UnbondingPeriod(context.Context, *QueryUnbondingPeriodRequest) (*QueryUnbondingPeriodResponse, error)
+	// ValidatorDelegation queries self delegated amount for given validator.
+	ValidatorDelegation(context.Context, *QueryValidatorDelegationRequest) (*QueryValidatorDelegationResponse, error)
+	// ValidatorUnbondingDelegations queries unbonding delegations of a validator.
+	ValidatorUnbondingDelegations(context.Context, *QueryValidatorUnbondingDelegationsRequest) (*QueryValidatorUnbondingDelegationsResponse, error)
+	// HistoricalInfo queries the historical info for given height.
+	HistoricalInfo(context.Context, *types1.QueryHistoricalInfoRequest) (*types1.QueryHistoricalInfoResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -349,14 +622,23 @@ type UnimplementedQueryServer struct {
 func (*UnimplementedQueryServer) ContractAddress(ctx context.Context, req *QueryContractAddressRequest) (*QueryContractAddressResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ContractAddress not implemented")
 }
-func (*UnimplementedQueryServer) Validators(ctx context.Context, req *types.QueryValidatorsRequest) (*types.QueryValidatorsResponse, error) {
+func (*UnimplementedQueryServer) Validators(ctx context.Context, req *types1.QueryValidatorsRequest) (*types1.QueryValidatorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Validators not implemented")
 }
-func (*UnimplementedQueryServer) Validator(ctx context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
+func (*UnimplementedQueryServer) Validator(ctx context.Context, req *types1.QueryValidatorRequest) (*types1.QueryValidatorResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Validator not implemented")
 }
 func (*UnimplementedQueryServer) UnbondingPeriod(ctx context.Context, req *QueryUnbondingPeriodRequest) (*QueryUnbondingPeriodResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnbondingPeriod not implemented")
+}
+func (*UnimplementedQueryServer) ValidatorDelegation(ctx context.Context, req *QueryValidatorDelegationRequest) (*QueryValidatorDelegationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ValidatorDelegation not implemented")
+}
+func (*UnimplementedQueryServer) ValidatorUnbondingDelegations(ctx context.Context, req *QueryValidatorUnbondingDelegationsRequest) (*QueryValidatorUnbondingDelegationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ValidatorUnbondingDelegations not implemented")
+}
+func (*UnimplementedQueryServer) HistoricalInfo(ctx context.Context, req *types1.QueryHistoricalInfoRequest) (*types1.QueryHistoricalInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HistoricalInfo not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -382,7 +664,7 @@ func _Query_ContractAddress_Handler(srv interface{}, ctx context.Context, dec fu
 }
 
 func _Query_Validators_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(types.QueryValidatorsRequest)
+	in := new(types1.QueryValidatorsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -394,13 +676,13 @@ func _Query_Validators_Handler(srv interface{}, ctx context.Context, dec func(in
 		FullMethod: "/confio.poe.v1beta1.Query/Validators",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Validators(ctx, req.(*types.QueryValidatorsRequest))
+		return srv.(QueryServer).Validators(ctx, req.(*types1.QueryValidatorsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Query_Validator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(types.QueryValidatorRequest)
+	in := new(types1.QueryValidatorRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -412,7 +694,7 @@ func _Query_Validator_Handler(srv interface{}, ctx context.Context, dec func(int
 		FullMethod: "/confio.poe.v1beta1.Query/Validator",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Validator(ctx, req.(*types.QueryValidatorRequest))
+		return srv.(QueryServer).Validator(ctx, req.(*types1.QueryValidatorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -431,6 +713,60 @@ func _Query_UnbondingPeriod_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServer).UnbondingPeriod(ctx, req.(*QueryUnbondingPeriodRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_ValidatorDelegation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryValidatorDelegationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ValidatorDelegation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/confio.poe.v1beta1.Query/ValidatorDelegation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ValidatorDelegation(ctx, req.(*QueryValidatorDelegationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_ValidatorUnbondingDelegations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryValidatorUnbondingDelegationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).ValidatorUnbondingDelegations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/confio.poe.v1beta1.Query/ValidatorUnbondingDelegations",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).ValidatorUnbondingDelegations(ctx, req.(*QueryValidatorUnbondingDelegationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_HistoricalInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(types1.QueryHistoricalInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).HistoricalInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/confio.poe.v1beta1.Query/HistoricalInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).HistoricalInfo(ctx, req.(*types1.QueryHistoricalInfoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -454,6 +790,18 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UnbondingPeriod",
 			Handler:    _Query_UnbondingPeriod_Handler,
+		},
+		{
+			MethodName: "ValidatorDelegation",
+			Handler:    _Query_ValidatorDelegation_Handler,
+		},
+		{
+			MethodName: "ValidatorUnbondingDelegations",
+			Handler:    _Query_ValidatorUnbondingDelegations_Handler,
+		},
+		{
+			MethodName: "HistoricalInfo",
+			Handler:    _Query_HistoricalInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -577,6 +925,160 @@ func (m *QueryUnbondingPeriodResponse) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryValidatorDelegationRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryValidatorDelegationRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryValidatorDelegationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ValidatorAddr) > 0 {
+		i -= len(m.ValidatorAddr)
+		copy(dAtA[i:], m.ValidatorAddr)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ValidatorAddr)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryValidatorDelegationResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryValidatorDelegationResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryValidatorDelegationResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Balance.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryValidatorUnbondingDelegationsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryValidatorUnbondingDelegationsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryValidatorUnbondingDelegationsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ValidatorAddr) > 0 {
+		i -= len(m.ValidatorAddr)
+		copy(dAtA[i:], m.ValidatorAddr)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.ValidatorAddr)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryValidatorUnbondingDelegationsResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryValidatorUnbondingDelegationsResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryValidatorUnbondingDelegationsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Entries) > 0 {
+		for iNdEx := len(m.Entries) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Entries[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -632,6 +1134,66 @@ func (m *QueryUnbondingPeriodResponse) Size() (n int) {
 	n += 1 + l + sovQuery(uint64(l))
 	if m.Height != 0 {
 		n += 1 + sovQuery(uint64(m.Height))
+	}
+	return n
+}
+
+func (m *QueryValidatorDelegationRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ValidatorAddr)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryValidatorDelegationResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Balance.Size()
+	n += 1 + l + sovQuery(uint64(l))
+	return n
+}
+
+func (m *QueryValidatorUnbondingDelegationsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ValidatorAddr)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryValidatorUnbondingDelegationsResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Entries) > 0 {
+		for _, e := range m.Entries {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
 }
@@ -924,6 +1486,409 @@ func (m *QueryUnbondingPeriodResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryValidatorDelegationRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryValidatorDelegationRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryValidatorDelegationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryValidatorDelegationResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryValidatorDelegationResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryValidatorDelegationResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Balance", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Balance.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryValidatorUnbondingDelegationsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryValidatorUnbondingDelegationsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryValidatorUnbondingDelegationsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorAddr", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorAddr = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryValidatorUnbondingDelegationsResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryValidatorUnbondingDelegationsResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryValidatorUnbondingDelegationsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Entries", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Entries = append(m.Entries, types1.UnbondingDelegationEntry{})
+			if err := m.Entries[len(m.Entries)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])

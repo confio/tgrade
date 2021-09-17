@@ -29,6 +29,10 @@
     - [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse)
     - [QueryUnbondingPeriodRequest](#confio.poe.v1beta1.QueryUnbondingPeriodRequest)
     - [QueryUnbondingPeriodResponse](#confio.poe.v1beta1.QueryUnbondingPeriodResponse)
+    - [QueryValidatorDelegationRequest](#confio.poe.v1beta1.QueryValidatorDelegationRequest)
+    - [QueryValidatorDelegationResponse](#confio.poe.v1beta1.QueryValidatorDelegationResponse)
+    - [QueryValidatorUnbondingDelegationsRequest](#confio.poe.v1beta1.QueryValidatorUnbondingDelegationsRequest)
+    - [QueryValidatorUnbondingDelegationsResponse](#confio.poe.v1beta1.QueryValidatorUnbondingDelegationsResponse)
   
     - [Query](#confio.poe.v1beta1.Query)
   
@@ -349,6 +353,72 @@ RPC method
 
 
 
+
+<a name="confio.poe.v1beta1.QueryValidatorDelegationRequest"></a>
+
+### QueryValidatorDelegationRequest
+QueryValidatorDelegationRequest is request type for the
+Query/ValidatorDelegation RPC method
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `validator_addr` | [string](#string) |  | validator_addr defines the validator address to query for. |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.QueryValidatorDelegationResponse"></a>
+
+### QueryValidatorDelegationResponse
+QueryValidatorDelegationResponse is response type for the
+Query/ValidatorDelegation RPC method
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `balance` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.QueryValidatorUnbondingDelegationsRequest"></a>
+
+### QueryValidatorUnbondingDelegationsRequest
+QueryValidatorUnbondingDelegationsRequest is required type for the
+Query/ValidatorUnbondingDelegations RPC method
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `validator_addr` | [string](#string) |  | validator_addr defines the validator address to query for. |
+| `pagination` | [cosmos.base.query.v1beta1.PageRequest](#cosmos.base.query.v1beta1.PageRequest) |  | pagination defines an optional pagination for the request. |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.QueryValidatorUnbondingDelegationsResponse"></a>
+
+### QueryValidatorUnbondingDelegationsResponse
+QueryValidatorUnbondingDelegationsResponse is response type for the
+Query/ValidatorUnbondingDelegations RPC method.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `entries` | [cosmos.staking.v1beta1.UnbondingDelegationEntry](#cosmos.staking.v1beta1.UnbondingDelegationEntry) | repeated | unbonding delegation entries |
+| `pagination` | [cosmos.base.query.v1beta1.PageResponse](#cosmos.base.query.v1beta1.PageResponse) |  | pagination defines the pagination in the response. |
+
+
+
+
+
  <!-- end messages -->
 
  <!-- end enums -->
@@ -366,7 +436,10 @@ Query defines the gRPC querier service.
 | `ContractAddress` | [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest) | [QueryContractAddressResponse](#confio.poe.v1beta1.QueryContractAddressResponse) | ContractAddress queries the address for one of the PoE contracts | GET|/tgrade/poe/v1beta1/contract/{contract_type}|
 | `Validators` | [.cosmos.staking.v1beta1.QueryValidatorsRequest](#cosmos.staking.v1beta1.QueryValidatorsRequest) | [.cosmos.staking.v1beta1.QueryValidatorsResponse](#cosmos.staking.v1beta1.QueryValidatorsResponse) | Validators queries all validators that match the given status. | GET|/tgrade/poe/v1beta1/validators|
 | `Validator` | [.cosmos.staking.v1beta1.QueryValidatorRequest](#cosmos.staking.v1beta1.QueryValidatorRequest) | [.cosmos.staking.v1beta1.QueryValidatorResponse](#cosmos.staking.v1beta1.QueryValidatorResponse) | Validator queries validator info for given validator address. | GET|/tgrade/poe/v1beta1/validators/{validator_addr}|
-| `UnbondingPeriod` | [QueryUnbondingPeriodRequest](#confio.poe.v1beta1.QueryUnbondingPeriodRequest) | [QueryUnbondingPeriodResponse](#confio.poe.v1beta1.QueryUnbondingPeriodResponse) | Validator queries validator info for given validator address. | GET|/tgrade/poe/v1beta1/staking/unbonding|
+| `UnbondingPeriod` | [QueryUnbondingPeriodRequest](#confio.poe.v1beta1.QueryUnbondingPeriodRequest) | [QueryUnbondingPeriodResponse](#confio.poe.v1beta1.QueryUnbondingPeriodResponse) | Validator queries validator info for given validator address. | GET|/tgrade/poe/v1beta1/unbonding|
+| `ValidatorDelegation` | [QueryValidatorDelegationRequest](#confio.poe.v1beta1.QueryValidatorDelegationRequest) | [QueryValidatorDelegationResponse](#confio.poe.v1beta1.QueryValidatorDelegationResponse) | ValidatorDelegation queries self delegated amount for given validator. | GET|/poe/tgrade/v1beta1/validators/{validator_addr}/delegation|
+| `ValidatorUnbondingDelegations` | [QueryValidatorUnbondingDelegationsRequest](#confio.poe.v1beta1.QueryValidatorUnbondingDelegationsRequest) | [QueryValidatorUnbondingDelegationsResponse](#confio.poe.v1beta1.QueryValidatorUnbondingDelegationsResponse) | ValidatorUnbondingDelegations queries unbonding delegations of a validator. | GET|/tgrade/poe/v1beta1/validators/{validator_addr}/unbonding_delegations|
+| `HistoricalInfo` | [.cosmos.staking.v1beta1.QueryHistoricalInfoRequest](#cosmos.staking.v1beta1.QueryHistoricalInfoRequest) | [.cosmos.staking.v1beta1.QueryHistoricalInfoResponse](#cosmos.staking.v1beta1.QueryHistoricalInfoResponse) | HistoricalInfo queries the historical info for given height. | GET|/tgrade/poe/v1beta1/historical_info/{height}|
 
  <!-- end services -->
 

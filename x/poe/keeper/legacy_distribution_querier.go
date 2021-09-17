@@ -17,7 +17,7 @@ type legacyDistributionGRPCQuerier struct {
 	queryServer types.QueryServer
 }
 
-func NewLegacyDistributionGRPCQuerier(keeper ContractSource, contractQuerier types.SmartQuerier) *legacyDistributionGRPCQuerier {
+func NewLegacyDistributionGRPCQuerier(keeper ViewKeeper, contractQuerier types.SmartQuerier) *legacyDistributionGRPCQuerier {
 	return &legacyDistributionGRPCQuerier{keeper: keeper, queryServer: NewGrpcQuerier(keeper, contractQuerier)}
 }
 
