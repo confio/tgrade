@@ -193,7 +193,7 @@ func (q grpcQuerier) ValidatorUnbondingDelegations(c context.Context, req *types
 	var unbodings []stakingtypes.UnbondingDelegationEntry
 	for _, v := range res.Claims {
 		var compl time.Time
-		switch {
+		switch { // todo: revisit for contracts v0.4
 		case v.ReleaseAt.AtTime != nil:
 			compl = time.Unix(0, int64(*v.ReleaseAt.AtTime)).UTC()
 		case v.ReleaseAt.Never != nil:
