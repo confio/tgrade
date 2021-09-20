@@ -91,7 +91,8 @@ jobs:
     executor: golang
     parallelism: 1
     steps:
-      - setup_remote_docker
+      - attach_workspace:
+          at: /tmp/workspace
       - checkout
       - restore_cache:
           keys:
@@ -101,7 +102,13 @@ jobs:
           command: |
             make test-system
       - store_artifacts:
-          path: /tmp/logs
+          path: /go/src/github.com/confio/tgrade/testnet/node0.out
+      - store_artifacts:
+          path: /go/src/github.com/confio/tgrade/testnet/node1.out
+      - store_artifacts:
+          path: /go/src/github.com/confio/tgrade/testnet/node2.out
+      - store_artifacts:
+          path: /go/src/github.com/confio/tgrade/testnet/node3.out
 
   upload-coverage:
     executor: golang
@@ -168,6 +175,8 @@ jobs:
     executor: golang
     parallelism: 1
     steps:
+      - attach_workspace:
+            at: /tmp/workspace
       - checkout
       - restore_cache:
           keys:
