@@ -95,13 +95,13 @@ var (
 	// Bech32PrefixAccPub defines the Bech32 prefix of an account's public key
 	Bech32PrefixAccPub = Bech32Prefix + sdk.PrefixPublic
 	// Bech32PrefixValAddr defines the Bech32 prefix of a validator's operator address
-	Bech32PrefixValAddr = Bech32Prefix + sdk.PrefixValidator + sdk.PrefixOperator
+	Bech32PrefixValAddr = Bech32Prefix
 	// Bech32PrefixValPub defines the Bech32 prefix of a validator's operator public key
-	Bech32PrefixValPub = Bech32Prefix + sdk.PrefixValidator + sdk.PrefixOperator + sdk.PrefixPublic
+	Bech32PrefixValPub = Bech32Prefix + sdk.PrefixPublic
 	// Bech32PrefixConsAddr defines the Bech32 prefix of a consensus node address
-	Bech32PrefixConsAddr = Bech32Prefix + sdk.PrefixValidator + sdk.PrefixConsensus
+	Bech32PrefixConsAddr = Bech32Prefix
 	// Bech32PrefixConsPub defines the Bech32 prefix of a consensus node public key
-	Bech32PrefixConsPub = Bech32Prefix + sdk.PrefixValidator + sdk.PrefixConsensus + sdk.PrefixPublic
+	Bech32PrefixConsPub = Bech32Prefix + sdk.PrefixPublic
 )
 
 var (

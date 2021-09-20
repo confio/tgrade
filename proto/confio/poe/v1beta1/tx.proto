@@ -2,6 +2,7 @@ syntax = "proto3";
 package confio.poe.v1beta1;
 
 import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
 
 import "cosmos_proto/cosmos.proto";
@@ -16,6 +17,13 @@ service Msg {
   rpc CreateValidator(MsgCreateValidator) returns (MsgCreateValidatorResponse);
   // MsgCreateValidator defines a method for updating validator metadata
   rpc UpdateValidator(MsgUpdateValidator) returns (MsgUpdateValidatorResponse);
+  // Delegate defines a method for performing a self delegation of coins
+  // by a node operator
+  rpc Delegate(MsgDelegate) returns (MsgDelegateResponse);
+
+  // Undelegate defines a method for performing an undelegation from a
+  // node operator
+  rpc Undelegate(MsgUndelegate) returns (MsgUndelegateResponse);
 }
 
 // MsgCreateValidator defines a PoE message for creating a new validator.
@@ -60,3 +68,34 @@ message MsgUpdateValidator {
 
 // MsgUpdateValidatorResponse defines the MsgUpdateValidator response type.
 message MsgUpdateValidatorResponse {}
+
+// MsgDelegate defines a SDK message for performing a self delegation of coins
+// by a node operator
+message MsgDelegate {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string delegator_address = 1
+      [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
+  cosmos.base.v1beta1.Coin amount = 2 [ (gogoproto.nullable) = false ];
+}
+
+// MsgDelegateResponse defines the Msg/Delegate response type.
+message MsgDelegateResponse {}
+
+// MsgUndelegate defines a SDK message for performing an undelegation from a
+// node operator
+message MsgUndelegate {
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = false;
+
+  string delegator_address = 1
+      [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
+  cosmos.base.v1beta1.Coin amount = 2 [ (gogoproto.nullable) = false ];
+}
+
+// MsgUndelegateResponse defines the Msg/Undelegate response type.
+message MsgUndelegateResponse {
+  google.protobuf.Timestamp completion_time = 1
+      [ (gogoproto.nullable) = false, (gogoproto.stdtime) = true ];
+}

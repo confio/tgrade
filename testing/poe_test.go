@@ -119,7 +119,8 @@ func TestPoEAddPostGenesisValidator(t *testing.T) {
 	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
 	opAddr := cli.AddKey("newOperator")
 	cli.FundAddress(opAddr, "1000utgd")
-	newPubKey, pubKeyAddr := loadValidatorPubKey(t, filepath.Join(workDir, sut.nodePath(sut.nodesCount-1), "config", "priv_validator_key.json"))
+	newPubKey, pubKeyAddr := loadValidatorPubKeyForNode(t, sut, sut.nodesCount-1)
+
 	// when
 	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd",
 		"--pubkey="+pubKeyAddr, "--from=newOperator")
@@ -138,6 +139,89 @@ func TestPoEAddPostGenesisValidator(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "not in validator set : %#v", valResult)
+}
+
+func TestPoESelfDelegate(t *testing.T) {
+	// Scenario:
+	// given a running chain
+	// when a validator adds stake
+	// then their staked amount increases by that amount
+	// and the total power increases
+
+	sut.ResetChain(t)
+	sut.StartChain(t)
+	cli := NewTgradeCli(t, sut, verbose)
+
+	qRes := cli.CustomQuery("q", "poe", "self-delegation", cli.GetKeyAddr("node0"))
+	amountBefore := gjson.Get(qRes, "balance.amount").Int()
+	powerBefore := queryTendermintValidatorPower(t, sut, 0)
+
+	// when
+	txResult := cli.CustomCommand("tx", "poe", "self-delegate", "100000utgd", "--from=node0")
+	RequireTxSuccess(t, txResult)
+	// wait for msg execution
+	sut.AwaitNextBlock(t)
+	awaitValsetEpochCompleted(t)
+
+	// then
+	qRes = cli.CustomQuery("q", "poe", "self-delegation", cli.GetKeyAddr("node0"))
+	amountAfter := gjson.Get(qRes, "balance.amount").Int()
+	assert.Equal(t, int64(100000), amountAfter-amountBefore)
+
+	powerAfter := queryTendermintValidatorPower(t, sut, 0)
+	assert.Greater(t, powerAfter, powerBefore)
+}
+
+func TestPoEUndelegate(t *testing.T) {
+	// Scenario:
+	// given a running chain
+	// when a validator unbonds stake
+	// then their staked amount decreases by that amount
+	// and the total power decreases
+	// and unbonded amount still locked
+
+	sut.ResetChain(t)
+	sut.StartChain(t)
+	cli := NewTgradeCli(t, sut, verbose)
+
+	qRes := cli.CustomQuery("q", "poe", "self-delegation", cli.GetKeyAddr("node0"))
+	delegatedAmountBefore := gjson.Get(qRes, "balance.amount").Int()
+	powerBefore := queryTendermintValidatorPower(t, sut, 0)
+	balanceBefore := cli.QueryBalance(cli.GetKeyAddr("node0"), "utgd")
+
+	// when
+	txResult := cli.CustomCommand("tx", "poe", "unbond", "100000utgd", "--from=node0")
+	RequireTxSuccess(t, txResult)
+	txResult = cli.CustomCommand("tx", "poe", "unbond", "200000utgd", "--from=node0")
+	RequireTxSuccess(t, txResult)
+	// wait for msg executions
+	sut.AwaitNextBlock(t)
+	awaitValsetEpochCompleted(t)
+
+	// then
+	qRes = cli.CustomQuery("q", "poe", "self-delegation", cli.GetKeyAddr("node0"))
+	delegatedAmountAfter := gjson.Get(qRes, "balance.amount").Int()
+	assert.Equal(t, int64(-300000), delegatedAmountAfter-delegatedAmountBefore)
+
+	// the total power decreases
+	powerAfter := queryTendermintValidatorPower(t, sut, 0)
+	assert.Less(t, powerAfter, powerBefore)
+
+	// account balance not increased
+	balanceAfter := cli.QueryBalance(cli.GetKeyAddr("node0"), "utgd")
+	diff := balanceAfter - balanceBefore
+	const someBlockRewards int64 = 100
+	assert.Greater(t, someBlockRewards, diff, "%d is more than %d (excluding %d block rewards)", balanceAfter, balanceBefore, someBlockRewards)
+
+	// but pending unbonding delegations
+	qRes = cli.CustomQuery("q", "poe", "unbonding-delegations", cli.GetKeyAddr("node0"))
+	entries := gjson.Get(qRes, "entries").Array()
+	require.Len(t, entries, 2, qRes)
+
+	amounts := gjson.Get(qRes, "entries.#.initial_balance").Array()
+	require.Len(t, amounts, 2, qRes)
+	assert.Equal(t, int64(100000), amounts[0].Int())
+	assert.Equal(t, int64(200000), amounts[1].Int())
 }
 
 func TestPoEQueries(t *testing.T) {
@@ -161,6 +245,33 @@ func TestPoEQueries(t *testing.T) {
 				gotValidators := gjson.Get(qResult, "validators").Array()
 				assert.Greater(t, len(gotValidators), 0, gotValidators)
 				assert.NotEmpty(t, gjson.Get(gotValidators[0].String(), "description.moniker"), "moniker")
+			},
+		},
+		"validator": {
+			query: []string{"q", "poe", "validator", cli.GetKeyAddr("node0")},
+			assert: func(t *testing.T, qResult string) {
+				assert.NotEmpty(t, gjson.Get(qResult, "description.moniker"), "moniker")
+			},
+		},
+		"historical info": {
+			query: []string{"q", "poe", "historical-info", "1"},
+			assert: func(t *testing.T, qResult string) {
+				gotHeight := gjson.Get(qResult, "header.height").String()
+				assert.Equal(t, "1", gotHeight)
+			},
+		},
+		"self delegation": {
+			query: []string{"q", "poe", "self-delegation", cli.GetKeyAddr("node0")},
+			assert: func(t *testing.T, qResult string) {
+				delegatedAmount := gjson.Get(qResult, "balance.amount").Int()
+				assert.Equal(t, int64(100000000), delegatedAmount)
+			},
+		},
+		"unbonding delegations": {
+			query: []string{"q", "poe", "unbonding-delegations", cli.GetKeyAddr("node0")},
+			assert: func(t *testing.T, qResult string) {
+				delegatedAmount := gjson.Get(qResult, "entries").Array()
+				assert.Len(t, delegatedAmount, 0)
 			},
 		},
 	}

@@ -19,6 +19,7 @@ import (
 type PoEKeeper interface {
 	ContractSource
 	SetValidatorInitialEngagementPoints(ctx sdk.Context, address sdk.AccAddress, value sdk.Coin) error
+	GetBondDenom(ctx sdk.Context) string
 }
 
 type msgServer struct {
@@ -35,8 +36,8 @@ func NewMsgServerImpl(poeKeeper PoEKeeper, contractKeeper wasmtypes.ContractOpsK
 
 var _ types.MsgServer = msgServer{}
 
-func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
+func (m msgServer) CreateValidator(c context.Context, msg *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
 
 	pk, ok := msg.Pubkey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
@@ -73,10 +74,10 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 	// delegate
 	stakingContractAddr, err := m.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "staking")
+		return nil, sdkerrors.Wrap(err, "staking contract")
 	}
 
-	err = contract.BondTokens(ctx, stakingContractAddr, operatorAddress, sdk.NewCoins(msg.Value), m.contractKeeper)
+	err = contract.BondDelegation(ctx, stakingContractAddr, operatorAddress, sdk.NewCoins(msg.Value), m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "self delegation validator")
 	}
@@ -100,14 +101,14 @@ func (m msgServer) CreateValidator(goCtx context.Context, msg *types.MsgCreateVa
 	return &types.MsgCreateValidatorResponse{}, nil
 }
 
-func (m msgServer) UpdateValidator(goCtx context.Context, msg *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error) {
-	ctx := sdk.UnwrapSDKContext(goCtx)
+func (m msgServer) UpdateValidator(c context.Context, msg *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
 
 	if _, err := msg.Description.EnsureLength(); err != nil {
 		return nil, sdkerrors.Wrap(err, "description")
 	}
 
-	contractAddr, err := m.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	valsetContractAddr, err := m.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "valset")
 	}
@@ -117,7 +118,7 @@ func (m msgServer) UpdateValidator(goCtx context.Context, msg *types.MsgUpdateVa
 	}
 
 	// client sends a diff. we need to query the old description and merge it
-	current, err := contract.QueryValidator(ctx, m.twasmKeeper, contractAddr, delegatorAddress)
+	current, err := contract.QueryValidator(ctx, m.twasmKeeper, valsetContractAddr, delegatorAddress)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "query current description")
 	}
@@ -133,7 +134,7 @@ func (m msgServer) UpdateValidator(goCtx context.Context, msg *types.MsgUpdateVa
 		return nil, sdkerrors.Wrap(err, "merge description")
 	}
 	// do the update
-	err = contract.UpdateValidator(ctx, contractAddr, delegatorAddress, newDescr, m.contractKeeper)
+	err = contract.UpdateValidator(ctx, valsetContractAddr, delegatorAddress, newDescr, m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "update validator")
 	}
@@ -152,4 +153,68 @@ func (m msgServer) UpdateValidator(goCtx context.Context, msg *types.MsgUpdateVa
 	})
 
 	return &types.MsgUpdateValidatorResponse{}, nil
+}
+
+func (m msgServer) Delegate(c context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+
+	operatorAddress, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "delegator address")
+	}
+
+	stakingContractAddr, err := m.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "staking contract")
+	}
+	err = contract.BondDelegation(ctx, stakingContractAddr, operatorAddress, sdk.NewCoins(msg.Amount), m.contractKeeper)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "bond delegation")
+	}
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+			sdk.NewAttribute(sdk.AttributeKeySender, msg.DelegatorAddress),
+		),
+		sdk.NewEvent(
+			types.EventTypeDelegate,
+			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Amount.String()),
+		),
+	})
+	return &types.MsgDelegateResponse{}, nil
+}
+
+func (m msgServer) Undelegate(c context.Context, msg *types.MsgUndelegate) (*types.MsgUndelegateResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+	operatorAddress, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "delegator address")
+	}
+
+	stakingContractAddr, err := m.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "staking contract")
+	}
+	if msg.Amount.Denom != m.keeper.GetBondDenom(ctx) {
+		return nil, sdkerrors.Wrap(types.ErrInvalid, "denom")
+	}
+	err = contract.UnbondDelegation(ctx, stakingContractAddr, operatorAddress, msg.Amount.Amount, m.contractKeeper)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "unbond delegation")
+	}
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			sdk.EventTypeMessage,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+			sdk.NewAttribute(sdk.AttributeKeySender, msg.DelegatorAddress),
+		),
+		sdk.NewEvent(
+			types.EventTypeUndelegate,
+			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Amount.String()),
+		),
+	})
+	return &types.MsgUndelegateResponse{}, nil
+
 }

@@ -16,11 +16,9 @@ var _ stakingtypes.QueryServer = &legacyStakingGRPCQuerier{}
 var neverReleasedDelegation = time.Date(2999, time.December, 31, 12, 0, 0, 0, time.UTC)
 
 type stakingQuerierKeeper interface {
-	ContractSource
-	GetBondDenom(ctx sdk.Context) string
+	ViewKeeper
 	HistoricalEntries(ctx sdk.Context) uint32
 	UnbondingTime(ctx sdk.Context) time.Duration
-	GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool)
 }
 type legacyStakingGRPCQuerier struct {
 	keeper          stakingQuerierKeeper
@@ -50,33 +48,22 @@ func (q legacyStakingGRPCQuerier) ValidatorDelegations(c context.Context, req *s
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	opAddr, err := sdk.AccAddressFromBech32(req.ValidatorAddr)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "validator address")
-	}
-
-	ctx := sdk.UnwrapSDKContext(c)
-	stakingContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	amount, err := contract.QueryTG4Member(ctx, q.contractQuerier, stakingContractAddr, opAddr)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if amount == nil {
+	selfDelegation, err := q.queryServer.ValidatorDelegation(c, &types.QueryValidatorDelegationRequest{ValidatorAddr: req.ValidatorAddr})
+	switch {
+	case status.Code(err) == codes.NotFound:
 		return &stakingtypes.QueryValidatorDelegationsResponse{}, nil
+	case err != nil:
+		return nil, err
 	}
 	return &stakingtypes.QueryValidatorDelegationsResponse{
 		DelegationResponses: stakingtypes.DelegationResponses{
 			{
 				Delegation: stakingtypes.Delegation{
-					DelegatorAddress: opAddr.String(),
-					ValidatorAddress: opAddr.String(),
+					DelegatorAddress: req.ValidatorAddr,
+					ValidatorAddress: req.ValidatorAddr,
 					Shares:           sdk.OneDec(),
 				},
-				Balance: sdk.NewCoin(q.keeper.GetBondDenom(ctx), sdk.NewInt(int64(*amount))),
+				Balance: selfDelegation.Balance,
 			},
 		},
 	}, nil
@@ -89,43 +76,18 @@ func (q legacyStakingGRPCQuerier) ValidatorUnbondingDelegations(c context.Contex
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	opAddr, err := sdk.AccAddressFromBech32(req.ValidatorAddr)
+	unbondings, err := q.queryServer.ValidatorUnbondingDelegations(c, &types.QueryValidatorUnbondingDelegationsRequest{
+		ValidatorAddr: req.ValidatorAddr,
+		Pagination:    req.Pagination,
+	})
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "validator address")
-	}
-
-	ctx := sdk.UnwrapSDKContext(c)
-	stakingContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	res, err := contract.QueryStakingUnbonding(ctx, q.contractQuerier, stakingContractAddr, opAddr)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	// add all unbonded amounts
-	var unbodings []stakingtypes.UnbondingDelegationEntry
-	for _, v := range res.Claims {
-		var compl time.Time
-		switch {
-		case v.ReleaseAt.AtTime != nil:
-			compl = time.Unix(0, int64(*v.ReleaseAt.AtTime)).UTC()
-		case v.ReleaseAt.Never != nil:
-			compl = neverReleasedDelegation
-		case v.ReleaseAt.AtHeight != nil:
-			// unhandled
-		}
-		unbodings = append(unbodings, stakingtypes.UnbondingDelegationEntry{
-			CompletionTime: compl,
-			Balance:        v.Amount,
-		})
+		return nil, err
 	}
 	result := &stakingtypes.QueryValidatorUnbondingDelegationsResponse{UnbondingResponses: []stakingtypes.UnbondingDelegation{
 		{
 			DelegatorAddress: req.ValidatorAddr,
 			ValidatorAddress: req.ValidatorAddr,
-			Entries:          unbodings,
+			Entries:          unbondings.Entries,
 		},
 	}}
 	return result, nil

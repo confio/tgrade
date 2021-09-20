@@ -25,6 +25,12 @@ func newHandler(msgServer types.MsgServer) sdk.Handler {
 		case *types.MsgUpdateValidator:
 			res, err := msgServer.UpdateValidator(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgDelegate:
+			res, err := msgServer.Delegate(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgUndelegate:
+			res, err := msgServer.Undelegate(sdk.WrapSDKContext(ctx), msg)
+			return sdk.WrapServiceResult(ctx, res, err)
 		default:
 			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unrecognized %s message type: %T", types.ModuleName, msg)
 		}

@@ -294,3 +294,197 @@ func TestQueryUnbondingPeriod(t *testing.T) {
 		})
 	}
 }
+
+func TestValidatorDelegation(t *testing.T) {
+	var myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+
+	contractSource := PoEKeeperMock{
+		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
+			require.Equal(t, types.PoEContractTypeStaking, ctype)
+			return myStakingContract, nil
+		},
+		GetBondDenomFn: func(ctx sdk.Context) string { return "utgd" },
+	}
+
+	specs := map[string]struct {
+		src     *types.QueryValidatorDelegationRequest
+		querier types.SmartQuerier
+		exp     *types.QueryValidatorDelegationResponse
+		expErr  bool
+	}{
+		"delegation": {
+			src: &types.QueryValidatorDelegationRequest{ValidatorAddr: myOperatorAddr.String()},
+			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				var amount = 10
+				return json.Marshal(contract.TG4MemberResponse{
+					Weight: &amount,
+				})
+			}},
+			exp: &types.QueryValidatorDelegationResponse{
+				Balance: sdk.NewCoin("utgd", sdk.NewInt(10)),
+			},
+		},
+		"empty": {
+			src: &types.QueryValidatorDelegationRequest{ValidatorAddr: myOperatorAddr.String()},
+			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				return json.Marshal(contract.TG4MemberResponse{})
+			}},
+			expErr: true,
+		},
+		"error": {
+			src: &types.QueryValidatorDelegationRequest{ValidatorAddr: myOperatorAddr.String()},
+			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				return nil, errors.New("testing")
+			}},
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			ctx := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()))
+
+			// when
+			q := NewGrpcQuerier(contractSource, spec.querier)
+			gotRes, gotErr := q.ValidatorDelegation(ctx, spec.src)
+
+			// then
+			if spec.expErr {
+				assert.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+			assert.Equal(t, spec.exp, gotRes)
+
+		})
+	}
+}
+
+func TestValidatorUnbondingDelegations(t *testing.T) {
+	var myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+
+	contractSource := PoEKeeperMock{
+		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
+			require.Equal(t, types.PoEContractTypeStaking, ctype)
+			return myStakingContract, nil
+		},
+		GetBondDenomFn: func(ctx sdk.Context) string { return "utgd" },
+	}
+	anyTime := time.Now().UTC()
+	specs := map[string]struct {
+		src     *types.QueryValidatorUnbondingDelegationsRequest
+		querier types.SmartQuerier
+		exp     *types.QueryValidatorUnbondingDelegationsResponse
+		expErr  bool
+	}{
+		"one delegation": {
+			src: &types.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
+			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				var myExpTime = uint64(anyTime.UnixNano())
+				return json.Marshal(contract.TG4StakeClaimsResponse{
+					Claims: []contract.TG4StakeClaim{{
+						Amount:    sdk.NewInt(10),
+						ReleaseAt: contract.Expiration{AtTime: &myExpTime},
+					},
+					},
+				})
+			}},
+			exp: &types.QueryValidatorUnbondingDelegationsResponse{
+				Entries: []stakingtypes.UnbondingDelegationEntry{
+					{CompletionTime: anyTime, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10)},
+				},
+			},
+		},
+		"multiple delegations": {
+			src: &types.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
+			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				var myExp = uint64(anyTime.UnixNano())
+				var myOtherExp = uint64(anyTime.Add(time.Minute).UnixNano())
+				return json.Marshal(contract.TG4StakeClaimsResponse{
+					Claims: []contract.TG4StakeClaim{{
+						Amount:    sdk.NewInt(10),
+						ReleaseAt: contract.Expiration{AtTime: &myExp},
+					}, {
+						Amount:    sdk.NewInt(11),
+						ReleaseAt: contract.Expiration{AtTime: &myOtherExp},
+					},
+					},
+				})
+			}},
+			exp: &types.QueryValidatorUnbondingDelegationsResponse{
+				Entries: []stakingtypes.UnbondingDelegationEntry{
+					{CompletionTime: anyTime, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10)},
+					{CompletionTime: anyTime.Add(time.Minute), Balance: sdk.NewInt(11), InitialBalance: sdk.NewInt(11)},
+				},
+			},
+		},
+		"none": {
+			src: &types.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
+			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				return json.Marshal(contract.TG4StakeClaimsResponse{})
+			}},
+			exp: &types.QueryValidatorUnbondingDelegationsResponse{},
+		},
+		"never released delegation: default to never reachable future date": {
+			src: &types.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
+			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				return json.Marshal(contract.TG4StakeClaimsResponse{
+					Claims: []contract.TG4StakeClaim{{
+						Amount:    sdk.NewInt(10),
+						ReleaseAt: contract.Expiration{Never: &struct{}{}},
+					},
+					},
+				})
+			}},
+			exp: &types.QueryValidatorUnbondingDelegationsResponse{
+				Entries: []stakingtypes.UnbondingDelegationEntry{
+					{CompletionTime: neverReleasedDelegation, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10)},
+				},
+			},
+		},
+		"delegation released at height: default to empty time": {
+			src: &types.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
+			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				var height uint64 = 20
+				return json.Marshal(contract.TG4StakeClaimsResponse{
+					Claims: []contract.TG4StakeClaim{{
+						Amount:    sdk.NewInt(10),
+						ReleaseAt: contract.Expiration{AtHeight: &height},
+					},
+					},
+				})
+			}},
+			exp: &types.QueryValidatorUnbondingDelegationsResponse{
+				Entries: []stakingtypes.UnbondingDelegationEntry{
+					{CompletionTime: time.Time{}, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10)},
+				},
+			},
+		},
+		"error": {
+			src: &types.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
+			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+				return nil, errors.New("testing")
+			}},
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			ctx := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()))
+
+			// when
+			q := NewGrpcQuerier(contractSource, spec.querier)
+			gotRes, gotErr := q.ValidatorUnbondingDelegations(ctx, spec.src)
+
+			// then
+			if spec.expErr {
+				assert.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+			assert.Equal(t, spec.exp, gotRes)
+
+		})
+	}
+}

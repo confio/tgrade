@@ -10,9 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 	abcitypes "github.com/tendermint/tendermint/abci/types"
 	"testing"
+	"time"
 )
 
 func TestHandler(t *testing.T) {
+	now := time.Now().UTC()
 	specs := map[string]struct {
 		src       sdk.Msg
 		mock      MsgServerMock
@@ -67,6 +69,44 @@ func TestHandler(t *testing.T) {
 			},
 			expErr: sdkerrors.ErrInvalidAddress,
 		},
+		"MsgDelegate": {
+			src: &types.MsgDelegate{},
+			mock: MsgServerMock{
+				DelegateFn: func(ctx context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error) {
+					return &types.MsgDelegateResponse{}, nil
+				},
+			},
+			expResult: &sdk.Result{Data: []byte{}, Events: []abcitypes.Event{}},
+		},
+		"MsgDelegate error returned": {
+			src: &types.MsgDelegate{},
+			mock: MsgServerMock{
+				DelegateFn: func(ctx context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error) {
+					return nil, types.ErrInvalid
+				},
+			},
+			expErr: types.ErrInvalid,
+		},
+		"MsgUndelegate": {
+			src: &types.MsgUndelegate{},
+			mock: MsgServerMock{
+				UndelegateFn: func(ctx context.Context, msg *types.MsgUndelegate) (*types.MsgUndelegateResponse, error) {
+					return &types.MsgUndelegateResponse{
+						CompletionTime: now,
+					}, nil
+				},
+			},
+			expResult: &sdk.Result{Data: mustMarshalProto(&types.MsgUndelegateResponse{CompletionTime: now}), Events: []abcitypes.Event{}},
+		},
+		"MsgUndelegate error returned": {
+			src: &types.MsgUndelegate{},
+			mock: MsgServerMock{
+				UndelegateFn: func(ctx context.Context, msg *types.MsgUndelegate) (*types.MsgUndelegateResponse, error) {
+					return nil, types.ErrInvalid
+				},
+			},
+			expErr: types.ErrInvalid,
+		},
 		"unknown message": {
 			src:    &banktypes.MsgSend{},
 			expErr: sdkerrors.ErrUnknownRequest,
@@ -88,18 +128,28 @@ func TestHandler(t *testing.T) {
 	}
 }
 
+func mustMarshalProto(m *types.MsgUndelegateResponse) []byte {
+	r, err := m.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	return r
+}
+
 var _ types.MsgServer = MsgServerMock{}
 
 type MsgServerMock struct {
-	CreateValidatorFn func(ctx context.Context, validator *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error)
-	UpdateValidatorFn func(ctx context.Context, validator *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error)
+	CreateValidatorFn func(ctx context.Context, msg *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error)
+	UpdateValidatorFn func(ctx context.Context, msg *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error)
+	DelegateFn        func(ctx context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error)
+	UndelegateFn      func(ctx context.Context, msg *types.MsgUndelegate) (*types.MsgUndelegateResponse, error)
 }
 
-func (m MsgServerMock) CreateValidator(ctx context.Context, validator *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error) {
+func (m MsgServerMock) CreateValidator(ctx context.Context, msg *types.MsgCreateValidator) (*types.MsgCreateValidatorResponse, error) {
 	if m.CreateValidatorFn == nil {
 		panic("not expected to be called")
 	}
-	return m.CreateValidatorFn(ctx, validator)
+	return m.CreateValidatorFn(ctx, msg)
 }
 
 func (m MsgServerMock) UpdateValidator(ctx context.Context, msg *types.MsgUpdateValidator) (*types.MsgUpdateValidatorResponse, error) {
@@ -107,4 +157,18 @@ func (m MsgServerMock) UpdateValidator(ctx context.Context, msg *types.MsgUpdate
 		panic("not expected to be called")
 	}
 	return m.UpdateValidatorFn(ctx, msg)
+}
+
+func (m MsgServerMock) Delegate(ctx context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error) {
+	if m.DelegateFn == nil {
+		panic("not expected to be called")
+	}
+	return m.DelegateFn(ctx, msg)
+}
+
+func (m MsgServerMock) Undelegate(ctx context.Context, msg *types.MsgUndelegate) (*types.MsgUndelegateResponse, error) {
+	if m.UndelegateFn == nil {
+		panic("not expected to be called")
+	}
+	return m.UndelegateFn(ctx, msg)
 }

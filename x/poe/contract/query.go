@@ -2,6 +2,7 @@ package contract
 
 import (
 	"encoding/json"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	"github.com/confio/tgrade/x/poe/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -241,16 +242,22 @@ func QueryTG4Admin(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress
 // TG4StakeQuery contains some custom queries for the tg4-stake contract.
 // You can also make any generic TG4Query on it.
 type TG4StakeQuery struct {
-	UnbondingPeriod *struct{}            `json:"unbonding_period,omitempty"`
-	Claims          *TG4StakeClaimsQuery `json:"claims,omitempty"`
+	UnbondingPeriod *struct{}             `json:"unbonding_period,omitempty"`
+	Claims          *TG4StakeQueryAddress `json:"claims,omitempty"`
+	Staked          *TG4StakeQueryAddress `json:"staked,omitempty"`
 }
 
-type TG4StakeClaimsQuery struct {
+type TG4StakeQueryAddress struct {
 	Address string `json:"address"`
 }
 type TG4StakeClaimsResponse struct {
 	Claims []TG4StakeClaim `json:"claims"`
 }
+
+type TG4StakedAmountsResponse struct {
+	Stake wasmvmtypes.Coin `json:"stake"`
+}
+
 type TG4StakeClaim struct {
 	Amount    sdk.Int    `json:"amount"`
 	ReleaseAt Expiration `json:"release_at"`
@@ -288,8 +295,16 @@ func QueryStakingUnbondingPeriod(ctx sdk.Context, k types.SmartQuerier, stakeAdd
 
 // QueryStakingUnbonding query PoE staking contract for unbonded self delegations
 func QueryStakingUnbonding(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.AccAddress, opAddr sdk.AccAddress) (TG4StakeClaimsResponse, error) {
-	query := TG4StakeQuery{Claims: &TG4StakeClaimsQuery{Address: opAddr.String()}}
+	query := TG4StakeQuery{Claims: &TG4StakeQueryAddress{Address: opAddr.String()}}
 	var response TG4StakeClaimsResponse
+	err := doQuery(ctx, k, stakeAddr, query, &response)
+	return response, err
+}
+
+// QueryStakedAmount query PoE staking contract for bonded self delegation amount
+func QueryStakedAmount(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.AccAddress, opAddr sdk.AccAddress) (TG4StakedAmountsResponse, error) {
+	query := TG4StakeQuery{Staked: &TG4StakeQueryAddress{Address: opAddr.String()}}
+	var response TG4StakedAmountsResponse
 	err := doQuery(ctx, k, stakeAddr, query, &response)
 	return response, err
 }

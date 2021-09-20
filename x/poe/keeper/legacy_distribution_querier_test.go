@@ -19,7 +19,7 @@ func TestDelegatorValidators(t *testing.T) {
 	var myValsetContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 
-	contractSource := StakingQuerierKeeperMock{
+	contractSource := PoEKeeperMock{
 		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
 			require.Equal(t, types.PoEContractTypeValset, ctype)
 			return myValsetContract, nil

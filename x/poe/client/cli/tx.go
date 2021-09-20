@@ -3,10 +3,12 @@ package cli
 import (
 	"fmt"
 	"github.com/confio/tgrade/x/poe/types"
+	"github.com/cosmos/cosmos-sdk/version"
 	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"os"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -35,6 +37,8 @@ func NewTxCmd() *cobra.Command {
 	poeTxCmd.AddCommand(
 		NewCreateValidatorCmd(),
 		NewEditValidatorCmd(),
+		NewDelegateCmd(),
+		NewUnbondCmd(),
 	)
 
 	return poeTxCmd
@@ -311,4 +315,83 @@ func BuildCreateValidatorMsg(clientCtx client.Context, config TxCreateValidatorC
 	}
 
 	return txBldr, msg, nil
+}
+
+func NewDelegateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "self-delegate [amount]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Delegate liquid tokens to a validator",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Delegate an amount of liquid coins to a validator from your wallet.
+
+Example:
+$ %s tx poe self-delegate 1000stake --from mykey
+`,
+				version.AppName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			amount, err := sdk.ParseCoinNormalized(args[0])
+			if err != nil {
+				return err
+			}
+
+			delAddr := clientCtx.GetFromAddress()
+			msg := types.NewMsgDelegate(delAddr, amount)
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
+}
+
+func NewUnbondCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "unbond [amount]",
+		Short: "Unbond shares from a validator",
+		Args:  cobra.ExactArgs(1),
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Unbond an amount of bonded shares from a validator.
+
+Example:
+$ %s tx poe unbond 100stake --from mykey
+`,
+				version.AppName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			delAddr := clientCtx.GetFromAddress()
+
+			amount, err := sdk.ParseCoinNormalized(args[0])
+			if err != nil {
+				return err
+			}
+
+			msg := types.NewMsgUndelegate(delAddr, amount)
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+
+	return cmd
 }

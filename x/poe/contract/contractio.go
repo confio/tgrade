@@ -100,6 +100,20 @@ func UnbondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAdd
 	return sdkerrors.Wrap(err, "execute staking contract")
 }
 
+// BondDelegation sends given amount to the staking contract to increase the bonded amount for the delegator
+func BondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, amount sdk.Coins, k types.Executor) error {
+	bondStake := TG4StakeExecute{
+		Bond: &struct{}{},
+	}
+	payloadBz, err := json.Marshal(&bondStake)
+	if err != nil {
+		return sdkerrors.Wrap(err, "serialize payload msg")
+	}
+
+	_, err = k.Execute(ctx, contractAddr, delegatorAddress, payloadBz, amount)
+	return sdkerrors.Wrap(err, "execute contract")
+}
+
 // SetEngagementPoints set engagement points  If the member already exists, its weight will be reset to the weight sent here
 func SetEngagementPoints(ctx sdk.Context, contractAddr sdk.AccAddress, k types.Sudoer, opAddr sdk.AccAddress, points uint64) error {
 	msg := TG4GroupSudoMsg{
@@ -131,18 +145,4 @@ func convertToTendermintPubKey(key ValidatorPubkey) (crypto.PublicKey, error) {
 	default:
 		return crypto.PublicKey{}, types.ErrValidatorPubKeyTypeNotSupported
 	}
-}
-
-// BondTokens sends given amount to the staking contract to increase the bonded amount for the delegator
-func BondTokens(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, amount sdk.Coins, k types.Executor) error {
-	bondStake := TG4StakeExecute{
-		Bond: &struct{}{},
-	}
-	payloadBz, err := json.Marshal(&bondStake)
-	if err != nil {
-		return sdkerrors.Wrap(err, "serialize payload msg")
-	}
-
-	_, err = k.Execute(ctx, contractAddr, delegatorAddress, payloadBz, amount)
-	return sdkerrors.Wrap(err, "execute contract")
 }

@@ -19,19 +19,28 @@ type ContractSource interface {
 	GetPoEContractAddress(sdk.Context, types.PoEContractType) (sdk.AccAddress, error)
 }
 
+type ViewKeeper interface {
+	ContractSource
+	GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool)
+	GetBondDenom(ctx sdk.Context) string
+}
 type grpcQuerier struct {
-	keeper          ContractSource
+	keeper          ViewKeeper
 	contractQuerier types.SmartQuerier
 }
 
 // NewGrpcQuerier constructor
-func NewGrpcQuerier(keeper ContractSource, contractQuerier types.SmartQuerier) *grpcQuerier {
+func NewGrpcQuerier(keeper ViewKeeper, contractQuerier types.SmartQuerier) *grpcQuerier {
 	return &grpcQuerier{keeper: keeper, contractQuerier: contractQuerier}
 }
 
 // ContractAddress query PoE contract address for given type
-func (g grpcQuerier) ContractAddress(c context.Context, request *types.QueryContractAddressRequest) (*types.QueryContractAddressResponse, error) {
-	addr, err := g.keeper.GetPoEContractAddress(sdk.UnwrapSDKContext(c), request.ContractType)
+func (q grpcQuerier) ContractAddress(c context.Context, req *types.QueryContractAddressRequest) (*types.QueryContractAddressResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	addr, err := q.keeper.GetPoEContractAddress(sdk.UnwrapSDKContext(c), req.ContractType)
 	switch {
 	case wasmtypes.ErrNotFound.Is(err):
 		return nil, status.Error(codes.NotFound, err.Error())
@@ -42,25 +51,25 @@ func (g grpcQuerier) ContractAddress(c context.Context, request *types.QueryCont
 }
 
 // Validators query all validators that match the given status.
-func (g grpcQuerier) Validators(c context.Context, request *stakingtypes.QueryValidatorsRequest) (*stakingtypes.QueryValidatorsResponse, error) {
-	if request == nil {
+func (q grpcQuerier) Validators(c context.Context, req *stakingtypes.QueryValidatorsRequest) (*stakingtypes.QueryValidatorsResponse, error) {
+	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if request.Pagination != nil {
+	if req.Pagination != nil {
 		return nil, status.Error(codes.Unimplemented, "pagination not supported, yet")
 	}
-	if request.Status != "" {
+	if req.Status != "" {
 		return nil, status.Error(codes.Unimplemented, "status not supported, yet")
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	addr, err := g.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	addr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	valsRsp, err := contract.ListValidators(ctx, g.contractQuerier, addr)
+	valsRsp, err := contract.ListValidators(ctx, q.contractQuerier, addr)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -79,7 +88,7 @@ func (g grpcQuerier) Validators(c context.Context, request *stakingtypes.QueryVa
 
 // Validator queries validator info for a given validator address.
 // returns NotFound error code when none exists for the given address
-func (g grpcQuerier) Validator(c context.Context, req *stakingtypes.QueryValidatorRequest) (*stakingtypes.QueryValidatorResponse, error) {
+func (q grpcQuerier) Validator(c context.Context, req *stakingtypes.QueryValidatorRequest) (*stakingtypes.QueryValidatorResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -94,12 +103,12 @@ func (g grpcQuerier) Validator(c context.Context, req *stakingtypes.QueryValidat
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	contractAddr, err := g.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	contractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	valRsp, err := contract.QueryValidator(ctx, g.contractQuerier, contractAddr, opAddr)
+	valRsp, err := contract.QueryValidator(ctx, q.contractQuerier, contractAddr, opAddr)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -114,17 +123,17 @@ func (g grpcQuerier) Validator(c context.Context, req *stakingtypes.QueryValidat
 }
 
 // UnbondingPeriod query the global unbonding period
-func (g grpcQuerier) UnbondingPeriod(c context.Context, request *types.QueryUnbondingPeriodRequest) (*types.QueryUnbondingPeriodResponse, error) {
-	if request == nil {
+func (q grpcQuerier) UnbondingPeriod(c context.Context, req *types.QueryUnbondingPeriodRequest) (*types.QueryUnbondingPeriodResponse, error) {
+	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 	ctx := sdk.UnwrapSDKContext(c)
-	contractAddr, err := g.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	contractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	rsp, err := contract.QueryStakingUnbondingPeriod(ctx, g.contractQuerier, contractAddr)
+	rsp, err := contract.QueryStakingUnbondingPeriod(ctx, q.contractQuerier, contractAddr)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -132,4 +141,83 @@ func (g grpcQuerier) UnbondingPeriod(c context.Context, request *types.QueryUnbo
 		Height: uint64(rsp.Height),
 		Time:   time.Duration(rsp.Time) * time.Second,
 	}, nil
+}
+
+func (q grpcQuerier) ValidatorDelegation(c context.Context, req *types.QueryValidatorDelegationRequest) (*types.QueryValidatorDelegationResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	opAddr, err := sdk.AccAddressFromBech32(req.ValidatorAddr)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "validator address")
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+	stakingContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	amount, err := contract.QueryTG4Member(ctx, q.contractQuerier, stakingContractAddr, opAddr)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if amount == nil {
+		return nil, status.Error(codes.NotFound, "not a validator operator address")
+	}
+	return &types.QueryValidatorDelegationResponse{
+		Balance: sdk.NewCoin(q.keeper.GetBondDenom(ctx), sdk.NewInt(int64(*amount))),
+	}, nil
+}
+
+func (q grpcQuerier) ValidatorUnbondingDelegations(c context.Context, req *types.QueryValidatorUnbondingDelegationsRequest) (*types.QueryValidatorUnbondingDelegationsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	opAddr, err := sdk.AccAddressFromBech32(req.ValidatorAddr)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "validator address")
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+	stakingContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	res, err := contract.QueryStakingUnbonding(ctx, q.contractQuerier, stakingContractAddr, opAddr)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	// add all unbonded amounts
+	var unbodings []stakingtypes.UnbondingDelegationEntry
+	for _, v := range res.Claims {
+		var compl time.Time
+		switch { // todo: revisit for contracts v0.4
+		case v.ReleaseAt.AtTime != nil:
+			compl = time.Unix(0, int64(*v.ReleaseAt.AtTime)).UTC()
+		case v.ReleaseAt.Never != nil:
+			compl = neverReleasedDelegation
+		case v.ReleaseAt.AtHeight != nil:
+			// unhandled
+		}
+		unbodings = append(unbodings, stakingtypes.UnbondingDelegationEntry{
+			InitialBalance: v.Amount,
+			CompletionTime: compl,
+			Balance:        v.Amount,
+		})
+	}
+	return &types.QueryValidatorUnbondingDelegationsResponse{Entries: unbodings}, nil
+}
+
+func (q grpcQuerier) HistoricalInfo(c context.Context, req *stakingtypes.QueryHistoricalInfoRequest) (*stakingtypes.QueryHistoricalInfoResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	hi, found := q.keeper.GetHistoricalInfo(sdk.UnwrapSDKContext(c), req.Height)
+	if !found {
+		return nil, status.Errorf(codes.NotFound, "historical info for height %d not found", req.Height)
+	}
+	return &stakingtypes.QueryHistoricalInfoResponse{Hist: &hi}, nil
 }

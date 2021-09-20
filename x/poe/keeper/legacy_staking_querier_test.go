@@ -15,11 +15,11 @@ import (
 	"time"
 )
 
-func TestValidatorDelegations(t *testing.T) {
+func TestStakingValidatorDelegations(t *testing.T) {
 	var myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 
-	contractSource := StakingQuerierKeeperMock{
+	contractSource := PoEKeeperMock{
 		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
 			require.Equal(t, types.PoEContractTypeStaking, ctype)
 			return myStakingContract, nil
@@ -87,11 +87,11 @@ func TestValidatorDelegations(t *testing.T) {
 	}
 }
 
-func TestValidatorUnbondingDelegations(t *testing.T) {
+func TestStakingValidatorUnbondingDelegations(t *testing.T) {
 	var myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 
-	contractSource := StakingQuerierKeeperMock{
+	contractSource := PoEKeeperMock{
 		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
 			require.Equal(t, types.PoEContractTypeStaking, ctype)
 			return myStakingContract, nil
@@ -123,7 +123,7 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 						DelegatorAddress: myOperatorAddr.String(),
 						ValidatorAddress: myOperatorAddr.String(),
 						Entries: []stakingtypes.UnbondingDelegationEntry{
-							{CompletionTime: anyTime, Balance: sdk.NewInt(10)},
+							{CompletionTime: anyTime, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10)},
 						},
 					},
 				}},
@@ -150,8 +150,8 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 						DelegatorAddress: myOperatorAddr.String(),
 						ValidatorAddress: myOperatorAddr.String(),
 						Entries: []stakingtypes.UnbondingDelegationEntry{
-							{CompletionTime: anyTime, Balance: sdk.NewInt(10)},
-							{CompletionTime: anyTime.Add(time.Minute), Balance: sdk.NewInt(11)},
+							{CompletionTime: anyTime, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10)},
+							{CompletionTime: anyTime.Add(time.Minute), Balance: sdk.NewInt(11), InitialBalance: sdk.NewInt(11)},
 						},
 					},
 				}},
@@ -186,7 +186,7 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 						DelegatorAddress: myOperatorAddr.String(),
 						ValidatorAddress: myOperatorAddr.String(),
 						Entries: []stakingtypes.UnbondingDelegationEntry{
-							{CompletionTime: neverReleasedDelegation, Balance: sdk.NewInt(10)},
+							{CompletionTime: neverReleasedDelegation, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10)},
 						},
 					},
 				}},
@@ -209,7 +209,7 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 						DelegatorAddress: myOperatorAddr.String(),
 						ValidatorAddress: myOperatorAddr.String(),
 						Entries: []stakingtypes.UnbondingDelegationEntry{
-							{CompletionTime: time.Time{}, Balance: sdk.NewInt(10)},
+							{CompletionTime: time.Time{}, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10)},
 						},
 					},
 				}},
@@ -245,7 +245,7 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 func TestStakingParams(t *testing.T) {
 	var myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 
-	keeperMock := StakingQuerierKeeperMock{
+	keeperMock := PoEKeeperMock{
 		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
 			require.Equal(t, types.PoEContractTypeValset, ctype)
 			return myStakingContract, nil

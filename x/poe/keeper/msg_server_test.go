@@ -317,3 +317,58 @@ func TestUpdateValidator(t *testing.T) {
 		})
 	}
 }
+
+func TestDelegate(t *testing.T) {
+	var (
+		myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+		myOperatorAddr    sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	)
+	poeKeeperMock := PoEKeeperMock{
+		GetPoEContractAddressFn: SwitchPoEContractAddressFn(t, nil, myStakingContract),
+	}
+
+	specs := map[string]struct {
+		src               *types.MsgDelegate
+		expSelfDelegation *sdk.Coin
+		expErr            *sdkerrors.Error
+	}{
+		"all good": {
+			src:               types.NewMsgDelegate(myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt())),
+			expSelfDelegation: &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.OneInt()},
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			fn, execs := wasmtesting.CaptureExecuteFn()
+			km := &wasmtesting.ContractOpsKeeperMock{
+				ExecuteFn: fn,
+			}
+			em := sdk.NewEventManager()
+			ctx := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()).WithEventManager(em))
+			// when
+			s := NewMsgServerImpl(poeKeeperMock, km, nil)
+			gotRes, gotErr := s.Delegate(ctx, spec.src)
+
+			// then
+			if spec.expErr != nil {
+				require.True(t, spec.expErr.Is(gotErr), "exp %v but got %#+v", spec.expErr, gotErr)
+				assert.Nil(t, gotRes)
+				return
+			}
+			require.NoError(t, gotErr)
+			// and contract called
+			require.Len(t, *execs, 1)
+			assert.Equal(t, myStakingContract, (*execs)[0].ContractAddress)
+			assert.Equal(t, myOperatorAddr, (*execs)[0].Caller)
+			assert.Equal(t, sdk.NewCoins(sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt())), (*execs)[0].Coins)
+
+			// and events emitted
+			require.NoError(t, gotErr)
+			require.Len(t, em.Events(), 2)
+			assert.Equal(t, sdk.EventTypeMessage, em.Events()[0].Type)
+			assert.Equal(t, types.EventTypeDelegate, em.Events()[1].Type)
+			assert.Equal(t, "amount", string(em.Events()[1].Attributes[0].Key))
+			assert.Equal(t, "1utgd", string(em.Events()[1].Attributes[0].Value))
+		})
+	}
+}
