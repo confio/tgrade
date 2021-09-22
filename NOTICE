@@ -1,5 +1,5 @@
 This repository contains code copied from https://github.com/cosmos/cosmos-sdk/tree/v0.42.9
 
-In the x/poe module code from x/gentx and x/staking was repurposed and modified from there on.
+In the x/poe module code from x/gentx, x/staking, x/slashing and x/auth was repurposed and modified from there on.
 
 Credits and a big thank you to the original authors!

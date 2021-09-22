@@ -2,6 +2,8 @@ package globalfee
 
 import (
 	"github.com/confio/tgrade/x/globalfee/types"
+	"github.com/confio/tgrade/x/poe"
+	poekeeper "github.com/confio/tgrade/x/poe/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -13,10 +15,11 @@ import (
 
 func NewAnteHandler(
 	ak authkeeper.AccountKeeper,
-	bankKeeper bankkeeper.Keeper,
+	bankKeeper bankkeeper.SendKeeper,
 	sigGasConsumer ante.SignatureVerificationGasConsumer,
 	signModeHandler signing.SignModeHandler,
 	paramStore paramtypes.Subspace,
+	contractSource poekeeper.ContractSource,
 ) sdk.AnteHandler {
 	// list of ante handlers copied from https://github.com/cosmos/cosmos-sdk/blob/v0.42.5/x/auth/ante/ante.go#L17-L31
 	// only NewGlobalMinimumChainFeeDecorator was added
@@ -32,7 +35,7 @@ func NewAnteHandler(
 		ante.NewRejectFeeGranterDecorator(),
 		ante.NewSetPubKeyDecorator(ak), // SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewValidateSigCountDecorator(ak),
-		ante.NewDeductFeeDecorator(ak, bankKeeper),
+		poe.NewDeductFeeDecorator(bankKeeper, contractSource),
 		ante.NewSigGasConsumeDecorator(ak, sigGasConsumer),
 		ante.NewSigVerificationDecorator(ak, signModeHandler),
 		ante.NewIncrementSequenceDecorator(ak),

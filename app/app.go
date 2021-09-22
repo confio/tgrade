@@ -38,7 +38,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	crisiskeeper "github.com/cosmos/cosmos-sdk/x/crisis/keeper"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/evidence"
 	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
 	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
@@ -126,15 +125,12 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:  nil,
 		ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
 	}
 
 	// module accounts that are allowed to receive tokens
-	allowedReceivingModAcc = map[string]bool{
-		distrtypes.ModuleName: true,
-	}
+	allowedReceivingModAcc = map[string]bool{}
 )
 
 // Verify app interface at compile time
@@ -399,6 +395,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	anteHandler := globalfee.NewAnteHandler(
 		app.accountKeeper, app.bankKeeper, authante.DefaultSigVerificationGasConsumer,
 		encodingConfig.TxConfig.SignModeHandler(), app.getSubspace(globalfee.ModuleName),
+		app.poeKeeper,
 	)
 	app.SetAnteHandler(anteHandler)
 	app.SetEndBlocker(app.EndBlocker)
@@ -433,7 +430,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 // Name returns the name of the App
 func (app *TgradeApp) Name() string { return app.BaseApp.Name() }
 
-// application updates every begin block
+// BeginBlocker application updates every begin block
 func (app *TgradeApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	return app.mm.BeginBlock(ctx, req)
 }

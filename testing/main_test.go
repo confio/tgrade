@@ -135,3 +135,9 @@ func encodeBech32Addr(src []byte) string {
 func ContractBech32Address(codeID, instanceID uint64) string {
 	return encodeBech32Addr(wasmkeeper.BuildContractAddress(codeID, instanceID))
 }
+
+func AwaitValsetEpochCompleted(t *testing.T) {
+	// wait for update manifests in valset (epoch has completed)
+	time.Sleep(time.Second)
+	sut.AwaitNextBlock(t)
+}

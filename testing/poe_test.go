@@ -4,7 +4,6 @@
 package testing
 
 import (
-	"encoding/json"
 	"fmt"
 	testingcontracts "github.com/confio/tgrade/x/poe/contract"
 	poetypes "github.com/confio/tgrade/x/poe/types"
@@ -12,11 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 	"math"
 	"path/filepath"
 	"testing"
-	"time"
 )
 
 func TestProofOfEngagementSetup(t *testing.T) {
@@ -74,7 +71,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	t.Log("got execution result", eResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
-	awaitValsetEpochCompleted(t)
+	AwaitValsetEpochCompleted(t)
 
 	// then validator set is updated
 	// with unengaged validator removed
@@ -127,7 +124,7 @@ func TestPoEAddPostGenesisValidator(t *testing.T) {
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
-	awaitValsetEpochCompleted(t)
+	AwaitValsetEpochCompleted(t)
 
 	// then
 	valResult := cli.GetTendermintValidatorSet()
@@ -161,7 +158,7 @@ func TestPoESelfDelegate(t *testing.T) {
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
-	awaitValsetEpochCompleted(t)
+	AwaitValsetEpochCompleted(t)
 
 	// then
 	qRes = cli.CustomQuery("q", "poe", "self-delegation", cli.GetKeyAddr("node0"))
@@ -196,7 +193,7 @@ func TestPoEUndelegate(t *testing.T) {
 	RequireTxSuccess(t, txResult)
 	// wait for msg executions
 	sut.AwaitNextBlock(t)
-	awaitValsetEpochCompleted(t)
+	AwaitValsetEpochCompleted(t)
 
 	// then
 	qRes = cli.CustomQuery("q", "poe", "self-delegation", cli.GetKeyAddr("node0"))
@@ -293,22 +290,4 @@ func assertValidatorsUpdated(t *testing.T, sortedMember []testingcontracts.TG4Me
 		expWeight := int64(math.Sqrt(float64(sortedMember[i].Weight * stakedAmounts[i]))) // function implemented in mixer
 		assert.Equal(t, expWeight, v[i].VotingPower, "address: %s", encodeBech32Addr(v[i].Address.Bytes()))
 	}
-}
-
-// SetPoEParams set in genesis
-func SetPoEParamsMutator(t *testing.T, params poetypes.Params) GenesisMutator {
-	return func(genesis []byte) []byte {
-		t.Helper()
-		val, err := json.Marshal(params)
-		require.NoError(t, err)
-		state, err := sjson.SetRawBytes(genesis, "app_state.poe.params", val)
-		require.NoError(t, err)
-		return state
-	}
-}
-
-func awaitValsetEpochCompleted(t *testing.T) {
-	// wait for update manifests in valset (epoch has completed)
-	time.Sleep(time.Second)
-	sut.AwaitNextBlock(t)
 }

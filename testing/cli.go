@@ -160,6 +160,14 @@ func (c TgradeCli) GetTendermintValidatorSet() rpc.ResultValidatorsOutput {
 	return res
 }
 
+// GetPoEContractAddress query the PoE contract address
+func (c TgradeCli) GetPoEContractAddress(v string) string {
+	qRes := c.CustomQuery("q", "poe", "contract-address", v)
+	addr := gjson.Get(qRes, "address").String()
+	require.NotEmpty(c.t, addr, "got %q", addr)
+	return addr
+}
+
 // RequireTxSuccess require the received response to contain the success code
 func RequireTxSuccess(t *testing.T, got string) {
 	t.Helper()
