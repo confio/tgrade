@@ -670,9 +670,10 @@ func restoreOriginalGenesis(t *testing.T, s SystemUnderTest) {
 func restoreOriginalKeyring(t *testing.T, s SystemUnderTest) {
 	dest := filepath.Join(workDir, s.outputDir, "keyring-test")
 	require.NoError(t, os.RemoveAll(dest))
-
-	src := filepath.Join(workDir, s.nodePath(0), "keyring-test")
-	require.NoError(t, copyFilesInDir(src, dest))
+	for i := 0; i < s.initialNodesCount; i++ {
+		src := filepath.Join(workDir, s.nodePath(i), "keyring-test")
+		require.NoError(t, copyFilesInDir(src, dest))
+	}
 }
 
 // copyFile copy source file to dest file path

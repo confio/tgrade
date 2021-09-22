@@ -4,11 +4,11 @@
 package testing
 
 import (
-	"encoding/json"
+	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 	"testing"
 )
 
@@ -39,16 +39,32 @@ func TestGlobalFee(t *testing.T) {
 	RequireTxSuccess(t, txResult)
 }
 
-// SetGlobalMinFee set the passed coins to the global minimum fee
-func SetGlobalMinFee(t *testing.T, fees ...sdk.DecCoin) GenesisMutator {
-	return func(genesis []byte) []byte {
-		t.Helper()
-		coins := sdk.NewDecCoins(fees...)
-		require.NoError(t, coins.Validate())
-		val, err := json.Marshal(coins)
-		require.NoError(t, err)
-		state, err := sjson.SetRawBytes(genesis, "app_state.globalfee.params.minimum_gas_prices", val)
-		require.NoError(t, err)
-		return state
+func TestFeeDistribution(t *testing.T) {
+	// scenario:
+	// when a transaction with high fees is submitted
+	// then the fees are distributed to the validators
+	sut.ResetChain(t)
+	sut.ModifyGenesisJson(t, SetAllEngagementPoints(t, 1))
+	sut.StartChain(t)
+
+	cli := NewTgradeCli(t, sut, verbose)
+	cli.FundAddress(cli.AddKey("myFatFingerKey"), "20000000utgd")
+	oldBalances := make([]int64, sut.nodesCount)
+	for i := 0; i < sut.nodesCount; i++ {
+		oldBalances[i] = cli.QueryBalance(cli.GetKeyAddr(fmt.Sprintf("node%d", i)), "utgd")
+	}
+
+	// when
+	const anyContract = "testing/contract/hackatom.wasm.gzip"
+	txResult := cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=myFatFingerKey", "--gas=1500000", "--fees=20000000utgd")
+	RequireTxSuccess(t, txResult)
+	AwaitValsetEpochCompleted(t) // so that fees are distributed
+
+	// then
+	for i := 0; i < sut.nodesCount; i++ {
+		newBalance := cli.QueryBalance(cli.GetKeyAddr(fmt.Sprintf("node%d", i)), "utgd")
+		diff := newBalance - oldBalances[i]
+		t.Logf("Block rewards: %d\n", diff)
+		assert.LessOrEqualf(t, int64(20000000/sut.nodesCount), diff, "got diff: %d (before %d after %d)", diff, oldBalances[i], newBalance)
 	}
 }
