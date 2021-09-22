@@ -233,7 +233,7 @@ func TestPoEQueries(t *testing.T) {
 			query: []string{"q", "poe", "unbonding-period"},
 			assert: func(t *testing.T, qResult string) {
 				gotTime := gjson.Get(qResult, "time").String()
-				assert.Equal(t, "1814400s", gotTime)
+				assert.Equal(t, "1814400s", gotTime, qResult)
 			},
 		},
 		"validators": {

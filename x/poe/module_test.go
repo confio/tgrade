@@ -66,7 +66,8 @@ func TestInitGenesis(t *testing.T) {
 		Membership:    mixerAddr.String(),
 		MinWeight:     1,
 		MaxValidators: 100,
-		Scaling:       0,
+		Scaling:       1,
+		FeePercentage: 500_000_000_000_000_000,
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)
 

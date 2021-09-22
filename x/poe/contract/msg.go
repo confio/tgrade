@@ -68,36 +68,25 @@ func (m TG4MixerInitMsg) Json(t *testing.T) string {
 }
 
 type TG4StakeInitMsg struct {
-	Admin           string         `json:"admin,omitempty"`
-	Denom           Denom          `json:"denom"`
-	MinBond         string         `json:"min_bond"`
-	TokensPerWeight string         `json:"tokens_per_weight"`
-	UnbondingPeriod UnbodingPeriod `json:"unbonding_period"`
-	Preauths        uint64         `json:"preauths,omitempty"`
+	Admin           string `json:"admin,omitempty"`
+	Denom           string `json:"denom"`
+	MinBond         uint64 `json:"min_bond,string"`
+	TokensPerWeight uint64 `json:"tokens_per_weight,string"`
+	// UnbondingPeriod unbonding period in seconds
+	UnbondingPeriod uint64 `json:"unbonding_period"`
+	// AutoReturnLimit limits how much claims would be automatically returned at end of block, 20 by default. Setting this to 0 disables auto returning claims.
+	AutoReturnLimit *uint64 `json:"auto_return_limit,string,omitempty"`
+	Preauths        uint64  `json:"preauths,omitempty"`
 }
 
 func (m TG4StakeInitMsg) Json(t *testing.T) string {
 	return asJson(t, m)
 }
 
-type Denom struct {
-	Native string `json:"native,omitempty"`
-	CW20   string `json:"cw20,omitempty"`
-}
-
-type UnbodingPeriod struct {
-	Height    uint64 `json:"height,omitempty"`
-	TimeInSec uint64 `json:"time,omitempty"`
-}
-
 // TG4GroupSudoMsg TG4 group sudo message
 // See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-group/schema/sudo_msg.json
 type TG4GroupSudoMsg struct {
-	UpdateMember *TG4GroupSudoUpdateMember `json:"update_member,omitempty"`
-}
-
-type TG4GroupSudoUpdateMember struct {
-	Member TG4Member `json:"member"`
+	UpdateMember *TG4Member `json:"update_member,omitempty"`
 }
 
 // ValsetInitMsg Valset contract init message
@@ -110,6 +99,8 @@ type ValsetInitMsg struct {
 	EpochReward   sdk.Coin    `json:"epoch_reward"`
 	InitialKeys   []Validator `json:"initial_keys"`
 	Scaling       int         `json:"scaling,omitempty"`
+	// Percentage of total accumulated fees which is substracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
+	FeePercentage uint64 `json:"fee_percentage,string,omitempty"`
 }
 
 func (m ValsetInitMsg) Json(t *testing.T) string {

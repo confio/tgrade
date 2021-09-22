@@ -12,7 +12,8 @@ tag="$1"
 GITHUB_API_TOKEN=${GITHUB_API_TOKEN:-"$(security find-generic-password -a "$USER" -s "github_api_key" -w)"}
 
 rm -f version.txt
-for contract in tg4_group tgrade_gov_reflect tgrade_valset tg4_mixer tg4_stake; do
+for contract in tg4_engagement tgrade_gov_reflect tgrade_valset tg4_mixer tg4_stake; do
+  echo "Download $contract"
   list_asset_url="https://api.github.com/repos/confio/tgrade-contracts/releases/tags/${tag}"
   # get url for artifact with name==$artifact
   asset_url=$(curl -H "Accept: application/vnd.github.v3+json" -H "Authorization: token $GITHUB_API_TOKEN" "${list_asset_url}" | jq -r ".assets[] | select(.name==\"${contract}.wasm\") | .url")

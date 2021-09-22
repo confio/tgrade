@@ -53,7 +53,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			require.NoError(t, gotErr)
 			// and codes uploaded
 			require.Len(t, *capCreate, 4, "got %d", len(*capCreate))
-			for i, f := range []string{"tg4_group.wasm", "tg4_stake.wasm", "tg4_mixer.wasm", "tgrade_valset.wasm"} {
+			for i, f := range []string{"tg4_engagement.wasm", "tg4_stake.wasm", "tg4_mixer.wasm", "tgrade_valset.wasm"} {
 				c, err := ioutil.ReadFile(filepath.Join("contract", f))
 				require.NoError(t, err)
 				assert.Equal(t, c, (*capCreate)[i].WasmCode)

@@ -347,7 +347,6 @@ RPC method
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `time` | [google.protobuf.Duration](#google.protobuf.Duration) |  | Time is the time that must pass |
-| `height` | [uint64](#uint64) |  | Height is the number of blocks that must pass |
 
 
 

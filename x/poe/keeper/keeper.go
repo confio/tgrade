@@ -93,7 +93,7 @@ func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
 	if err != nil {
 		panic(fmt.Sprintf("query unponding period from %s: %s", contractAddr.String(), err))
 	}
-	return time.Duration(rsp.Time) * time.Second
+	return time.Duration(rsp) * time.Second
 }
 
 func (k Keeper) GetBondDenom(ctx sdk.Context) string {

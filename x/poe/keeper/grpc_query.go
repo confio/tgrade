@@ -138,8 +138,7 @@ func (q grpcQuerier) UnbondingPeriod(c context.Context, req *types.QueryUnbondin
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return &types.QueryUnbondingPeriodResponse{
-		Height: uint64(rsp.Height),
-		Time:   time.Duration(rsp.Time) * time.Second,
+		Time: time.Duration(rsp) * time.Second,
 	}, nil
 }
 
@@ -192,19 +191,11 @@ func (q grpcQuerier) ValidatorUnbondingDelegations(c context.Context, req *types
 	// add all unbonded amounts
 	var unbodings []stakingtypes.UnbondingDelegationEntry
 	for _, v := range res.Claims {
-		var compl time.Time
-		switch { // todo: revisit for contracts v0.4
-		case v.ReleaseAt.AtTime != nil:
-			compl = time.Unix(0, int64(*v.ReleaseAt.AtTime)).UTC()
-		case v.ReleaseAt.Never != nil:
-			compl = neverReleasedDelegation
-		case v.ReleaseAt.AtHeight != nil:
-			// unhandled
-		}
 		unbodings = append(unbodings, stakingtypes.UnbondingDelegationEntry{
 			InitialBalance: v.Amount,
-			CompletionTime: compl,
+			CompletionTime: time.Unix(0, int64(v.ReleaseAt)).UTC(),
 			Balance:        v.Amount,
+			CreationHeight: int64(v.CreationHeight),
 		})
 	}
 	return &types.QueryValidatorUnbondingDelegationsResponse{Entries: unbodings}, nil

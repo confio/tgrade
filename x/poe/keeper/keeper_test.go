@@ -99,7 +99,7 @@ func TestUnbondingTime(t *testing.T) {
 	k.twasmKeeper = TwasmKeeperMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 		require.Equal(t, myAddr, contractAddr)
 		return json.Marshal(contract.UnbondingPeriodResponse{
-			UnbondingPeriod: contract.Duration{Time: 60, Height: 2},
+			UnbondingPeriod: 60,
 		})
 	}}
 	assert.Equal(t, time.Minute, k.UnbondingTime(ctx))

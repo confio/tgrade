@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	//go:embed contract/tg4_group.wasm
-	tg4Group []byte
+	//go:embed contract/tg4_engagement.wasm
+	tg4Engagement []byte
 	//go:embed contract/tg4_stake.wasm
 	tg4Stake []byte
 	//go:embed contract/tg4_mixer.wasm
@@ -29,7 +29,7 @@ var (
 
 // ClearEmbeddedContracts release memory
 func ClearEmbeddedContracts() {
-	tg4Group = nil
+	tg4Engagement = nil
 	tg4Stake = nil
 	tg4Mixer = nil
 	tgValset = nil
@@ -67,28 +67,26 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "system admin")
 	}
 	creator := systemAdmin
-	codeID, err := k.Create(ctx, creator, tg4Group, &wasmtypes.AllowEverybody)
+	codeID, err := k.Create(ctx, creator, tg4Engagement, &wasmtypes.AllowEverybody)
 	if err != nil {
-		return sdkerrors.Wrap(err, "store tg4 group contract")
+		return sdkerrors.Wrap(err, "store tg4 engagement contract")
 	}
 	engagementContractAddr, _, err := k.Instantiate(ctx, codeID, creator, systemAdmin, mustMarshalJson(tg4EngagementInitMsg), "engagement", nil)
 	if err != nil {
-		return sdkerrors.Wrap(err, "instantiate tg4 group")
+		return sdkerrors.Wrap(err, "instantiate tg4 engagement")
 	}
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeEngagement, engagementContractAddr)
 	if err := k.PinCode(ctx, codeID); err != nil {
-		return sdkerrors.Wrap(err, "pin tg4 group contract")
+		return sdkerrors.Wrap(err, "pin tg4 engagement contract")
 	}
 
 	tg4StakerInitMsg := contract.TG4StakeInitMsg{
 		Admin:           gs.SystemAdminAddress,
-		Denom:           contract.Denom{Native: gs.BondDenom},
-		MinBond:         "1",
-		TokensPerWeight: "1",
-		UnbondingPeriod: contract.UnbodingPeriod{
-			TimeInSec: uint64(21 * 24 * time.Hour.Seconds()),
-		},
-		Preauths: 1,
+		Denom:           gs.BondDenom,
+		MinBond:         1,
+		TokensPerWeight: 1,
+		UnbondingPeriod: uint64(21 * 24 * time.Hour.Seconds()),
+		Preauths:        1,
 	}
 	codeID, err = k.Create(ctx, creator, tg4Stake, &wasmtypes.AllowEverybody)
 	if err != nil {
@@ -128,6 +126,8 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		EpochLength:   1,
 		EpochReward:   sdk.NewCoin(gs.BondDenom, sdk.OneInt()),
 		InitialKeys:   []contract.Validator{},
+		Scaling:       1,
+		FeePercentage: 500_000_000_000_000_000,
 	}
 	codeID, err = k.Create(ctx, creator, tgValset, &wasmtypes.AllowEverybody)
 	if err != nil {
