@@ -85,13 +85,13 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		if err := msg.ValidateBasic(); err != nil {
 			return sdkerrors.Wrapf(err, "gentx %d", i)
 		}
-		if _, ok := uniqueEngagementMembers[msg.DelegatorAddress]; !ok {
-			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator not in engagement group: %q, gentx: %d", msg.DelegatorAddress, i)
+		if _, ok := uniqueEngagementMembers[msg.OperatorAddress]; !ok {
+			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator not in engagement group: %q, gentx: %d", msg.OperatorAddress, i)
 		}
-		if _, exists := uniqueOperators[msg.DelegatorAddress]; exists {
-			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator used already with another gen tx: %q, gentx: %d", msg.DelegatorAddress, i)
+		if _, exists := uniqueOperators[msg.OperatorAddress]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator used already with another gen tx: %q, gentx: %d", msg.OperatorAddress, i)
 		}
-		uniqueOperators[msg.DelegatorAddress] = struct{}{}
+		uniqueOperators[msg.OperatorAddress] = struct{}{}
 	}
 	return nil
 }

@@ -46,7 +46,7 @@ func TestCreateValidator(t *testing.T) {
 		"all good": {
 			src: types.MsgCreateValidatorFixture(
 				func(m *types.MsgCreateValidator) {
-					m.DelegatorAddress = myOperatorAddr.String()
+					m.OperatorAddress = myOperatorAddr.String()
 					m.Value = sdk.NewInt64Coin(types.DefaultBondDenom, 1)
 				},
 			),
@@ -138,7 +138,7 @@ func TestUpdateValidator(t *testing.T) {
 		"update all": {
 			src: types.MsgUpdateValidatorFixture(
 				func(m *types.MsgUpdateValidator) {
-					m.DelegatorAddress = myOperatorAddr.String()
+					m.OperatorAddress = myOperatorAddr.String()
 					m.Description = stakingtypes.NewDescription(
 						"otherMoniker",
 						"otherIdentity",
@@ -159,7 +159,7 @@ func TestUpdateValidator(t *testing.T) {
 		"partial update: moniker": {
 			src: types.MsgUpdateValidatorFixture(
 				func(m *types.MsgUpdateValidator) {
-					m.DelegatorAddress = myOperatorAddr.String()
+					m.OperatorAddress = myOperatorAddr.String()
 					m.Description = stakingtypes.NewDescription(
 						"otherMoniker",
 						stakingtypes.DoNotModifyDesc,
@@ -180,7 +180,7 @@ func TestUpdateValidator(t *testing.T) {
 		"partial update: Identity": {
 			src: types.MsgUpdateValidatorFixture(
 				func(m *types.MsgUpdateValidator) {
-					m.DelegatorAddress = myOperatorAddr.String()
+					m.OperatorAddress = myOperatorAddr.String()
 					m.Description = stakingtypes.NewDescription(
 						stakingtypes.DoNotModifyDesc,
 						"otherIdentity",
@@ -201,7 +201,7 @@ func TestUpdateValidator(t *testing.T) {
 		"partial update: Website": {
 			src: types.MsgUpdateValidatorFixture(
 				func(m *types.MsgUpdateValidator) {
-					m.DelegatorAddress = myOperatorAddr.String()
+					m.OperatorAddress = myOperatorAddr.String()
 					m.Description = stakingtypes.NewDescription(
 						stakingtypes.DoNotModifyDesc,
 						stakingtypes.DoNotModifyDesc,
@@ -222,7 +222,7 @@ func TestUpdateValidator(t *testing.T) {
 		"partial update: Details": {
 			src: types.MsgUpdateValidatorFixture(
 				func(m *types.MsgUpdateValidator) {
-					m.DelegatorAddress = myOperatorAddr.String()
+					m.OperatorAddress = myOperatorAddr.String()
 					m.Description = stakingtypes.NewDescription(
 						stakingtypes.DoNotModifyDesc,
 						stakingtypes.DoNotModifyDesc,
@@ -243,7 +243,7 @@ func TestUpdateValidator(t *testing.T) {
 		"partial update: SecurityContact": {
 			src: types.MsgUpdateValidatorFixture(
 				func(m *types.MsgUpdateValidator) {
-					m.DelegatorAddress = myOperatorAddr.String()
+					m.OperatorAddress = myOperatorAddr.String()
 					m.Description = stakingtypes.NewDescription(
 						stakingtypes.DoNotModifyDesc,
 						stakingtypes.DoNotModifyDesc,
@@ -264,7 +264,7 @@ func TestUpdateValidator(t *testing.T) {
 		"set empty values": {
 			src: types.MsgUpdateValidatorFixture(
 				func(m *types.MsgUpdateValidator) {
-					m.DelegatorAddress = myOperatorAddr.String()
+					m.OperatorAddress = myOperatorAddr.String()
 					m.Description = stakingtypes.NewDescription("otherMoniker", "", "", "", "")
 				},
 			),

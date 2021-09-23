@@ -12,7 +12,7 @@ import (
 )
 
 // RegisterValidator calls valset contract to register a new validator key and address
-func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptotypes.PubKey, delegatorAddress sdk.AccAddress, description stakingtypes.Description, k types.Executor) error {
+func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptotypes.PubKey, operatorAddress sdk.AccAddress, description stakingtypes.Description, k types.Executor) error {
 	pub, err := NewValidatorPubkey(pk)
 	if err != nil {
 		return err
@@ -28,12 +28,12 @@ func RegisterValidator(ctx sdk.Context, contractAddr sdk.AccAddress, pk cryptoty
 		return sdkerrors.Wrap(err, "serialize payload msg")
 	}
 
-	_, err = k.Execute(ctx, contractAddr, delegatorAddress, payloadBz, nil)
+	_, err = k.Execute(ctx, contractAddr, operatorAddress, payloadBz, nil)
 	return sdkerrors.Wrap(err, "execute contract")
 }
 
 // UpdateValidator calls valset contract to change validator's metadata
-func UpdateValidator(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, description stakingtypes.Description, k types.Executor) error {
+func UpdateValidator(ctx sdk.Context, contractAddr sdk.AccAddress, operatorAddress sdk.AccAddress, description stakingtypes.Description, k types.Executor) error {
 	metadata := MetadataFromDescription(description)
 	updateValidator := TG4ValsetExecute{
 		UpdateMetadata: &metadata,
@@ -43,7 +43,7 @@ func UpdateValidator(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddr
 		return sdkerrors.Wrap(err, "serialize payload msg")
 	}
 
-	_, err = k.Execute(ctx, contractAddr, delegatorAddress, payloadBz, nil)
+	_, err = k.Execute(ctx, contractAddr, operatorAddress, payloadBz, nil)
 	return sdkerrors.Wrap(err, "execute contract")
 }
 
@@ -86,7 +86,7 @@ func CallEndBlockWithValidatorUpdate(ctx sdk.Context, contractAddr sdk.AccAddres
 
 // UnbondDelegation unbond the given amount from the operators self delegation
 // Amount must be in bonding token denom
-func UnbondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, amount sdk.Int, k types.Executor) error {
+func UnbondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, operatorAddress sdk.AccAddress, amount sdk.Int, k types.Executor) error {
 	if amount.IsNil() || amount.IsZero() || amount.IsNegative() || !amount.IsInt64() {
 		return sdkerrors.Wrap(types.ErrInvalid, "amount")
 	}
@@ -96,12 +96,12 @@ func UnbondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAdd
 		return sdkerrors.Wrap(err, "TG4StakeExecute message")
 	}
 
-	_, err = k.Execute(ctx, contractAddr, delegatorAddress, msgBz, nil)
+	_, err = k.Execute(ctx, contractAddr, operatorAddress, msgBz, nil)
 	return sdkerrors.Wrap(err, "execute staking contract")
 }
 
-// BondDelegation sends given amount to the staking contract to increase the bonded amount for the delegator
-func BondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddress sdk.AccAddress, amount sdk.Coins, k types.Executor) error {
+// BondDelegation sends given amount to the staking contract to increase the bonded amount for the validator operator
+func BondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, operatorAddress sdk.AccAddress, amount sdk.Coins, k types.Executor) error {
 	bondStake := TG4StakeExecute{
 		Bond: &struct{}{},
 	}
@@ -110,7 +110,7 @@ func BondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, delegatorAddre
 		return sdkerrors.Wrap(err, "serialize payload msg")
 	}
 
-	_, err = k.Execute(ctx, contractAddr, delegatorAddress, payloadBz, amount)
+	_, err = k.Execute(ctx, contractAddr, operatorAddress, payloadBz, amount)
 	return sdkerrors.Wrap(err, "execute contract")
 }
 

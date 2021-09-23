@@ -57,7 +57,7 @@ func TestMsgDecode(t *testing.T) {
 func TestMsgCreateValidator(t *testing.T) {
 	tests := []struct {
 		name, moniker, identity, website, securityContact, details string
-		delegatorAddr                                              sdk.AccAddress
+		operatorAddr                                               sdk.AccAddress
 		pubkey                                                     cryptotypes.PubKey
 		bond                                                       sdk.Coin
 		expectPass                                                 bool
@@ -74,7 +74,7 @@ func TestMsgCreateValidator(t *testing.T) {
 
 	for _, tc := range tests {
 		description := stakingtypes.NewDescription(tc.moniker, tc.identity, tc.website, tc.securityContact, tc.details)
-		msg, err := NewMsgCreateValidator(tc.delegatorAddr, tc.pubkey, tc.bond, description)
+		msg, err := NewMsgCreateValidator(tc.operatorAddr, tc.pubkey, tc.bond, description)
 		require.NoError(t, err)
 		if tc.expectPass {
 			require.Nil(t, msg.ValidateBasic(), "test: %v", tc.name)
@@ -112,7 +112,7 @@ func TestMsgUpdateValidatorValidateBasic(t *testing.T) {
 		},
 		"invalid address": {
 			src: MsgUpdateValidatorFixture(func(m *MsgUpdateValidator) {
-				m.DelegatorAddress = "notAValidAddress"
+				m.OperatorAddress = "notAValidAddress"
 			}),
 			expErr: true,
 		},
@@ -120,7 +120,7 @@ func TestMsgUpdateValidatorValidateBasic(t *testing.T) {
 			src: MsgUpdateValidatorFixture(func(m *MsgUpdateValidator) {
 				bech32PrefixAccAddr := sdk.GetConfig().GetBech32AccountAddrPrefix()
 				bech32Addr, _ := bech32.ConvertAndEncode(bech32PrefixAccAddr, []byte{})
-				m.DelegatorAddress = bech32Addr
+				m.OperatorAddress = bech32Addr
 			}),
 			expErr: true,
 		},
@@ -139,18 +139,18 @@ func TestMsgUpdateValidatorValidateBasic(t *testing.T) {
 
 func TestMsgDelegate(t *testing.T) {
 	tests := []struct {
-		name          string
-		delegatorAddr sdk.AccAddress
-		bond          sdk.Coin
-		expectPass    bool
+		name         string
+		operatorAddr sdk.AccAddress
+		bond         sdk.Coin
+		expectPass   bool
 	}{
 		{"basic good", sdk.AccAddress(valAddr1), coinPos, true},
-		{"empty delegator", sdk.AccAddress(emptyAddr), coinPos, false},
+		{"empty operator", sdk.AccAddress(emptyAddr), coinPos, false},
 		{"empty bond", sdk.AccAddress(valAddr1), coinZero, false},
 		{"nil bold", sdk.AccAddress(valAddr1), sdk.Coin{}, false},
 	}
 	for _, tc := range tests {
-		msg := NewMsgDelegate(tc.delegatorAddr, tc.bond)
+		msg := NewMsgDelegate(tc.operatorAddr, tc.bond)
 		if tc.expectPass {
 			require.Nil(t, msg.ValidateBasic(), "test: %v", tc.name)
 		} else {
@@ -162,19 +162,19 @@ func TestMsgDelegate(t *testing.T) {
 // test ValidateBasic for MsgUnbond
 func TestMsgUndelegate(t *testing.T) {
 	tests := []struct {
-		name          string
-		delegatorAddr sdk.AccAddress
-		amount        sdk.Coin
-		expectPass    bool
+		name         string
+		operatorAddr sdk.AccAddress
+		amount       sdk.Coin
+		expectPass   bool
 	}{
 		{"regular", sdk.AccAddress(valAddr1), sdk.NewInt64Coin(sdk.DefaultBondDenom, 1), true},
 		{"zero amount", sdk.AccAddress(valAddr1), sdk.NewInt64Coin(sdk.DefaultBondDenom, 0), false},
 		{"nil amount", sdk.AccAddress(valAddr1), sdk.Coin{}, false},
-		{"empty delegator", sdk.AccAddress(emptyAddr), sdk.NewInt64Coin(sdk.DefaultBondDenom, 1), false},
+		{"empty operator", sdk.AccAddress(emptyAddr), sdk.NewInt64Coin(sdk.DefaultBondDenom, 1), false},
 	}
 
 	for _, tc := range tests {
-		msg := NewMsgUndelegate(tc.delegatorAddr, tc.amount)
+		msg := NewMsgUndelegate(tc.operatorAddr, tc.amount)
 		if tc.expectPass {
 			require.Nil(t, msg.ValidateBasic(), "test: %v", tc.name)
 		} else {

@@ -461,7 +461,7 @@ Based on the SDK staking.MsgCreateValidator
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  | Description meta data |
-| `delegator_address` | [string](#string) |  | DelegatorAddress is the bech32 address string |
+| `operator_address` | [string](#string) |  | OperatorAddress is the bech32 address string |
 | `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  | Pubkey public key |
 | `value` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | Value defines the initial staking amount |
 
@@ -489,7 +489,7 @@ by a node operator
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `delegator_address` | [string](#string) |  |  |
+| `operator_address` | [string](#string) |  |  |
 | `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
 
 
@@ -516,7 +516,7 @@ node operator
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `delegator_address` | [string](#string) |  |  |
+| `operator_address` | [string](#string) |  |  |
 | `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
 
 
@@ -548,7 +548,7 @@ MsgCreateValidator defines a PoE message for updating validator metadata
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  | New Description meta data |
-| `delegator_address` | [string](#string) |  | DelegatorAddress is the bech32 address string Also know as "signer" in other messages |
+| `operator_address` | [string](#string) |  | OperatorAddress is the bech32 address string Also know as "signer" in other messages |
 
 
 
