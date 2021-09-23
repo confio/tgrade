@@ -3,7 +3,7 @@ package confio.poe.v1beta1;
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
-import "cosmwasm/wasm/v1beta1/genesis.proto";
+import "cosmwasm/wasm/v1/genesis.proto";
 import "confio/poe/v1beta1/poe.proto";
 
 option go_package = "github.com/confio/tgrade/x/poe/types";

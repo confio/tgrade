@@ -2,7 +2,7 @@ syntax = "proto3";
 package confio.twasm.v1beta1;
 
 import "gogoproto/gogo.proto";
-import "cosmwasm/wasm/v1beta1/types.proto";
+import "cosmwasm/wasm/v1/types.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 
