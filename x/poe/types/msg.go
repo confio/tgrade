@@ -21,7 +21,7 @@ var (
 )
 
 // NewMsgCreateValidator creates a new MsgCreateValidator instance.
-// Delegator address and validator address are the same.
+// Operator address and validator address are the same.
 func NewMsgCreateValidator(
 	valAddr sdk.AccAddress,
 	pubKey cryptotypes.PubKey,
@@ -36,10 +36,10 @@ func NewMsgCreateValidator(
 		}
 	}
 	return &MsgCreateValidator{
-		Description:      description,
-		DelegatorAddress: valAddr.String(),
-		Pubkey:           pkAny,
-		Value:            selfDelegation,
+		Description:     description,
+		OperatorAddress: valAddr.String(),
+		Pubkey:          pkAny,
+		Value:           selfDelegation,
 	}, nil
 }
 
@@ -51,11 +51,8 @@ func (msg MsgCreateValidator) Type() string { return TypeMsgCreateValidator }
 
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
-// If the validator address is not same as delegator's, then the validator must
-// sign the msg as well.
 func (msg MsgCreateValidator) GetSigners() []sdk.AccAddress {
-	// delegator is first signer so delegator pays fees
-	delAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	delAddr, err := sdk.AccAddressFromBech32(msg.OperatorAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -71,7 +68,7 @@ func (msg MsgCreateValidator) GetSignBytes() []byte {
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgCreateValidator) ValidateBasic() error {
 	// note that unmarshaling from bech32 ensures either empty or valid
-	delAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	delAddr, err := sdk.AccAddressFromBech32(msg.OperatorAddress)
 	if err != nil {
 		return err
 	}
@@ -105,14 +102,14 @@ func (msg MsgCreateValidator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) 
 }
 
 // NewMsgUpdateValidator creates a new MsgUpdateValidator instance.
-// Delegator address and validator address are the same.
+// Operator address and validator address are the same.
 func NewMsgUpdateValidator(
 	valAddr sdk.AccAddress,
 	description stakingtypes.Description,
 ) *MsgUpdateValidator {
 	return &MsgUpdateValidator{
-		Description:      description,
-		DelegatorAddress: valAddr.String(),
+		Description:     description,
+		OperatorAddress: valAddr.String(),
 	}
 }
 
@@ -124,15 +121,12 @@ func (msg MsgUpdateValidator) Type() string { return TypeMsgUpdateValidator }
 
 // GetSigners implements the sdk.Msg interface. It returns the address(es) that
 // must sign over msg.GetSignBytes().
-// If the validator address is not same as delegator's, then the validator must
-// sign the msg as well.
 func (msg MsgUpdateValidator) GetSigners() []sdk.AccAddress {
-	// delegator is first signer so delegator pays fees
-	delAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	opAddr, err := sdk.AccAddressFromBech32(msg.OperatorAddress)
 	if err != nil {
 		panic(err)
 	}
-	return []sdk.AccAddress{delAddr}
+	return []sdk.AccAddress{opAddr}
 }
 
 // GetSignBytes returns the message bytes to sign over.
@@ -144,7 +138,7 @@ func (msg MsgUpdateValidator) GetSignBytes() []byte {
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgUpdateValidator) ValidateBasic() error {
 	// note that unmarshaling from bech32 ensures either empty or valid
-	_, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	_, err := sdk.AccAddressFromBech32(msg.OperatorAddress)
 	if err != nil {
 		return err
 	}
@@ -170,8 +164,8 @@ func (msg MsgUpdateValidator) ValidateBasic() error {
 // NewMsgDelegate constructor
 func NewMsgDelegate(delAddr sdk.AccAddress, amount sdk.Coin) *MsgDelegate {
 	return &MsgDelegate{
-		DelegatorAddress: delAddr.String(),
-		Amount:           amount,
+		OperatorAddress: delAddr.String(),
+		Amount:          amount,
 	}
 }
 
@@ -183,7 +177,7 @@ func (msg MsgDelegate) Type() string { return TypeMsgDelegate }
 
 // GetSigners implements the sdk.Msg interface.
 func (msg MsgDelegate) GetSigners() []sdk.AccAddress {
-	delAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	delAddr, err := sdk.AccAddressFromBech32(msg.OperatorAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -198,8 +192,8 @@ func (msg MsgDelegate) GetSignBytes() []byte {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgDelegate) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(msg.DelegatorAddress); err != nil {
-		return sdkerrors.Wrap(ErrEmpty, "delegator address")
+	if _, err := sdk.AccAddressFromBech32(msg.OperatorAddress); err != nil {
+		return sdkerrors.Wrap(ErrEmpty, "operator address")
 	}
 
 	if !msg.Amount.IsValid() || !msg.Amount.Amount.IsPositive() {
@@ -212,8 +206,8 @@ func (msg MsgDelegate) ValidateBasic() error {
 // NewMsgUndelegate constructor
 func NewMsgUndelegate(delAddr sdk.AccAddress, amount sdk.Coin) *MsgUndelegate {
 	return &MsgUndelegate{
-		DelegatorAddress: delAddr.String(),
-		Amount:           amount,
+		OperatorAddress: delAddr.String(),
+		Amount:          amount,
 	}
 }
 
@@ -225,7 +219,7 @@ func (msg MsgUndelegate) Type() string { return TypeMsgUndelegate }
 
 // GetSigners implements the sdk.Msg interface.
 func (msg MsgUndelegate) GetSigners() []sdk.AccAddress {
-	delAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	delAddr, err := sdk.AccAddressFromBech32(msg.OperatorAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -240,8 +234,8 @@ func (msg MsgUndelegate) GetSignBytes() []byte {
 
 // ValidateBasic implements the sdk.Msg interface.
 func (msg MsgUndelegate) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(msg.DelegatorAddress); err != nil {
-		return sdkerrors.Wrap(ErrEmpty, "delegator address")
+	if _, err := sdk.AccAddressFromBech32(msg.OperatorAddress); err != nil {
+		return sdkerrors.Wrap(ErrEmpty, "operator address")
 	}
 
 	if !msg.Amount.IsValid() || !msg.Amount.Amount.IsPositive() {

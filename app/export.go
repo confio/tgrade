@@ -76,7 +76,7 @@ func (app *TgradeApp) ExportAppStateAndValidators(
 //			panic(err)
 //		}
 //
-//		delAddr, err := sdk.AccAddressFromBech32(delegation.DelegatorAddress)
+//		delAddr, err := sdk.AccAddressFromBech32(delegation.OperatorAddress)
 //		if err != nil {
 //			panic(err)
 //		}
@@ -111,7 +111,7 @@ func (app *TgradeApp) ExportAppStateAndValidators(
 //		if err != nil {
 //			panic(err)
 //		}
-//		delAddr, err := sdk.AccAddressFromBech32(del.DelegatorAddress)
+//		delAddr, err := sdk.AccAddressFromBech32(del.OperatorAddress)
 //		if err != nil {
 //			panic(err)
 //		}

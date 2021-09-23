@@ -271,7 +271,7 @@ func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k keeper.Keeper, con
 		msg := msgs[0].(*types.MsgCreateValidator)
 		_, err = h(ctx, msg)
 		require.NoError(t, err)
-		t.Logf("+++ create validator: %s\n", msg.DelegatorAddress)
+		t.Logf("+++ create validator: %s\n", msg.OperatorAddress)
 		return abci.ResponseDeliverTx{}
 	}
 }

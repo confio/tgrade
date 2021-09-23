@@ -62,9 +62,9 @@ func (m msgServer) CreateValidator(c context.Context, msg *types.MsgCreateValida
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "valset")
 	}
-	operatorAddress, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	operatorAddress, err := sdk.AccAddressFromBech32(msg.OperatorAddress)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "delegator address")
+		return nil, sdkerrors.Wrap(err, "operator address")
 	}
 
 	err = contract.RegisterValidator(ctx, valsetContractAddr, pk, operatorAddress, msg.Description, m.contractKeeper)
@@ -85,11 +85,11 @@ func (m msgServer) CreateValidator(c context.Context, msg *types.MsgCreateValida
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(sdk.AttributeKeySender, msg.DelegatorAddress),
+			sdk.NewAttribute(sdk.AttributeKeySender, msg.OperatorAddress),
 		),
 		sdk.NewEvent(
 			types.EventTypeCreateValidator,
-			sdk.NewAttribute(types.AttributeKeyValOperator, msg.DelegatorAddress),
+			sdk.NewAttribute(types.AttributeKeyValOperator, msg.OperatorAddress),
 			sdk.NewAttribute(types.AttributeKeyMoniker, msg.Description.Moniker),
 			sdk.NewAttribute(types.AttributeKeyPubKeyHex, hex.EncodeToString(pk.Bytes())),
 			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Value.Amount.String()),
@@ -112,13 +112,13 @@ func (m msgServer) UpdateValidator(c context.Context, msg *types.MsgUpdateValida
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "valset")
 	}
-	delegatorAddress, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	operatorAddress, err := sdk.AccAddressFromBech32(msg.OperatorAddress)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "delegator address")
+		return nil, sdkerrors.Wrap(err, "operator address")
 	}
 
 	// client sends a diff. we need to query the old description and merge it
-	current, err := contract.QueryValidator(ctx, m.twasmKeeper, valsetContractAddr, delegatorAddress)
+	current, err := contract.QueryValidator(ctx, m.twasmKeeper, valsetContractAddr, operatorAddress)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "query current description")
 	}
@@ -134,7 +134,7 @@ func (m msgServer) UpdateValidator(c context.Context, msg *types.MsgUpdateValida
 		return nil, sdkerrors.Wrap(err, "merge description")
 	}
 	// do the update
-	err = contract.UpdateValidator(ctx, valsetContractAddr, delegatorAddress, newDescr, m.contractKeeper)
+	err = contract.UpdateValidator(ctx, valsetContractAddr, operatorAddress, newDescr, m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "update validator")
 	}
@@ -143,11 +143,11 @@ func (m msgServer) UpdateValidator(c context.Context, msg *types.MsgUpdateValida
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(sdk.AttributeKeySender, msg.DelegatorAddress),
+			sdk.NewAttribute(sdk.AttributeKeySender, msg.OperatorAddress),
 		),
 		sdk.NewEvent(
 			types.EventTypeUpdateValidator,
-			sdk.NewAttribute(types.AttributeKeyValOperator, msg.DelegatorAddress),
+			sdk.NewAttribute(types.AttributeKeyValOperator, msg.OperatorAddress),
 			sdk.NewAttribute(types.AttributeKeyMoniker, msg.Description.Moniker),
 		),
 	})
@@ -158,9 +158,9 @@ func (m msgServer) UpdateValidator(c context.Context, msg *types.MsgUpdateValida
 func (m msgServer) Delegate(c context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 
-	operatorAddress, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	operatorAddress, err := sdk.AccAddressFromBech32(msg.OperatorAddress)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "delegator address")
+		return nil, sdkerrors.Wrap(err, "operator address")
 	}
 
 	stakingContractAddr, err := m.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
@@ -175,7 +175,7 @@ func (m msgServer) Delegate(c context.Context, msg *types.MsgDelegate) (*types.M
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(sdk.AttributeKeySender, msg.DelegatorAddress),
+			sdk.NewAttribute(sdk.AttributeKeySender, msg.OperatorAddress),
 		),
 		sdk.NewEvent(
 			types.EventTypeDelegate,
@@ -187,9 +187,9 @@ func (m msgServer) Delegate(c context.Context, msg *types.MsgDelegate) (*types.M
 
 func (m msgServer) Undelegate(c context.Context, msg *types.MsgUndelegate) (*types.MsgUndelegateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	operatorAddress, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	operatorAddress, err := sdk.AccAddressFromBech32(msg.OperatorAddress)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "delegator address")
+		return nil, sdkerrors.Wrap(err, "operator address")
 	}
 
 	stakingContractAddr, err := m.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
@@ -208,7 +208,7 @@ func (m msgServer) Undelegate(c context.Context, msg *types.MsgUndelegate) (*typ
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(sdk.AttributeKeySender, msg.DelegatorAddress),
+			sdk.NewAttribute(sdk.AttributeKeySender, msg.OperatorAddress),
 		),
 		sdk.NewEvent(
 			types.EventTypeUndelegate,

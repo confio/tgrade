@@ -36,9 +36,9 @@ message MsgCreateValidator {
   cosmos.staking.v1beta1.Description description = 1
       [ (gogoproto.nullable) = false ];
 
-  // DelegatorAddress is the bech32 address string
-  string delegator_address = 4
-      [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
+  // OperatorAddress is the bech32 address string
+  string operator_address = 4
+      [ (gogoproto.moretags) = "yaml:\"operator_address\"" ];
 
   // Pubkey public key
   google.protobuf.Any pubkey = 6
@@ -60,10 +60,10 @@ message MsgUpdateValidator {
   cosmos.staking.v1beta1.Description description = 1
       [ (gogoproto.nullable) = false ];
 
-  // DelegatorAddress is the bech32 address string
+  // OperatorAddress is the bech32 address string
   // Also know as "signer" in other messages
-  string delegator_address = 2
-      [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
+  string operator_address = 2
+      [ (gogoproto.moretags) = "yaml:\"operator_address\"" ];
 }
 
 // MsgUpdateValidatorResponse defines the MsgUpdateValidator response type.
@@ -75,8 +75,8 @@ message MsgDelegate {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 
-  string delegator_address = 1
-      [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
+  string operator_address = 1
+      [ (gogoproto.moretags) = "yaml:\"operator_address\"" ];
   cosmos.base.v1beta1.Coin amount = 2 [ (gogoproto.nullable) = false ];
 }
 
@@ -89,8 +89,8 @@ message MsgUndelegate {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 
-  string delegator_address = 1
-      [ (gogoproto.moretags) = "yaml:\"delegator_address\"" ];
+  string operator_address = 1
+      [ (gogoproto.moretags) = "yaml:\"operator_address\"" ];
   cosmos.base.v1beta1.Coin amount = 2 [ (gogoproto.nullable) = false ];
 }
 
