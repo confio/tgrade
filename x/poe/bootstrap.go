@@ -80,12 +80,14 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "pin tg4 engagement contract")
 	}
 
+	var claimLimit uint64 = 20
 	tg4StakerInitMsg := contract.TG4StakeInitMsg{
 		Admin:           gs.SystemAdminAddress,
 		Denom:           gs.BondDenom,
 		MinBond:         1,
 		TokensPerWeight: 1,
 		UnbondingPeriod: uint64(21 * 24 * time.Hour.Seconds()),
+		AutoReturnLimit: &claimLimit,
 		Preauths:        1,
 	}
 	codeID, err = k.Create(ctx, creator, tg4Stake, &wasmtypes.AllowEverybody)
