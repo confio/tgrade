@@ -39,6 +39,8 @@ type ValsetConfigResponse struct {
 	MinWeight     int    `json:"min_weight"`
 	MaxValidators int    `json:"max_validators"`
 	Scaling       int    `json:"scaling,omitempty"`
+	// Percentage of total accumulated fees which is substracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
+	FeePercentage uint64 `json:"fee_percentage,string,omitempty"`
 }
 
 // ValsetEpochQueryResponse Response to `config` query
@@ -259,34 +261,23 @@ type TG4StakedAmountsResponse struct {
 }
 
 type TG4StakeClaim struct {
-	Amount    sdk.Int    `json:"amount"`
-	ReleaseAt Expiration `json:"release_at"`
-}
-
-// Expiration represents a point in time when some event happens.
-type Expiration struct {
-	// AtHeight will expire when `env.block.height` >= height
-	AtHeight *uint64 `json:"at_height,omitempty"`
-	// AtTime will expire when `env.block.time` >= time
-	// A point in time in nanosecond precision.
-	AtTime *uint64   `json:"at_time,string,omitempty"`
-	Never  *struct{} `json:"never,omitempty"`
+	// Addr A human readable address
+	Addr string `json:"addr"`
+	// Amount of tokens in claim
+	Amount sdk.Int `json:"amount"`
+	// CreationHeight Height of a blockchain in a moment of creation of this claim
+	CreationHeight uint64 `json:"creation_height"`
+	// ReleaseAt is the release time of the claim as timestamp in nanoseconds
+	ReleaseAt uint64 `json:"release_at,string,omitempty"`
 }
 
 type UnbondingPeriodResponse struct {
-	UnbondingPeriod Duration `json:"unbonding_period"`
-}
-
-// Duration measures time between multiple events. Exactly one of these must be non-zero
-type Duration struct {
-	// Height is the number of blocks that must pass
-	Height int `json:"height,omitempty"`
 	// Time is the number of seconds that must pass
-	Time int `json:"time,omitempty"`
+	UnbondingPeriod uint64 `json:"unbonding_period"`
 }
 
 // QueryStakingUnbondingPeriod query the unbonding period from PoE staking contract
-func QueryStakingUnbondingPeriod(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.AccAddress) (Duration, error) {
+func QueryStakingUnbondingPeriod(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.AccAddress) (uint64, error) {
 	query := TG4StakeQuery{UnbondingPeriod: &struct{}{}}
 	var response UnbondingPeriodResponse
 	err := doQuery(ctx, k, stakeAddr, query, &response)

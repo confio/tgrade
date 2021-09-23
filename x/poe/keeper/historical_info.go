@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 	"github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibccoretypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
@@ -81,7 +80,6 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	// Since the entries to be deleted are always in a continuous range, we can iterate
 	// over the historical entries starting from the most recent version to be pruned
 	// and then return at the first empty entry.
-	fmt.Printf("++ height: %d", ctx.BlockHeight())
 	for i := ctx.BlockHeight() - int64(entryNum); i >= 0; i-- {
 		_, found := k.GetHistoricalInfo(ctx, i)
 		if found {

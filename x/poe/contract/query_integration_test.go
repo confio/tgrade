@@ -124,9 +124,8 @@ func TestQueryUnbondingPeriod(t *testing.T) {
 	res, err := contract.QueryStakingUnbondingPeriod(ctx, example.TWasmKeeper, contractAddr)
 
 	// then
-
-	configuredTime := 21 * 24 * 60 * 60 // in bootstrap
-	assert.Equal(t, contract.Duration{Time: configuredTime}, res)
+	const configuredTime uint64 = 21 * 24 * 60 * 60 // in bootstrap
+	assert.Equal(t, configuredTime, res)
 }
 
 func TestQueryValsetConfig(t *testing.T) {
@@ -153,7 +152,8 @@ func TestQueryValsetConfig(t *testing.T) {
 		Membership:    mixerContractAddr.String(),
 		MinWeight:     1,
 		MaxValidators: 100,
-		Scaling:       0,
+		Scaling:       1,
+		FeePercentage: 500_000_000_000_000_000,
 	}
 	assert.Equal(t, expConfig, res)
 }
@@ -215,7 +215,7 @@ func TestQueryValidatorUnboding(t *testing.T) {
 
 	// unbond some tokens for operator 1
 	now := time.Now().UTC()
-	ctx = ctx.WithBlockTime(now)
+	ctx = ctx.WithBlockTime(now).WithBlockHeight(12)
 	unbondedAmount := sdk.NewInt(10)
 	contract.UnbondDelegation(ctx, contractAddr, op1Addr, unbondedAmount, example.TWasmKeeper.GetContractKeeper())
 
@@ -223,7 +223,6 @@ func TestQueryValidatorUnboding(t *testing.T) {
 	require.NoError(t, err)
 	unbodingPeriod, err := contract.QueryStakingUnbondingPeriod(ctx, example.TWasmKeeper, contractAddr)
 	require.NoError(t, err)
-	expectedReleaseTime := uint64(now.Add(time.Duration(unbodingPeriod.Time) * time.Second).UnixNano())
 	specs := map[string]struct {
 		srcOpAddr sdk.AccAddress
 		expResult contract.TG4StakeClaimsResponse
@@ -232,10 +231,10 @@ func TestQueryValidatorUnboding(t *testing.T) {
 			srcOpAddr: op1Addr,
 			expResult: contract.TG4StakeClaimsResponse{Claims: []contract.TG4StakeClaim{
 				{
-					Amount: sdk.NewInt(10),
-					ReleaseAt: contract.Expiration{
-						AtTime: &expectedReleaseTime,
-					},
+					Addr:           op1Addr.String(),
+					Amount:         sdk.NewInt(10),
+					ReleaseAt:      uint64(now.Add(time.Duration(unbodingPeriod) * time.Second).UTC().UnixNano()),
+					CreationHeight: 12,
 				},
 			}},
 		},
