@@ -267,7 +267,7 @@ type TG4StakeClaim struct {
 	Amount sdk.Int `json:"amount"`
 	// CreationHeight Height of a blockchain in a moment of creation of this claim
 	CreationHeight uint64 `json:"creation_height"`
-	// ReleaseAt is the release time of the claim
+	// ReleaseAt is the release time of the claim as timestamp in nanoseconds
 	ReleaseAt uint64 `json:"release_at,string,omitempty"`
 }
 
