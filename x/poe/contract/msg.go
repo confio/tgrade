@@ -9,6 +9,8 @@ import (
 	"testing"
 )
 
+const ValsetInitPercentageFactor = 10_000_000_000_000_000
+
 // TG4GroupInitMsg contract init message
 //See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-group/schema/instantiate_msg.json
 type TG4GroupInitMsg struct {

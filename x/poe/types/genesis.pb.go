@@ -7,18 +7,23 @@ import (
 	encoding_json "encoding/json"
 	fmt "fmt"
 	_ "github.com/CosmWasm/wasmd/x/wasm/types"
-	_ "github.com/cosmos/cosmos-sdk/types"
+	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
+	_ "google.golang.org/protobuf/types/known/durationpb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+var _ = time.Kitchen
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -43,9 +48,11 @@ type GenesisState struct {
 	Contracts []PoEContract `protobuf:"bytes,5,rep,name=contracts,proto3" json:"contracts,omitempty"`
 	// Engagement weighted members of the engagement group. Validators should be
 	// in here.
-	Engagement []TG4Member `protobuf:"bytes,6,rep,name=engagement,proto3" json:"engagement,omitempty"`
+	Engagement           []TG4Member           `protobuf:"bytes,6,rep,name=engagement,proto3" json:"engagement,omitempty"`
+	StakeContractConfig  *StakeContractConfig  `protobuf:"bytes,7,opt,name=stake_contract_config,json=stakeContractConfig,proto3" json:"stake_contract_config,omitempty"`
+	ValsetContractConfig *ValsetContractConfig `protobuf:"bytes,8,opt,name=valset_contract_config,json=valsetContractConfig,proto3" json:"valset_contract_config,omitempty"`
 	// BondDenom defines the bondable coin denomination.
-	BondDenom string `protobuf:"bytes,7,opt,name=bond_denom,json=bondDenom,proto3" json:"bond_denom,omitempty" yaml:"bond_denom"`
+	BondDenom string `protobuf:"bytes,9,opt,name=bond_denom,json=bondDenom,proto3" json:"bond_denom,omitempty" yaml:"bond_denom"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
@@ -123,11 +130,180 @@ func (m *GenesisState) GetEngagement() []TG4Member {
 	return nil
 }
 
+func (m *GenesisState) GetStakeContractConfig() *StakeContractConfig {
+	if m != nil {
+		return m.StakeContractConfig
+	}
+	return nil
+}
+
+func (m *GenesisState) GetValsetContractConfig() *ValsetContractConfig {
+	if m != nil {
+		return m.ValsetContractConfig
+	}
+	return nil
+}
+
 func (m *GenesisState) GetBondDenom() string {
 	if m != nil {
 		return m.BondDenom
 	}
 	return ""
+}
+
+// StakeContractConfig initial setup config
+type StakeContractConfig struct {
+	MinBond              uint64        `protobuf:"varint,1,opt,name=min_bond,json=minBond,proto3" json:"min_bond,omitempty"`
+	TokensPerWeight      uint64        `protobuf:"varint,2,opt,name=tokens_per_weight,json=tokensPerWeight,proto3" json:"tokens_per_weight,omitempty"`
+	UnbondingPeriod      time.Duration `protobuf:"bytes,3,opt,name=unbonding_period,json=unbondingPeriod,proto3,stdduration" json:"unbonding_period"`
+	ClaimAutoreturnLimit uint32        `protobuf:"varint,4,opt,name=claim_autoreturn_limit,json=claimAutoreturnLimit,proto3" json:"claim_autoreturn_limit,omitempty"`
+	PreAuths             uint32        `protobuf:"varint,5,opt,name=pre_auths,json=preAuths,proto3" json:"pre_auths,omitempty"`
+}
+
+func (m *StakeContractConfig) Reset()         { *m = StakeContractConfig{} }
+func (m *StakeContractConfig) String() string { return proto.CompactTextString(m) }
+func (*StakeContractConfig) ProtoMessage()    {}
+func (*StakeContractConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a165193bab811d9d, []int{1}
+}
+func (m *StakeContractConfig) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *StakeContractConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_StakeContractConfig.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *StakeContractConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StakeContractConfig.Merge(m, src)
+}
+func (m *StakeContractConfig) XXX_Size() int {
+	return m.Size()
+}
+func (m *StakeContractConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_StakeContractConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StakeContractConfig proto.InternalMessageInfo
+
+func (m *StakeContractConfig) GetMinBond() uint64 {
+	if m != nil {
+		return m.MinBond
+	}
+	return 0
+}
+
+func (m *StakeContractConfig) GetTokensPerWeight() uint64 {
+	if m != nil {
+		return m.TokensPerWeight
+	}
+	return 0
+}
+
+func (m *StakeContractConfig) GetUnbondingPeriod() time.Duration {
+	if m != nil {
+		return m.UnbondingPeriod
+	}
+	return 0
+}
+
+func (m *StakeContractConfig) GetClaimAutoreturnLimit() uint32 {
+	if m != nil {
+		return m.ClaimAutoreturnLimit
+	}
+	return 0
+}
+
+func (m *StakeContractConfig) GetPreAuths() uint32 {
+	if m != nil {
+		return m.PreAuths
+	}
+	return 0
+}
+
+// ValsetContractConfig initial setup config
+type ValsetContractConfig struct {
+	MinWeight     uint64                                 `protobuf:"varint,1,opt,name=min_weight,json=minWeight,proto3" json:"min_weight,omitempty"`
+	MaxValidators uint32                                 `protobuf:"varint,2,opt,name=max_validators,json=maxValidators,proto3" json:"max_validators,omitempty"`
+	EpochLength   time.Duration                          `protobuf:"bytes,3,opt,name=epoch_length,json=epochLength,proto3,stdduration" json:"epoch_length"`
+	EpochReward   types.Coin                             `protobuf:"bytes,4,opt,name=epoch_reward,json=epochReward,proto3" json:"epoch_reward"`
+	Scaling       uint32                                 `protobuf:"varint,5,opt,name=scaling,proto3" json:"scaling,omitempty"`
+	FeePercentage github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,6,opt,name=fee_percentage,json=feePercentage,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"fee_percentage"`
+}
+
+func (m *ValsetContractConfig) Reset()         { *m = ValsetContractConfig{} }
+func (m *ValsetContractConfig) String() string { return proto.CompactTextString(m) }
+func (*ValsetContractConfig) ProtoMessage()    {}
+func (*ValsetContractConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a165193bab811d9d, []int{2}
+}
+func (m *ValsetContractConfig) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ValsetContractConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ValsetContractConfig.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ValsetContractConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ValsetContractConfig.Merge(m, src)
+}
+func (m *ValsetContractConfig) XXX_Size() int {
+	return m.Size()
+}
+func (m *ValsetContractConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_ValsetContractConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ValsetContractConfig proto.InternalMessageInfo
+
+func (m *ValsetContractConfig) GetMinWeight() uint64 {
+	if m != nil {
+		return m.MinWeight
+	}
+	return 0
+}
+
+func (m *ValsetContractConfig) GetMaxValidators() uint32 {
+	if m != nil {
+		return m.MaxValidators
+	}
+	return 0
+}
+
+func (m *ValsetContractConfig) GetEpochLength() time.Duration {
+	if m != nil {
+		return m.EpochLength
+	}
+	return 0
+}
+
+func (m *ValsetContractConfig) GetEpochReward() types.Coin {
+	if m != nil {
+		return m.EpochReward
+	}
+	return types.Coin{}
+}
+
+func (m *ValsetContractConfig) GetScaling() uint32 {
+	if m != nil {
+		return m.Scaling
+	}
+	return 0
 }
 
 // PoEContract address and type information
@@ -142,7 +318,7 @@ func (m *PoEContract) Reset()         { *m = PoEContract{} }
 func (m *PoEContract) String() string { return proto.CompactTextString(m) }
 func (*PoEContract) ProtoMessage()    {}
 func (*PoEContract) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a165193bab811d9d, []int{1}
+	return fileDescriptor_a165193bab811d9d, []int{3}
 }
 func (m *PoEContract) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -196,7 +372,7 @@ func (m *TG4Member) Reset()         { *m = TG4Member{} }
 func (m *TG4Member) String() string { return proto.CompactTextString(m) }
 func (*TG4Member) ProtoMessage()    {}
 func (*TG4Member) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a165193bab811d9d, []int{2}
+	return fileDescriptor_a165193bab811d9d, []int{4}
 }
 func (m *TG4Member) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -241,6 +417,8 @@ func (m *TG4Member) GetWeight() uint64 {
 
 func init() {
 	proto.RegisterType((*GenesisState)(nil), "confio.poe.v1beta1.GenesisState")
+	proto.RegisterType((*StakeContractConfig)(nil), "confio.poe.v1beta1.StakeContractConfig")
+	proto.RegisterType((*ValsetContractConfig)(nil), "confio.poe.v1beta1.ValsetContractConfig")
 	proto.RegisterType((*PoEContract)(nil), "confio.poe.v1beta1.PoEContract")
 	proto.RegisterType((*TG4Member)(nil), "confio.poe.v1beta1.TG4Member")
 }
@@ -248,42 +426,67 @@ func init() {
 func init() { proto.RegisterFile("confio/poe/v1beta1/genesis.proto", fileDescriptor_a165193bab811d9d) }
 
 var fileDescriptor_a165193bab811d9d = []byte{
-	// 547 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x52, 0x4d, 0x6f, 0xd3, 0x40,
-	0x10, 0x8d, 0x9b, 0x90, 0x36, 0xdb, 0x0f, 0x89, 0xa5, 0x48, 0x56, 0x28, 0xb6, 0x65, 0x40, 0xca,
-	0x01, 0xd9, 0xb4, 0x54, 0x02, 0x71, 0x40, 0xaa, 0x01, 0x95, 0x4b, 0xa5, 0xca, 0xed, 0xa9, 0x1c,
-	0xac, 0xb5, 0x3d, 0x6c, 0x8d, 0xd8, 0x5d, 0xe3, 0x5d, 0xda, 0xe4, 0x5f, 0xf0, 0xb3, 0x7a, 0xec,
-	0x91, 0x93, 0x85, 0x92, 0x5b, 0x8e, 0x3d, 0x72, 0x42, 0x5e, 0x27, 0x71, 0x04, 0x91, 0xb8, 0xd8,
-	0x3b, 0xf3, 0xde, 0xbc, 0x9d, 0x37, 0x3b, 0xc8, 0x49, 0x04, 0xff, 0x9c, 0x09, 0x3f, 0x17, 0xe0,
-	0x5f, 0xed, 0xc7, 0xa0, 0xc8, 0xbe, 0x4f, 0x81, 0x83, 0xcc, 0xa4, 0x97, 0x17, 0x42, 0x09, 0x8c,
-	0x6b, 0x86, 0x97, 0x0b, 0xf0, 0x66, 0x8c, 0xfe, 0x2e, 0x15, 0x54, 0x68, 0xd8, 0xaf, 0x4e, 0x35,
-	0xb3, 0x6f, 0x25, 0x42, 0x32, 0x21, 0xfd, 0x98, 0xc8, 0x46, 0x2c, 0x11, 0x19, 0x5f, 0xc6, 0xaf,
-	0x89, 0x64, 0xbe, 0xfe, 0x5c, 0xfd, 0x75, 0x53, 0x7f, 0x6f, 0x45, 0x2f, 0xd5, 0xad, 0x1a, 0x75,
-	0xc7, 0x6d, 0xb4, 0x75, 0x5c, 0xf3, 0xcf, 0x14, 0x51, 0x80, 0x5f, 0xa3, 0x6e, 0x4e, 0x0a, 0xc2,
-	0xa4, 0x69, 0x38, 0xc6, 0x60, 0xf3, 0xa0, 0xef, 0xfd, 0xdb, 0xa9, 0x77, 0xaa, 0x19, 0x41, 0xe7,
-	0xa6, 0xb4, 0x5b, 0xe1, 0x8c, 0x8f, 0x9f, 0xa1, 0x1d, 0x09, 0x90, 0x46, 0x89, 0xe0, 0xaa, 0x20,
-	0x89, 0x92, 0xe6, 0x9a, 0x63, 0x0c, 0x36, 0xc2, 0xed, 0x2a, 0xfb, 0x6e, 0x9e, 0xc4, 0xa7, 0x68,
-	0x9d, 0x02, 0x8f, 0xd4, 0x50, 0x9a, 0x6d, 0xa7, 0x3d, 0xd8, 0x0a, 0x5e, 0x4d, 0x4b, 0xbb, 0x4b,
-	0x81, 0xab, 0xa1, 0xbc, 0x2b, 0xed, 0xed, 0x11, 0x61, 0x5f, 0xdf, 0xb8, 0x75, 0xec, 0xfe, 0x2e,
-	0x6d, 0x13, 0x78, 0x22, 0xd2, 0x8c, 0x53, 0xff, 0x8b, 0x14, 0xdc, 0x0b, 0xc9, 0xf5, 0x09, 0x48,
-	0x49, 0x28, 0x84, 0x55, 0xd1, 0xf9, 0x50, 0xe2, 0x17, 0x68, 0x57, 0x8e, 0xa4, 0x02, 0x16, 0x91,
-	0x94, 0x65, 0x3c, 0x22, 0x69, 0x5a, 0x80, 0x94, 0x66, 0xc7, 0x31, 0x06, 0xbd, 0x10, 0xd7, 0xd8,
-	0x51, 0x05, 0x1d, 0xd5, 0x08, 0xbe, 0x40, 0xbd, 0xa6, 0xcb, 0x7b, 0x4e, 0x7b, 0xb0, 0x79, 0x60,
-	0xaf, 0xf4, 0x29, 0x3e, 0xcc, 0x1b, 0x0f, 0x1e, 0x55, 0x66, 0xa7, 0xa5, 0xfd, 0x60, 0x51, 0xf9,
-	0x5c, 0xb0, 0x4c, 0x01, 0xcb, 0xd5, 0x28, 0x6c, 0xe4, 0xf0, 0x27, 0x84, 0x80, 0x53, 0x42, 0x81,
-	0x01, 0x57, 0x66, 0x57, 0x8b, 0x3f, 0x5e, 0x25, 0x7e, 0x7e, 0x7c, 0x78, 0x02, 0x2c, 0x86, 0x22,
-	0xd8, 0x9b, 0x49, 0xef, 0x36, 0x85, 0x4b, 0xda, 0x4b, 0x72, 0xf8, 0x10, 0xa1, 0x58, 0xf0, 0x34,
-	0x4a, 0x81, 0x0b, 0x66, 0xae, 0x57, 0x06, 0x83, 0x87, 0x77, 0xa5, 0x7d, 0xbf, 0x9e, 0x5a, 0x83,
-	0xb9, 0x61, 0xaf, 0x0a, 0xde, 0xeb, 0xf3, 0x37, 0xb4, 0xb9, 0xe4, 0x04, 0x7f, 0x44, 0xdb, 0xf3,
-	0x76, 0x23, 0x35, 0xca, 0x41, 0xbf, 0xf4, 0xce, 0xc1, 0x93, 0xff, 0x4c, 0xe0, 0x7c, 0x94, 0x43,
-	0xb8, 0x95, 0x2c, 0x45, 0xd8, 0x44, 0xeb, 0xf3, 0x61, 0xaf, 0xe9, 0x61, 0xcf, 0x43, 0xf7, 0x0c,
-	0xf5, 0x16, 0xfe, 0xb0, 0xdb, 0xd0, 0x0c, 0xdd, 0xf2, 0xc6, 0xb4, 0xb4, 0x3b, 0xd5, 0x73, 0x2e,
-	0x0a, 0xb0, 0x8b, 0xba, 0xd7, 0x90, 0xd1, 0x4b, 0xa5, 0x95, 0x3a, 0x01, 0xaa, 0xb6, 0xa2, 0xce,
-	0x84, 0xb3, 0x7f, 0xf0, 0xf6, 0x66, 0x6c, 0x19, 0xb7, 0x63, 0xcb, 0xf8, 0x35, 0xb6, 0x8c, 0x1f,
-	0x13, 0xab, 0x75, 0x3b, 0xb1, 0x5a, 0x3f, 0x27, 0x56, 0xeb, 0xe2, 0x29, 0xcd, 0xd4, 0xe5, 0xf7,
-	0xd8, 0x4b, 0x04, 0xf3, 0x67, 0xfb, 0xae, 0x68, 0x41, 0x52, 0xf0, 0x87, 0x7a, 0xf1, 0x2b, 0x9b,
-	0x32, 0xee, 0xea, 0x9d, 0x7f, 0xf9, 0x27, 0x00, 0x00, 0xff, 0xff, 0x4f, 0xf7, 0x32, 0xb2, 0x9f,
-	0x03, 0x00, 0x00,
+	// 945 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x55, 0xc1, 0x73, 0xdb, 0xc4,
+	0x17, 0x8e, 0x92, 0xd4, 0xb1, 0x37, 0x71, 0xfa, 0xeb, 0xc6, 0xed, 0xa8, 0x69, 0x6b, 0x79, 0xdc,
+	0xf6, 0x87, 0x87, 0x01, 0x89, 0x86, 0xcc, 0xc0, 0x70, 0x60, 0x26, 0x4a, 0xa0, 0x1c, 0x5a, 0x26,
+	0xa3, 0x84, 0x32, 0x53, 0x0e, 0x9a, 0xb5, 0xf4, 0x22, 0x2f, 0xb1, 0x76, 0x85, 0x76, 0xed, 0xd8,
+	0x37, 0x0e, 0xfc, 0x01, 0x1c, 0xf9, 0x93, 0x7a, 0xec, 0x11, 0x38, 0x08, 0x26, 0xb9, 0x79, 0x38,
+	0xf5, 0xc8, 0x05, 0x66, 0x57, 0xb2, 0x6c, 0x1a, 0xcd, 0x30, 0x5c, 0x24, 0xbd, 0x7d, 0xef, 0xfb,
+	0xf6, 0xbd, 0xb7, 0x6f, 0x3f, 0xa1, 0x4e, 0xc0, 0xd9, 0x19, 0xe5, 0x4e, 0xc2, 0xc1, 0x19, 0x3f,
+	0xe9, 0x83, 0x24, 0x4f, 0x9c, 0x08, 0x18, 0x08, 0x2a, 0xec, 0x24, 0xe5, 0x92, 0x63, 0x9c, 0x47,
+	0xd8, 0x09, 0x07, 0xbb, 0x88, 0xd8, 0x6d, 0x45, 0x3c, 0xe2, 0xda, 0xed, 0xa8, 0xaf, 0x3c, 0x72,
+	0xb7, 0x1d, 0x70, 0x11, 0x73, 0xe1, 0xf4, 0x89, 0x58, 0x90, 0x05, 0x9c, 0xb2, 0x65, 0xff, 0x05,
+	0x11, 0xb1, 0xa3, 0x1f, 0xe3, 0xb7, 0x76, 0xda, 0xbd, 0x5f, 0x91, 0x8b, 0xda, 0xb5, 0x40, 0x47,
+	0x9c, 0x47, 0x43, 0x70, 0xb4, 0xd5, 0x1f, 0x9d, 0x39, 0xe1, 0x28, 0x25, 0x92, 0xf2, 0x82, 0xbd,
+	0xfb, 0xc7, 0x0d, 0xb4, 0xf5, 0x34, 0xe7, 0x3b, 0x91, 0x44, 0x02, 0xfe, 0x18, 0xd5, 0x12, 0x92,
+	0x92, 0x58, 0x98, 0x46, 0xc7, 0xe8, 0x6d, 0xee, 0xed, 0xda, 0xd7, 0x2b, 0xb1, 0x8f, 0x75, 0x84,
+	0xbb, 0xfe, 0x2a, 0xb3, 0x56, 0xbc, 0x22, 0x1e, 0x3f, 0x46, 0xdb, 0x02, 0x20, 0xf4, 0x03, 0xce,
+	0x64, 0x4a, 0x02, 0x29, 0xcc, 0xd5, 0x8e, 0xd1, 0xab, 0x7b, 0x4d, 0xb5, 0x7a, 0x38, 0x5f, 0xc4,
+	0xc7, 0x68, 0x23, 0x02, 0xe6, 0xcb, 0x89, 0x30, 0xd7, 0x3a, 0x6b, 0xbd, 0x2d, 0xf7, 0xa3, 0x59,
+	0x66, 0xd5, 0x22, 0x60, 0x72, 0x22, 0xde, 0x64, 0x56, 0x73, 0x4a, 0xe2, 0xe1, 0x27, 0xdd, 0xdc,
+	0xee, 0xfe, 0x99, 0x59, 0x26, 0xb0, 0x80, 0x87, 0x94, 0x45, 0xce, 0xb7, 0x82, 0x33, 0xdb, 0x23,
+	0x17, 0xcf, 0x41, 0x08, 0x12, 0x81, 0xa7, 0x40, 0xa7, 0x13, 0x81, 0x3f, 0x40, 0x2d, 0x31, 0x15,
+	0x12, 0x62, 0x9f, 0x84, 0x31, 0x65, 0x3e, 0x09, 0xc3, 0x14, 0x84, 0x30, 0xd7, 0x3b, 0x46, 0xaf,
+	0xe1, 0xe1, 0xdc, 0x77, 0xa0, 0x5c, 0x07, 0xb9, 0x07, 0xbf, 0x44, 0x8d, 0x45, 0x96, 0x37, 0x3a,
+	0x6b, 0xbd, 0xcd, 0x3d, 0xab, 0xb2, 0x4e, 0xfe, 0xd9, 0x3c, 0x71, 0xf7, 0x9e, 0x2a, 0x76, 0x96,
+	0x59, 0x3b, 0x25, 0xf2, 0x3d, 0x1e, 0x53, 0x09, 0x71, 0x22, 0xa7, 0xde, 0x82, 0x0e, 0x7f, 0x83,
+	0x10, 0xb0, 0x88, 0x44, 0x10, 0x03, 0x93, 0x66, 0x4d, 0x93, 0x3f, 0xa8, 0x22, 0x3f, 0x7d, 0xba,
+	0xff, 0x1c, 0xe2, 0x3e, 0xa4, 0xee, 0xfd, 0x82, 0xba, 0xb5, 0x00, 0x2e, 0x71, 0x2f, 0xd1, 0xe1,
+	0xef, 0x0d, 0x74, 0x5b, 0x48, 0x72, 0x0e, 0x65, 0x97, 0x7d, 0xcd, 0x1c, 0x99, 0x1b, 0xfa, 0xb4,
+	0xde, 0xa9, 0xda, 0xe8, 0x44, 0x01, 0xe6, 0x75, 0x1c, 0xea, 0x70, 0xf7, 0xe1, 0x2c, 0xb3, 0xac,
+	0x4a, 0xa6, 0xa5, 0x9d, 0x77, 0xc4, 0x75, 0x24, 0xfe, 0xc1, 0x40, 0x77, 0xc6, 0x64, 0x28, 0x40,
+	0x5e, 0xcb, 0xa1, 0xae, 0x73, 0xe8, 0x55, 0xe5, 0xf0, 0x42, 0x23, 0xde, 0x4a, 0xe2, 0xd1, 0x2c,
+	0xb3, 0x3a, 0xd5, 0x5c, 0x4b, 0x59, 0xb4, 0xc6, 0x15, 0x58, 0xbc, 0x8f, 0x50, 0x9f, 0xb3, 0xd0,
+	0x0f, 0x81, 0xf1, 0xd8, 0x6c, 0xa8, 0xa3, 0x76, 0x6f, 0xbf, 0xc9, 0xac, 0x5b, 0xf9, 0xfc, 0x2c,
+	0x7c, 0x5d, 0xaf, 0xa1, 0x8c, 0x23, 0xfd, 0xfd, 0x97, 0x81, 0x76, 0x2a, 0xda, 0x81, 0xef, 0xa2,
+	0xba, 0x9a, 0x1c, 0x15, 0xa8, 0xe7, 0x7e, 0xdd, 0xdb, 0x88, 0x29, 0x73, 0x39, 0x0b, 0xf1, 0xbb,
+	0xe8, 0x96, 0xe4, 0xe7, 0xc0, 0x84, 0x9f, 0x40, 0xea, 0x5f, 0x00, 0x8d, 0x06, 0x52, 0x4f, 0xf6,
+	0xba, 0x77, 0x33, 0x77, 0x1c, 0x43, 0xfa, 0xb5, 0x5e, 0xc6, 0x5f, 0xa2, 0xff, 0x8d, 0x98, 0x22,
+	0xa1, 0x2c, 0x52, 0xe1, 0x94, 0x87, 0xe6, 0x9a, 0x6e, 0xca, 0x5d, 0x3b, 0xbf, 0x88, 0xf6, 0xfc,
+	0x22, 0xda, 0x47, 0xc5, 0x45, 0x74, 0xeb, 0xea, 0xf4, 0x7f, 0xfa, 0xcd, 0x32, 0xbc, 0x9b, 0x25,
+	0xf8, 0x58, 0x63, 0xf1, 0x3e, 0xba, 0x13, 0x0c, 0x09, 0x8d, 0x7d, 0x32, 0x92, 0x3c, 0x05, 0x39,
+	0x4a, 0x99, 0x3f, 0xa4, 0x31, 0x95, 0x7a, 0xb6, 0x9b, 0x5e, 0x4b, 0x7b, 0x0f, 0x4a, 0xe7, 0x33,
+	0xe5, 0xc3, 0xf7, 0x50, 0x23, 0x49, 0x41, 0x61, 0x06, 0x6a, 0xba, 0x55, 0x60, 0x3d, 0x49, 0xe1,
+	0x40, 0xd9, 0xdd, 0x5f, 0x56, 0x51, 0xab, 0xea, 0x30, 0xf0, 0x03, 0x84, 0x54, 0x0b, 0x8a, 0x02,
+	0xf3, 0x26, 0x34, 0x62, 0xca, 0x8a, 0xd2, 0x1e, 0xa3, 0xed, 0x98, 0x4c, 0xfc, 0x31, 0x19, 0xd2,
+	0x90, 0x48, 0x9e, 0xe6, 0xb7, 0xbb, 0xe9, 0x35, 0x63, 0x32, 0x79, 0x51, 0x2e, 0xe2, 0xcf, 0xd1,
+	0x16, 0x24, 0x3c, 0x18, 0xf8, 0x43, 0x60, 0x91, 0x1c, 0xfc, 0x97, 0xea, 0x37, 0x35, 0xf0, 0x99,
+	0xc6, 0x61, 0x77, 0xce, 0x93, 0xc2, 0x05, 0x49, 0x43, 0x5d, 0xaf, 0xe2, 0xc9, 0xc5, 0xd2, 0x56,
+	0x62, 0x59, 0xce, 0xd6, 0x21, 0xa7, 0xac, 0xd0, 0xa2, 0x9c, 0xc3, 0xd3, 0x18, 0x6c, 0xa2, 0x0d,
+	0x11, 0x90, 0x21, 0x65, 0x51, 0xd1, 0x85, 0xb9, 0x89, 0xbf, 0x42, 0xdb, 0x67, 0x00, 0xea, 0x84,
+	0x02, 0x60, 0x92, 0x44, 0x60, 0xd6, 0xf4, 0x00, 0xd9, 0x8a, 0xe4, 0xd7, 0xcc, 0xfa, 0x7f, 0x44,
+	0xe5, 0x60, 0xd4, 0xb7, 0x03, 0x1e, 0x3b, 0x85, 0x3c, 0xe7, 0xaf, 0xf7, 0x45, 0x78, 0xee, 0xc8,
+	0x69, 0x02, 0xc2, 0x3e, 0x82, 0xc0, 0x6b, 0x9e, 0x01, 0x1c, 0x97, 0x24, 0xdd, 0xef, 0xd0, 0xe6,
+	0x92, 0x62, 0xe0, 0x2f, 0x50, 0xb3, 0x9c, 0x6a, 0x85, 0xd1, 0x4d, 0xdd, 0xde, 0x7b, 0xf8, 0x2f,
+	0x4a, 0x73, 0x3a, 0x4d, 0xc0, 0xdb, 0x0a, 0x96, 0x2c, 0x55, 0xc9, 0x5c, 0xd4, 0x56, 0xb5, 0xa8,
+	0xcd, 0xcd, 0xee, 0x09, 0x6a, 0x94, 0x3a, 0x82, 0xbb, 0x8b, 0x30, 0x43, 0xd7, 0x53, 0x9f, 0x65,
+	0xd6, 0xba, 0x92, 0xcd, 0x12, 0x80, 0xbb, 0xa8, 0xb6, 0x3c, 0xc3, 0x2e, 0x52, 0xea, 0x9b, 0xaf,
+	0x78, 0xc5, 0xdb, 0xfd, 0xf4, 0xd5, 0x65, 0xdb, 0x78, 0x7d, 0xd9, 0x36, 0x7e, 0xbf, 0x6c, 0x1b,
+	0x3f, 0x5e, 0xb5, 0x57, 0x5e, 0x5f, 0xb5, 0x57, 0x7e, 0xbe, 0x6a, 0xaf, 0xbc, 0x7c, 0xf4, 0x8f,
+	0xc6, 0xe8, 0xff, 0x8e, 0x8c, 0x52, 0x12, 0x82, 0x33, 0xd1, 0x3f, 0x20, 0xdd, 0x9a, 0x7e, 0x4d,
+	0x1f, 0xf3, 0x87, 0x7f, 0x07, 0x00, 0x00, 0xff, 0xff, 0xab, 0xec, 0x0d, 0xa6, 0x27, 0x07, 0x00,
+	0x00,
 }
 
 func (m *GenesisState) Marshal() (dAtA []byte, err error) {
@@ -310,6 +513,30 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.BondDenom)
 		copy(dAtA[i:], m.BondDenom)
 		i = encodeVarintGenesis(dAtA, i, uint64(len(m.BondDenom)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if m.ValsetContractConfig != nil {
+		{
+			size, err := m.ValsetContractConfig.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenesis(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x42
+	}
+	if m.StakeContractConfig != nil {
+		{
+			size, err := m.StakeContractConfig.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenesis(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0x3a
 	}
@@ -377,6 +604,123 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *StakeContractConfig) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *StakeContractConfig) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *StakeContractConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.PreAuths != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.PreAuths))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.ClaimAutoreturnLimit != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.ClaimAutoreturnLimit))
+		i--
+		dAtA[i] = 0x20
+	}
+	n4, err4 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.UnbondingPeriod, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.UnbondingPeriod):])
+	if err4 != nil {
+		return 0, err4
+	}
+	i -= n4
+	i = encodeVarintGenesis(dAtA, i, uint64(n4))
+	i--
+	dAtA[i] = 0x1a
+	if m.TokensPerWeight != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.TokensPerWeight))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.MinBond != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.MinBond))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ValsetContractConfig) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ValsetContractConfig) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ValsetContractConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size := m.FeePercentage.Size()
+		i -= size
+		if _, err := m.FeePercentage.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintGenesis(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x32
+	if m.Scaling != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.Scaling))
+		i--
+		dAtA[i] = 0x28
+	}
+	{
+		size, err := m.EpochReward.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenesis(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x22
+	n6, err6 := github_com_gogo_protobuf_types.StdDurationMarshalTo(m.EpochLength, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(m.EpochLength):])
+	if err6 != nil {
+		return 0, err6
+	}
+	i -= n6
+	i = encodeVarintGenesis(dAtA, i, uint64(n6))
+	i--
+	dAtA[i] = 0x1a
+	if m.MaxValidators != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.MaxValidators))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.MinWeight != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.MinWeight))
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -494,10 +838,65 @@ func (m *GenesisState) Size() (n int) {
 			n += 1 + l + sovGenesis(uint64(l))
 		}
 	}
+	if m.StakeContractConfig != nil {
+		l = m.StakeContractConfig.Size()
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	if m.ValsetContractConfig != nil {
+		l = m.ValsetContractConfig.Size()
+		n += 1 + l + sovGenesis(uint64(l))
+	}
 	l = len(m.BondDenom)
 	if l > 0 {
 		n += 1 + l + sovGenesis(uint64(l))
 	}
+	return n
+}
+
+func (m *StakeContractConfig) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.MinBond != 0 {
+		n += 1 + sovGenesis(uint64(m.MinBond))
+	}
+	if m.TokensPerWeight != 0 {
+		n += 1 + sovGenesis(uint64(m.TokensPerWeight))
+	}
+	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.UnbondingPeriod)
+	n += 1 + l + sovGenesis(uint64(l))
+	if m.ClaimAutoreturnLimit != 0 {
+		n += 1 + sovGenesis(uint64(m.ClaimAutoreturnLimit))
+	}
+	if m.PreAuths != 0 {
+		n += 1 + sovGenesis(uint64(m.PreAuths))
+	}
+	return n
+}
+
+func (m *ValsetContractConfig) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.MinWeight != 0 {
+		n += 1 + sovGenesis(uint64(m.MinWeight))
+	}
+	if m.MaxValidators != 0 {
+		n += 1 + sovGenesis(uint64(m.MaxValidators))
+	}
+	l = github_com_gogo_protobuf_types.SizeOfStdDuration(m.EpochLength)
+	n += 1 + l + sovGenesis(uint64(l))
+	l = m.EpochReward.Size()
+	n += 1 + l + sovGenesis(uint64(l))
+	if m.Scaling != 0 {
+		n += 1 + sovGenesis(uint64(m.Scaling))
+	}
+	l = m.FeePercentage.Size()
+	n += 1 + l + sovGenesis(uint64(l))
 	return n
 }
 
@@ -755,6 +1154,78 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StakeContractConfig", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.StakeContractConfig == nil {
+				m.StakeContractConfig = &StakeContractConfig{}
+			}
+			if err := m.StakeContractConfig.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValsetContractConfig", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ValsetContractConfig == nil {
+				m.ValsetContractConfig = &ValsetContractConfig{}
+			}
+			if err := m.ValsetContractConfig.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field BondDenom", wireType)
 			}
 			var stringLen uint64
@@ -784,6 +1255,372 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.BondDenom = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *StakeContractConfig) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: StakeContractConfig: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: StakeContractConfig: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MinBond", wireType)
+			}
+			m.MinBond = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MinBond |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TokensPerWeight", wireType)
+			}
+			m.TokensPerWeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TokensPerWeight |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UnbondingPeriod", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.UnbondingPeriod, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClaimAutoreturnLimit", wireType)
+			}
+			m.ClaimAutoreturnLimit = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ClaimAutoreturnLimit |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PreAuths", wireType)
+			}
+			m.PreAuths = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.PreAuths |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ValsetContractConfig) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ValsetContractConfig: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ValsetContractConfig: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MinWeight", wireType)
+			}
+			m.MinWeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MinWeight |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxValidators", wireType)
+			}
+			m.MaxValidators = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.MaxValidators |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochLength", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(&m.EpochLength, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EpochReward", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.EpochReward.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scaling", wireType)
+			}
+			m.Scaling = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Scaling |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FeePercentage", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.FeePercentage.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

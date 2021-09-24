@@ -14,6 +14,7 @@ import (
 	"math"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestProofOfEngagementSetup(t *testing.T) {
@@ -175,9 +176,13 @@ func TestPoEUndelegate(t *testing.T) {
 	// when a validator unbonds stake
 	// then their staked amount decreases by that amount
 	// and the total power decreases
-	// and unbonded amount still locked
+	// and unbonded amount still locked until auto unbonding
+	// when unboding time expired
+	// then claims got executed automatically
 
 	sut.ResetChain(t)
+	unbodingPeriod := 7 * time.Second
+	sut.ModifyGenesisJson(t, SetUnbodingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin("utgd", sdk.ZeroInt())))
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 
@@ -193,6 +198,7 @@ func TestPoEUndelegate(t *testing.T) {
 	RequireTxSuccess(t, txResult)
 	// wait for msg executions
 	sut.AwaitNextBlock(t)
+	unbondingStart := time.Now()
 	AwaitValsetEpochCompleted(t)
 
 	// then
@@ -204,13 +210,11 @@ func TestPoEUndelegate(t *testing.T) {
 	powerAfter := queryTendermintValidatorPower(t, sut, 0)
 	assert.Less(t, powerAfter, powerBefore)
 
-	// account balance not increased
+	// account balance not increased, yet
 	balanceAfter := cli.QueryBalance(cli.GetKeyAddr("node0"), "utgd")
-	diff := balanceAfter - balanceBefore
-	const someBlockRewards int64 = 100
-	assert.Greater(t, someBlockRewards, diff, "%d is more than %d (excluding %d block rewards)", balanceAfter, balanceBefore, someBlockRewards)
+	assert.Equal(t, balanceBefore, balanceAfter)
 
-	// but pending unbonding delegations
+	// but unbonding delegations pending
 	qRes = cli.CustomQuery("q", "poe", "unbonding-delegations", cli.GetKeyAddr("node0"))
 	entries := gjson.Get(qRes, "entries").Array()
 	require.Len(t, entries, 2, qRes)
@@ -219,6 +223,19 @@ func TestPoEUndelegate(t *testing.T) {
 	require.Len(t, amounts, 2, qRes)
 	assert.Equal(t, int64(100000), amounts[0].Int())
 	assert.Equal(t, int64(200000), amounts[1].Int())
+
+	// and when unboding time expired
+	time.Sleep(unbodingPeriod - time.Since(unbondingStart))
+	sut.AwaitNextBlock(t)
+
+	// then auto claimed
+	balanceAfter = cli.QueryBalance(cli.GetKeyAddr("node0"), "utgd")
+	expBalance := balanceBefore + 100000 + 200000
+	assert.Equal(t, expBalance, balanceAfter)
+
+	qRes = cli.CustomQuery("q", "poe", "unbonding-delegations", cli.GetKeyAddr("node0"))
+	entries = gjson.Get(qRes, "entries").Array()
+	require.Len(t, entries, 0, qRes)
 }
 
 func TestPoEQueries(t *testing.T) {

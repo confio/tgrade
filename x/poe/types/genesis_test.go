@@ -2,8 +2,10 @@ package types
 
 import (
 	"encoding/json"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
 func TestValidateGenesis(t *testing.T) {
@@ -101,6 +103,18 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
+		"invalid valset contract config": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.ValsetContractConfig.MaxValidators = 0
+			}),
+			expErr: true,
+		},
+		"invalid stake contract config": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.StakeContractConfig.UnbondingPeriod = 0
+			}),
+			expErr: true,
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
@@ -112,4 +126,116 @@ func TestValidateGenesis(t *testing.T) {
 			require.NoError(t, gotErr)
 		})
 	}
+}
+
+func TestValidateValsetContractConfig(t *testing.T) {
+	specs := map[string]struct {
+		src    ValsetContractConfig
+		expErr bool
+	}{
+		"default": {
+			src: *DefaultGenesisState().ValsetContractConfig,
+		},
+		"max validators empty": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) { m.ValsetContractConfig.MaxValidators = 0 },
+			).ValsetContractConfig,
+			expErr: true,
+		},
+		"scaling empty": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) { m.ValsetContractConfig.Scaling = 0 },
+			).ValsetContractConfig,
+			expErr: true,
+		},
+		"epoch length empty": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) { m.ValsetContractConfig.EpochLength = 0 },
+			).ValsetContractConfig,
+			expErr: true,
+		},
+		"fee percentage at min": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) {
+					const min_fee_percentage = "0.0000000000000001"
+					val, err := sdk.NewDecFromStr(min_fee_percentage)
+					require.NoError(t, err)
+					m.ValsetContractConfig.FeePercentage = val
+				},
+			).ValsetContractConfig,
+		},
+		"fee percentage below min": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) {
+					const min_fee_percentage = "0.00000000000000009"
+					val, err := sdk.NewDecFromStr(min_fee_percentage)
+					require.NoError(t, err)
+					m.ValsetContractConfig.FeePercentage = val
+				},
+			).ValsetContractConfig,
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			gotErr := spec.src.ValidateBasic()
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+		})
+	}
+}
+
+func TestValidateStakeContractConfig(t *testing.T) {
+	specs := map[string]struct {
+		src    StakeContractConfig
+		expErr bool
+	}{
+		"default": {
+			src: *DefaultGenesisState().StakeContractConfig,
+		},
+		"min bond empty": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) { m.StakeContractConfig.MinBond = 0 },
+			).StakeContractConfig,
+			expErr: true,
+		},
+		"tokens per weight empty": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) { m.StakeContractConfig.TokensPerWeight = 0 },
+			).StakeContractConfig,
+			expErr: true,
+		},
+		"unbonding period empty": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) { m.StakeContractConfig.UnbondingPeriod = 0 },
+			).StakeContractConfig,
+			expErr: true,
+		},
+		"unbonding period below min": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) { m.StakeContractConfig.UnbondingPeriod = time.Second - time.Nanosecond },
+			).StakeContractConfig,
+			expErr: true,
+		},
+		"not convertable to seconds": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) { m.StakeContractConfig.UnbondingPeriod = time.Second + time.Nanosecond },
+			).StakeContractConfig,
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			gotErr := spec.src.ValidateBasic()
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+		})
+	}
+
 }

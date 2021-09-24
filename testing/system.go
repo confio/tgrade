@@ -206,21 +206,29 @@ func (s *SystemUnderTest) StopChain() {
 		c()
 	}
 	s.cleanupFn = nil
-	// send SIGTERM
+	//send SIGTERM
 	cmd := exec.Command(locateExecutable("pkill"), "-15", "tgrade")
 	cmd.Dir = workDir
 	if _, err := cmd.CombinedOutput(); err != nil {
 		s.Logf("failed to stop chain: %s\n", err)
 	}
-	time.Sleep(200 * time.Millisecond)
 
-	// send SIGKILL
-	cmd = exec.Command(locateExecutable("pkill"), "-9", "tgrade")
-	cmd.Dir = workDir
-	if _, err := cmd.CombinedOutput(); err != nil {
-		s.Logf("failed to kill process: %s\n", err)
+	var shutdown bool
+	for timeout := time.NewTimer(200 * time.Millisecond).C; !shutdown; {
+		select {
+		case <-timeout:
+			cmd = exec.Command(locateExecutable("pkill"), "-9", "tgrade")
+			cmd.Dir = workDir
+			if _, err := cmd.CombinedOutput(); err != nil {
+				s.Logf("failed to kill process: %s\n", err)
+			}
+			shutdown = true
+		default:
+			if err := exec.Command(locateExecutable("pgrep"), "tgrade").Run(); err != nil {
+				shutdown = true
+			}
+		}
 	}
-
 	s.ChainStarted = false
 }
 
@@ -293,6 +301,7 @@ func (s *SystemUnderTest) ResetChain(t *testing.T) {
 
 	// reset all validataor nodes
 	s.ForEachNodeExecAndWait(t, []string{"unsafe-reset-all"})
+	s.ModifyGenesisJson(t, SetEpochLength(t, time.Second))
 }
 
 // ModifyGenesisCLI executes the CLI commands to modify the genesis
