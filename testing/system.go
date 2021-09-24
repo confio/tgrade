@@ -293,9 +293,6 @@ func (s *SystemUnderTest) ResetChain(t *testing.T) {
 
 	// reset all validataor nodes
 	s.ForEachNodeExecAndWait(t, []string{"unsafe-reset-all"})
-	s.withEachNodeHome(func(i int, home string) {
-		os.Remove(filepath.Join(workDir, home, "wasm"))
-	})
 }
 
 // ModifyGenesisCLI executes the CLI commands to modify the genesis

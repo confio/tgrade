@@ -231,11 +231,13 @@ func createWasmAppAndExport(
 
 // extendUnsafeResetAllCmd - also clear wasm dir
 func extendUnsafeResetAllCmd(rootCmd *cobra.Command) {
+	unsafeResetCmd := server.UnsafeResetAllCmd().Use
 	for _, cmd := range rootCmd.Commands() {
-		if cmd.Use == "unsafe-reset-all" {
-			serverRunE := cmd.RunE
+		if cmd.Use == unsafeResetCmd {
 			cmd.RunE = func(cmd *cobra.Command, args []string) error {
-				_ = serverRunE(cmd, args)
+				if err := cmd.RunE(cmd, args); err != nil {
+					return nil
+				}
 				serverCtx := server.GetServerContextFromCmd(cmd)
 				return os.RemoveAll(filepath.Join(serverCtx.Config.RootDir, "wasm"))
 			}
