@@ -94,6 +94,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig app.EncodingConfig) {
 	)
 
 	server.AddCommands(rootCmd, app.DefaultNodeHome, newApp, createWasmAppAndExport, addModuleInitFlags)
+	extendUnsafeResetAllCmd(rootCmd)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
@@ -226,4 +227,22 @@ func createWasmAppAndExport(
 	}
 
 	return tgradeApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
+}
+
+// extendUnsafeResetAllCmd - also clear wasm dir
+func extendUnsafeResetAllCmd(rootCmd *cobra.Command) {
+	unsafeResetCmd := server.UnsafeResetAllCmd().Use
+	for _, cmd := range rootCmd.Commands() {
+		if cmd.Use == unsafeResetCmd {
+			serverRunE := cmd.RunE
+			cmd.RunE = func(cmd *cobra.Command, args []string) error {
+				if err := serverRunE(cmd, args); err != nil {
+					return nil
+				}
+				serverCtx := server.GetServerContextFromCmd(cmd)
+				return os.RemoveAll(filepath.Join(serverCtx.Config.RootDir, "wasm"))
+			}
+			return
+		}
+	}
 }

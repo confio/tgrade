@@ -4,6 +4,9 @@
 package testing
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,5 +33,28 @@ func TestGenesisCodePin(t *testing.T) {
 		require.Equal(t, codeIDs[0].Int(), int64(1))
 		require.Equal(t, codeIDs[1].Int(), int64(3))
 		return raw
+	})
+}
+
+func TestUnsafeResetAll(t *testing.T) {
+	// scenario:
+	// 	given a non empty wasm dir exists in the node home
+	//  when `unsafe-reset-all` is executed
+	// 	then the dir and all files in it are removed
+
+	wasmDir := filepath.Join(workDir, sut.nodePath(0), "wasm")
+	require.NoError(t, os.MkdirAll(wasmDir, os.ModePerm))
+
+	_, err := ioutil.TempFile(wasmDir, "testing")
+	require.NoError(t, err)
+
+	// when
+	sut.ForEachNodeExecAndWait(t, []string{"unsafe-reset-all"})
+
+	// then
+	sut.withEachNodeHome(func(i int, home string) {
+		if _, err := os.Stat(wasmDir); !os.IsNotExist(err) {
+			t.Fatal("expected wasm dir to be removed")
+		}
 	})
 }
