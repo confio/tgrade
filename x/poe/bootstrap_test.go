@@ -61,7 +61,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			// and contracts instantiated
 			require.Len(t, *capInst, 4)
 			// and pinned
-			assert.Equal(t, []uint64{1, 2, 3}, *capPin)
+			assert.Equal(t, []uint64{1, 3}, *capPin)
 
 			assert.Equal(t, []keeper.CapturedPoEContractAddress{
 				{Ctype: types.PoEContractTypeEngagement, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 1)},
@@ -70,7 +70,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				{Ctype: types.PoEContractTypeValset, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)},
 			}, *capSetAddr)
 			// and privilege set
-			require.Equal(t, []sdk.AccAddress{twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)}, *capPriv)
+			require.Equal(t, []sdk.AccAddress{twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 2), twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)}, *capPriv)
 		})
 	}
 }

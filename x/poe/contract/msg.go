@@ -75,7 +75,7 @@ type TG4StakeInitMsg struct {
 	// UnbondingPeriod unbonding period in seconds
 	UnbondingPeriod uint64 `json:"unbonding_period"`
 	// AutoReturnLimit limits how much claims would be automatically returned at end of block, 20 by default. Setting this to 0 disables auto returning claims.
-	AutoReturnLimit *uint64 `json:"auto_return_limit,string,omitempty"`
+	AutoReturnLimit *uint64 `json:"auto_return_limit,omitempty"`
 	Preauths        uint64  `json:"preauths,omitempty"`
 }
 

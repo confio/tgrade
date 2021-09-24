@@ -80,12 +80,14 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "pin tg4 engagement contract")
 	}
 
+	var claimLimit uint64 = 20
 	tg4StakerInitMsg := contract.TG4StakeInitMsg{
 		Admin:           gs.SystemAdminAddress,
 		Denom:           gs.BondDenom,
 		MinBond:         1,
 		TokensPerWeight: 1,
 		UnbondingPeriod: uint64(21 * 24 * time.Hour.Seconds()),
+		AutoReturnLimit: &claimLimit,
 		Preauths:        1,
 	}
 	codeID, err = k.Create(ctx, creator, tg4Stake, &wasmtypes.AllowEverybody)
@@ -97,8 +99,8 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "instantiate tg4 stake")
 	}
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeStaking, stakersContractAddr)
-	if err := k.PinCode(ctx, codeID); err != nil {
-		return sdkerrors.Wrap(err, "pin tg4 stake contract")
+	if err := tk.SetPrivileged(ctx, stakersContractAddr); err != nil {
+		return sdkerrors.Wrap(err, "grant privileges to staker contract")
 	}
 
 	tg4MixerInitMsg := contract.TG4MixerInitMsg{
