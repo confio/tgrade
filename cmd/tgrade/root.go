@@ -234,8 +234,9 @@ func extendUnsafeResetAllCmd(rootCmd *cobra.Command) {
 	unsafeResetCmd := server.UnsafeResetAllCmd().Use
 	for _, cmd := range rootCmd.Commands() {
 		if cmd.Use == unsafeResetCmd {
+			serverRunE := cmd.RunE
 			cmd.RunE = func(cmd *cobra.Command, args []string) error {
-				if err := cmd.RunE(cmd, args); err != nil {
+				if err := serverRunE(cmd, args); err != nil {
 					return nil
 				}
 				serverCtx := server.GetServerContextFromCmd(cmd)
