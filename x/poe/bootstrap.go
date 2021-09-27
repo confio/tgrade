@@ -145,12 +145,12 @@ func newStakeInitMsg(gs types.GenesisState, claimLimit uint64) contract.TG4Stake
 func newValsetInitMsg(mixerContractAddr sdk.AccAddress, gs types.GenesisState) contract.ValsetInitMsg {
 	return contract.ValsetInitMsg{
 		Membership:    mixerContractAddr.String(),
-		MinWeight:     int(gs.ValsetContractConfig.MinWeight),
-		MaxValidators: int(gs.ValsetContractConfig.MaxValidators),
-		EpochLength:   int(gs.ValsetContractConfig.EpochLength.Seconds()),
+		MinWeight:     gs.ValsetContractConfig.MinWeight,
+		MaxValidators: gs.ValsetContractConfig.MaxValidators,
+		EpochLength:   uint64(gs.ValsetContractConfig.EpochLength.Seconds()),
 		EpochReward:   gs.ValsetContractConfig.EpochReward,
 		InitialKeys:   []contract.Validator{},
-		Scaling:       int(gs.ValsetContractConfig.Scaling),
+		Scaling:       gs.ValsetContractConfig.Scaling,
 		FeePercentage: uint64(gs.ValsetContractConfig.FeePercentage.Mul(sdk.NewDec(contract.ValsetInitPercentageFactor)).TruncateInt64()),
 	}
 }

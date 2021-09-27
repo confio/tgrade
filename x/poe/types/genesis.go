@@ -27,7 +27,7 @@ func DefaultGenesisState() GenesisState {
 			MinWeight:     1,
 			MaxValidators: 100,
 			EpochLength:   60 * time.Second,
-			EpochReward:   sdk.NewCoin(DefaultBondDenom, sdk.OneInt()),
+			EpochReward:   sdk.NewCoin(DefaultBondDenom, sdk.NewInt(100_000)),
 			Scaling:       1,
 			FeePercentage: sdk.NewDec(50),
 		},
