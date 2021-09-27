@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/tendermint/tendermint/libs/rand"
+	"time"
 )
 
 const DefaultBondDenom = "utgd"
@@ -13,8 +14,23 @@ const DefaultBondDenom = "utgd"
 // DefaultGenesisState default values
 func DefaultGenesisState() GenesisState {
 	return GenesisState{
-		SeedContracts:      true,
-		BondDenom:          DefaultBondDenom,
+		SeedContracts: true,
+		BondDenom:     DefaultBondDenom,
+		StakeContractConfig: &StakeContractConfig{
+			MinBond:              1,
+			TokensPerWeight:      1,
+			UnbondingPeriod:      time.Hour * 21 * 24,
+			ClaimAutoreturnLimit: 20,
+			PreAuths:             1,
+		},
+		ValsetContractConfig: &ValsetContractConfig{
+			MinWeight:     1,
+			MaxValidators: 100,
+			EpochLength:   60 * time.Second,
+			EpochReward:   sdk.NewCoin(DefaultBondDenom, sdk.NewInt(100_000)),
+			Scaling:       1,
+			FeePercentage: sdk.NewDec(50),
+		},
 		SystemAdminAddress: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),
 		Params:             DefaultParams(),
 	}
@@ -24,7 +40,6 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 	if err := sdk.ValidateDenom(g.BondDenom); err != nil {
 		return sdkerrors.Wrap(err, "bond denom")
 	}
-
 	if g.SeedContracts {
 		if len(g.Contracts) != 0 {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "seed enabled but PoE contracts addresses provided")
@@ -32,6 +47,22 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		if len(g.Engagement) == 0 {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty engagement group")
 		}
+		if g.ValsetContractConfig == nil {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty valset contract config")
+		}
+		if err := g.ValsetContractConfig.ValidateBasic(); err != nil {
+			return sdkerrors.Wrap(err, "valset contract config")
+		}
+		if g.StakeContractConfig == nil {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty stake contract config")
+		}
+		if err := g.StakeContractConfig.ValidateBasic(); err != nil {
+			return sdkerrors.Wrap(err, "stake contract config")
+		}
+		if g.ValsetContractConfig.EpochReward.Denom != g.BondDenom {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "rewards not in bonded denom")
+		}
+
 	} else {
 		return errors.New("not supported, yet")
 		//if len(g.Contracts) == 0 {
@@ -96,6 +127,43 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 	return nil
 }
 
+// ValidateBasic ensure basic constraints
+func (c ValsetContractConfig) ValidateBasic() error {
+	if c.MaxValidators == 0 {
+		return sdkerrors.Wrap(ErrEmpty, "max validators")
+	}
+	if c.EpochLength == 0 {
+		return sdkerrors.Wrap(ErrEmpty, "epoch length")
+	}
+	if c.Scaling == 0 {
+		return sdkerrors.Wrap(ErrEmpty, "scaling")
+	}
+
+	minFeePercentage := sdk.NewDecFromIntWithPrec(sdk.OneInt(), 16)
+	if c.FeePercentage.LT(minFeePercentage) {
+		return sdkerrors.Wrap(ErrEmpty, "fee percentage")
+	}
+	return nil
+}
+
+// ValidateBasic ensure basic constraints
+func (c StakeContractConfig) ValidateBasic() error {
+	if c.MinBond == 0 {
+		return sdkerrors.Wrap(ErrEmpty, "min bond")
+	}
+	if c.TokensPerWeight == 0 {
+		return sdkerrors.Wrap(ErrEmpty, "tokens per weight")
+	}
+	if c.UnbondingPeriod == 0 {
+		return sdkerrors.Wrap(ErrEmpty, "unbonding period")
+	}
+	if time.Duration(uint64(c.UnbondingPeriod.Seconds()))*time.Second != c.UnbondingPeriod {
+		return sdkerrors.Wrap(ErrInvalid, "unbonding period not convertable to seconds")
+	}
+	return nil
+}
+
+// ValidateBasic ensure basic constraints
 func (c PoEContract) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(c.Address); err != nil {
 		return sdkerrors.Wrap(err, "address")
@@ -103,6 +171,7 @@ func (c PoEContract) ValidateBasic() error {
 	return sdkerrors.Wrap(c.ContractType.ValidateBasic(), "contract type")
 }
 
+// ValidateBasic ensure basic constraints
 func (c TG4Member) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(c.Address); err != nil {
 		return sdkerrors.Wrap(err, "address")

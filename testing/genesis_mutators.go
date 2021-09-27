@@ -9,6 +9,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"testing"
+	"time"
 )
 
 // SetPoEParamsMutator set params in genesis
@@ -47,5 +48,37 @@ func SetAllEngagementPoints(t *testing.T, points int) GenesisMutator {
 			require.NoError(t, err)
 		}
 		return raw
+	}
+}
+
+// SetEpochLength set the valset contract config to given epoch length
+func SetEpochLength(t *testing.T, epoch time.Duration) GenesisMutator {
+	return func(genesis []byte) []byte {
+		t.Helper()
+		state, err := sjson.SetRawBytes(genesis, "app_state.poe.valset_contract_config.epoch_length", []byte(fmt.Sprintf("%q", epoch)))
+		require.NoError(t, err)
+		return state
+	}
+}
+
+// SetUnbodingPeriod set the stake contract config unboding period
+func SetUnbodingPeriod(t *testing.T, unboding time.Duration) GenesisMutator {
+	return func(genesis []byte) []byte {
+		t.Helper()
+		state, err := sjson.SetRawBytes(genesis, "app_state.poe.stake_contract_config.unbonding_period", []byte(fmt.Sprintf("%q", unboding)))
+		require.NoError(t, err)
+		return state
+	}
+}
+
+// SetBlockRewards set the valset contract config unboding period
+func SetBlockRewards(t *testing.T, amount sdk.Coin) GenesisMutator {
+	return func(genesis []byte) []byte {
+		t.Helper()
+		bz, err := json.Marshal(amount)
+		require.NoError(t, err)
+		state, err := sjson.SetRawBytes(genesis, "app_state.poe.valset_contract_config.epoch_reward", bz)
+		require.NoError(t, err)
+		return state
 	}
 }

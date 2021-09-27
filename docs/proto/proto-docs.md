@@ -22,7 +22,9 @@
 - [confio/poe/v1beta1/genesis.proto](#confio/poe/v1beta1/genesis.proto)
     - [GenesisState](#confio.poe.v1beta1.GenesisState)
     - [PoEContract](#confio.poe.v1beta1.PoEContract)
+    - [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig)
     - [TG4Member](#confio.poe.v1beta1.TG4Member)
+    - [ValsetContractConfig](#confio.poe.v1beta1.ValsetContractConfig)
   
 - [confio/poe/v1beta1/query.proto](#confio/poe/v1beta1/query.proto)
     - [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest)
@@ -239,6 +241,8 @@ GenesisState - initial state of module
 | `system_admin_address` | [string](#string) |  | SystemAdminAddress single address that is set as admin for the PoE contracts in seed mode. |
 | `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated | Contracts Poe contract addresses and types when used with state dump in non seed mode. |
 | `engagement` | [TG4Member](#confio.poe.v1beta1.TG4Member) | repeated | Engagement weighted members of the engagement group. Validators should be in here. |
+| `stake_contract_config` | [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig) |  |  |
+| `valset_contract_config` | [ValsetContractConfig](#confio.poe.v1beta1.ValsetContractConfig) |  |  |
 | `bond_denom` | [string](#string) |  | BondDenom defines the bondable coin denomination. |
 
 
@@ -262,6 +266,25 @@ PoEContract address and type information
 
 
 
+<a name="confio.poe.v1beta1.StakeContractConfig"></a>
+
+### StakeContractConfig
+StakeContractConfig initial setup config
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `min_bond` | [uint64](#uint64) |  |  |
+| `tokens_per_weight` | [uint64](#uint64) |  |  |
+| `unbonding_period` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
+| `claim_autoreturn_limit` | [uint32](#uint32) |  |  |
+| `pre_auths` | [uint32](#uint32) |  |  |
+
+
+
+
+
+
 <a name="confio.poe.v1beta1.TG4Member"></a>
 
 ### TG4Member
@@ -272,6 +295,26 @@ TG4Member member of the Engagement group.
 | ----- | ---- | ----- | ----------- |
 | `address` | [string](#string) |  | Address is the bech32 address string |
 | `weight` | [uint64](#uint64) |  |  |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.ValsetContractConfig"></a>
+
+### ValsetContractConfig
+ValsetContractConfig initial setup config
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `min_weight` | [uint64](#uint64) |  |  |
+| `max_validators` | [uint32](#uint32) |  |  |
+| `epoch_length` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
+| `epoch_reward` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
+| `scaling` | [uint32](#uint32) |  |  |
+| `fee_percentage` | [string](#string) |  |  |
 
 
 

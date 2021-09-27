@@ -1,6 +1,8 @@
 package poe
 
 import (
+	"encoding/json"
+	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 	"github.com/confio/tgrade/x/twasm"
@@ -15,12 +17,56 @@ import (
 )
 
 func TestBootstrapPoEContracts(t *testing.T) {
+	var (
+		defaultLimit  uint64 = 20
+		mySystemAdmin        = types.RandomAccAddress().String()
+		myUser               = types.RandomAccAddress().String()
+		myOtherUser          = types.RandomAccAddress().String()
+	)
+
+	var (
+		engagementContractAddr = twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 1)
+		stakingContractAdddr   = twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 2)
+		mixerContractAddr      = twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 3)
+		valsetContractAddr     = twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)
+	)
+
 	specs := map[string]struct {
-		genesis types.GenesisState
-		expErr  bool
+		genesis           types.GenesisState
+		expEngagementInit contract.TG4GroupInitMsg
+		expStakerInit     contract.TG4StakeInitMsg
+		expValsetInit     contract.ValsetInitMsg
+		expErr            bool
 	}{
 		"all contracts setup": {
-			genesis: types.GenesisStateFixture(),
+			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
+				m.SystemAdminAddress = mySystemAdmin
+				m.Engagement = []types.TG4Member{{Address: myUser, Weight: 10}, {Address: myOtherUser, Weight: 11}}
+			}),
+			expEngagementInit: contract.TG4GroupInitMsg{
+				Admin:    mySystemAdmin,
+				Preauths: 1,
+				Members:  []contract.TG4Member{{Addr: myUser, Weight: 10}, {Addr: myOtherUser, Weight: 11}},
+			},
+			expStakerInit: contract.TG4StakeInitMsg{
+				Admin:           mySystemAdmin,
+				Denom:           "utgd",
+				MinBond:         1,
+				TokensPerWeight: 1,
+				UnbondingPeriod: 21 * 24 * 60 * 60,
+				AutoReturnLimit: &defaultLimit,
+				Preauths:        1,
+			},
+			expValsetInit: contract.ValsetInitMsg{
+				Membership:    mixerContractAddr.String(),
+				MinWeight:     1,
+				MaxValidators: 100,
+				EpochLength:   60,
+				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:       1,
+				FeePercentage: 500_000_000_000_000_000,
+				InitialKeys:   []contract.Validator{},
+			},
 		},
 	}
 	for name, spec := range specs {
@@ -58,19 +104,118 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, c, (*capCreate)[i].WasmCode)
 			}
-			// and contracts instantiated
+			// and contracts proper instantiated
 			require.Len(t, *capInst, 4)
-			// and pinned
-			assert.Equal(t, []uint64{1, 3}, *capPin)
 
+			var (
+				gotEngagementInit contract.TG4GroupInitMsg
+				gotStakerInit     contract.TG4StakeInitMsg
+				gotMixerInit      contract.TG4MixerInitMsg
+				gotValsetInit     contract.ValsetInitMsg
+			)
+			for i, ref := range []interface{}{&gotEngagementInit, &gotStakerInit, &gotMixerInit, &gotValsetInit} {
+				require.NoError(t, json.Unmarshal((*capInst)[i].InitMsg, ref))
+			}
+			assert.Equal(t, spec.expEngagementInit, gotEngagementInit)
+			assert.Equal(t, spec.expStakerInit, gotStakerInit)
+			assert.Equal(t, spec.expValsetInit, gotValsetInit)
+			expMixerInit := contract.TG4MixerInitMsg{
+				LeftGroup:  engagementContractAddr.String(),
+				RightGroup: stakingContractAdddr.String(),
+			}
+			assert.Equal(t, expMixerInit, gotMixerInit)
+
+			// and pinned or privileged
+			assert.Equal(t, []uint64{1, 3}, *capPin)
+			require.Equal(t, []sdk.AccAddress{stakingContractAdddr, valsetContractAddr}, *capPriv)
+
+			// and contract addr stored for types
 			assert.Equal(t, []keeper.CapturedPoEContractAddress{
-				{Ctype: types.PoEContractTypeEngagement, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 1)},
-				{Ctype: types.PoEContractTypeStaking, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 2)},
-				{Ctype: types.PoEContractTypeMixer, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 3)},
-				{Ctype: types.PoEContractTypeValset, ContractAddr: twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)},
+				{Ctype: types.PoEContractTypeEngagement, ContractAddr: engagementContractAddr},
+				{Ctype: types.PoEContractTypeStaking, ContractAddr: stakingContractAdddr},
+				{Ctype: types.PoEContractTypeMixer, ContractAddr: mixerContractAddr},
+				{Ctype: types.PoEContractTypeValset, ContractAddr: valsetContractAddr},
 			}, *capSetAddr)
-			// and privilege set
-			require.Equal(t, []sdk.AccAddress{twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 2), twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)}, *capPriv)
+		})
+	}
+}
+
+func TestCreateValsetInitMsg(t *testing.T) {
+	mixerContractAddr := types.RandomAccAddress()
+
+	specs := map[string]struct {
+		genesis types.GenesisState
+		exp     contract.ValsetInitMsg
+	}{
+		"default": {
+			genesis: types.DefaultGenesisState(),
+			exp: contract.ValsetInitMsg{
+				Membership:    mixerContractAddr.String(),
+				MinWeight:     1,
+				MaxValidators: 100,
+				EpochLength:   60,
+				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:       1,
+				FeePercentage: 500_000_000_000_000_000,
+				InitialKeys:   []contract.Validator{},
+			},
+		},
+		"fee percentage with comma value": {
+			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
+				var err error
+				m.ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("50.1")
+				require.NoError(t, err)
+			}),
+			exp: contract.ValsetInitMsg{
+				Membership:    mixerContractAddr.String(),
+				MinWeight:     1,
+				MaxValidators: 100,
+				EpochLength:   60,
+				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:       1,
+				FeePercentage: 501_000_000_000_000_000,
+				InitialKeys:   []contract.Validator{},
+			},
+		},
+		"fee percentage with after comma value": {
+			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
+				var err error
+				m.ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("0.1")
+				require.NoError(t, err)
+			}),
+			exp: contract.ValsetInitMsg{
+				Membership:    mixerContractAddr.String(),
+				MinWeight:     1,
+				MaxValidators: 100,
+				EpochLength:   60,
+				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:       1,
+				FeePercentage: 1_000_000_000_000_000,
+				InitialKeys:   []contract.Validator{},
+			},
+		},
+		"fee percentage with min comma value": {
+			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
+				var err error
+				m.ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("0.0000000000000001")
+				require.NoError(t, err)
+			}),
+			exp: contract.ValsetInitMsg{
+				Membership:    mixerContractAddr.String(),
+				MinWeight:     1,
+				MaxValidators: 100,
+				EpochLength:   60,
+				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:       1,
+				FeePercentage: 1,
+				InitialKeys:   []contract.Validator{},
+			},
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			got := newValsetInitMsg(mixerContractAddr, spec.genesis)
+			assert.Equal(t, spec.exp, got)
 		})
 	}
 }

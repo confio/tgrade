@@ -11,7 +11,6 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"time"
 )
 
 var (
@@ -80,20 +79,12 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "pin tg4 engagement contract")
 	}
 
-	var claimLimit uint64 = 20
-	tg4StakerInitMsg := contract.TG4StakeInitMsg{
-		Admin:           gs.SystemAdminAddress,
-		Denom:           gs.BondDenom,
-		MinBond:         1,
-		TokensPerWeight: 1,
-		UnbondingPeriod: uint64(21 * 24 * time.Hour.Seconds()),
-		AutoReturnLimit: &claimLimit,
-		Preauths:        1,
-	}
+	var claimLimit = uint64(gs.StakeContractConfig.ClaimAutoreturnLimit)
 	codeID, err = k.Create(ctx, creator, tg4Stake, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 stake contract")
 	}
+	tg4StakerInitMsg := newStakeInitMsg(gs, claimLimit)
 	stakersContractAddr, _, err := k.Instantiate(ctx, codeID, creator, systemAdmin, mustMarshalJson(tg4StakerInitMsg), "stakers", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 stake")
@@ -121,20 +112,12 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "pin tg4 mixer contract")
 	}
 
-	valsetInitMsg := contract.ValsetInitMsg{
-		Membership:    mixerContractAddr.String(),
-		MinWeight:     1,
-		MaxValidators: 100,
-		EpochLength:   1,
-		EpochReward:   sdk.NewCoin(gs.BondDenom, sdk.OneInt()),
-		InitialKeys:   []contract.Validator{},
-		Scaling:       1,
-		FeePercentage: 500_000_000_000_000_000,
-	}
 	codeID, err = k.Create(ctx, creator, tgValset, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store valset contract")
 	}
+
+	valsetInitMsg := newValsetInitMsg(mixerContractAddr, gs)
 	valsetContractAddr, _, err := k.Instantiate(ctx, codeID, creator, systemAdmin, mustMarshalJson(valsetInitMsg), "valset", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate valset")
@@ -145,6 +128,31 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "grant privileges to valset contract")
 	}
 	return nil
+}
+
+func newStakeInitMsg(gs types.GenesisState, claimLimit uint64) contract.TG4StakeInitMsg {
+	return contract.TG4StakeInitMsg{
+		Admin:           gs.SystemAdminAddress,
+		Denom:           gs.BondDenom,
+		MinBond:         gs.StakeContractConfig.MinBond,
+		TokensPerWeight: gs.StakeContractConfig.TokensPerWeight,
+		UnbondingPeriod: uint64(gs.StakeContractConfig.UnbondingPeriod.Seconds()),
+		AutoReturnLimit: &claimLimit,
+		Preauths:        uint64(gs.StakeContractConfig.PreAuths),
+	}
+}
+
+func newValsetInitMsg(mixerContractAddr sdk.AccAddress, gs types.GenesisState) contract.ValsetInitMsg {
+	return contract.ValsetInitMsg{
+		Membership:    mixerContractAddr.String(),
+		MinWeight:     gs.ValsetContractConfig.MinWeight,
+		MaxValidators: gs.ValsetContractConfig.MaxValidators,
+		EpochLength:   uint64(gs.ValsetContractConfig.EpochLength.Seconds()),
+		EpochReward:   gs.ValsetContractConfig.EpochReward,
+		InitialKeys:   []contract.Validator{},
+		Scaling:       gs.ValsetContractConfig.Scaling,
+		FeePercentage: uint64(gs.ValsetContractConfig.FeePercentage.Mul(sdk.NewDec(contract.ValsetInitPercentageFactor)).TruncateInt64()),
+	}
 }
 
 // verifyPoEContracts verifies all PoE contracts are setup as expected

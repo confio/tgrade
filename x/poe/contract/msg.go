@@ -9,6 +9,8 @@ import (
 	"testing"
 )
 
+const ValsetInitPercentageFactor = 10_000_000_000_000_000
+
 // TG4GroupInitMsg contract init message
 //See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-group/schema/instantiate_msg.json
 type TG4GroupInitMsg struct {
@@ -93,12 +95,12 @@ type TG4GroupSudoMsg struct {
 // See https://github.com/confio/tgrade-contracts/tree/main/contracts/tgrade-valset
 type ValsetInitMsg struct {
 	Membership    string      `json:"membership"`
-	MinWeight     int         `json:"min_weight"`
-	MaxValidators int         `json:"max_validators"`
-	EpochLength   int         `json:"epoch_length"`
+	MinWeight     uint64      `json:"min_weight"`
+	MaxValidators uint32      `json:"max_validators"`
+	EpochLength   uint64      `json:"epoch_length"`
 	EpochReward   sdk.Coin    `json:"epoch_reward"`
 	InitialKeys   []Validator `json:"initial_keys"`
-	Scaling       int         `json:"scaling,omitempty"`
+	Scaling       uint32      `json:"scaling,omitempty"`
 	// Percentage of total accumulated fees which is substracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
 	FeePercentage uint64 `json:"fee_percentage,string,omitempty"`
 }

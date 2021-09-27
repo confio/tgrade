@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmwasm/wasm/v1/genesis.proto";
 import "confio/poe/v1beta1/poe.proto";
+import "google/protobuf/duration.proto";
 
 option go_package = "github.com/confio/tgrade/x/poe/types";
 
@@ -43,8 +44,37 @@ message GenesisState {
     (gogoproto.jsontag) = "engagement,omitempty"
   ];
 
+  StakeContractConfig stake_contract_config = 7
+      [ (gogoproto.jsontag) = "stake_contract_config,omitempty" ];
+
+  ValsetContractConfig valset_contract_config = 8
+      [ (gogoproto.jsontag) = "valset_contract_config,omitempty" ];
   // BondDenom defines the bondable coin denomination.
-  string bond_denom = 7 [ (gogoproto.moretags) = "yaml:\"bond_denom\"" ];
+  string bond_denom = 9 [ (gogoproto.moretags) = "yaml:\"bond_denom\"" ];
+}
+
+// StakeContractConfig initial setup config
+message StakeContractConfig {
+  uint64 min_bond = 1;
+  uint64 tokens_per_weight = 2;
+  google.protobuf.Duration unbonding_period = 3
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  uint32 claim_autoreturn_limit = 4;
+  uint32 pre_auths = 5;
+}
+
+// ValsetContractConfig initial setup config
+message ValsetContractConfig {
+  uint64 min_weight = 1;
+  uint32 max_validators = 2;
+  google.protobuf.Duration epoch_length = 3
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  cosmos.base.v1beta1.Coin epoch_reward = 4 [ (gogoproto.nullable) = false ];
+  uint32 scaling = 5;
+  string fee_percentage = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
+  ];
 }
 
 // PoEContract address and type information
