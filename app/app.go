@@ -335,9 +335,11 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
-		poe.ModuleName,
 		upgradetypes.ModuleName,
-		evidencetypes.ModuleName, ibchost.ModuleName,
+		capabilitytypes.ModuleName,
+		evidencetypes.ModuleName,
+		poe.ModuleName,
+		ibchost.ModuleName,
 		twasm.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, twasm.ModuleName, poe.ModuleName)
@@ -392,10 +394,10 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 
-	anteHandler := globalfee.NewAnteHandler(
+	anteHandler := NewAnteHandler(
 		app.accountKeeper, app.bankKeeper, authante.DefaultSigVerificationGasConsumer,
-		encodingConfig.TxConfig.SignModeHandler(), app.getSubspace(globalfee.ModuleName),
-		app.poeKeeper,
+		encodingConfig.TxConfig.SignModeHandler(), keys[wasm.StoreKey], app.ibcKeeper.ChannelKeeper,
+		app.getSubspace(globalfee.ModuleName), app.poeKeeper,
 	)
 	app.SetAnteHandler(anteHandler)
 	app.SetEndBlocker(app.EndBlocker)
