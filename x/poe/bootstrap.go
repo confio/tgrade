@@ -129,7 +129,12 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 
 	valsetInitMsg := newValsetInitMsg(mixerContractAddr, gs, engagementContractAddr, engagementCodeID)
-	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, creator, systemAdmin, mustMarshalJson(valsetInitMsg), "valset", nil)
+	// TODO: what is wrong with this input????
+	fmt.Printf("%#v\n", valsetInitMsg)
+	//fmt.Printf("%v\n", *valsetInitMsg.ValidatorsRewardRatio)
+	valsetJson := mustMarshalJson(valsetInitMsg)
+	fmt.Println(string(valsetJson))
+	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, creator, systemAdmin, valsetJson, "valset", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate valset")
 	}
@@ -166,7 +171,7 @@ func newValsetInitMsg(mixerContractAddr sdk.AccAddress, gs types.GenesisState, e
 		FeePercentage: contract.DecimalFromPercentage(gs.ValsetContractConfig.FeePercentage),
 		// TODO: set AutoJail from genesis
 		// TODO: set ValidatorsRewardRatio from genesis (hardcode to 50% here)
-		ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
+		//ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 		DistributionContract:  engagementAddr.String(),
 		RewardsCodeId:         engagementID,
 	}

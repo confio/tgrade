@@ -48,8 +48,7 @@ type ValsetInitMsg struct {
 	// Percentage of total accumulated fees which is substracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
 	FeePercentage *Decimal `json:"fee_percentage,string,omitempty"`
 	// If set to true, we will auto-unjail any validator after their jailtime is over.
-	// Defaults to false if unset (but this may change).
-	AutoUnjail *bool `json:"auto_unjail,omitempty"`
+	AutoUnjail bool `json:"auto_unjail"`
 	// What percentage of the rewards (fees + inflation) go to validators. The rest go to distribution contract (below)
 	ValidatorsRewardRatio *Decimal `json:"validators_reward_ratio,string,omitempty"`
 	// This contract receives the rewards that don't go to the validator (set ot tg4-engagement)
