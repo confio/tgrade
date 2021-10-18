@@ -87,7 +87,7 @@ type TestKeepers struct {
 
 // CreateDefaultTestInput common settings for CreateTestInput
 func CreateDefaultTestInput(t *testing.T, opts ...wasmkeeper.Option) (sdk.Context, TestKeepers) {
-	return CreateTestInput(t, false, "staking", opts...)
+	return CreateTestInput(t, false, "staking,iterator", opts...)
 }
 
 // CreateTestInput encoders can be nil to accept the defaults, or set it to override some of the message handlers (like default)

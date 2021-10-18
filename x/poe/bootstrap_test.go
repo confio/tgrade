@@ -19,10 +19,11 @@ import (
 
 func TestBootstrapPoEContracts(t *testing.T) {
 	var (
-		defaultLimit  uint64 = 20
-		mySystemAdmin        = types.RandomAccAddress().String()
-		myUser               = types.RandomAccAddress().String()
-		myOtherUser          = types.RandomAccAddress().String()
+		defaultLimit     uint64 = 20
+		expFeePercentage        = contract.Decimal(500_000_000_000_000_000)
+		mySystemAdmin           = types.RandomAccAddress().String()
+		myUser                  = types.RandomAccAddress().String()
+		myOtherUser             = types.RandomAccAddress().String()
 	)
 
 	var (
@@ -67,7 +68,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				EpochLength:   60,
 				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
 				Scaling:       1,
-				FeePercentage: 500_000_000_000_000_000,
+				FeePercentage: &expFeePercentage,
 				InitialKeys:   []contract.Validator{},
 			},
 		},
