@@ -2,6 +2,10 @@ package poe
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"path/filepath"
+	"testing"
+
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
@@ -11,9 +15,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
-	"path/filepath"
-	"testing"
 )
 
 func TestBootstrapPoEContracts(t *testing.T) {
@@ -33,7 +34,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 
 	specs := map[string]struct {
 		genesis           types.GenesisState
-		expEngagementInit contract.TG4GroupInitMsg
+		expEngagementInit contract.TG4EngagementInitMsg
 		expStakerInit     contract.TG4StakeInitMsg
 		expValsetInit     contract.ValsetInitMsg
 		expErr            bool
@@ -43,7 +44,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				m.SystemAdminAddress = mySystemAdmin
 				m.Engagement = []types.TG4Member{{Address: myUser, Weight: 10}, {Address: myOtherUser, Weight: 11}}
 			}),
-			expEngagementInit: contract.TG4GroupInitMsg{
+			expEngagementInit: contract.TG4EngagementInitMsg{
 				Admin:    mySystemAdmin,
 				Preauths: 1,
 				Members:  []contract.TG4Member{{Addr: myUser, Weight: 10}, {Addr: myOtherUser, Weight: 11}},
@@ -108,7 +109,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			require.Len(t, *capInst, 4)
 
 			var (
-				gotEngagementInit contract.TG4GroupInitMsg
+				gotEngagementInit contract.TG4EngagementInitMsg
 				gotStakerInit     contract.TG4StakeInitMsg
 				gotMixerInit      contract.TG4MixerInitMsg
 				gotValsetInit     contract.ValsetInitMsg

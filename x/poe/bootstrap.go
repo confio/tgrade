@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
@@ -50,7 +51,7 @@ type poeKeeper interface {
 //* [mixer](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-mixer) - calculates the combined value of
 //  stake and engagement points. Source for the valset contract.
 func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
-	tg4EngagementInitMsg := contract.TG4GroupInitMsg{
+	tg4EngagementInitMsg := contract.TG4EngagementInitMsg{
 		Admin:    gs.SystemAdminAddress,
 		Members:  make([]contract.TG4Member, len(gs.Engagement)),
 		Preauths: 1,
