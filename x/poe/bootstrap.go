@@ -55,6 +55,10 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		Admin:    gs.SystemAdminAddress,
 		Members:  make([]contract.TG4Member, len(gs.Engagement)),
 		Preauths: 1,
+		Token:    gs.BondDenom,
+		// TODO: allow us to configure halflife in Genesis
+		// now hardcoded as 180 days = 180 * 86400s
+		Halflife: 15552000,
 	}
 	for i, v := range gs.Engagement {
 		tg4EngagementInitMsg.Members[i] = contract.TG4Member{

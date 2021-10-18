@@ -48,6 +48,8 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				Admin:    mySystemAdmin,
 				Preauths: 1,
 				Members:  []contract.TG4Member{{Addr: myUser, Weight: 10}, {Addr: myOtherUser, Weight: 11}},
+				Token:    "utgd",
+				Halflife: 15552000,
 			},
 			expStakerInit: contract.TG4StakeInitMsg{
 				Admin:           mySystemAdmin,

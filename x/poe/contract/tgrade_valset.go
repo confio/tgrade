@@ -92,19 +92,6 @@ func (m ValidatorMetadata) ToDescription() stakingtypes.Description {
 
 }
 
-// TG4StakeExecute staking contract execute messages
-// See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-stake/schema/execute_msg.json
-type TG4StakeExecute struct {
-	Bond   *struct{} `json:"bond,omitempty"`
-	Unbond *Unbond   `json:"unbond,omitempty"`
-}
-
-// Unbond will start the unbonding process for the given number of tokens. The sender immediately loses weight from these tokens, and can claim them back to his wallet after `unbonding_period`",
-type Unbond struct {
-	// Tokens are the amount to unbond
-	Tokens sdk.Int `json:"tokens"`
-}
-
 // ValsetQuery will create many queries for the valset contract
 // https://github.com/confio/tgrade-contracts/blob/v0.3.0/contracts/tgrade-valset/src/msg.rs
 type ValsetQuery struct {
