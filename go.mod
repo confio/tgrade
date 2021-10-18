@@ -3,8 +3,8 @@ module github.com/confio/tgrade
 go 1.16
 
 require (
-	github.com/CosmWasm/wasmd v0.20.0-rc1
-	github.com/CosmWasm/wasmvm v1.0.0-soon2
+	github.com/CosmWasm/wasmd v0.20.0
+	github.com/CosmWasm/wasmvm v1.0.0-beta
 	github.com/cosmos/cosmos-sdk v0.42.10
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2

@@ -54,6 +54,10 @@ github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d h1:nalkkPQ
 github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d/go.mod h1:URdX5+vg25ts3aCh8H5IFZybJYKWhJHYMTnf+ULtoC4=
 github.com/CosmWasm/wasmd v0.20.0-rc1 h1:+7WCDkxvwm6tstz0Pcn+QCqHZ/sAs+Vku4NGnnjI20k=
 github.com/CosmWasm/wasmd v0.20.0-rc1/go.mod h1:zuZutqwB8XIOzgw1tk6vDFVTGixlP+pPza91i0zl8bQ=
+github.com/CosmWasm/wasmd v0.20.0 h1:5iuazO1EU/fOSgBoKxIFbtS4pRXWgXN+7oVUSulm7XA=
+github.com/CosmWasm/wasmd v0.20.0/go.mod h1:XsG61XO+WTh/001JwW+7jOQRFgpbYNlMZ0ntDyqPAOM=
+github.com/CosmWasm/wasmvm v1.0.0-beta h1:cTBsF0tZ2A54PMlDbBcHmf+P1I7BKxnpTHn9NA06TPg=
+github.com/CosmWasm/wasmvm v1.0.0-beta/go.mod h1:Id107qllDJyJjVQQsKMOy2YYF98sqPJ2t+jX1QES40A=
 github.com/CosmWasm/wasmvm v1.0.0-soon2 h1:lwaV55tM+LMWGM0pu18iESEcAQ/PABNsnVQhCng6xJ8=
 github.com/CosmWasm/wasmvm v1.0.0-soon2/go.mod h1:Id107qllDJyJjVQQsKMOy2YYF98sqPJ2t+jX1QES40A=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
