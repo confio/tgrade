@@ -102,6 +102,12 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	tg4MixerInitMsg := contract.TG4MixerInitMsg{
 		LeftGroup:  engagementContractAddr.String(),
 		RightGroup: stakersContractAddr.String(),
+		// TODO: allow to configure the other types.
+		// We need to analyze benchmarks and discuss first.
+		// This maintains same behavior
+		FunctionType: contract.MixerFunction{
+			GeometricMean: &struct{}{},
+		},
 	}
 	mixerCodeID, err := k.Create(ctx, creator, tg4Mixer, &wasmtypes.AllowEverybody)
 	if err != nil {

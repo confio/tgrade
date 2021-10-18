@@ -125,6 +125,9 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			expMixerInit := contract.TG4MixerInitMsg{
 				LeftGroup:  engagementContractAddr.String(),
 				RightGroup: stakingContractAdddr.String(),
+				FunctionType: contract.MixerFunction{
+					GeometricMean: &struct{}{},
+				},
 			}
 			assert.Equal(t, expMixerInit, gotMixerInit)
 
