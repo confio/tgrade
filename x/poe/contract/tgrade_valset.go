@@ -4,21 +4,40 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/confio/tgrade/x/poe/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	cryptosecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto/ed25519"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
-// This is used by bootstrap module (what number = 1%)
-const ValsetInitPercentageFactor = 10_000_000_000_000_000
+// normalizing 1% to cosmwasm decimal (18 places)
+var decimalPercentageFactor = sdk.NewDec(10_000_000_000_000_000)
+
+type Decimal uint64
+
+func DecimalFromPercentage(percent sdk.Dec) *Decimal {
+	if percent.IsZero() {
+		return nil
+	}
+	res := Decimal(percent.Mul(decimalPercentageFactor).TruncateInt64())
+	return &res
+}
+
+func DecimalFromProMille(promille uint64) *Decimal {
+	res := Decimal(1_000_000_000_000_000 * promille)
+	return &res
+}
 
 // ValsetInitMsg Valset contract init message
-// See https://github.com/confio/tgrade-contracts/tree/main/contracts/tgrade-valset
+// See https://github.com/confio/tgrade-contracts/tree/v0.5.0-alpha/contracts/tgrade-valset/src/msg.rs
 type ValsetInitMsg struct {
+	Admin         string      `json:"admin,omitempty"`
 	Membership    string      `json:"membership"`
 	MinWeight     uint64      `json:"min_weight"`
 	MaxValidators uint32      `json:"max_validators"`
@@ -27,7 +46,17 @@ type ValsetInitMsg struct {
 	InitialKeys   []Validator `json:"initial_keys"`
 	Scaling       uint32      `json:"scaling,omitempty"`
 	// Percentage of total accumulated fees which is substracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
-	FeePercentage uint64 `json:"fee_percentage,string,omitempty"`
+	FeePercentage *Decimal `json:"fee_percentage,string,omitempty"`
+	// If set to true, we will auto-unjail any validator after their jailtime is over.
+	// Defaults to false if unset (but this may change).
+	AutoUnjail *bool `json:"auto_unjail"`
+	// What percentage of the rewards (fees + inflation) go to validators. The rest go to distribution contract (below)
+	ValidatorsRewardRatio *Decimal `json:"validators_reward_ratio,string,omitempty"`
+	// This contract receives the rewards that don't go to the validator (set ot tg4-engagement)
+	DistributionContract string `json:"distribution_contract,omitempty"`
+	// This is the code-id of the cw2222-compliant contract used to handle rewards for the validators
+	// Generally should the the tg4-engagement code id
+	RewardsCodeId uint64 `json:"rewards_code_id"`
 }
 
 func (m ValsetInitMsg) Json(t *testing.T) string {
@@ -47,10 +76,28 @@ func asJson(t *testing.T, m interface{}) string {
 }
 
 // TG4ValsetExecute Valset contract validator key registration
-// See https://github.com/confio/tgrade-contracts/blob/main/contracts/tgrade-valset/schema/execute_msg.json
+// See https://github.com/confio/tgrade-contracts/tree/v0.5.0-alpha/contracts/tgrade-valset/src/msg.rs
 type TG4ValsetExecute struct {
 	RegisterValidatorKey *RegisterValidatorKey `json:"register_validator_key,omitempty"`
 	UpdateMetadata       *ValidatorMetadata    `json:"update_metadata,omitempty"`
+	// Jails validator. Can be executed only by the admin.
+	Jail *JailMsg `json:"jail,omitempty"`
+	// Unjails validator. Admin can unjail anyone anytime, others can unjail only themselves and
+	// only if the jail period passed.
+	Unjail *UnjailMsg `json:"unjail,omitempty"`
+}
+
+type JailMsg struct {
+	Operator string `json:"operator"`
+	// Duration for how long validator is jailed (in seconds)
+	// 0 means jailing forever
+	Duration uint64 `json:"duration,omitempty"`
+}
+
+type UnjailMsg struct {
+	// Address to unjail. Optional, as if not provided it is assumed to be the sender of the
+	// message (for convenience when unjailing self after the jail period).
+	Operator string `json:"operator,omitempty"`
 }
 
 type RegisterValidatorKey struct {
@@ -93,7 +140,7 @@ func (m ValidatorMetadata) ToDescription() stakingtypes.Description {
 }
 
 // ValsetQuery will create many queries for the valset contract
-// https://github.com/confio/tgrade-contracts/blob/v0.3.0/contracts/tgrade-valset/src/msg.rs
+// See https://github.com/confio/tgrade-contracts/tree/v0.5.0-alpha/contracts/tgrade-valset/src/msg.rs
 type ValsetQuery struct {
 	Config                   *struct{}            `json:"config,omitempty"`
 	Epoch                    *struct{}            `json:"epoch,omitempty"`

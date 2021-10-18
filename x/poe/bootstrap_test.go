@@ -145,6 +145,9 @@ func TestBootstrapPoEContracts(t *testing.T) {
 
 func TestCreateValsetInitMsg(t *testing.T) {
 	mixerContractAddr := types.RandomAccAddress()
+	minDecimal := contract.Decimal(1)
+	engagementID := uint64(7)
+	engagementAddr := types.RandomAccAddress()
 
 	specs := map[string]struct {
 		genesis types.GenesisState
@@ -153,14 +156,17 @@ func TestCreateValsetInitMsg(t *testing.T) {
 		"default": {
 			genesis: types.DefaultGenesisState(),
 			exp: contract.ValsetInitMsg{
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: 500_000_000_000_000_000,
-				InitialKeys:   []contract.Validator{},
+				Membership:            mixerContractAddr.String(),
+				MinWeight:             1,
+				MaxValidators:         100,
+				EpochLength:           60,
+				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:               1,
+				FeePercentage:         contract.DecimalFromProMille(500),
+				InitialKeys:           []contract.Validator{},
+				RewardsCodeId:         engagementID,
+				DistributionContract:  engagementAddr.String(),
+				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},
 		},
 		"fee percentage with comma value": {
@@ -170,14 +176,17 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: 501_000_000_000_000_000,
-				InitialKeys:   []contract.Validator{},
+				Membership:            mixerContractAddr.String(),
+				MinWeight:             1,
+				MaxValidators:         100,
+				EpochLength:           60,
+				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:               1,
+				FeePercentage:         contract.DecimalFromProMille(501),
+				InitialKeys:           []contract.Validator{},
+				RewardsCodeId:         engagementID,
+				DistributionContract:  engagementAddr.String(),
+				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},
 		},
 		"fee percentage with after comma value": {
@@ -187,14 +196,17 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: 1_000_000_000_000_000,
-				InitialKeys:   []contract.Validator{},
+				Membership:            mixerContractAddr.String(),
+				MinWeight:             1,
+				MaxValidators:         100,
+				EpochLength:           60,
+				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:               1,
+				FeePercentage:         contract.DecimalFromProMille(1),
+				InitialKeys:           []contract.Validator{},
+				RewardsCodeId:         engagementID,
+				DistributionContract:  engagementAddr.String(),
+				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},
 		},
 		"fee percentage with min comma value": {
@@ -204,20 +216,23 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: 1,
-				InitialKeys:   []contract.Validator{},
+				Membership:            mixerContractAddr.String(),
+				MinWeight:             1,
+				MaxValidators:         100,
+				EpochLength:           60,
+				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:               1,
+				FeePercentage:         &minDecimal,
+				InitialKeys:           []contract.Validator{},
+				RewardsCodeId:         engagementID,
+				DistributionContract:  engagementAddr.String(),
+				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},
 		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			got := newValsetInitMsg(mixerContractAddr, spec.genesis)
+			got := newValsetInitMsg(mixerContractAddr, spec.genesis, engagementAddr, engagementID)
 			assert.Equal(t, spec.exp, got)
 		})
 	}

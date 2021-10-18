@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// See https://github.com/confio/tgrade-contracts/blob/v0.5.0-alpha/contracts/tg4-stake/src/msg.rs
 type TG4StakeInitMsg struct {
 	Admin           string `json:"admin,omitempty"`
 	Denom           string `json:"denom"`
@@ -26,10 +27,11 @@ func (m TG4StakeInitMsg) Json(t *testing.T) string {
 }
 
 // TG4StakeExecute staking contract execute messages
-// See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-stake/schema/execute_msg.json
+// See https://github.com/confio/tgrade-contracts/blob/v0.5.0-alpha/contracts/tg4-stake/src/msg.rs
 type TG4StakeExecute struct {
 	Bond   *struct{} `json:"bond,omitempty"`
 	Unbond *Unbond   `json:"unbond,omitempty"`
+	Claim  *struct{} `json:"claim,omitempty"`
 }
 
 // Unbond will start the unbonding process for the given number of tokens. The sender immediately loses weight from these tokens, and can claim them back to his wallet after `unbonding_period`",
@@ -40,15 +42,25 @@ type Unbond struct {
 
 // TG4StakeQuery contains some custom queries for the tg4-stake contract.
 // You can also make any generic TG4Query on it.
+// See https://github.com/confio/tgrade-contracts/blob/v0.5.0-alpha/contracts/tg4-stake/src/msg.rs
 type TG4StakeQuery struct {
-	UnbondingPeriod *struct{}             `json:"unbonding_period,omitempty"`
-	Claims          *TG4StakeQueryAddress `json:"claims,omitempty"`
-	Staked          *TG4StakeQueryAddress `json:"staked,omitempty"`
+	UnbondingPeriod *struct{}        `json:"unbonding_period,omitempty"`
+	Claims          *ListClaimsQuery `json:"claims,omitempty"`
+	Staked          *StakedQuery     `json:"staked,omitempty"`
 }
 
-type TG4StakeQueryAddress struct {
+type StakedQuery struct {
 	Address string `json:"address"`
 }
+
+type ListClaimsQuery struct {
+	Address string `json:"address"`
+	// Limit for pagination
+	Limit uint32 `json:"limit,omitempty"`
+	// StartAfter is used for pagination. Take last `claim.ReleaseAt` from last query
+	StartAfter uint64 `json:"start_after,string,omitempty"`
+}
+
 type TG4StakeClaimsResponse struct {
 	Claims []TG4StakeClaim `json:"claims"`
 }
@@ -82,8 +94,9 @@ func QueryStakingUnbondingPeriod(ctx sdk.Context, k types.SmartQuerier, stakeAdd
 }
 
 // QueryStakingUnbonding query PoE staking contract for unbonded self delegations
+// TODO: add pagination support here!
 func QueryStakingUnbonding(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.AccAddress, opAddr sdk.AccAddress) (TG4StakeClaimsResponse, error) {
-	query := TG4StakeQuery{Claims: &TG4StakeQueryAddress{Address: opAddr.String()}}
+	query := TG4StakeQuery{Claims: &ListClaimsQuery{Address: opAddr.String()}}
 	var response TG4StakeClaimsResponse
 	err := doQuery(ctx, k, stakeAddr, query, &response)
 	return response, err
@@ -91,7 +104,7 @@ func QueryStakingUnbonding(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.
 
 // QueryStakedAmount query PoE staking contract for bonded self delegation amount
 func QueryStakedAmount(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.AccAddress, opAddr sdk.AccAddress) (TG4StakedAmountsResponse, error) {
-	query := TG4StakeQuery{Staked: &TG4StakeQueryAddress{Address: opAddr.String()}}
+	query := TG4StakeQuery{Staked: &StakedQuery{Address: opAddr.String()}}
 	var response TG4StakedAmountsResponse
 	err := doQuery(ctx, k, stakeAddr, query, &response)
 	return response, err
