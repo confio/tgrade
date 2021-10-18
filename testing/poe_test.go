@@ -64,7 +64,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	initialSupply := cli.QueryTotalSupply("utgd")
 
 	// And when removed from **engagement** group
-	engagementUpdateMsg := testingcontracts.TG4UpdateMembersMsg{
+	engagementUpdateMsg := testingcontracts.UpdateMembersMsg{
 		Remove: []string{sortedMember[0].Addr},
 	}
 	eResult := cli.Execute(engagementGroupAddr, engagementUpdateMsg.Json(t), tg4AdminAddr)
