@@ -184,7 +184,7 @@ func TestPoEUndelegate(t *testing.T) {
 	// then claims got executed automatically
 
 	sut.ResetChain(t)
-	unbodingPeriod := 7 * time.Second
+	unbodingPeriod := 15 * time.Second
 	sut.ModifyGenesisJson(t, SetUnbodingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin("utgd", sdk.ZeroInt())))
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
@@ -220,7 +220,7 @@ func TestPoEUndelegate(t *testing.T) {
 	// but unbonding delegations pending
 	qRes = cli.CustomQuery("q", "poe", "unbonding-delegations", cli.GetKeyAddr("node0"))
 	entries := gjson.Get(qRes, "entries").Array()
-	require.Len(t, entries, 2, qRes)
+	assert.Len(t, entries, 2, qRes)
 
 	amounts := gjson.Get(qRes, "entries.#.initial_balance").Array()
 	require.Len(t, amounts, 2, qRes)
@@ -238,7 +238,7 @@ func TestPoEUndelegate(t *testing.T) {
 
 	qRes = cli.CustomQuery("q", "poe", "unbonding-delegations", cli.GetKeyAddr("node0"))
 	entries = gjson.Get(qRes, "entries").Array()
-	require.Len(t, entries, 0, qRes)
+	assert.Len(t, entries, 0, qRes)
 }
 
 func TestPoEQueries(t *testing.T) {
