@@ -20,7 +20,7 @@ import (
 func TestBootstrapPoEContracts(t *testing.T) {
 	var (
 		defaultLimit     uint64 = 20
-		expFeePercentage        = contract.Decimal(500_000_000_000_000_000)
+		expFeePercentage        = contract.DecimalFromProMille(500)
 		mySystemAdmin           = types.RandomAccAddress().String()
 		myUser                  = types.RandomAccAddress().String()
 		myOtherUser             = types.RandomAccAddress().String()
@@ -69,7 +69,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				EpochLength:           60,
 				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
 				Scaling:               1,
-				FeePercentage:         &expFeePercentage,
+				FeePercentage:         expFeePercentage,
 				InitialKeys:           []contract.Validator{},
 				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 				RewardsCodeId:         1,
@@ -153,7 +153,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 
 func TestCreateValsetInitMsg(t *testing.T) {
 	mixerContractAddr := types.RandomAccAddress()
-	minDecimal := contract.Decimal(1)
+	minDecimal := sdk.NewDec(1).QuoInt64(1_000_000_000_000_000_000)
 	engagementID := uint64(7)
 	engagementAddr := types.RandomAccAddress()
 
@@ -224,18 +224,17 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Membership:           mixerContractAddr.String(),
-				MinWeight:            1,
-				MaxValidators:        100,
-				EpochLength:          60,
-				EpochReward:          sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:              1,
-				FeePercentage:        &minDecimal,
-				InitialKeys:          []contract.Validator{},
-				RewardsCodeId:        engagementID,
-				DistributionContract: engagementAddr.String(),
-				// TODO: reenable once we fix some init issue
-				//ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
+				Membership:            mixerContractAddr.String(),
+				MinWeight:             1,
+				MaxValidators:         100,
+				EpochLength:           60,
+				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:               1,
+				FeePercentage:         &minDecimal,
+				InitialKeys:           []contract.Validator{},
+				RewardsCodeId:         engagementID,
+				DistributionContract:  engagementAddr.String(),
+				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},
 		},
 	}

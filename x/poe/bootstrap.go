@@ -129,11 +129,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 
 	valsetInitMsg := newValsetInitMsg(mixerContractAddr, gs, engagementContractAddr, engagementCodeID)
-	// TODO: what is wrong with this input????
-	fmt.Printf("%#v\n", valsetInitMsg)
-	//fmt.Printf("%v\n", *valsetInitMsg.ValidatorsRewardRatio)
 	valsetJson := mustMarshalJson(valsetInitMsg)
-	fmt.Println(string(valsetJson))
 	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, creator, systemAdmin, valsetJson, "valset", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate valset")
