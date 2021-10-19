@@ -171,7 +171,7 @@ func newValsetInitMsg(mixerContractAddr sdk.AccAddress, gs types.GenesisState, e
 		FeePercentage: contract.DecimalFromPercentage(gs.ValsetContractConfig.FeePercentage),
 		// TODO: set AutoJail from genesis
 		// TODO: set ValidatorsRewardRatio from genesis (hardcode to 50% here)
-		//ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
+		ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 		DistributionContract:  engagementAddr.String(),
 		RewardsCodeId:         engagementID,
 	}

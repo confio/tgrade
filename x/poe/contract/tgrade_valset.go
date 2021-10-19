@@ -16,21 +16,16 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-// normalizing 1% to cosmwasm decimal (18 places)
-var decimalPercentageFactor = sdk.NewDec(10_000_000_000_000_000)
-
-type Decimal uint64
-
-func DecimalFromPercentage(percent sdk.Dec) *Decimal {
+func DecimalFromPercentage(percent sdk.Dec) *sdk.Dec {
 	if percent.IsZero() {
 		return nil
 	}
-	res := Decimal(percent.Mul(decimalPercentageFactor).TruncateInt64())
+	res := percent.QuoInt64(100)
 	return &res
 }
 
-func DecimalFromProMille(promille uint64) *Decimal {
-	res := Decimal(1_000_000_000_000_000 * promille)
+func DecimalFromProMille(promille int64) *sdk.Dec {
+	res := sdk.NewDec(promille).QuoInt64(1000)
 	return &res
 }
 
@@ -46,11 +41,11 @@ type ValsetInitMsg struct {
 	InitialKeys   []Validator `json:"initial_keys"`
 	Scaling       uint32      `json:"scaling,omitempty"`
 	// Percentage of total accumulated fees which is substracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
-	FeePercentage *Decimal `json:"fee_percentage,string,omitempty"`
+	FeePercentage *sdk.Dec `json:"fee_percentage,string,omitempty"`
 	// If set to true, we will auto-unjail any validator after their jailtime is over.
 	AutoUnjail bool `json:"auto_unjail"`
 	// What percentage of the rewards (fees + inflation) go to validators. The rest go to distribution contract (below)
-	ValidatorsRewardRatio *Decimal `json:"validators_reward_ratio,string,omitempty"`
+	ValidatorsRewardRatio *sdk.Dec `json:"validators_reward_ratio,string,omitempty"`
 	// This contract receives the rewards that don't go to the validator (set ot tg4-engagement)
 	DistributionContract string `json:"distribution_contract,omitempty"`
 	// This is the code-id of the cw2222-compliant contract used to handle rewards for the validators
@@ -160,26 +155,32 @@ type ListValidatorsQuery struct {
 
 // ValsetConfigResponse Response to `config` query
 type ValsetConfigResponse struct {
-	Membership    string `json:"membership"`
-	MinWeight     int    `json:"min_weight"`
-	MaxValidators int    `json:"max_validators"`
-	Scaling       int    `json:"scaling,omitempty"`
+	Membership    string   `json:"membership"`
+	MinWeight     uint64   `json:"min_weight"`
+	MaxValidators uint32   `json:"max_validators"`
+	Scaling       uint32   `json:"scaling,omitempty"`
+	EpochReward   sdk.Coin `json:"epoch_reward"`
 	// Percentage of total accumulated fees which is substracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
-	FeePercentage uint64 `json:"fee_percentage,string,omitempty"`
+	FeePercentage         sdk.Dec `json:"fee_percentage"`
+	ValidatorsRewardRatio sdk.Dec `json:"validators_reward_ratio"`
+	DistributionContract  string  `json:"distribution_contract,omitempty"`
+	RewardsContract       string  `json:"rewards_contract"`
+	AutoUnjail            bool    `json:"auto_unjail"`
 }
 
 // ValsetEpochQueryResponse Response to `config` query
 type ValsetEpochResponse struct {
 	// Number of seconds in one epoch. We update the Tendermint validator set only once per epoch.
-	EpochLength int `json:"epoch_length"`
+	EpochLength uint64 `json:"epoch_length"`
 	// The current epoch # (block.time/epoch_length, rounding down)
-	CurrentEpoch int `json:"current_epoch"`
+	CurrentEpoch uint64 `json:"current_epoch"`
 	// The last time we updated the validator set - block time (in seconds)
-	LastUpdateTime int `json:"last_update_time"`
+	LastUpdateTime uint64 `json:"last_update_time"`
 	// The last time we updated the validator set - block height
-	LastUpdateHeight int `json:"last_update_height"`
+	LastUpdateHeight uint64 `json:"last_update_height"`
+	// TODO: add this if you want it, not in current code
 	/// Seconds (UTC UNIX time) of next timestamp that will trigger a validator recalculation
-	NextUpdateTime int `json:"next_update_time"`
+	//NextUpdateTime int `json:"next_update_time"`
 }
 
 type OperatorResponse struct {
@@ -221,7 +222,7 @@ func toCosmosPubKey(key ValidatorPubkey) (cryptotypes.PubKey, error) {
 type ValidatorInfo struct {
 	Operator        string          `json:"operator"`
 	ValidatorPubkey ValidatorPubkey `json:"validator_pubkey"`
-	Power           int             `json:"power"`
+	Power           uint64          `json:"power"`
 }
 
 type ValidatorResponse struct {

@@ -1,6 +1,9 @@
 package contract
 
-import "testing"
+import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"testing"
+)
 
 // TG4MixerInitMsg contract init message
 //See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-mixer/schema/instantiate_msg.json
@@ -20,20 +23,20 @@ type MixerFunction struct {
 
 type Sigmoid struct {
 	MaxRewards uint64  `json:"max_rewards,string"`
-	P          Decimal `json:"p,string"`
-	S          Decimal `json:"s,string"`
+	P          sdk.Dec `json:"p"`
+	S          sdk.Dec `json:"s"`
 }
 
 type SigmoidSqrt struct {
 	MaxRewards uint64  `json:"max_rewards,string"`
-	S          Decimal `json:"s,string"`
+	S          sdk.Dec `json:"s"`
 }
 
 type AlgebraicSigmoid struct {
 	MaxRewards uint64  `json:"max_rewards,string"`
-	A          Decimal `json:"a,string"`
-	P          Decimal `json:"p,string"`
-	S          Decimal `json:"s,string"`
+	A          sdk.Dec `json:"a"`
+	P          sdk.Dec `json:"p"`
+	S          sdk.Dec `json:"s"`
 }
 
 func (m TG4MixerInitMsg) Json(t *testing.T) string {
