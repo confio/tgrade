@@ -6,7 +6,6 @@ package testing
 import (
 	"fmt"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 	"testing"
@@ -60,11 +59,13 @@ func TestFeeDistribution(t *testing.T) {
 	RequireTxSuccess(t, txResult)
 	AwaitValsetEpochCompleted(t) // so that fees are distributed
 
+	// TODO: no more fees are distributed. Rather they are held in a new contract to be withdrawn.
+	// DO proper fix in issue #156, so we can query the pending stake. For now I will disable
 	// then
-	for i := 0; i < sut.nodesCount; i++ {
-		newBalance := cli.QueryBalance(cli.GetKeyAddr(fmt.Sprintf("node%d", i)), "utgd")
-		diff := newBalance - oldBalances[i]
-		t.Logf("Block rewards: %d\n", diff)
-		assert.LessOrEqualf(t, int64(20000000/sut.nodesCount), diff, "got diff: %d (before %d after %d)", diff, oldBalances[i], newBalance)
-	}
+	//for i := 0; i < sut.nodesCount; i++ {
+	//	newBalance := cli.QueryBalance(cli.GetKeyAddr(fmt.Sprintf("node%d", i)), "utgd")
+	//	diff := newBalance - oldBalances[i]
+	//	t.Logf("Block rewards: %d\n", diff)
+	//	assert.LessOrEqualf(t, int64(20000000/sut.nodesCount), diff, "got diff: %d (before %d after %d)", diff, oldBalances[i], newBalance)
+	//}
 }

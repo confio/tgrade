@@ -83,14 +83,17 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	// and new tokens were minted
 	assert.Greater(t, cli.QueryTotalSupply("utgd"), initialSupply)
 
+	// TODO: no more fees are distributed. Rather they are held in a new contract to be withdrawn.
+	// DO proper fix in issue #156, so we can query the pending stake. For now I will disable
+	// See fee_test.go 63
 	// and distributed to the validators
-	var distributed bool
-	for _, v := range sortedMember {
-		if initialValBalances[v.Addr] < cli.QueryBalance(v.Addr, "utgd") {
-			distributed = true
-		}
-	}
-	assert.True(t, distributed, "no tokens distributed")
+	//var distributed bool
+	//for _, v := range sortedMember {
+	//	if initialValBalances[v.Addr] < cli.QueryBalance(v.Addr, "utgd") {
+	//		distributed = true
+	//	}
+	//}
+	//assert.True(t, distributed, "no tokens distributed")
 
 	// And when moniker updated
 	myAddr := cli.GetKeyAddr("node0")
