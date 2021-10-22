@@ -35,16 +35,17 @@ func TestSmokeTest(t *testing.T) {
 	t.Log("Query wasm code list")
 	qResult := cli.CustomQuery("q", "wasm", "list-code")
 	codes := gjson.Get(qResult, "code_infos.#.code_id").Array()
-	const poeContractCount = 4
-	require.Len(t, codes, poeContractCount+1, qResult)
-	require.Equal(t, int64(poeContractCount+1), codes[poeContractCount].Int(), "sequential ids")
-	codeID := strconv.Itoa(poeContractCount + 1)
+	const poeContractCount = 5
+	const poeCodeCount = 4
+	require.Len(t, codes, poeCodeCount+1, qResult)
+	require.Equal(t, int64(poeCodeCount+1), codes[poeCodeCount].Int(), "sequential ids")
+	codeID := strconv.Itoa(poeCodeCount + 1)
 
 	t.Log("got query result", qResult)
 
 	l := sut.NewEventListener(t)
 	c, done := CaptureAllEventsConsumer(t)
-	contractAddr := ContractBech32Address(poeContractCount+1, poeContractCount+1)
+	contractAddr := ContractBech32Address(poeCodeCount+1, poeContractCount+1)
 	query := fmt.Sprintf(`tm.event='Tx' AND wasm._contract_address='%s'`, contractAddr)
 	t.Logf("Subscribe to events: %s", query)
 

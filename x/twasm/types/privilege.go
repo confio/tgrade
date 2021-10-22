@@ -12,6 +12,7 @@ type PrivilegeType byte
 var (
 	// PrivilegeTypeEmpty is empty value
 	PrivilegeTypeEmpty PrivilegeType = 0
+
 	// PrivilegeTypeBeginBlock called every block before the TX are processed
 	// Multiple contracts can register for this callback privilege
 	PrivilegeTypeBeginBlock = registerCallbackType(0x1, "begin_blocker", false)
@@ -24,12 +25,10 @@ var (
 	// This callback privilege is exclusive to one contract instance, only.
 	PrivilegeTypeValidatorSetUpdate = registerCallbackType(0x3, "validator_set_updater", true)
 
-	// PrivilegeTypeGovProposalExecutor
-	// This is a permission privilege to execute governance proposals.
+	// PrivilegeTypeGovProposalExecutor is a permission privilege to execute governance proposals.
 	PrivilegeTypeGovProposalExecutor = registerCallbackType(0x4, "gov_proposal_executor", false)
 
-	// PrivilegeTypeTokenMinter
-	// This is a permission to mint native tokens on the chain.
+	// PrivilegeTypeTokenMinter is a permission to mint native tokens on the chain.
 	PrivilegeTypeTokenMinter = registerCallbackType(0x5, "token_minter", false)
 )
 

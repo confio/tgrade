@@ -2,6 +2,10 @@ package poe
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"path/filepath"
+	"testing"
+
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
@@ -11,17 +15,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
-	"path/filepath"
-	"testing"
 )
 
 func TestBootstrapPoEContracts(t *testing.T) {
 	var (
-		defaultLimit  uint64 = 20
-		mySystemAdmin        = types.RandomAccAddress().String()
-		myUser               = types.RandomAccAddress().String()
-		myOtherUser          = types.RandomAccAddress().String()
+		defaultLimit     uint64 = 20
+		expFeePercentage        = contract.DecimalFromProMille(500)
+		mySystemAdmin           = types.RandomAccAddress().String()
+		myUser                  = types.RandomAccAddress().String()
+		myOtherUser             = types.RandomAccAddress().String()
 	)
 
 	var (
@@ -33,7 +35,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 
 	specs := map[string]struct {
 		genesis           types.GenesisState
-		expEngagementInit contract.TG4GroupInitMsg
+		expEngagementInit contract.TG4EngagementInitMsg
 		expStakerInit     contract.TG4StakeInitMsg
 		expValsetInit     contract.ValsetInitMsg
 		expErr            bool
@@ -42,11 +44,14 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
 				m.SystemAdminAddress = mySystemAdmin
 				m.Engagement = []types.TG4Member{{Address: myUser, Weight: 10}, {Address: myOtherUser, Weight: 11}}
+				m.ValsetContractConfig.FeePercentage = sdk.NewDec(50)
 			}),
-			expEngagementInit: contract.TG4GroupInitMsg{
+			expEngagementInit: contract.TG4EngagementInitMsg{
 				Admin:    mySystemAdmin,
 				Preauths: 1,
 				Members:  []contract.TG4Member{{Addr: myUser, Weight: 10}, {Addr: myOtherUser, Weight: 11}},
+				Token:    "utgd",
+				Halflife: 15552000,
 			},
 			expStakerInit: contract.TG4StakeInitMsg{
 				Admin:           mySystemAdmin,
@@ -58,14 +63,17 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				Preauths:        1,
 			},
 			expValsetInit: contract.ValsetInitMsg{
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: 500_000_000_000_000_000,
-				InitialKeys:   []contract.Validator{},
+				Membership:            mixerContractAddr.String(),
+				MinWeight:             1,
+				MaxValidators:         100,
+				EpochLength:           60,
+				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:               1,
+				FeePercentage:         expFeePercentage,
+				InitialKeys:           []contract.Validator{},
+				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
+				RewardsCodeId:         1,
+				DistributionContract:  "cosmos156r47kpk4va938pmtpuee4fh77847gqcq4xu6e",
 			},
 		},
 	}
@@ -108,7 +116,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			require.Len(t, *capInst, 4)
 
 			var (
-				gotEngagementInit contract.TG4GroupInitMsg
+				gotEngagementInit contract.TG4EngagementInitMsg
 				gotStakerInit     contract.TG4StakeInitMsg
 				gotMixerInit      contract.TG4MixerInitMsg
 				gotValsetInit     contract.ValsetInitMsg
@@ -122,6 +130,9 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			expMixerInit := contract.TG4MixerInitMsg{
 				LeftGroup:  engagementContractAddr.String(),
 				RightGroup: stakingContractAdddr.String(),
+				FunctionType: contract.MixerFunction{
+					GeometricMean: &struct{}{},
+				},
 			}
 			assert.Equal(t, expMixerInit, gotMixerInit)
 
@@ -142,6 +153,9 @@ func TestBootstrapPoEContracts(t *testing.T) {
 
 func TestCreateValsetInitMsg(t *testing.T) {
 	mixerContractAddr := types.RandomAccAddress()
+	minDecimal := sdk.NewDec(1).QuoInt64(1_000_000_000_000_000_000)
+	engagementID := uint64(7)
+	engagementAddr := types.RandomAccAddress()
 
 	specs := map[string]struct {
 		genesis types.GenesisState
@@ -150,14 +164,17 @@ func TestCreateValsetInitMsg(t *testing.T) {
 		"default": {
 			genesis: types.DefaultGenesisState(),
 			exp: contract.ValsetInitMsg{
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: 500_000_000_000_000_000,
-				InitialKeys:   []contract.Validator{},
+				Membership:            mixerContractAddr.String(),
+				MinWeight:             1,
+				MaxValidators:         100,
+				EpochLength:           60,
+				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:               1,
+				FeePercentage:         contract.DecimalFromProMille(500),
+				InitialKeys:           []contract.Validator{},
+				RewardsCodeId:         engagementID,
+				DistributionContract:  engagementAddr.String(),
+				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},
 		},
 		"fee percentage with comma value": {
@@ -167,14 +184,17 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: 501_000_000_000_000_000,
-				InitialKeys:   []contract.Validator{},
+				Membership:            mixerContractAddr.String(),
+				MinWeight:             1,
+				MaxValidators:         100,
+				EpochLength:           60,
+				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:               1,
+				FeePercentage:         contract.DecimalFromProMille(501),
+				InitialKeys:           []contract.Validator{},
+				RewardsCodeId:         engagementID,
+				DistributionContract:  engagementAddr.String(),
+				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},
 		},
 		"fee percentage with after comma value": {
@@ -184,14 +204,17 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: 1_000_000_000_000_000,
-				InitialKeys:   []contract.Validator{},
+				Membership:            mixerContractAddr.String(),
+				MinWeight:             1,
+				MaxValidators:         100,
+				EpochLength:           60,
+				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:               1,
+				FeePercentage:         contract.DecimalFromProMille(1),
+				InitialKeys:           []contract.Validator{},
+				RewardsCodeId:         engagementID,
+				DistributionContract:  engagementAddr.String(),
+				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},
 		},
 		"fee percentage with min comma value": {
@@ -201,20 +224,23 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: 1,
-				InitialKeys:   []contract.Validator{},
+				Membership:            mixerContractAddr.String(),
+				MinWeight:             1,
+				MaxValidators:         100,
+				EpochLength:           60,
+				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:               1,
+				FeePercentage:         &minDecimal,
+				InitialKeys:           []contract.Validator{},
+				RewardsCodeId:         engagementID,
+				DistributionContract:  engagementAddr.String(),
+				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},
 		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			got := newValsetInitMsg(mixerContractAddr, spec.genesis)
+			got := newValsetInitMsg(mixerContractAddr, spec.genesis, engagementAddr, engagementID)
 			assert.Equal(t, spec.exp, got)
 		})
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
@@ -50,10 +51,14 @@ type poeKeeper interface {
 //* [mixer](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-mixer) - calculates the combined value of
 //  stake and engagement points. Source for the valset contract.
 func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
-	tg4EngagementInitMsg := contract.TG4GroupInitMsg{
+	tg4EngagementInitMsg := contract.TG4EngagementInitMsg{
 		Admin:    gs.SystemAdminAddress,
 		Members:  make([]contract.TG4Member, len(gs.Engagement)),
 		Preauths: 1,
+		Token:    gs.BondDenom,
+		// TODO: allow us to configure halflife in Genesis
+		// now hardcoded as 180 days = 180 * 86400s
+		Halflife: 15552000,
 	}
 	for i, v := range gs.Engagement {
 		tg4EngagementInitMsg.Members[i] = contract.TG4Member{
@@ -66,26 +71,26 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "system admin")
 	}
 	creator := systemAdmin
-	codeID, err := k.Create(ctx, creator, tg4Engagement, &wasmtypes.AllowEverybody)
+	engagementCodeID, err := k.Create(ctx, creator, tg4Engagement, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 engagement contract")
 	}
-	engagementContractAddr, _, err := k.Instantiate(ctx, codeID, creator, systemAdmin, mustMarshalJson(tg4EngagementInitMsg), "engagement", nil)
+	engagementContractAddr, _, err := k.Instantiate(ctx, engagementCodeID, creator, systemAdmin, mustMarshalJson(tg4EngagementInitMsg), "engagement", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 engagement")
 	}
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeEngagement, engagementContractAddr)
-	if err := k.PinCode(ctx, codeID); err != nil {
+	if err := k.PinCode(ctx, engagementCodeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tg4 engagement contract")
 	}
 
 	var claimLimit = uint64(gs.StakeContractConfig.ClaimAutoreturnLimit)
-	codeID, err = k.Create(ctx, creator, tg4Stake, &wasmtypes.AllowEverybody)
+	stakeCodeID, err := k.Create(ctx, creator, tg4Stake, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 stake contract")
 	}
 	tg4StakerInitMsg := newStakeInitMsg(gs, claimLimit)
-	stakersContractAddr, _, err := k.Instantiate(ctx, codeID, creator, systemAdmin, mustMarshalJson(tg4StakerInitMsg), "stakers", nil)
+	stakersContractAddr, _, err := k.Instantiate(ctx, stakeCodeID, creator, systemAdmin, mustMarshalJson(tg4StakerInitMsg), "stakers", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 stake")
 	}
@@ -97,28 +102,35 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	tg4MixerInitMsg := contract.TG4MixerInitMsg{
 		LeftGroup:  engagementContractAddr.String(),
 		RightGroup: stakersContractAddr.String(),
+		// TODO: allow to configure the other types.
+		// We need to analyze benchmarks and discuss first.
+		// This maintains same behavior
+		FunctionType: contract.MixerFunction{
+			GeometricMean: &struct{}{},
+		},
 	}
-	codeID, err = k.Create(ctx, creator, tg4Mixer, &wasmtypes.AllowEverybody)
+	mixerCodeID, err := k.Create(ctx, creator, tg4Mixer, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 mixer contract")
 	}
-	mixerContractAddr, _, err := k.Instantiate(ctx, codeID, creator, systemAdmin, mustMarshalJson(tg4MixerInitMsg), "poe", nil)
+	mixerContractAddr, _, err := k.Instantiate(ctx, mixerCodeID, creator, systemAdmin, mustMarshalJson(tg4MixerInitMsg), "poe", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 mixer")
 	}
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeMixer, mixerContractAddr)
 
-	if err := k.PinCode(ctx, codeID); err != nil {
+	if err := k.PinCode(ctx, mixerCodeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tg4 mixer contract")
 	}
 
-	codeID, err = k.Create(ctx, creator, tgValset, &wasmtypes.AllowEverybody)
+	valSetCodeID, err := k.Create(ctx, creator, tgValset, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store valset contract")
 	}
 
-	valsetInitMsg := newValsetInitMsg(mixerContractAddr, gs)
-	valsetContractAddr, _, err := k.Instantiate(ctx, codeID, creator, systemAdmin, mustMarshalJson(valsetInitMsg), "valset", nil)
+	valsetInitMsg := newValsetInitMsg(mixerContractAddr, gs, engagementContractAddr, engagementCodeID)
+	valsetJson := mustMarshalJson(valsetInitMsg)
+	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, creator, systemAdmin, valsetJson, "valset", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate valset")
 	}
@@ -142,7 +154,8 @@ func newStakeInitMsg(gs types.GenesisState, claimLimit uint64) contract.TG4Stake
 	}
 }
 
-func newValsetInitMsg(mixerContractAddr sdk.AccAddress, gs types.GenesisState) contract.ValsetInitMsg {
+// TODO: needs tg4-engagement code id, address
+func newValsetInitMsg(mixerContractAddr sdk.AccAddress, gs types.GenesisState, engagementAddr sdk.AccAddress, engagementID uint64) contract.ValsetInitMsg {
 	return contract.ValsetInitMsg{
 		Membership:    mixerContractAddr.String(),
 		MinWeight:     gs.ValsetContractConfig.MinWeight,
@@ -151,7 +164,12 @@ func newValsetInitMsg(mixerContractAddr sdk.AccAddress, gs types.GenesisState) c
 		EpochReward:   gs.ValsetContractConfig.EpochReward,
 		InitialKeys:   []contract.Validator{},
 		Scaling:       gs.ValsetContractConfig.Scaling,
-		FeePercentage: uint64(gs.ValsetContractConfig.FeePercentage.Mul(sdk.NewDec(contract.ValsetInitPercentageFactor)).TruncateInt64()),
+		FeePercentage: contract.DecimalFromPercentage(gs.ValsetContractConfig.FeePercentage),
+		// TODO: set AutoJail from genesis
+		// TODO: set ValidatorsRewardRatio from genesis (hardcode to 50% here)
+		ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
+		DistributionContract:  engagementAddr.String(),
+		RewardsCodeId:         engagementID,
 	}
 }
 

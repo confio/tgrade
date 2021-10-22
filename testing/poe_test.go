@@ -64,7 +64,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	initialSupply := cli.QueryTotalSupply("utgd")
 
 	// And when removed from **engagement** group
-	engagementUpdateMsg := testingcontracts.TG4UpdateMembersMsg{
+	engagementUpdateMsg := testingcontracts.UpdateMembersMsg{
 		Remove: []string{sortedMember[0].Addr},
 	}
 	eResult := cli.Execute(engagementGroupAddr, engagementUpdateMsg.Json(t), tg4AdminAddr)
@@ -83,14 +83,17 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	// and new tokens were minted
 	assert.Greater(t, cli.QueryTotalSupply("utgd"), initialSupply)
 
+	// TODO: no more fees are distributed. Rather they are held in a new contract to be withdrawn.
+	// DO proper fix in issue #156, so we can query the pending stake. For now I will disable
+	// See fee_test.go 63
 	// and distributed to the validators
-	var distributed bool
-	for _, v := range sortedMember {
-		if initialValBalances[v.Addr] < cli.QueryBalance(v.Addr, "utgd") {
-			distributed = true
-		}
-	}
-	assert.True(t, distributed, "no tokens distributed")
+	//var distributed bool
+	//for _, v := range sortedMember {
+	//	if initialValBalances[v.Addr] < cli.QueryBalance(v.Addr, "utgd") {
+	//		distributed = true
+	//	}
+	//}
+	//assert.True(t, distributed, "no tokens distributed")
 
 	// And when moniker updated
 	myAddr := cli.GetKeyAddr("node0")
@@ -181,7 +184,7 @@ func TestPoEUndelegate(t *testing.T) {
 	// then claims got executed automatically
 
 	sut.ResetChain(t)
-	unbodingPeriod := 7 * time.Second
+	unbodingPeriod := 15 * time.Second
 	sut.ModifyGenesisJson(t, SetUnbodingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin("utgd", sdk.ZeroInt())))
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
@@ -217,7 +220,7 @@ func TestPoEUndelegate(t *testing.T) {
 	// but unbonding delegations pending
 	qRes = cli.CustomQuery("q", "poe", "unbonding-delegations", cli.GetKeyAddr("node0"))
 	entries := gjson.Get(qRes, "entries").Array()
-	require.Len(t, entries, 2, qRes)
+	assert.Len(t, entries, 2, qRes)
 
 	amounts := gjson.Get(qRes, "entries.#.initial_balance").Array()
 	require.Len(t, amounts, 2, qRes)
@@ -235,7 +238,7 @@ func TestPoEUndelegate(t *testing.T) {
 
 	qRes = cli.CustomQuery("q", "poe", "unbonding-delegations", cli.GetKeyAddr("node0"))
 	entries = gjson.Get(qRes, "entries").Array()
-	require.Len(t, entries, 0, qRes)
+	assert.Len(t, entries, 0, qRes)
 }
 
 func TestPoEQueries(t *testing.T) {

@@ -1,6 +1,11 @@
 package app
 
 import (
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/confio/tgrade/x/globalfee"
 	"github.com/confio/tgrade/x/poe"
@@ -66,10 +71,6 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -275,7 +276,8 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
-	supportedFeatures := "staking,stargate"
+	// TODO: add tgrade here soon
+	supportedFeatures := "staking,stargate,iterator"
 
 	stakingAdapter := stakingKeeper
 	app.twasmKeeper = twasmkeeper.NewKeeper(
@@ -335,9 +337,11 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	// CanWithdrawInvariant invariant.
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
-		poe.ModuleName,
 		upgradetypes.ModuleName,
-		evidencetypes.ModuleName, ibchost.ModuleName,
+		capabilitytypes.ModuleName,
+		evidencetypes.ModuleName,
+		poe.ModuleName,
+		ibchost.ModuleName,
 		twasm.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(crisistypes.ModuleName, twasm.ModuleName, poe.ModuleName)
@@ -392,10 +396,10 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	app.SetInitChainer(app.InitChainer)
 	app.SetBeginBlocker(app.BeginBlocker)
 
-	anteHandler := globalfee.NewAnteHandler(
+	anteHandler := NewAnteHandler(
 		app.accountKeeper, app.bankKeeper, authante.DefaultSigVerificationGasConsumer,
-		encodingConfig.TxConfig.SignModeHandler(), app.getSubspace(globalfee.ModuleName),
-		app.poeKeeper,
+		encodingConfig.TxConfig.SignModeHandler(), keys[wasm.StoreKey], app.ibcKeeper.ChannelKeeper,
+		app.getSubspace(globalfee.ModuleName), app.poeKeeper,
 	)
 	app.SetAnteHandler(anteHandler)
 	app.SetEndBlocker(app.EndBlocker)

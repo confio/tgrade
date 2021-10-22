@@ -63,11 +63,16 @@ func TestInitGenesis(t *testing.T) {
 	require.NoError(t, err)
 
 	expConfig := &contract.ValsetConfigResponse{
-		Membership:    mixerAddr.String(),
-		MinWeight:     1,
-		MaxValidators: 100,
-		Scaling:       1,
-		FeePercentage: 500_000_000_000_000_000,
+		Membership:            mixerAddr.String(),
+		MinWeight:             1,
+		MaxValidators:         100,
+		Scaling:               1,
+		FeePercentage:         sdk.MustNewDecFromStr("0.50"),
+		ValidatorsRewardRatio: sdk.MustNewDecFromStr("0.50"),
+		EpochReward:           sdk.NewInt64Coin("utgd", 100000),
+		DistributionContract:  "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhuc53mp6",
+		RewardsContract:       "cosmos1cnuw3f076wgdyahssdkd0g3nr96ckq8caf5mdm",
+		AutoUnjail:            false,
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)
 
