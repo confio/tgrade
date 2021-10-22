@@ -3,13 +3,15 @@ package keeper
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	"github.com/confio/tgrade/x/twasm/contract"
-	"github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"math"
+
+	"github.com/confio/tgrade/x/twasm/contract"
+	"github.com/confio/tgrade/x/twasm/types"
 )
 
 // SetPrivileged does
@@ -281,7 +283,7 @@ func getContractPrivilegesSecondaryIndexPrefix(privilegeType types.PrivilegeType
 // splits source of type `<position>`
 func parseContractPosition(key []byte) uint8 {
 	if len(key) != 1 {
-		panic(fmt.Sprintf("unexpected key lenght %d", len(key)))
+		panic(fmt.Sprintf("unexpected key length %d", len(key)))
 	}
 	return key[0]
 }

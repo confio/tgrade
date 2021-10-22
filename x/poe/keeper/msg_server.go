@@ -3,9 +3,8 @@ package keeper
 import (
 	"context"
 	"encoding/hex"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	"github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/poe/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -13,6 +12,9 @@ import (
 	tmstrings "github.com/tendermint/tendermint/libs/strings"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 // PoEKeeper is a subset of the keeper

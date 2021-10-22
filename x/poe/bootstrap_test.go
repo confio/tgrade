@@ -6,15 +6,16 @@ import (
 	"path/filepath"
 	"testing"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 	"github.com/confio/tgrade/x/twasm"
 	twasmtesting "github.com/confio/tgrade/x/twasm/testing"
 	twasmtypes "github.com/confio/tgrade/x/twasm/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestBootstrapPoEContracts(t *testing.T) {

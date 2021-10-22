@@ -2,7 +2,10 @@ package app
 
 import (
 	"encoding/json"
-	poetypes "github.com/confio/tgrade/x/poe/types"
+	"os"
+	"testing"
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -10,9 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tendermint/tendermint/libs/rand"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"os"
-	"testing"
-	"time"
+
+	poetypes "github.com/confio/tgrade/x/poe/types"
 
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"

@@ -2,8 +2,10 @@ package globalfee
 
 import (
 	"context"
-	"github.com/confio/tgrade/x/globalfee/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/confio/tgrade/x/globalfee/types"
 )
 
 var _ types.QueryServer = &grpcQuerier{}

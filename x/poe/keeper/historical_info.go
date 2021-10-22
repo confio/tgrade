@@ -1,11 +1,13 @@
 package keeper
 
 import (
-	"github.com/confio/tgrade/x/poe/types"
+	"strconv"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	ibccoretypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"strconv"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 var _ ibccoretypes.StakingKeeper = &Keeper{}

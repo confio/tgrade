@@ -2,14 +2,16 @@ package keeper
 
 import (
 	"context"
+	"time"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	"github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"time"
+
+	"github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 var _ types.QueryServer = &grpcQuerier{}

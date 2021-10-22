@@ -4,12 +4,13 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
-	"github.com/confio/tgrade/x/twasm/contract"
-	"github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+
+	"github.com/confio/tgrade/x/twasm/contract"
+	"github.com/confio/tgrade/x/twasm/types"
 )
 
 // tgradeKeeper defines a subset of Keeper

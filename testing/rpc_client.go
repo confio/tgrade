@@ -2,10 +2,11 @@ package testing
 
 import (
 	"context"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	client "github.com/tendermint/tendermint/rpc/client/http"
 	tmtypes "github.com/tendermint/tendermint/types"
-	"testing"
 )
 
 // RPCClient is a test helper to interact with a node via the RPC endpoint.

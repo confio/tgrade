@@ -1,9 +1,11 @@
 package keeper
 
 import (
+	"testing"
+	"time"
+
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
-	"github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -51,8 +53,8 @@ import (
 	"github.com/tendermint/tendermint/libs/rand"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
-	"testing"
-	"time"
+
+	"github.com/confio/tgrade/x/twasm/types"
 )
 
 var moduleBasics = module.NewBasicManager(

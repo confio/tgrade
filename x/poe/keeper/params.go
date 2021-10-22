@@ -1,8 +1,9 @@
 package keeper
 
 import (
-	"github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 // HistoricalEntries = number of historical info entries

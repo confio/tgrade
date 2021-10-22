@@ -1,11 +1,13 @@
 package keeper
 
 import (
-	"github.com/confio/tgrade/x/poe/types"
-	fuzz "github.com/google/gofuzz"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	fuzz "github.com/google/gofuzz"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/confio/tgrade/x/poe/types"
 
 	"github.com/stretchr/testify/require"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"

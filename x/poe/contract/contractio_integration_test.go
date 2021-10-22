@@ -1,15 +1,17 @@
 package contract_test
 
 import (
-	"github.com/confio/tgrade/x/poe"
-	"github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/poe/keeper"
-	"github.com/confio/tgrade/x/poe/types"
+	"testing"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
-	"testing"
+
+	"github.com/confio/tgrade/x/poe"
+	"github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/keeper"
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 func TestSetEngagementPoints(t *testing.T) {

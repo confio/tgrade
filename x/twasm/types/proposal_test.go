@@ -1,12 +1,13 @@
 package types
 
 import (
+	"strings"
+	"testing"
+
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
-	"strings"
-	"testing"
 )
 
 func TestValidatePromoteToPrivilegedContractProposal(t *testing.T) {

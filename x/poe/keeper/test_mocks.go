@@ -1,11 +1,13 @@
 package keeper
 
 import (
-	"github.com/confio/tgrade/x/poe/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"testing"
 	"time"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 var _ PoEKeeper = PoEKeeperMock{}

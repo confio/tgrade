@@ -2,14 +2,16 @@ package keeper
 
 import (
 	"encoding/json"
-	"github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/poe/types"
+	"testing"
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
-	"testing"
-	"time"
+
+	"github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 func TestSetGetPoEContractAddress(t *testing.T) {
@@ -73,7 +75,7 @@ func TestSetGetPoESystemAdmin(t *testing.T) {
 func TestIteratePoEContracts(t *testing.T) {
 	ctx, _, k := createMinTestInput(t)
 	storedTypes := make(map[types.PoEContractType]sdk.AccAddress)
-	for c, _ := range types.PoEContractType_name {
+	for c := range types.PoEContractType_name {
 		src := types.PoEContractType(c)
 		if src == types.PoEContractTypeUndefined {
 			continue

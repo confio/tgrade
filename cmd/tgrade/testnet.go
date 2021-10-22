@@ -6,8 +6,12 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	poeclient "github.com/confio/tgrade/x/poe/client"
-	poetypes "github.com/confio/tgrade/x/poe/types"
+	"net"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -29,11 +33,9 @@ import (
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/types"
 	tmtime "github.com/tendermint/tendermint/types/time"
-	"net"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
+
+	poeclient "github.com/confio/tgrade/x/poe/client"
+	poetypes "github.com/confio/tgrade/x/poe/types"
 )
 
 const stakingToken = "utgd"

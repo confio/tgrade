@@ -10,9 +10,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/confio/tgrade/x/poe/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	bankexported "github.com/cosmos/cosmos-sdk/x/bank/exported"
+
+	"github.com/confio/tgrade/x/poe/types"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

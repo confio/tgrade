@@ -6,11 +6,12 @@ import (
 	"strings"
 
 	wasmcli "github.com/CosmWasm/wasmd/x/wasm/client/cli"
-	"github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
+
+	"github.com/confio/tgrade/x/twasm/types"
 )
 
 func GetQueryCmd() *cobra.Command {

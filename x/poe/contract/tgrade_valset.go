@@ -40,7 +40,7 @@ type ValsetInitMsg struct {
 	EpochReward   sdk.Coin    `json:"epoch_reward"`
 	InitialKeys   []Validator `json:"initial_keys"`
 	Scaling       uint32      `json:"scaling,omitempty"`
-	// Percentage of total accumulated fees which is substracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
+	// Percentage of total accumulated fees which is subtracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
 	FeePercentage *sdk.Dec `json:"fee_percentage,string,omitempty"`
 	// If set to true, we will auto-unjail any validator after their jailtime is over.
 	AutoUnjail bool `json:"auto_unjail"`
@@ -160,7 +160,7 @@ type ValsetConfigResponse struct {
 	MaxValidators uint32   `json:"max_validators"`
 	Scaling       uint32   `json:"scaling,omitempty"`
 	EpochReward   sdk.Coin `json:"epoch_reward"`
-	// Percentage of total accumulated fees which is substracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
+	// Percentage of total accumulated fees which is subtracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
 	FeePercentage         sdk.Dec `json:"fee_percentage"`
 	ValidatorsRewardRatio sdk.Dec `json:"validators_reward_ratio"`
 	DistributionContract  string  `json:"distribution_contract,omitempty"`

@@ -1,14 +1,12 @@
 package keeper
 
 import (
+	"testing"
+	"time"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
-	"github.com/confio/tgrade/x/poe/stakingadapter"
-	"github.com/confio/tgrade/x/poe/types"
-	"github.com/confio/tgrade/x/twasm"
-	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
-	twasmtypes "github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	params2 "github.com/cosmos/cosmos-sdk/simapp/params"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
@@ -48,8 +46,12 @@ import (
 	"github.com/tendermint/tendermint/libs/rand"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
-	"testing"
-	"time"
+
+	"github.com/confio/tgrade/x/poe/stakingadapter"
+	"github.com/confio/tgrade/x/poe/types"
+	"github.com/confio/tgrade/x/twasm"
+	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
+	twasmtypes "github.com/confio/tgrade/x/twasm/types"
 )
 
 var moduleBasics = module.NewBasicManager(

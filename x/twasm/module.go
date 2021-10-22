@@ -7,15 +7,15 @@ import (
 
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
 	"github.com/confio/tgrade/x/twasm/client/cli"
 	"github.com/confio/tgrade/x/twasm/keeper"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	wasmcli "github.com/CosmWasm/wasmd/x/wasm/client/cli"
 	wasmrest "github.com/CosmWasm/wasmd/x/wasm/client/rest"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmsimuliation "github.com/CosmWasm/wasmd/x/wasm/simulation"
-	"github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -27,6 +27,8 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/confio/tgrade/x/twasm/types"
 )
 
 var (

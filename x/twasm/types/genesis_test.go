@@ -1,9 +1,10 @@
 package types
 
 import (
+	"testing"
+
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestGenesisValidate(t *testing.T) {

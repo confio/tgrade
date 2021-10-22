@@ -3,10 +3,11 @@ package keeper
 import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	"github.com/confio/tgrade/x/twasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/confio/tgrade/x/twasm/types"
 )
 
 // InitGenesis sets supply information for genesis.

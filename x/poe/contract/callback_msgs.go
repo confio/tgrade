@@ -1,9 +1,10 @@
 package contract
 
 import (
-	"github.com/confio/tgrade/x/poe/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/types/errors"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 // ValidatorUpdateSudoMsg callback message sent to a contract.

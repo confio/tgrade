@@ -2,11 +2,10 @@ package poe
 
 import (
 	"encoding/json"
+	"math"
+	"testing"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	"github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/poe/keeper"
-	"github.com/confio/tgrade/x/poe/types"
-	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	fuzz "github.com/google/gofuzz"
@@ -14,8 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/proto/tendermint/crypto"
-	"math"
-	"testing"
+
+	"github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/keeper"
+	"github.com/confio/tgrade/x/poe/types"
+	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
 )
 
 func TestInitGenesis(t *testing.T) {

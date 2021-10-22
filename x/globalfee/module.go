@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/confio/tgrade/x/globalfee/client/cli"
-	"github.com/confio/tgrade/x/globalfee/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -17,6 +15,9 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/confio/tgrade/x/globalfee/client/cli"
+	"github.com/confio/tgrade/x/globalfee/types"
 )
 
 var _ module.AppModuleBasic = AppModuleBasic{}

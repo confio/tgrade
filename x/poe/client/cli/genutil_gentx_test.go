@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/confio/tgrade/x/poe"
-	"github.com/confio/tgrade/x/poe/client/cli"
-	"github.com/confio/tgrade/x/poe/types"
-	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"testing"
+
 	sdkclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
@@ -25,10 +26,11 @@ import (
 	"github.com/stretchr/testify/require"
 	cfg "github.com/tendermint/tendermint/config"
 	tmtypes "github.com/tendermint/tendermint/types"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"testing"
+
+	"github.com/confio/tgrade/x/poe"
+	"github.com/confio/tgrade/x/poe/client/cli"
+	"github.com/confio/tgrade/x/poe/types"
+	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
 )
 
 const (

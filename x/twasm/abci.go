@@ -3,12 +3,14 @@ package twasm
 import (
 	"encoding/json"
 	"fmt"
+	"runtime/debug"
+	"time"
+
+	"github.com/tendermint/tendermint/libs/log"
+
 	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/confio/tgrade/x/twasm/keeper"
 	"github.com/confio/tgrade/x/twasm/types"
-	"github.com/tendermint/tendermint/libs/log"
-	"runtime/debug"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"

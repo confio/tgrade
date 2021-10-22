@@ -2,11 +2,13 @@ package keeper
 
 import (
 	"context"
-	"github.com/confio/tgrade/x/twasm/types"
+	"testing"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/confio/tgrade/x/twasm/types"
 )
 
 func TestQueryPrivilegedContracts(t *testing.T) {

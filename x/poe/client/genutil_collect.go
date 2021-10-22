@@ -13,7 +13,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/confio/tgrade/x/poe/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,6 +20,8 @@ import (
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	cfg "github.com/tendermint/tendermint/config"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 // AddGenTxsToGenesisFile collects and adds the gentx to the app state

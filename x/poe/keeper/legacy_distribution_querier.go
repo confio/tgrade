@@ -2,12 +2,14 @@ package keeper
 
 import (
 	"context"
-	"github.com/confio/tgrade/x/poe/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 var _ distributiontypes.QueryServer = &legacyDistributionGRPCQuerier{}

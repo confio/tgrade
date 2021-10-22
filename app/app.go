@@ -7,12 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
-	"github.com/confio/tgrade/x/globalfee"
-	"github.com/confio/tgrade/x/poe"
-	poekeeper "github.com/confio/tgrade/x/poe/keeper"
-	poestakingadapter "github.com/confio/tgrade/x/poe/stakingadapter"
-	"github.com/confio/tgrade/x/twasm"
-	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -71,6 +65,13 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
+
+	"github.com/confio/tgrade/x/globalfee"
+	"github.com/confio/tgrade/x/poe"
+	poekeeper "github.com/confio/tgrade/x/poe/keeper"
+	poestakingadapter "github.com/confio/tgrade/x/poe/stakingadapter"
+	"github.com/confio/tgrade/x/twasm"
+	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"

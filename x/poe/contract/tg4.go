@@ -3,8 +3,9 @@ package contract
 import (
 	"sort"
 
-	"github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 type TG4Member struct {

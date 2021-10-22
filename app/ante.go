@@ -2,9 +2,6 @@ package app
 
 import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	"github.com/confio/tgrade/x/globalfee"
-	"github.com/confio/tgrade/x/poe"
-	poekeeper "github.com/confio/tgrade/x/poe/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
@@ -12,6 +9,10 @@ import (
 	channelkeeper "github.com/cosmos/cosmos-sdk/x/ibc/core/04-channel/keeper"
 	ibcante "github.com/cosmos/cosmos-sdk/x/ibc/core/ante"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	"github.com/confio/tgrade/x/globalfee"
+	"github.com/confio/tgrade/x/poe"
+	poekeeper "github.com/confio/tgrade/x/poe/keeper"
 )
 
 // NewAnteHandler returns an AnteHandler that checks and increments sequence

@@ -6,12 +6,6 @@ import (
 	"container/ring"
 	"context"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/sync"
-	client "github.com/tendermint/tendermint/rpc/client/http"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 	"io"
 	"io/ioutil"
 	"os"
@@ -22,6 +16,13 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/server"
+	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/libs/sync"
+	client "github.com/tendermint/tendermint/rpc/client/http"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 var workDir string

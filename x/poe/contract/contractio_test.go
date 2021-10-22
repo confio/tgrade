@@ -1,12 +1,13 @@
 package contract
 
 import (
+	"testing"
+
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/proto/tendermint/crypto"
-	"testing"
 )
 
 func TestConvertToTendermintPubKey(t *testing.T) {

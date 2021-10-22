@@ -1,16 +1,18 @@
 package testing
 
 import (
-	"github.com/confio/tgrade/app"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"testing"
+
+	"github.com/confio/tgrade/app"
 )
 
 // TgradeCli wraps the command line interface

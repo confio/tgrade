@@ -2,11 +2,13 @@ package keeper
 
 import (
 	"context"
-	"github.com/confio/tgrade/x/poe/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 var _ slashingtypes.QueryServer = &legacySlashingGRPCQuerier{}

@@ -3,10 +3,12 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+
 	wasmcli "github.com/CosmWasm/wasmd/x/wasm/client/cli"
-	"github.com/confio/tgrade/x/twasm/types"
 	"github.com/cosmos/cosmos-sdk/server"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+
+	"github.com/confio/tgrade/x/twasm/types"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"

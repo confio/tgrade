@@ -1,9 +1,10 @@
 package types
 
 import (
+	"math"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"math"
 )
 
 //AddRegisteredPrivilege add privilege type to list
