@@ -72,6 +72,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "system admin")
 	}
 	creator := systemAdmin
+
 	engagementCodeID, err := k.Create(ctx, creator, tg4Engagement, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 engagement contract")
@@ -129,13 +130,24 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "store valset contract")
 	}
 
-	valsetInitMsg := newValsetInitMsg(mixerContractAddr, gs, engagementContractAddr, engagementCodeID)
+	valsetInitMsg := newValsetInitMsg(gs, mixerContractAddr, engagementContractAddr, engagementCodeID)
 	valsetJson := mustMarshalJson(valsetInitMsg)
 	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, creator, systemAdmin, valsetJson, "valset", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate valset")
 	}
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeValset, valsetContractAddr)
+	// store distribution contract address
+	valsetCfg, err := contract.QueryValsetConfig(ctx, tk, valsetContractAddr)
+	if err != nil {
+		return sdkerrors.Wrap(err, "query valset config")
+	}
+
+	distrAddr, err := sdk.AccAddressFromBech32(valsetCfg.DistributionContract)
+	if err != nil {
+		return sdkerrors.Wrap(err, "distribution contract address")
+	}
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeDistribution, distrAddr)
 
 	if err := tk.SetPrivileged(ctx, valsetContractAddr); err != nil {
 		return sdkerrors.Wrap(err, "grant privileges to valset contract")
@@ -155,8 +167,12 @@ func newStakeInitMsg(gs types.GenesisState, claimLimit uint64) contract.TG4Stake
 	}
 }
 
-// TODO: needs tg4-engagement code id, address
-func newValsetInitMsg(mixerContractAddr sdk.AccAddress, gs types.GenesisState, engagementAddr sdk.AccAddress, engagementID uint64) contract.ValsetInitMsg {
+func newValsetInitMsg(
+	gs types.GenesisState,
+	mixerContractAddr sdk.AccAddress,
+	engagementAddr sdk.AccAddress,
+	engagementID uint64,
+) contract.ValsetInitMsg {
 	return contract.ValsetInitMsg{
 		Membership:    mixerContractAddr.String(),
 		MinWeight:     gs.ValsetContractConfig.MinWeight,

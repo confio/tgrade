@@ -23,6 +23,8 @@ enum PoEContractType {
   ENGAGEMENT = 3
       [ (gogoproto.enumvalue_customname) = "PoEContractTypeEngagement" ];
   MIXER = 4 [ (gogoproto.enumvalue_customname) = "PoEContractTypeMixer" ];
+  DISTRIBUTION = 5
+      [ (gogoproto.enumvalue_customname) = "PoEContractTypeDistribution" ];
 }
 
 // Params defines the parameters for the PoE module.

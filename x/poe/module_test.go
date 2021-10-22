@@ -5,6 +5,8 @@ import (
 	"math"
 	"testing"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -51,6 +53,8 @@ func TestInitGenesis(t *testing.T) {
 
 	// and staking group setup as expected
 	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	require.NoError(t, err)
+
 	gotMembers = queryAllMembers(t, ctx, example.TWasmKeeper, addr)
 	assert.Equal(t, myValidators.expStakingGroup(), gotMembers)
 
@@ -72,8 +76,8 @@ func TestInitGenesis(t *testing.T) {
 		FeePercentage:         sdk.MustNewDecFromStr("0.50"),
 		ValidatorsRewardRatio: sdk.MustNewDecFromStr("0.50"),
 		EpochReward:           sdk.NewInt64Coin("utgd", 100000),
-		DistributionContract:  "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhuc53mp6",
-		RewardsContract:       "cosmos1cnuw3f076wgdyahssdkd0g3nr96ckq8caf5mdm",
+		DistributionContract:  wasmkeeper.BuildContractAddress(1, 1).String(),
+		RewardsContract:       wasmkeeper.BuildContractAddress(1, 5).String(),
 		AutoUnjail:            false,
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)

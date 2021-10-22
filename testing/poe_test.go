@@ -46,6 +46,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 
 	engagementGroupAddr := gjson.Get(cli.CustomQuery("q", "poe", "contract-address", "ENGAGEMENT"), "address").String()
 	valsetAddr := gjson.Get(cli.CustomQuery("q", "poe", "contract-address", "VALSET"), "address").String()
+	distributionAddr := gjson.Get(cli.CustomQuery("q", "poe", "contract-address", "DISTRIBUTION"), "address").String()
 
 	// and smart query internal list of validators
 	qResult := cli.CustomQuery("q", "wasm", "contract-state", "smart", valsetAddr, `{"list_active_validators":{}}`)
@@ -85,6 +86,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	// and new tokens were minted
 	assert.Greater(t, cli.QueryTotalSupply("utgd"), initialSupply)
 
+	assert.NotEmpty(t, distributionAddr)
 	// TODO: no more fees are distributed. Rather they are held in a new contract to be withdrawn.
 	// DO proper fix in issue #156, so we can query the pending stake. For now I will disable
 	// See fee_test.go 63
