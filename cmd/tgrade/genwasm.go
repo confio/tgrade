@@ -2,9 +2,10 @@ package main
 
 import (
 	wasmcli "github.com/CosmWasm/wasmd/x/wasm/client/cli"
-	"github.com/confio/tgrade/x/twasm/client/cli"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/spf13/cobra"
+
+	"github.com/confio/tgrade/x/twasm/client/cli"
 )
 
 func AddGenesisWasmMsgCmd(defaultNodeHome string) *cobra.Command {

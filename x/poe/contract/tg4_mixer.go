@@ -1,8 +1,9 @@
 package contract
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"testing"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // TG4MixerInitMsg contract init message

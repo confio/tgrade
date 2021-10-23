@@ -2,13 +2,15 @@ package cli
 
 import (
 	"fmt"
-	"github.com/confio/tgrade/x/poe/types"
+	"os"
+	"strings"
+
 	"github.com/cosmos/cosmos-sdk/version"
 	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
-	"os"
-	"strings"
+
+	"github.com/confio/tgrade/x/poe/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"

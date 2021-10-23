@@ -2,8 +2,9 @@ package testing
 
 import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	"github.com/confio/tgrade/x/twasm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/confio/tgrade/x/twasm"
 )
 
 var _ wasmtypes.ContractOpsKeeper = &ContractOpsKeeperMock{}

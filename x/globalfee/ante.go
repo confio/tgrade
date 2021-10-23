@@ -1,10 +1,11 @@
 package globalfee
 
 import (
-	"github.com/confio/tgrade/x/globalfee/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+
+	"github.com/confio/tgrade/x/globalfee/types"
 )
 
 var _ sdk.AnteDecorator = GlobalMinimumChainFeeDecorator{}

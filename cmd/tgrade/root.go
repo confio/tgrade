@@ -2,10 +2,11 @@ package main
 
 import (
 	"errors"
-	"github.com/confio/tgrade/x/poe/client/cli"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/confio/tgrade/x/poe/client/cli"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
@@ -18,7 +19,6 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	wasmcodec "github.com/CosmWasm/wasmd/x/wasm/client/codec"
-	"github.com/confio/tgrade/app"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -36,6 +36,8 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+
+	"github.com/confio/tgrade/app"
 )
 
 // NewRootCmd creates a new root command for wasmd. It is called once in the

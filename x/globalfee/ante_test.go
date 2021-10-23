@@ -1,7 +1,9 @@
 package globalfee
 
 import (
-	"github.com/confio/tgrade/x/globalfee/types"
+	"testing"
+	"time"
+
 	"github.com/cosmos/cosmos-sdk/simapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -15,8 +17,8 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
-	"testing"
-	"time"
+
+	"github.com/confio/tgrade/x/globalfee/types"
 )
 
 func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {

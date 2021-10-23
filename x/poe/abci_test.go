@@ -2,8 +2,8 @@ package poe
 
 import (
 	"encoding/json"
-	"github.com/confio/tgrade/x/poe/contract"
-	twasmtypes "github.com/confio/tgrade/x/twasm/types"
+	"testing"
+
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
@@ -12,7 +12,9 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/proto/tendermint/crypto"
-	"testing"
+
+	"github.com/confio/tgrade/x/poe/contract"
+	twasmtypes "github.com/confio/tgrade/x/twasm/types"
 )
 
 func TestEndBlock(t *testing.T) {

@@ -2,15 +2,17 @@ package poe
 
 import (
 	"context"
-	"github.com/confio/tgrade/x/poe/types"
+	"testing"
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abcitypes "github.com/tendermint/tendermint/abci/types"
-	"testing"
-	"time"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 func TestHandler(t *testing.T) {

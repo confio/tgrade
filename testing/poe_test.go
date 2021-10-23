@@ -5,16 +5,18 @@ package testing
 
 import (
 	"fmt"
-	testingcontracts "github.com/confio/tgrade/x/poe/contract"
-	poetypes "github.com/confio/tgrade/x/poe/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/tidwall/gjson"
 	"math"
 	"path/filepath"
 	"testing"
 	"time"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
+
+	testingcontracts "github.com/confio/tgrade/x/poe/contract"
+	poetypes "github.com/confio/tgrade/x/poe/types"
 )
 
 func TestProofOfEngagementSetup(t *testing.T) {

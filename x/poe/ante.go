@@ -2,6 +2,7 @@ package poe
 
 import (
 	"fmt"
+
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 

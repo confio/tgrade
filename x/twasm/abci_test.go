@@ -4,16 +4,18 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/confio/tgrade/x/twasm/keeper"
-	"github.com/confio/tgrade/x/twasm/types"
+	"testing"
+	"time"
+
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
-	"testing"
-	"time"
+
+	"github.com/confio/tgrade/x/twasm/keeper"
+	"github.com/confio/tgrade/x/twasm/types"
 )
 
 func TestBeginBlock(t *testing.T) {

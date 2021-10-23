@@ -1,12 +1,14 @@
 package globalfee
 
 import (
-	"github.com/confio/tgrade/x/globalfee/types"
+	"testing"
+
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/confio/tgrade/x/globalfee/types"
 )
 
 func TestDefaultGenesis(t *testing.T) {

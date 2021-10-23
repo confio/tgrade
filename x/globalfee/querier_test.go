@@ -1,12 +1,14 @@
 package globalfee
 
 import (
-	"github.com/confio/tgrade/x/globalfee/types"
+	"testing"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/confio/tgrade/x/globalfee/types"
 )
 
 func TestQueryMinimumGasPrices(t *testing.T) {

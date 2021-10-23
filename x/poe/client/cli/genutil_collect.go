@@ -3,10 +3,12 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
-	poeclient "github.com/confio/tgrade/x/poe/client"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"os"
 	"path/filepath"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	poeclient "github.com/confio/tgrade/x/poe/client"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

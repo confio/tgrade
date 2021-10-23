@@ -6,11 +6,6 @@ package testing
 import (
 	"flag"
 	"fmt"
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	"github.com/confio/tgrade/app"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
-	"github.com/tendermint/tendermint/libs/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,6 +13,13 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/tendermint/tendermint/libs/rand"
+
+	"github.com/confio/tgrade/app"
 )
 
 var sut *SystemUnderTest

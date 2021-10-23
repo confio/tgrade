@@ -2,12 +2,14 @@ package keeper
 
 import (
 	"encoding/json"
-	"github.com/confio/tgrade/x/poe/types"
+	"testing"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"testing"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 func TestInitGenesis(t *testing.T) {

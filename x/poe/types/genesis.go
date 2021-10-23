@@ -2,11 +2,12 @@ package types
 
 import (
 	"errors"
+	"time"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/tendermint/tendermint/libs/rand"
-	"time"
 )
 
 const DefaultBondDenom = "utgd"

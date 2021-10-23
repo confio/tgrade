@@ -1,9 +1,11 @@
 package main
 
 import (
-	"github.com/confio/tgrade/app"
-	"github.com/cosmos/cosmos-sdk/server"
 	"os"
+
+	"github.com/cosmos/cosmos-sdk/server"
+
+	"github.com/confio/tgrade/app"
 )
 
 func main() {

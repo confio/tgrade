@@ -3,13 +3,15 @@ package testing
 import (
 	"encoding/json"
 	"fmt"
-	poetypes "github.com/confio/tgrade/x/poe/types"
+	"testing"
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"testing"
-	"time"
+
+	poetypes "github.com/confio/tgrade/x/poe/types"
 )
 
 // SetPoEParamsMutator set params in genesis

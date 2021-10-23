@@ -3,9 +3,9 @@ package keeper
 import (
 	"context"
 	"encoding/json"
-	"github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/poe/types"
-	wasmtesting "github.com/confio/tgrade/x/twasm/testing"
+	"strings"
+	"testing"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,8 +17,10 @@ import (
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/rand"
 	types1 "github.com/tendermint/tendermint/proto/tendermint/types"
-	"strings"
-	"testing"
+
+	"github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/types"
+	wasmtesting "github.com/confio/tgrade/x/twasm/testing"
 )
 
 func TestCreateValidator(t *testing.T) {

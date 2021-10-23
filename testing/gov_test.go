@@ -5,9 +5,10 @@ package testing
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
-	"testing"
 )
 
 // Scenario: add reflect contract to genesis and set privileged
