@@ -210,6 +210,7 @@ PoEContractType type of PoE contract
 | VALSET | 2 |  |
 | ENGAGEMENT | 3 |  |
 | MIXER | 4 |  |
+| DISTRIBUTION | 5 |  |
 
 
  <!-- end enums -->

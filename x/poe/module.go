@@ -115,13 +115,7 @@ type twasmKeeper interface {
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(
-	poeKeeper keeper.Keeper,
-	twasmKeeper twasmKeeper,
-	deliverTx DeliverTxfn,
-	txEncodingConfig client.TxEncodingConfig,
-	contractKeeper wasmtypes.ContractOpsKeeper,
-) AppModule {
+func NewAppModule(poeKeeper keeper.Keeper, twasmKeeper twasmKeeper, deliverTx DeliverTxfn, txEncodingConfig client.TxEncodingConfig, contractKeeper wasmtypes.ContractOpsKeeper) AppModule {
 	return AppModule{
 		AppModuleBasic:   AppModuleBasic{},
 		twasmKeeper:      twasmKeeper,

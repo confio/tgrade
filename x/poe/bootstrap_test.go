@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,7 +15,6 @@ import (
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
-	"github.com/confio/tgrade/x/twasm"
 	twasmtesting "github.com/confio/tgrade/x/twasm/testing"
 	twasmtypes "github.com/confio/tgrade/x/twasm/types"
 )
@@ -28,10 +29,11 @@ func TestBootstrapPoEContracts(t *testing.T) {
 	)
 
 	var (
-		engagementContractAddr = twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 1)
-		stakingContractAdddr   = twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 2)
-		mixerContractAddr      = twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 3)
-		valsetContractAddr     = twasm.ContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)
+		engagementContractAddr   = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 1)
+		stakingContractAdddr     = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 2)
+		mixerContractAddr        = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 3)
+		valsetContractAddr       = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)
+		distributionContractAddr = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 5)
 	)
 
 	specs := map[string]struct {
@@ -92,6 +94,13 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			spFn, capPriv := CaptureSetPrivilegedFn()
 			tm := twasmKeeperMock{
 				SetPrivilegedFn: spFn,
+				QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+					require.Equal(t, valsetContractAddr, contractAddr)
+					cfg := contract.ValsetConfigResponse{
+						DistributionContract: distributionContractAddr.String(),
+					}
+					return json.Marshal(cfg)
+				},
 			}
 			sFn, capSetAddr := keeper.CaptureSetPoEContractAddressFn()
 			pm := keeper.PoEKeeperMock{
@@ -147,6 +156,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				{Ctype: types.PoEContractTypeStaking, ContractAddr: stakingContractAdddr},
 				{Ctype: types.PoEContractTypeMixer, ContractAddr: mixerContractAddr},
 				{Ctype: types.PoEContractTypeValset, ContractAddr: valsetContractAddr},
+				{Ctype: types.PoEContractTypeDistribution, ContractAddr: distributionContractAddr},
 			}, *capSetAddr)
 		})
 	}
@@ -241,7 +251,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			got := newValsetInitMsg(mixerContractAddr, spec.genesis, engagementAddr, engagementID)
+			got := newValsetInitMsg(spec.genesis, mixerContractAddr, engagementAddr, engagementID)
 			assert.Equal(t, spec.exp, got)
 		})
 	}
