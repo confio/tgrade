@@ -3,8 +3,6 @@ package keeper
 import (
 	"context"
 
-	"github.com/confio/tgrade/x/poe/contract"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -30,26 +28,13 @@ func (q legacyDistributionGRPCQuerier) ValidatorOutstandingRewards(c context.Con
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
-	if req.ValidatorAddress == "" {
-		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
-	}
-	valAddr, err := sdk.AccAddressFromBech32(req.ValidatorAddress)
+	resp, err := q.queryServer.ValidatorOutstandingReward(c, &types.QueryValidatorOutstandingRewardRequest{ValidatorAddress: req.ValidatorAddress})
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "delegator address invalid")
+		return nil, err
 	}
-	ctx := sdk.UnwrapSDKContext(c)
-	distContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	reward, err := contract.QueryWithdrawableFunds(ctx, q.contractQuerier, distContractAddr, valAddr)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
 	return &distributiontypes.QueryValidatorOutstandingRewardsResponse{
 		Rewards: distributiontypes.ValidatorOutstandingRewards{
-			Rewards: sdk.NewDecCoins(reward),
+			Rewards: sdk.NewDecCoins(resp.Reward),
 		},
 	}, nil
 }

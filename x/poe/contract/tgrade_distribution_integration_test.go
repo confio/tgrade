@@ -3,6 +3,9 @@ package contract_test
 import (
 	"testing"
 
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/tendermint/tendermint/libs/rand"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,16 +33,44 @@ func TestQueryWithdrawableFunds(t *testing.T) {
 	opAddr, err := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
 	require.NoError(t, err)
 
-	// empty rewards
-	gotAmount, gotErr := contract.QueryWithdrawableFunds(ctx, example.TWasmKeeper, contractAddr, opAddr)
-	require.NoError(t, gotErr)
-	assert.Equal(t, sdk.NewDecCoin("utgd", sdk.ZeroInt()), gotAmount)
-
-	// and when one epoch has passed
-	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(types.DefaultGenesisState().ValsetContractConfig.EpochLength))
-	module.EndBlock(ctx, abci.RequestEndBlock{})
-	// then
-	gotAmount, gotErr = contract.QueryWithdrawableFunds(ctx, example.TWasmKeeper, contractAddr, opAddr)
-	require.NoError(t, gotErr)
-	assert.True(t, gotAmount.IsGTE(sdk.NewDecCoin("utgd", sdk.NewInt(1))), gotAmount)
+	specs := map[string]struct {
+		setup  func(ctx sdk.Context) sdk.Context
+		src    sdk.AccAddress
+		exp    sdk.DecCoin
+		expErr *sdkerrors.Error
+	}{
+		"empty rewards": {
+			src: opAddr,
+			exp: sdk.NewDecCoin("utgd", sdk.ZeroInt()),
+		},
+		"with rewards after epoche": {
+			setup: func(ctx sdk.Context) sdk.Context {
+				ctx = ctx.WithBlockTime(ctx.BlockTime().Add(types.DefaultGenesisState().ValsetContractConfig.EpochLength))
+				module.EndBlock(ctx, abci.RequestEndBlock{})
+				return ctx
+			},
+			src: opAddr,
+			exp: sdk.NewDecCoin("utgd", sdk.NewInt(49999)),
+		},
+		"unknown address": {
+			src:    rand.Bytes(sdk.AddrLen),
+			exp:    sdk.NewDecCoin("utgd", sdk.ZeroInt()),
+			expErr: types.ErrNotFound,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			tCtx, _ := ctx.CacheContext()
+			if spec.setup != nil {
+				tCtx = spec.setup(tCtx)
+			}
+			gotAmount, gotErr := contract.QueryWithdrawableFunds(tCtx, example.TWasmKeeper, contractAddr, spec.src)
+			if spec.expErr != nil {
+				assert.True(t, spec.expErr.Is(gotErr), "got %s", gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+			assert.Equal(t, spec.exp, gotAmount)
+		})
+	}
 }

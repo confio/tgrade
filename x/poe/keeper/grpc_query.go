@@ -214,3 +214,32 @@ func (q grpcQuerier) HistoricalInfo(c context.Context, req *stakingtypes.QueryHi
 	}
 	return &stakingtypes.QueryHistoricalInfoResponse{Hist: &hi}, nil
 }
+
+func (q grpcQuerier) ValidatorOutstandingReward(c context.Context, req *types.QueryValidatorOutstandingRewardRequest) (*types.QueryValidatorOutstandingRewardResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	if req.ValidatorAddress == "" {
+		return nil, status.Error(codes.InvalidArgument, "address cannot be empty")
+	}
+	valAddr, err := sdk.AccAddressFromBech32(req.ValidatorAddress)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "address invalid")
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+	distContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	reward, err := contract.QueryWithdrawableFunds(ctx, q.contractQuerier, distContractAddr, valAddr)
+	if err != nil {
+		if types.ErrNotFound.Is(err) {
+			return nil, status.Error(codes.NotFound, "address")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryValidatorOutstandingRewardResponse{
+		Reward: reward,
+	}, nil
+}

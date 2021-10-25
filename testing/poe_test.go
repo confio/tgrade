@@ -89,8 +89,8 @@ func TestProofOfEngagementSetup(t *testing.T) {
 
 	// check rewards distributed
 	for _, v := range sortedMember {
-		rewards := cli.QueryValidatorRewards(v.Addr)
-		assert.True(t, rewards.AmountOf("utgd").GTE(sdk.OneDec()), "got %s for addr: %s", rewards, v.Addr)
+		reward := cli.QueryValidatorRewards(v.Addr)
+		assert.True(t, reward.IsGTE(sdk.NewDecCoinFromDec("utgd", sdk.OneDec())), "got %s for addr: %s", reward, v.Addr)
 	}
 
 	// And when moniker updated

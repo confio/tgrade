@@ -11,7 +11,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
-	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/spf13/cobra"
 
@@ -365,17 +364,17 @@ $ %s query poe validator-reward %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 			if err != nil {
 				return err
 			}
-			queryClient := distributiontypes.NewQueryClient(clientCtx)
+			queryClient := types.NewQueryClient(clientCtx)
 
 			valAddr, err := sdk.ValAddressFromBech32(args[0])
 			if err != nil {
 				return err
 			}
 
-			req := &distributiontypes.QueryValidatorOutstandingRewardsRequest{
+			req := &types.QueryValidatorOutstandingRewardRequest{
 				ValidatorAddress: valAddr.String(),
 			}
-			res, err := queryClient.ValidatorOutstandingRewards(context.Background(), req)
+			res, err := queryClient.ValidatorOutstandingReward(context.Background(), req)
 			if err != nil {
 				return err
 			}

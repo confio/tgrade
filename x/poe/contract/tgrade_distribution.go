@@ -1,6 +1,8 @@
 package contract
 
 import (
+	"strings"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/confio/tgrade/x/poe/types"
@@ -21,5 +23,16 @@ func QueryWithdrawableFunds(ctx sdk.Context, k types.SmartQuerier, contractAddr,
 	query := DistributionQuery{WithdrawableFunds: &WithdrawableFundsQuery{Owner: owner.String()}}
 	var resp FundsResponse
 	err := doQuery(ctx, k, contractAddr, query, &resp)
+	if err != nil {
+		return sdk.DecCoin{}, asTypedError(err)
+	}
 	return resp.Funds, err
+}
+
+func asTypedError(err error) error {
+	const notFound = "tg4_engagement::state::WithdrawAdjustment not found"
+	if strings.HasPrefix(err.Error(), notFound) {
+		return types.ErrNotFound
+	}
+	return err
 }

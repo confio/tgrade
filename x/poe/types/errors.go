@@ -8,4 +8,5 @@ var (
 	ErrInvalidHistoricalInfo           = sdkerrors.Register(ModuleName, 4, "invalid historical info")
 	ErrEmpty                           = sdkerrors.Register(ModuleName, 5, "empty")
 	ErrInvalid                         = sdkerrors.Register(ModuleName, 6, "invalid")
+	ErrNotFound                        = sdkerrors.Register(ModuleName, 7, "not found")
 )

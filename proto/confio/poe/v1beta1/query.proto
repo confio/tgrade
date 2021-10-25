@@ -59,6 +59,13 @@ service Query {
     option (google.api.http).get =
         "/tgrade/poe/v1beta1/historical_info/{height}";
   }
+
+  // ValidatorOutstandingRewards queries rewards of a validator address.
+  rpc ValidatorOutstandingReward(QueryValidatorOutstandingRewardRequest)
+      returns (QueryValidatorOutstandingRewardResponse) {
+    option (google.api.http).get = "/tgrade/poe/v1beta1/validators/"
+                                   "{validator_address}/outstanding_reward";
+  }
 }
 
 // QueryContractAddressRequest is the request type for the Query/ContractAddress
@@ -118,4 +125,21 @@ message QueryValidatorUnbondingDelegationsResponse {
 
   // pagination defines the pagination in the response.
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryValidatorOutstandingRewardRequest is the request type for the
+// Query/ValidatorOutstandingReward RPC method.
+message QueryValidatorOutstandingRewardRequest {
+  // validator_address defines the validator address to query for.
+  string validator_address = 1;
+}
+
+// QueryValidatorOutstandingRewardResponse is the response type for the
+// Query/ValidatorOutstandingReward RPC method.
+message QueryValidatorOutstandingRewardResponse {
+  cosmos.base.v1beta1.DecCoin reward = 1 [
+    (gogoproto.moretags) = "yaml:\"reward\"",
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoin",
+    (gogoproto.nullable) = false
+  ];
 }
