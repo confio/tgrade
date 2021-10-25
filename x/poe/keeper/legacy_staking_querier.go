@@ -15,8 +15,6 @@ import (
 
 var _ stakingtypes.QueryServer = &legacyStakingGRPCQuerier{}
 
-var neverReleasedDelegation = time.Date(2999, time.December, 31, 12, 0, 0, 0, time.UTC)
-
 type stakingQuerierKeeper interface {
 	ViewKeeper
 	HistoricalEntries(ctx sdk.Context) uint32
@@ -28,7 +26,7 @@ type legacyStakingGRPCQuerier struct {
 	queryServer     types.QueryServer
 }
 
-func NewLegacyStakingGRPCQuerier(poeKeeper stakingQuerierKeeper, q types.SmartQuerier) *legacyStakingGRPCQuerier {
+func NewLegacyStakingGRPCQuerier(poeKeeper stakingQuerierKeeper, q types.SmartQuerier) *legacyStakingGRPCQuerier { //nolint:golint
 	return &legacyStakingGRPCQuerier{keeper: poeKeeper, contractQuerier: q, queryServer: NewGrpcQuerier(poeKeeper, q)}
 }
 

@@ -3,6 +3,8 @@ package keeper
 import (
 	"context"
 
+	"github.com/confio/tgrade/x/poe/contract"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -15,12 +17,13 @@ import (
 var _ distributiontypes.QueryServer = &legacyDistributionGRPCQuerier{}
 
 type legacyDistributionGRPCQuerier struct {
-	keeper      ContractSource
-	queryServer types.QueryServer
+	keeper          ContractSource
+	contractQuerier types.SmartQuerier
+	queryServer     types.QueryServer
 }
 
-func NewLegacyDistributionGRPCQuerier(keeper ViewKeeper, contractQuerier types.SmartQuerier) *legacyDistributionGRPCQuerier {
-	return &legacyDistributionGRPCQuerier{keeper: keeper, queryServer: NewGrpcQuerier(keeper, contractQuerier)}
+func NewLegacyDistributionGRPCQuerier(keeper ViewKeeper, contractQuerier types.SmartQuerier) *legacyDistributionGRPCQuerier { //nolint:golint
+	return &legacyDistributionGRPCQuerier{keeper: keeper, contractQuerier: contractQuerier, queryServer: NewGrpcQuerier(keeper, contractQuerier)}
 }
 
 func (q legacyDistributionGRPCQuerier) ValidatorOutstandingRewards(c context.Context, req *distributiontypes.QueryValidatorOutstandingRewardsRequest) (*distributiontypes.QueryValidatorOutstandingRewardsResponse, error) {
@@ -30,12 +33,24 @@ func (q legacyDistributionGRPCQuerier) ValidatorOutstandingRewards(c context.Con
 	if req.ValidatorAddress == "" {
 		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
 	}
-	if _, err := sdk.AccAddressFromBech32(req.ValidatorAddress); err != nil {
+	valAddr, err := sdk.AccAddressFromBech32(req.ValidatorAddress)
+	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "delegator address invalid")
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+	distContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	reward, err := contract.QueryWithdrawableFunds(ctx, q.contractQuerier, distContractAddr, valAddr)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &distributiontypes.QueryValidatorOutstandingRewardsResponse{
-		Rewards: distributiontypes.ValidatorOutstandingRewards{},
+		Rewards: distributiontypes.ValidatorOutstandingRewards{
+			Rewards: sdk.NewDecCoins(reward),
+		},
 	}, nil
 }
 

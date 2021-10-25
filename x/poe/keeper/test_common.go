@@ -152,10 +152,8 @@ func createTestInput(
 	paramsKeeper.Subspace(types.ModuleName)
 
 	maccPerms := map[string][]string{ // module account permissions
-		authtypes.FeeCollectorName:  nil,
-		minttypes.ModuleName:        {authtypes.Minter},
-		govtypes.ModuleName:         {authtypes.Burner},
 		ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
+		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
 	}
 	authSubsp, _ := paramsKeeper.GetSubspace(authtypes.ModuleName)
 	authKeeper := authkeeper.NewAccountKeeper(
@@ -180,8 +178,9 @@ func createTestInput(
 		blockedAddrs,
 	)
 	bankParams := banktypes.DefaultParams()
-	bankParams = bankParams.SetSendEnabledParam("stake", true)
+	bankParams = bankParams.SetSendEnabledParam("utgd", true)
 	bankKeeper.SetParams(ctx, bankParams)
+	bankKeeper.SetSupply(ctx, banktypes.NewSupply(sdk.NewCoins(sdk.NewCoin("utgd", sdk.ZeroInt()))))
 
 	capabilityKeeper := capabilitykeeper.NewKeeper(appCodec, keyCapability, keyCapabilityTransient)
 	scopedIBCKeeper := capabilityKeeper.ScopeToModule(ibchost.ModuleName)
