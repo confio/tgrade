@@ -19,10 +19,24 @@ type FundsResponse struct {
 	Funds sdk.Coin
 }
 
-func QueryWithdrawableFunds(ctx sdk.Context, k types.SmartQuerier, contractAddr, owner sdk.AccAddress) (sdk.Coin, error) {
-	query := DistributionQuery{WithdrawableFunds: &WithdrawableFundsQuery{Owner: owner.String()}}
+type DistributionContractImpl struct {
+	contractAddr     sdk.AccAddress
+	contractQuerier  types.SmartQuerier
+	addressLookupErr error
+}
+
+// NewDistributionContractImpl constructor
+func NewDistributionContractImpl(contractAddr sdk.AccAddress, contractQuerier types.SmartQuerier, addressLookupErr error) *DistributionContractImpl {
+	return &DistributionContractImpl{contractAddr: contractAddr, contractQuerier: contractQuerier, addressLookupErr: addressLookupErr}
+}
+
+func (d DistributionContractImpl) ValidatorOutstandingReward(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+	if d.addressLookupErr != nil {
+		return sdk.Coin{}, d.addressLookupErr
+	}
+	query := DistributionQuery{WithdrawableFunds: &WithdrawableFundsQuery{Owner: addr.String()}}
 	var resp FundsResponse
-	err := doQuery(ctx, k, contractAddr, query, &resp)
+	err := doQuery(ctx, d.contractQuerier, d.contractAddr, query, &resp)
 	if err != nil {
 		return sdk.Coin{}, castError(err)
 	}

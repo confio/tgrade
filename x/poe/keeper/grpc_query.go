@@ -25,7 +25,9 @@ type ViewKeeper interface {
 	ContractSource
 	GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool)
 	GetBondDenom(ctx sdk.Context) string
+	DistributionContract(ctx sdk.Context) DistributionContract
 }
+
 type grpcQuerier struct {
 	keeper          ViewKeeper
 	contractQuerier types.SmartQuerier
@@ -227,11 +229,7 @@ func (q grpcQuerier) ValidatorOutstandingReward(c context.Context, req *types.Qu
 		return nil, status.Error(codes.InvalidArgument, "address invalid")
 	}
 	ctx := sdk.UnwrapSDKContext(c)
-	distContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	reward, err := contract.QueryWithdrawableFunds(ctx, q.contractQuerier, distContractAddr, valAddr)
+	reward, err := q.keeper.DistributionContract(ctx).ValidatorOutstandingReward(ctx, valAddr)
 	if err != nil {
 		if types.ErrNotFound.Is(err) {
 			return nil, status.Error(codes.NotFound, "address")

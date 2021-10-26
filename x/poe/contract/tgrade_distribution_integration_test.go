@@ -64,7 +64,7 @@ func TestQueryWithdrawableFunds(t *testing.T) {
 			if spec.setup != nil {
 				tCtx = spec.setup(tCtx)
 			}
-			gotAmount, gotErr := contract.QueryWithdrawableFunds(tCtx, example.TWasmKeeper, contractAddr, spec.src)
+			gotAmount, gotErr := contract.NewDistributionContractImpl(contractAddr, example.TWasmKeeper, nil).ValidatorOutstandingReward(tCtx, spec.src)
 			if spec.expErr != nil {
 				assert.True(t, spec.expErr.Is(gotErr), "got %s", gotErr)
 				return

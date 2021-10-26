@@ -459,3 +459,69 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 		})
 	}
 }
+
+func TestValidatorOutstandingReward(t *testing.T) {
+	var anyAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+
+	specs := map[string]struct {
+		src    *types.QueryValidatorOutstandingRewardRequest
+		mock   DistributionContract
+		exp    *types.QueryValidatorOutstandingRewardResponse
+		expErr error
+	}{
+		"reward": {
+			src: &types.QueryValidatorOutstandingRewardRequest{ValidatorAddress: anyAddr.String()},
+			mock: DistributionContractMock{ValidatorOutstandingRewardFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+				require.Equal(t, anyAddr, addr)
+				return sdk.NewCoin("utgd", sdk.OneInt()), nil
+			}},
+			exp: &types.QueryValidatorOutstandingRewardResponse{
+				Reward: sdk.NewDecCoin("utgd", sdk.OneInt()),
+			},
+		},
+		"not found": {
+			src: &types.QueryValidatorOutstandingRewardRequest{ValidatorAddress: anyAddr.String()},
+			mock: DistributionContractMock{ValidatorOutstandingRewardFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+				return sdk.Coin{}, types.ErrNotFound
+			}},
+			expErr: status.Error(codes.NotFound, "address"),
+		},
+		"any error": {
+			src: &types.QueryValidatorOutstandingRewardRequest{ValidatorAddress: anyAddr.String()},
+			mock: DistributionContractMock{ValidatorOutstandingRewardFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+				return sdk.Coin{}, errors.New("testing")
+			}},
+			expErr: status.Error(codes.Internal, "testing"),
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			keeperMock := PoEKeeperMock{
+				DistributionContractFn: func(ctx sdk.Context) DistributionContract { return spec.mock },
+			}
+
+			c := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()))
+			// when
+			s := NewGrpcQuerier(keeperMock, nil)
+			gotResp, gotErr := s.ValidatorOutstandingReward(c, spec.src)
+			// then
+			if spec.expErr != nil {
+				assert.ErrorIs(t, gotErr, spec.expErr)
+				return
+			}
+			require.NoError(t, gotErr)
+			assert.Equal(t, spec.exp, gotResp)
+		})
+	}
+}
+
+type DistributionContractMock struct {
+	ValidatorOutstandingRewardFn func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error)
+}
+
+func (m DistributionContractMock) ValidatorOutstandingReward(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+	if m.ValidatorOutstandingRewardFn == nil {
+		panic("not expected to be called")
+	}
+	return m.ValidatorOutstandingRewardFn(ctx, addr)
+}

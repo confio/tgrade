@@ -24,6 +24,7 @@ type PoEKeeperMock struct {
 	HistoricalEntriesFn                   func(ctx sdk.Context) uint32
 	UnbondingTimeFn                       func(ctx sdk.Context) time.Duration
 	GetHistoricalInfoFn                   func(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool)
+	DistributionContractFn                func(ctx sdk.Context) DistributionContract
 }
 
 func (m PoEKeeperMock) setParams(ctx sdk.Context, params types.Params) {
@@ -114,6 +115,13 @@ func (m PoEKeeperMock) SetValidatorInitialEngagementPoints(ctx sdk.Context, opAd
 		panic("not expected to be called")
 	}
 	return m.SetValidatorInitialEngagementPointsFn(ctx, opAddr, points)
+}
+
+func (m PoEKeeperMock) DistributionContract(ctx sdk.Context) DistributionContract {
+	if m.DistributionContractFn == nil {
+		panic("not expected to be called")
+	}
+	return m.DistributionContractFn(ctx)
 }
 
 // return matching type or fail
