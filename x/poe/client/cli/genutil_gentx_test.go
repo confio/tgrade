@@ -135,7 +135,7 @@ func setupSystem(t *testing.T, workDir string, encodingConfig params.EncodingCon
 	gs := moduleManager.DefaultGenesis(encodingConfig.Marshaler)
 	// with PoE setup
 	state := types.GetGenesisStateFromAppState(encodingConfig.Marshaler, gs)
-	state.BondDenom = bondDenum
+	state.EngagmentContractConfig.BondDenom = bondDenum
 	state.Engagement = append(state.Engagement, types.TG4Member{
 		Address: addr.String(),
 		Weight:  1,
