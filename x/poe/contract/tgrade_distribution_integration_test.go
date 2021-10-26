@@ -36,12 +36,12 @@ func TestQueryWithdrawableFunds(t *testing.T) {
 	specs := map[string]struct {
 		setup  func(ctx sdk.Context) sdk.Context
 		src    sdk.AccAddress
-		exp    sdk.DecCoin
+		exp    sdk.Coin
 		expErr *sdkerrors.Error
 	}{
 		"empty rewards": {
 			src: opAddr,
-			exp: sdk.NewDecCoin("utgd", sdk.ZeroInt()),
+			exp: sdk.NewCoin("utgd", sdk.ZeroInt()),
 		},
 		"with rewards after epoche": {
 			setup: func(ctx sdk.Context) sdk.Context {
@@ -50,11 +50,11 @@ func TestQueryWithdrawableFunds(t *testing.T) {
 				return ctx
 			},
 			src: opAddr,
-			exp: sdk.NewDecCoin("utgd", sdk.NewInt(49999)),
+			exp: sdk.NewCoin("utgd", sdk.NewInt(49999)),
 		},
 		"unknown address": {
 			src:    rand.Bytes(sdk.AddrLen),
-			exp:    sdk.NewDecCoin("utgd", sdk.ZeroInt()),
+			exp:    sdk.NewCoin("utgd", sdk.ZeroInt()),
 			expErr: types.ErrNotFound,
 		},
 	}

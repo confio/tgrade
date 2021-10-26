@@ -240,6 +240,6 @@ func (q grpcQuerier) ValidatorOutstandingReward(c context.Context, req *types.Qu
 	}
 
 	return &types.QueryValidatorOutstandingRewardResponse{
-		Reward: reward,
+		Reward: sdk.NewDecCoin(reward.Denom, reward.Amount),
 	}, nil
 }
