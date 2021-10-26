@@ -99,7 +99,7 @@ func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
 }
 
 func (k Keeper) GetBondDenom(ctx sdk.Context) string {
-	return "utgd"
+	return types.DefaultBondDenom
 }
 
 func ModuleLogger(ctx sdk.Context) log.Logger {

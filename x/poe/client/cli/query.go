@@ -33,6 +33,7 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryValidatorUnbondingDelegations(),
 		GetCmdQueryUnbondingPeriod(),
 		GetCmdQueryHistoricalInfo(),
+		GetCmdQueryValidatorReward(),
 	)
 	return queryCmd
 }
@@ -336,5 +337,52 @@ $ %s query poe unbonding-delegations %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddPaginationFlagsToCmd(cmd, "unbonding delegations")
 
+	return cmd
+}
+
+// GetCmdQueryValidatorReward implements the command to query the
+// claimable reward of a specific validator.
+func GetCmdQueryValidatorReward() *cobra.Command {
+	bech32PrefixValAddr := sdk.GetConfig().GetBech32ValidatorAddrPrefix()
+
+	cmd := &cobra.Command{
+		Use:     "validator-reward [validator-addr]",
+		Short:   "Query the pending reward by one validator",
+		Aliases: []string{"validator-rewards", "rewards", "reward"},
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Query reward of an individual validator.
+
+Example:
+$ %s query poe validator-reward %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
+`,
+				version.AppName, bech32PrefixValAddr,
+			),
+		),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+
+			valAddr, err := sdk.ValAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+
+			req := &types.QueryValidatorOutstandingRewardRequest{
+				ValidatorAddress: valAddr.String(),
+			}
+			res, err := queryClient.ValidatorOutstandingReward(context.Background(), req)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
 	return cmd
 }

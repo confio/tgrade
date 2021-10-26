@@ -107,8 +107,8 @@ func TestGetValidator(t *testing.T) {
 			assert.Equal(t, spec.expVal, gotVal)
 		})
 	}
-
 }
+
 func TestQueryUnbondingPeriod(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example := keeper.CreateDefaultTestInput(t)

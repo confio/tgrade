@@ -153,6 +153,18 @@ func (c TgradeCli) QueryValidator(addr string) string {
 	return c.CustomQuery("q", "poe", "validator", addr)
 }
 
+// QueryValidatorRewards queries the validator rewards for the given operator address
+func (c TgradeCli) QueryValidatorRewards(addr string) sdk.DecCoin {
+	raw := c.CustomQuery("q", "poe", "validator-reward", addr)
+	require.NotEmpty(c.t, raw)
+
+	r := gjson.Get(raw, "reward")
+	amount, err := sdk.NewDecFromStr(gjson.Get(r.Raw, "amount").String())
+	require.NoError(c.t, err)
+	denom := gjson.Get(r.Raw, "denom").String()
+	return sdk.NewDecCoinFromDec(denom, amount)
+}
+
 func (c TgradeCli) GetTendermintValidatorSet() rpc.ResultValidatorsOutput {
 	args := []string{"q", "tendermint-validator-set"}
 	got := c.run(c.withChainFlags(args...))

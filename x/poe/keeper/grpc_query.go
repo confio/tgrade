@@ -25,7 +25,9 @@ type ViewKeeper interface {
 	ContractSource
 	GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool)
 	GetBondDenom(ctx sdk.Context) string
+	DistributionContract(ctx sdk.Context) DistributionContract
 }
+
 type grpcQuerier struct {
 	keeper          ViewKeeper
 	contractQuerier types.SmartQuerier
@@ -213,4 +215,29 @@ func (q grpcQuerier) HistoricalInfo(c context.Context, req *stakingtypes.QueryHi
 		return nil, status.Errorf(codes.NotFound, "historical info for height %d not found", req.Height)
 	}
 	return &stakingtypes.QueryHistoricalInfoResponse{Hist: &hi}, nil
+}
+
+func (q grpcQuerier) ValidatorOutstandingReward(c context.Context, req *types.QueryValidatorOutstandingRewardRequest) (*types.QueryValidatorOutstandingRewardResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	if req.ValidatorAddress == "" {
+		return nil, status.Error(codes.InvalidArgument, "address cannot be empty")
+	}
+	valAddr, err := sdk.AccAddressFromBech32(req.ValidatorAddress)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "address invalid")
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+	reward, err := q.keeper.DistributionContract(ctx).ValidatorOutstandingReward(ctx, valAddr)
+	if err != nil {
+		if types.ErrNotFound.Is(err) {
+			return nil, status.Error(codes.NotFound, "address")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryValidatorOutstandingRewardResponse{
+		Reward: sdk.NewDecCoin(reward.Denom, reward.Amount),
+	}, nil
 }

@@ -15,27 +15,27 @@ import (
 var _ distributiontypes.QueryServer = &legacyDistributionGRPCQuerier{}
 
 type legacyDistributionGRPCQuerier struct {
-	keeper      ContractSource
-	queryServer types.QueryServer
+	keeper          ContractSource
+	contractQuerier types.SmartQuerier
+	queryServer     types.QueryServer
 }
 
-func NewLegacyDistributionGRPCQuerier(keeper ViewKeeper, contractQuerier types.SmartQuerier) *legacyDistributionGRPCQuerier {
-	return &legacyDistributionGRPCQuerier{keeper: keeper, queryServer: NewGrpcQuerier(keeper, contractQuerier)}
+func NewLegacyDistributionGRPCQuerier(keeper ViewKeeper, contractQuerier types.SmartQuerier) *legacyDistributionGRPCQuerier { //nolint:golint
+	return &legacyDistributionGRPCQuerier{keeper: keeper, contractQuerier: contractQuerier, queryServer: NewGrpcQuerier(keeper, contractQuerier)}
 }
 
 func (q legacyDistributionGRPCQuerier) ValidatorOutstandingRewards(c context.Context, req *distributiontypes.QueryValidatorOutstandingRewardsRequest) (*distributiontypes.QueryValidatorOutstandingRewardsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
-	if req.ValidatorAddress == "" {
-		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
+	resp, err := q.queryServer.ValidatorOutstandingReward(c, &types.QueryValidatorOutstandingRewardRequest{ValidatorAddress: req.ValidatorAddress})
+	if err != nil {
+		return nil, err
 	}
-	if _, err := sdk.AccAddressFromBech32(req.ValidatorAddress); err != nil {
-		return nil, status.Error(codes.InvalidArgument, "delegator address invalid")
-	}
-
 	return &distributiontypes.QueryValidatorOutstandingRewardsResponse{
-		Rewards: distributiontypes.ValidatorOutstandingRewards{},
+		Rewards: distributiontypes.ValidatorOutstandingRewards{
+			Rewards: sdk.NewDecCoins(resp.Reward),
+		},
 	}, nil
 }
 
