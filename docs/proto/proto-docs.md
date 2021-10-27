@@ -240,7 +240,6 @@ EngagementContractConfig initial setup config
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `halflife` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
-| `bond_denom` | [string](#string) |  | BondDenom defines the bondable coin denomination. |
 
 
 
@@ -264,6 +263,7 @@ GenesisState - initial state of module
 | `stake_contract_config` | [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig) |  |  |
 | `valset_contract_config` | [ValsetContractConfig](#confio.poe.v1beta1.ValsetContractConfig) |  |  |
 | `engagment_contract_config` | [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig) |  |  |
+| `bond_denom` | [string](#string) |  | BondDenom defines the bondable coin denomination. |
 
 
 

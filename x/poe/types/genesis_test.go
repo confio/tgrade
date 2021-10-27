@@ -49,6 +49,18 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
+		"empty bond denum": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.BondDenom = ""
+			}),
+			expErr: true,
+		},
+		"invalid bond denum": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.BondDenom = "&&&"
+			}),
+			expErr: true,
+		},
 		"empty system admin": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.SystemAdminAddress = ""
@@ -130,18 +142,6 @@ func TestValidateEngagementContractConfig(t *testing.T) {
 	}{
 		"default": {
 			src: DefaultGenesisState().EngagmentContractConfig,
-		},
-		"empty bond denum": {
-			src: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagmentContractConfig.BondDenom = ""
-			}).EngagmentContractConfig,
-			expErr: true,
-		},
-		"invalid bond denum": {
-			src: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagmentContractConfig.BondDenom = "&&&"
-			}).EngagmentContractConfig,
-			expErr: true,
 		},
 		"halflife empty": {
 			src: GenesisStateFixture(func(m *GenesisState) {

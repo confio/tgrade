@@ -81,7 +81,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 
 	// add system admin to not fail poe on validation
 	poeGS := poetypes.GetGenesisStateFromAppState(marshaler, genesisState)
-	poeGS.EngagmentContractConfig.BondDenom = poetypes.DefaultBondDenom
+	poeGS.BondDenom = poetypes.DefaultBondDenom
 	poeGS.SystemAdminAddress = sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String()
 	poeGS.GenTxs = []json.RawMessage{myGenTx}
 	poeGS.Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Weight: 10}}

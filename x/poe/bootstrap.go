@@ -56,7 +56,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		Admin:    gs.SystemAdminAddress,
 		Members:  make([]contract.TG4Member, len(gs.Engagement)),
 		Preauths: 1,
-		Token:    gs.EngagmentContractConfig.BondDenom,
+		Token:    gs.BondDenom,
 		Halflife: uint64(gs.EngagmentContractConfig.Halflife.Seconds()),
 	}
 	for i, v := range gs.Engagement {
@@ -156,7 +156,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 func newStakeInitMsg(gs types.GenesisState, claimLimit uint64) contract.TG4StakeInitMsg {
 	return contract.TG4StakeInitMsg{
 		Admin:           gs.SystemAdminAddress,
-		Denom:           gs.EngagmentContractConfig.BondDenom,
+		Denom:           gs.BondDenom,
 		MinBond:         gs.StakeContractConfig.MinBond,
 		TokensPerWeight: gs.StakeContractConfig.TokensPerWeight,
 		UnbondingPeriod: uint64(gs.StakeContractConfig.UnbondingPeriod.Seconds()),

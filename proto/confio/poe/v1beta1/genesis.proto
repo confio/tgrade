@@ -51,6 +51,8 @@ message GenesisState {
       [ (gogoproto.jsontag) = "valset_contract_config,omitempty" ];
   EngagementContractConfig engagment_contract_config = 9
       [ (gogoproto.jsontag) = "engagment_contract_config,omitempty" ];
+  // BondDenom defines the bondable coin denomination.
+  string bond_denom = 10 [ (gogoproto.moretags) = "yaml:\"bond_denom\"" ];
 }
 
 // StakeContractConfig initial setup config
@@ -86,8 +88,6 @@ message ValsetContractConfig {
 message EngagementContractConfig {
   google.protobuf.Duration halflife = 1
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
-  // BondDenom defines the bondable coin denomination.
-  string bond_denom = 2 [ (gogoproto.moretags) = "yaml:\"bond_denom\"" ];
 }
 
 // PoEContract address and type information

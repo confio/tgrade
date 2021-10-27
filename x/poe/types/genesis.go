@@ -16,6 +16,7 @@ const DefaultBondDenom = "utgd"
 func DefaultGenesisState() GenesisState {
 	return GenesisState{
 		SeedContracts: true,
+		BondDenom:     DefaultBondDenom,
 		StakeContractConfig: &StakeContractConfig{
 			MinBond:              1,
 			TokensPerWeight:      1,
@@ -34,8 +35,7 @@ func DefaultGenesisState() GenesisState {
 			ValidatorsRewardRatio: 50,
 		},
 		EngagmentContractConfig: &EngagementContractConfig{
-			Halflife:  180 * 24 * time.Hour,
-			BondDenom: DefaultBondDenom,
+			Halflife: 180 * 24 * time.Hour,
 		},
 		SystemAdminAddress: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),
 		Params:             DefaultParams(),
@@ -56,7 +56,9 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		if err := g.EngagmentContractConfig.ValidateBasic(); err != nil {
 			return sdkerrors.Wrap(err, "engagement contract config")
 		}
-		bondDenom := g.EngagmentContractConfig.BondDenom
+		if err := sdk.ValidateDenom(g.BondDenom); err != nil {
+			return sdkerrors.Wrap(err, "bond denom")
+		}
 
 		if g.ValsetContractConfig == nil {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty valset contract config")
@@ -70,7 +72,7 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		if err := g.StakeContractConfig.ValidateBasic(); err != nil {
 			return sdkerrors.Wrap(err, "stake contract config")
 		}
-		if g.ValsetContractConfig.EpochReward.Denom != bondDenom {
+		if g.ValsetContractConfig.EpochReward.Denom != g.BondDenom {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "rewards not in bonded denom")
 		}
 
@@ -140,9 +142,6 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 
 // ValidateBasic ensure basic constraints
 func (c *EngagementContractConfig) ValidateBasic() error {
-	if err := sdk.ValidateDenom(c.BondDenom); err != nil {
-		return sdkerrors.Wrap(err, "bond denom")
-	}
 	if c.Halflife.Truncate(time.Second) != c.Halflife {
 		return sdkerrors.Wrap(ErrInvalid, "halflife must not contain anything less than seconds")
 	}

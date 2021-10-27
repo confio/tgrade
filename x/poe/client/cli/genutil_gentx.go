@@ -261,7 +261,7 @@ func ValidateAccountInGenesis(
 	addr sdk.Address, coins sdk.Coins, cdc codec.JSONMarshaler,
 ) error {
 	gs := types.GetGenesisStateFromAppState(cdc, appGenesisState)
-	bondDenom := gs.EngagmentContractConfig.BondDenom
+	bondDenom := gs.BondDenom
 
 	var err error
 	accountIsInGenesis := false
