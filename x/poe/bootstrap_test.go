@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/confio/tgrade/x/poe/keeper/poetesting"
+
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -106,7 +108,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			pm := keeper.PoEKeeperMock{
 				SetPoEContractAddressFn: sFn,
 				ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
-					return keeper.ValsetContractMock{QueryConfigFn: func(ctx sdk.Context) (*contract.ValsetConfigResponse, error) {
+					return poetesting.ValsetContractMock{QueryConfigFn: func(ctx sdk.Context) (*contract.ValsetConfigResponse, error) {
 						return &contract.ValsetConfigResponse{DistributionContract: distributionContractAddr.String()}, nil
 					}}
 				},

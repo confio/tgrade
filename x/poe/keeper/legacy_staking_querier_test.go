@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/confio/tgrade/x/poe/keeper/poetesting"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
@@ -25,13 +27,13 @@ func TestStakingValidatorDelegations(t *testing.T) {
 
 	specs := map[string]struct {
 		src    *stakingtypes.QueryValidatorDelegationsRequest
-		mock   StakeContractMock
+		mock   poetesting.StakeContractMock
 		exp    *stakingtypes.QueryValidatorDelegationsResponse
 		expErr bool
 	}{
 		"delegation": {
 			src: &stakingtypes.QueryValidatorDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
+			mock: poetesting.StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
 				var amount = sdk.NewInt(10)
 				return &amount, nil
 			}},
@@ -48,14 +50,14 @@ func TestStakingValidatorDelegations(t *testing.T) {
 		},
 		"empty": {
 			src: &stakingtypes.QueryValidatorDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
+			mock: poetesting.StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
 				return nil, nil
 			}},
 			exp: &stakingtypes.QueryValidatorDelegationsResponse{},
 		},
 		"error": {
 			src: &stakingtypes.QueryValidatorDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
+			mock: poetesting.StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
 				return nil, errors.New("testing")
 			}},
 			expErr: true,
@@ -94,13 +96,13 @@ func TestStakingValidatorUnbondingDelegations(t *testing.T) {
 	poeKeeper := PoEKeeperMock{}
 	specs := map[string]struct {
 		src    *stakingtypes.QueryValidatorUnbondingDelegationsRequest
-		mock   StakeContractMock
+		mock   poetesting.StakeContractMock
 		exp    *stakingtypes.QueryValidatorUnbondingDelegationsResponse
 		expErr bool
 	}{
 		"one delegation": {
 			src: &stakingtypes.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
+			mock: poetesting.StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
 				return []stakingtypes.UnbondingDelegationEntry{
 					{CompletionTime: myTime, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10), CreationHeight: myHeight},
 				}, nil
@@ -118,7 +120,7 @@ func TestStakingValidatorUnbondingDelegations(t *testing.T) {
 		},
 		"multiple delegations": {
 			src: &stakingtypes.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
+			mock: poetesting.StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
 				return []stakingtypes.UnbondingDelegationEntry{
 					{CompletionTime: myTime, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10), CreationHeight: myHeight},
 					{CompletionTime: myTime.Add(time.Minute), Balance: sdk.NewInt(11), InitialBalance: sdk.NewInt(11), CreationHeight: myHeight + 1},
@@ -138,7 +140,7 @@ func TestStakingValidatorUnbondingDelegations(t *testing.T) {
 		},
 		"none": {
 			src: &stakingtypes.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
+			mock: poetesting.StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
 				return []stakingtypes.UnbondingDelegationEntry{}, nil
 			}},
 			exp: &stakingtypes.QueryValidatorUnbondingDelegationsResponse{
@@ -152,7 +154,7 @@ func TestStakingValidatorUnbondingDelegations(t *testing.T) {
 		},
 		"error": {
 			src: &stakingtypes.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
+			mock: poetesting.StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
 				return nil, errors.New("testing")
 			}},
 			expErr: true,
@@ -192,12 +194,12 @@ func TestStakingParams(t *testing.T) {
 		GetBondDenomFn:      func(ctx sdk.Context) string { return "utgd" },
 		HistoricalEntriesFn: func(ctx sdk.Context) uint32 { return 1 },
 		StakeContractFn: func(ctx sdk.Context) StakeContract {
-			return StakeContractMock{QueryStakingUnbondingPeriodFn: func(ctx sdk.Context) (time.Duration, error) {
+			return poetesting.StakeContractMock{QueryStakingUnbondingPeriodFn: func(ctx sdk.Context) (time.Duration, error) {
 				return time.Hour, nil
 			}}
 		},
 		ValsetContractFn: func(ctx sdk.Context) ValsetContract {
-			return ValsetContractMock{QueryConfigFn: func(ctx sdk.Context) (*contract.ValsetConfigResponse, error) {
+			return poetesting.ValsetContractMock{QueryConfigFn: func(ctx sdk.Context) (*contract.ValsetConfigResponse, error) {
 				return &contract.ValsetConfigResponse{MaxValidators: 2}, nil
 			}}
 		},

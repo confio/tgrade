@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/confio/tgrade/x/poe/keeper/poetesting"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
@@ -80,13 +82,13 @@ func TestQueryValidators(t *testing.T) {
 
 	specs := map[string]struct {
 		src    *stakingtypes.QueryValidatorsRequest
-		mock   ValsetContractMock
+		mock   poetesting.ValsetContractMock
 		exp    *stakingtypes.QueryValidatorsResponse
 		expErr bool
 	}{
 		"all good": {
 			src: &stakingtypes.QueryValidatorsRequest{},
-			mock: ValsetContractMock{
+			mock: poetesting.ValsetContractMock{
 				ListValidatorsFn: func(ctx sdk.Context) ([]stakingtypes.Validator, error) {
 					return []stakingtypes.Validator{expValidator}, nil
 				},
@@ -96,12 +98,12 @@ func TestQueryValidators(t *testing.T) {
 			},
 		},
 		"nil request": {
-			mock:   ValsetContractMock{},
+			mock:   poetesting.ValsetContractMock{},
 			expErr: true,
 		},
 		"empty result": {
 			src: &stakingtypes.QueryValidatorsRequest{},
-			mock: ValsetContractMock{
+			mock: poetesting.ValsetContractMock{
 				ListValidatorsFn: func(ctx sdk.Context) ([]stakingtypes.Validator, error) {
 					return []stakingtypes.Validator{}, nil
 				},
@@ -112,7 +114,7 @@ func TestQueryValidators(t *testing.T) {
 		},
 		"contract returns error": {
 			src: &stakingtypes.QueryValidatorsRequest{},
-			mock: ValsetContractMock{
+			mock: poetesting.ValsetContractMock{
 				ListValidatorsFn: func(ctx sdk.Context) ([]stakingtypes.Validator, error) {
 					return nil, errors.New("testing")
 				},
@@ -150,13 +152,13 @@ func TestQueryValidator(t *testing.T) {
 
 	specs := map[string]struct {
 		src    *stakingtypes.QueryValidatorRequest
-		mock   ValsetContractMock
+		mock   poetesting.ValsetContractMock
 		exp    *stakingtypes.QueryValidatorResponse
 		expErr bool
 	}{
 		"all good": {
 			src: &stakingtypes.QueryValidatorRequest{ValidatorAddr: myOperator.String()},
-			mock: ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
+			mock: poetesting.ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
 				return &expValidator, nil
 			}},
 			exp: &stakingtypes.QueryValidatorResponse{
@@ -164,24 +166,24 @@ func TestQueryValidator(t *testing.T) {
 			},
 		},
 		"nil request": {
-			mock:   ValsetContractMock{},
+			mock:   poetesting.ValsetContractMock{},
 			expErr: true,
 		},
 		"empty address": {
 			src:    &stakingtypes.QueryValidatorRequest{},
-			mock:   ValsetContractMock{},
+			mock:   poetesting.ValsetContractMock{},
 			expErr: true,
 		},
 		"not found": {
 			src: &stakingtypes.QueryValidatorRequest{ValidatorAddr: myOperator.String()},
-			mock: ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
+			mock: poetesting.ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
 				return nil, nil
 			}},
 			expErr: true,
 		},
 		"contract returns error": {
 			src: &stakingtypes.QueryValidatorRequest{ValidatorAddr: myOperator.String()},
-			mock: ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
+			mock: poetesting.ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
 				return nil, errors.New("testing")
 			}},
 			expErr: true,
@@ -210,13 +212,13 @@ func TestQueryUnbondingPeriod(t *testing.T) {
 
 	specs := map[string]struct {
 		src    *types.QueryUnbondingPeriodRequest
-		mock   StakeContractMock
+		mock   poetesting.StakeContractMock
 		exp    *types.QueryUnbondingPeriodResponse
 		expErr bool
 	}{
 		"all good": {
 			src: &types.QueryUnbondingPeriodRequest{},
-			mock: StakeContractMock{QueryStakingUnbondingPeriodFn: func(ctx sdk.Context) (time.Duration, error) {
+			mock: poetesting.StakeContractMock{QueryStakingUnbondingPeriodFn: func(ctx sdk.Context) (time.Duration, error) {
 				return time.Second, nil
 			}},
 			exp: &types.QueryUnbondingPeriodResponse{
@@ -228,7 +230,7 @@ func TestQueryUnbondingPeriod(t *testing.T) {
 		},
 		"contract returns error": {
 			src: &types.QueryUnbondingPeriodRequest{},
-			mock: StakeContractMock{QueryStakingUnbondingPeriodFn: func(ctx sdk.Context) (time.Duration, error) {
+			mock: poetesting.StakeContractMock{QueryStakingUnbondingPeriodFn: func(ctx sdk.Context) (time.Duration, error) {
 				return 0, errors.New("testing")
 			}},
 			expErr: true,
@@ -265,13 +267,13 @@ func TestValidatorDelegation(t *testing.T) {
 
 	specs := map[string]struct {
 		src    *types.QueryValidatorDelegationRequest
-		mock   StakeContractMock
+		mock   poetesting.StakeContractMock
 		exp    *types.QueryValidatorDelegationResponse
 		expErr bool
 	}{
 		"delegation": {
 			src: &types.QueryValidatorDelegationRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
+			mock: poetesting.StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
 				var amount = sdk.NewInt(10)
 				return &amount, nil
 			}},
@@ -281,14 +283,14 @@ func TestValidatorDelegation(t *testing.T) {
 		},
 		"empty": {
 			src: &types.QueryValidatorDelegationRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
+			mock: poetesting.StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
 				return nil, nil
 			}},
 			expErr: true,
 		},
 		"error": {
 			src: &types.QueryValidatorDelegationRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
+			mock: poetesting.StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
 				return nil, errors.New("testing")
 			}},
 			expErr: true,
@@ -326,13 +328,13 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 	poeKeeper := PoEKeeperMock{}
 	specs := map[string]struct {
 		src    *types.QueryValidatorUnbondingDelegationsRequest
-		mock   StakeContractMock
+		mock   poetesting.StakeContractMock
 		exp    *types.QueryValidatorUnbondingDelegationsResponse
 		expErr bool
 	}{
 		"one delegation": {
 			src: &types.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
+			mock: poetesting.StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
 				return []stakingtypes.UnbondingDelegationEntry{
 					{CompletionTime: myTime, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10), CreationHeight: myHeight},
 				}, nil
@@ -345,7 +347,7 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 		},
 		"multiple delegations": {
 			src: &types.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
+			mock: poetesting.StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
 				return []stakingtypes.UnbondingDelegationEntry{
 					{CompletionTime: myTime, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10), CreationHeight: myHeight},
 					{CompletionTime: myTime.Add(time.Minute), Balance: sdk.NewInt(11), InitialBalance: sdk.NewInt(11), CreationHeight: myHeight + 1},
@@ -360,14 +362,14 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 		},
 		"none": {
 			src: &types.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
+			mock: poetesting.StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
 				return []stakingtypes.UnbondingDelegationEntry{}, nil
 			}},
 			exp: &types.QueryValidatorUnbondingDelegationsResponse{Entries: []stakingtypes.UnbondingDelegationEntry{}},
 		},
 		"error": {
 			src: &types.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
-			mock: StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
+			mock: poetesting.StakeContractMock{QueryStakingUnbondingFn: func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
 				return nil, errors.New("testing")
 			}},
 			expErr: true,
@@ -406,7 +408,7 @@ func TestValidatorOutstandingReward(t *testing.T) {
 	}{
 		"reward": {
 			src: &types.QueryValidatorOutstandingRewardRequest{ValidatorAddress: anyAddr.String()},
-			mock: DistributionContractMock{ValidatorOutstandingRewardFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+			mock: poetesting.DistributionContractMock{ValidatorOutstandingRewardFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
 				require.Equal(t, anyAddr, addr)
 				return sdk.NewCoin("utgd", sdk.OneInt()), nil
 			}},
@@ -416,14 +418,14 @@ func TestValidatorOutstandingReward(t *testing.T) {
 		},
 		"not found": {
 			src: &types.QueryValidatorOutstandingRewardRequest{ValidatorAddress: anyAddr.String()},
-			mock: DistributionContractMock{ValidatorOutstandingRewardFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+			mock: poetesting.DistributionContractMock{ValidatorOutstandingRewardFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
 				return sdk.Coin{}, types.ErrNotFound
 			}},
 			expErr: status.Error(codes.NotFound, "address"),
 		},
 		"any error": {
 			src: &types.QueryValidatorOutstandingRewardRequest{ValidatorAddress: anyAddr.String()},
-			mock: DistributionContractMock{ValidatorOutstandingRewardFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+			mock: poetesting.DistributionContractMock{ValidatorOutstandingRewardFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
 				return sdk.Coin{}, errors.New("testing")
 			}},
 			expErr: status.Error(codes.Internal, "testing"),

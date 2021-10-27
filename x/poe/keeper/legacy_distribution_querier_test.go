@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/confio/tgrade/x/poe/keeper/poetesting"
+
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -19,27 +21,27 @@ func TestDelegatorValidators(t *testing.T) {
 
 	specs := map[string]struct {
 		src    *distributiontypes.QueryDelegatorValidatorsRequest
-		mock   ValsetContractMock
+		mock   poetesting.ValsetContractMock
 		exp    *distributiontypes.QueryDelegatorValidatorsResponse
 		expErr bool
 	}{
 		"delegation": {
 			src: &distributiontypes.QueryDelegatorValidatorsRequest{DelegatorAddress: myOperatorAddr.String()},
-			mock: ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
+			mock: poetesting.ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
 				return &stakingtypes.Validator{OperatorAddress: opAddr.String()}, nil
 			}},
 			exp: &distributiontypes.QueryDelegatorValidatorsResponse{Validators: []string{myOperatorAddr.String()}},
 		},
 		"unknown": {
 			src: &distributiontypes.QueryDelegatorValidatorsRequest{DelegatorAddress: myOperatorAddr.String()},
-			mock: ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
+			mock: poetesting.ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
 				return nil, nil
 			}},
 			exp: &distributiontypes.QueryDelegatorValidatorsResponse{Validators: []string{}},
 		},
 		"error": {
 			src: &distributiontypes.QueryDelegatorValidatorsRequest{DelegatorAddress: myOperatorAddr.String()},
-			mock: ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
+			mock: poetesting.ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
 				return nil, errors.New("testing")
 			}},
 			expErr: true,

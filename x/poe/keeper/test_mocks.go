@@ -4,8 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/confio/tgrade/x/poe/contract"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -101,6 +99,13 @@ func (m PoEKeeperMock) StakeContract(ctx sdk.Context) StakeContract {
 	return m.StakeContractFn(ctx)
 }
 
+func (m PoEKeeperMock) ValsetContract(ctx sdk.Context) ValsetContract {
+	if m.ValsetContractFn == nil {
+		panic("not expected to be called")
+	}
+	return m.ValsetContractFn(ctx)
+}
+
 // CapturedPoEContractAddress data type
 type CapturedPoEContractAddress struct {
 	Ctype        types.PoEContractType
@@ -127,13 +132,6 @@ func (m SmartQuerierMock) QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddres
 		panic("not expected to be called")
 	}
 	return m.QuerySmartFn(ctx, contractAddr, req)
-}
-
-func (m PoEKeeperMock) ValsetContract(ctx sdk.Context) ValsetContract {
-	if m.ValsetContractFn == nil {
-		panic("not expected to be called")
-	}
-	return m.ValsetContractFn(ctx)
 }
 
 // return matching type or fail
@@ -183,74 +181,4 @@ func (m TwasmKeeperMock) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, m
 		panic("not expected to be called")
 	}
 	return m.SudoFn(ctx, contractAddress, msg)
-}
-
-var _ DistributionContract = DistributionContractMock{}
-
-type DistributionContractMock struct {
-	ValidatorOutstandingRewardFn func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error)
-}
-
-func (m DistributionContractMock) ValidatorOutstandingReward(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
-	if m.ValidatorOutstandingRewardFn == nil {
-		panic("not expected to be called")
-	}
-	return m.ValidatorOutstandingRewardFn(ctx, addr)
-}
-
-var _ ValsetContract = ValsetContractMock{}
-
-type ValsetContractMock struct {
-	QueryValidatorFn func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error)
-	ListValidatorsFn func(ctx sdk.Context) ([]stakingtypes.Validator, error)
-	QueryConfigFn    func(ctx sdk.Context) (*contract.ValsetConfigResponse, error)
-}
-
-func (m ValsetContractMock) QueryValidator(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
-	if m.QueryValidatorFn == nil {
-		panic("not expected to be called")
-	}
-	return m.QueryValidatorFn(ctx, opAddr)
-}
-
-func (m ValsetContractMock) ListValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
-	if m.ListValidatorsFn == nil {
-		panic("not expected to be called")
-	}
-	return m.ListValidatorsFn(ctx)
-}
-
-func (m ValsetContractMock) QueryConfig(ctx sdk.Context) (*contract.ValsetConfigResponse, error) {
-	if m.QueryConfigFn == nil {
-		panic("not expected to be called")
-	}
-	return m.QueryConfigFn(ctx)
-}
-
-var _ StakeContract = StakeContractMock{}
-
-type StakeContractMock struct {
-	QueryStakingUnbondingPeriodFn func(ctx sdk.Context) (time.Duration, error)
-	QueryStakingUnbondingFn       func(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error)
-	QueryStakedAmountFn           func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error)
-}
-
-func (m StakeContractMock) QueryStakedAmount(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
-	if m.QueryStakedAmountFn == nil {
-		panic("not expected to be called")
-	}
-	return m.QueryStakedAmountFn(ctx, opAddr)
-}
-
-func (m StakeContractMock) QueryStakingUnbondingPeriod(ctx sdk.Context) (time.Duration, error) {
-	if m.QueryStakingUnbondingPeriodFn == nil {
-		panic("not expected to be called")
-	}
-	return m.QueryStakingUnbondingPeriodFn(ctx)
-}
-func (m StakeContractMock) QueryStakingUnbonding(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
-	if m.QueryStakingUnbondingFn == nil {
-		panic("not expected to be called")
-	}
-	return m.QueryStakingUnbondingFn(ctx, opAddr)
 }
