@@ -15,13 +15,12 @@ import (
 var _ distributiontypes.QueryServer = &legacyDistributionGRPCQuerier{}
 
 type legacyDistributionGRPCQuerier struct {
-	keeper          ContractSource
-	contractQuerier types.SmartQuerier
-	queryServer     types.QueryServer
+	keeper      ContractSource
+	queryServer types.QueryServer
 }
 
-func NewLegacyDistributionGRPCQuerier(keeper ViewKeeper, contractQuerier types.SmartQuerier) *legacyDistributionGRPCQuerier { //nolint:golint
-	return &legacyDistributionGRPCQuerier{keeper: keeper, contractQuerier: contractQuerier, queryServer: NewGrpcQuerier(keeper, contractQuerier)}
+func NewLegacyDistributionGRPCQuerier(keeper ViewKeeper) *legacyDistributionGRPCQuerier { //nolint:golint
+	return &legacyDistributionGRPCQuerier{keeper: keeper, queryServer: NewGrpcQuerier(keeper)}
 }
 
 func (q legacyDistributionGRPCQuerier) ValidatorOutstandingRewards(c context.Context, req *distributiontypes.QueryValidatorOutstandingRewardsRequest) (*distributiontypes.QueryValidatorOutstandingRewardsResponse, error) {

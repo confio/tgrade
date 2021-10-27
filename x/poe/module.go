@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -102,7 +101,6 @@ type AppModule struct {
 	twasmKeeper      twasmKeeper
 	contractKeeper   wasmtypes.ContractOpsKeeper
 	poeKeeper        keeper.Keeper
-	doOnce           sync.Once
 }
 
 // twasmKeeper subset of keeper to decouple from twasm module
@@ -142,13 +140,13 @@ func (am AppModule) LegacyQuerierHandler(amino *codec.LegacyAmino) sdk.Querier {
 }
 
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewGrpcQuerier(am.poeKeeper, am.twasmKeeper))
+	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewGrpcQuerier(am.poeKeeper))
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.poeKeeper, am.contractKeeper, am.twasmKeeper))
 
 	// support cosmos query path
-	stakingtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacyStakingGRPCQuerier(am.poeKeeper, am.twasmKeeper))
-	slashingtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacySlashingGRPCQuerier(am.poeKeeper, am.twasmKeeper))
-	distributiontypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacyDistributionGRPCQuerier(am.poeKeeper, am.twasmKeeper))
+	stakingtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacyStakingGRPCQuerier(am.poeKeeper))
+	slashingtypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacySlashingGRPCQuerier(am.poeKeeper))
+	distributiontypes.RegisterQueryServer(cfg.QueryServer(), keeper.NewLegacyDistributionGRPCQuerier(am.poeKeeper))
 }
 
 func (am AppModule) BeginBlock(ctx sdk.Context, block abci.RequestBeginBlock) {
@@ -156,7 +154,7 @@ func (am AppModule) BeginBlock(ctx sdk.Context, block abci.RequestBeginBlock) {
 }
 
 func (am AppModule) EndBlock(ctx sdk.Context, block abci.RequestEndBlock) []abci.ValidatorUpdate {
-	am.doOnce.Do(ClearEmbeddedContracts) // release memory
+	ClearEmbeddedContracts() // release memory
 	return EndBlocker(ctx, am.twasmKeeper)
 }
 
@@ -171,11 +169,11 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, data j
 
 	if genesisState.SeedContracts {
 		if err := bootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, genesisState); err != nil {
-			panic(fmt.Sprintf("bootstrap PoE contracts: %s", err))
+			panic(fmt.Sprintf("bootstrap PoE contracts: %+v", err))
 		}
 	} else {
 		if err := verifyPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, genesisState); err != nil {
-			panic(fmt.Sprintf("verify PoE bootstrap contracts: %s", err))
+			panic(fmt.Sprintf("verify PoE bootstrap contracts: %+v", err))
 		}
 	}
 

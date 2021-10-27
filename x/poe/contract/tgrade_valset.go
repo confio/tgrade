@@ -239,32 +239,11 @@ type ListActiveValidatorsResponse struct {
 
 type SimulateActiveValidatorsResponse = ListActiveValidatorsResponse
 
-func QueryValsetConfig(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress) (*ValsetConfigResponse, error) {
-	query := ValsetQuery{Config: &struct{}{}}
-	var response ValsetConfigResponse
-	err := doQuery(ctx, k, valset, query, &response)
-	return &response, err
-}
-
 func QueryValsetEpoch(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress) (*ValsetEpochResponse, error) {
 	query := ValsetQuery{Epoch: &struct{}{}}
 	var response ValsetEpochResponse
 	err := doQuery(ctx, k, valset, query, &response)
 	return &response, err
-}
-
-func QueryValidator(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress, operator sdk.AccAddress) (*OperatorResponse, error) {
-	query := ValsetQuery{Validator: &ValidatorQuery{Operator: operator.String()}}
-	var response ValidatorResponse
-	err := doQuery(ctx, k, valset, query, &response)
-	return response.Validator, err
-}
-
-func ListValidators(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress) ([]OperatorResponse, error) {
-	query := ValsetQuery{ListValidators: &ListValidatorsQuery{Limit: 30}}
-	var response ListValidatorsResponse
-	err := doQuery(ctx, k, valset, query, &response)
-	return response.Validators, err
 }
 
 func ListActiveValidators(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress) ([]ValidatorInfo, error) {
@@ -279,4 +258,67 @@ func SimulateActiveValidators(ctx sdk.Context, k types.SmartQuerier, valset sdk.
 	var response ListActiveValidatorsResponse
 	err := doQuery(ctx, k, valset, query, &response)
 	return response.Validators, err
+}
+
+type ValsetContractAdapter struct {
+	contractAddr     sdk.AccAddress
+	contractQuerier  types.SmartQuerier
+	addressLookupErr error
+}
+
+// NewValsetContractAdapter constructor
+func NewValsetContractAdapter(contractAddr sdk.AccAddress, contractQuerier types.SmartQuerier, addressLookupErr error) *ValsetContractAdapter {
+	return &ValsetContractAdapter{contractAddr: contractAddr, contractQuerier: contractQuerier, addressLookupErr: addressLookupErr}
+}
+
+func (v ValsetContractAdapter) QueryValidator(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
+	if v.addressLookupErr != nil {
+		return nil, v.addressLookupErr
+	}
+	query := ValsetQuery{Validator: &ValidatorQuery{Operator: opAddr.String()}}
+	var rsp ValidatorResponse
+	err := doQuery(ctx, v.contractQuerier, v.contractAddr, query, &rsp)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "contract query")
+	}
+	if rsp.Validator == nil {
+		return nil, nil
+	}
+	val, err := rsp.Validator.ToValidator()
+	return &val, err
+}
+
+func (v ValsetContractAdapter) ListValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
+	if v.addressLookupErr != nil {
+		return nil, v.addressLookupErr
+	}
+	query := ValsetQuery{ListValidators: &ListValidatorsQuery{Limit: 30}}
+	var rsp ListValidatorsResponse
+	err := doQuery(ctx, v.contractQuerier, v.contractAddr, query, &rsp)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "contract query")
+	}
+
+	vals := make([]stakingtypes.Validator, len(rsp.Validators))
+	for i, v := range rsp.Validators {
+		vals[i], err = v.ToValidator()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return vals, nil
+}
+
+// QueryConfig query contract configuration
+func (v ValsetContractAdapter) QueryConfig(ctx sdk.Context) (*ValsetConfigResponse, error) {
+	if v.addressLookupErr != nil {
+		return nil, v.addressLookupErr
+	}
+	query := ValsetQuery{Config: &struct{}{}}
+	var rsp ValsetConfigResponse
+	err := doQuery(ctx, v.contractQuerier, v.contractAddr, query, &rsp)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "contract query")
+	}
+	return &rsp, err
 }

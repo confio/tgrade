@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"time"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,7 +9,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
 )
 
@@ -26,16 +24,17 @@ type ViewKeeper interface {
 	GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool)
 	GetBondDenom(ctx sdk.Context) string
 	DistributionContract(ctx sdk.Context) DistributionContract
+	ValsetContract(ctx sdk.Context) ValsetContract
+	StakeContract(ctx sdk.Context) StakeContract
 }
 
 type grpcQuerier struct {
-	keeper          ViewKeeper
-	contractQuerier types.SmartQuerier
+	keeper ViewKeeper
 }
 
 // NewGrpcQuerier constructor
-func NewGrpcQuerier(keeper ViewKeeper, contractQuerier types.SmartQuerier) *grpcQuerier {
-	return &grpcQuerier{keeper: keeper, contractQuerier: contractQuerier}
+func NewGrpcQuerier(keeper ViewKeeper) *grpcQuerier {
+	return &grpcQuerier{keeper: keeper}
 }
 
 // ContractAddress query PoE contract address for given type
@@ -68,22 +67,9 @@ func (q grpcQuerier) Validators(c context.Context, req *stakingtypes.QueryValida
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	addr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	vals, err := q.keeper.ValsetContract(ctx).ListValidators(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	valsRsp, err := contract.ListValidators(ctx, q.contractQuerier, addr)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	vals := make([]stakingtypes.Validator, len(valsRsp))
-	for i, v := range valsRsp {
-		vals[i], err = v.ToValidator()
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
 	}
 	return &stakingtypes.QueryValidatorsResponse{
 		Validators: vals,
@@ -107,23 +93,14 @@ func (q grpcQuerier) Validator(c context.Context, req *stakingtypes.QueryValidat
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	contractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	val, err := q.keeper.ValsetContract(ctx).QueryValidator(ctx, opAddr)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	valRsp, err := contract.QueryValidator(ctx, q.contractQuerier, contractAddr, opAddr)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+	if val == nil {
+		return nil, status.Error(codes.NotFound, "by address")
 	}
-	if valRsp == nil {
-		return nil, status.Errorf(codes.NotFound, "validator %s not found", req.ValidatorAddr)
-	}
-	val, err := valRsp.ToValidator()
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	return &stakingtypes.QueryValidatorResponse{Validator: val}, nil
+	return &stakingtypes.QueryValidatorResponse{Validator: *val}, nil
 }
 
 // UnbondingPeriod query the global unbonding period
@@ -132,17 +109,12 @@ func (q grpcQuerier) UnbondingPeriod(c context.Context, req *types.QueryUnbondin
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 	ctx := sdk.UnwrapSDKContext(c)
-	contractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	period, err := q.keeper.StakeContract(ctx).QueryStakingUnbondingPeriod(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	rsp, err := contract.QueryStakingUnbondingPeriod(ctx, q.contractQuerier, contractAddr)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
 	return &types.QueryUnbondingPeriodResponse{
-		Time: time.Duration(rsp) * time.Second,
+		Time: period,
 	}, nil
 }
 
@@ -156,20 +128,16 @@ func (q grpcQuerier) ValidatorDelegation(c context.Context, req *types.QueryVali
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	stakingContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	amount, err := q.keeper.StakeContract(ctx).QueryStakedAmount(ctx, opAddr)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	amount, err := contract.QueryTG4Member(ctx, q.contractQuerier, stakingContractAddr, opAddr)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
 	if amount == nil {
 		return nil, status.Error(codes.NotFound, "not a validator operator address")
 	}
 	return &types.QueryValidatorDelegationResponse{
-		Balance: sdk.NewCoin(q.keeper.GetBondDenom(ctx), sdk.NewInt(int64(*amount))),
+		Balance: sdk.NewCoin(q.keeper.GetBondDenom(ctx), *amount),
 	}, nil
 }
 
@@ -183,24 +151,9 @@ func (q grpcQuerier) ValidatorUnbondingDelegations(c context.Context, req *types
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	stakingContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	res, err := contract.QueryStakingUnbonding(ctx, q.contractQuerier, stakingContractAddr, opAddr)
+	unbodings, err := q.keeper.StakeContract(ctx).QueryStakingUnbonding(ctx, opAddr)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	// add all unbonded amounts
-	var unbodings []stakingtypes.UnbondingDelegationEntry
-	for _, v := range res.Claims {
-		unbodings = append(unbodings, stakingtypes.UnbondingDelegationEntry{
-			InitialBalance: v.Amount,
-			CompletionTime: time.Unix(0, int64(v.ReleaseAt)).UTC(),
-			Balance:        v.Amount,
-			CreationHeight: int64(v.CreationHeight),
-		})
 	}
 	return &types.QueryValidatorUnbondingDelegationsResponse{Entries: unbodings}, nil
 }

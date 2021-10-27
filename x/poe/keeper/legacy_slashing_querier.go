@@ -7,19 +7,16 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"github.com/confio/tgrade/x/poe/types"
 )
 
 var _ slashingtypes.QueryServer = &legacySlashingGRPCQuerier{}
 
 type legacySlashingGRPCQuerier struct {
-	keeper          ContractSource
-	contractQuerier types.SmartQuerier
+	keeper ContractSource
 }
 
-func NewLegacySlashingGRPCQuerier(keeper Keeper, contractQuerier types.SmartQuerier) *legacySlashingGRPCQuerier {
-	return &legacySlashingGRPCQuerier{keeper: keeper, contractQuerier: contractQuerier}
+func NewLegacySlashingGRPCQuerier(keeper Keeper) *legacySlashingGRPCQuerier { //nolint:golint
+	return &legacySlashingGRPCQuerier{keeper: keeper}
 }
 
 // SigningInfo legacy support for cosmos-sdk signing info. Note that not all field are available on tgrade
