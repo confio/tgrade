@@ -104,6 +104,12 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
+		"invalid engagement contract config": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.EngagmentContractConfig.Halflife = time.Nanosecond
+			}),
+			expErr: true,
+		},
 		"invalid valset contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.ValsetContractConfig.MaxValidators = 0
@@ -120,6 +126,38 @@ func TestValidateGenesis(t *testing.T) {
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 			gotErr := ValidateGenesis(spec.source, txConfig.TxJSONDecoder())
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+		})
+	}
+}
+
+func TestValidateEngagementContractConfig(t *testing.T) {
+	specs := map[string]struct {
+		src    *EngagementContractConfig
+		expErr bool
+	}{
+		"default": {
+			src: DefaultGenesisState().EngagmentContractConfig,
+		},
+		"halflife empty": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.EngagmentContractConfig.Halflife = 0
+			}).EngagmentContractConfig,
+		},
+		"halflife contains elements < second": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.EngagmentContractConfig.Halflife = time.Minute + time.Millisecond
+			}).EngagmentContractConfig,
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			gotErr := spec.src.ValidateBasic()
 			if spec.expErr {
 				require.Error(t, gotErr)
 				return
@@ -172,6 +210,28 @@ func TestValidateValsetContractConfig(t *testing.T) {
 					val, err := sdk.NewDecFromStr(min_fee_percentage)
 					require.NoError(t, err)
 					m.ValsetContractConfig.FeePercentage = val
+				},
+			).ValsetContractConfig,
+			expErr: true,
+		},
+		"rewards ratio zero": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) {
+					m.ValsetContractConfig.ValidatorsRewardRatio = 0
+				},
+			).ValsetContractConfig,
+		},
+		"rewards ratio 100": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) {
+					m.ValsetContractConfig.ValidatorsRewardRatio = 100
+				},
+			).ValsetContractConfig,
+		},
+		"rewards ratio > 100": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) {
+					m.ValsetContractConfig.ValidatorsRewardRatio = 101
 				},
 			).ValsetContractConfig,
 			expErr: true,
@@ -238,5 +298,4 @@ func TestValidateStakeContractConfig(t *testing.T) {
 			require.NoError(t, gotErr)
 		})
 	}
-
 }

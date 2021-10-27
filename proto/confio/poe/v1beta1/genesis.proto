@@ -49,8 +49,10 @@ message GenesisState {
 
   ValsetContractConfig valset_contract_config = 8
       [ (gogoproto.jsontag) = "valset_contract_config,omitempty" ];
+  EngagementContractConfig engagment_contract_config = 9
+      [ (gogoproto.jsontag) = "engagment_contract_config,omitempty" ];
   // BondDenom defines the bondable coin denomination.
-  string bond_denom = 9 [ (gogoproto.moretags) = "yaml:\"bond_denom\"" ];
+  string bond_denom = 10 [ (gogoproto.moretags) = "yaml:\"bond_denom\"" ];
 }
 
 // StakeContractConfig initial setup config
@@ -75,6 +77,17 @@ message ValsetContractConfig {
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
   ];
+  // ValidatorsRewardRatio in percentage
+  uint32 ValidatorsRewardRatio = 7;
+  // AutoUnjail if set to true, we will auto-unjail any validator after their
+  // jailtime is over.
+  bool AutoUnjail = 8;
+}
+
+// EngagementContractConfig initial setup config
+message EngagementContractConfig {
+  google.protobuf.Duration halflife = 1
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 }
 
 // PoEContract address and type information

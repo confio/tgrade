@@ -25,12 +25,17 @@ func DefaultGenesisState() GenesisState {
 			PreAuths:             1,
 		},
 		ValsetContractConfig: &ValsetContractConfig{
-			MinWeight:     1,
-			MaxValidators: 100,
-			EpochLength:   60 * time.Second,
-			EpochReward:   sdk.NewCoin(DefaultBondDenom, sdk.NewInt(100_000)),
-			Scaling:       1,
-			FeePercentage: sdk.NewDec(50),
+			MinWeight:             1,
+			MaxValidators:         100,
+			EpochLength:           60 * time.Second,
+			EpochReward:           sdk.NewCoin(DefaultBondDenom, sdk.NewInt(100_000)),
+			Scaling:               1,
+			FeePercentage:         sdk.NewDec(50),
+			AutoUnjail:            false,
+			ValidatorsRewardRatio: 50,
+		},
+		EngagmentContractConfig: &EngagementContractConfig{
+			Halflife: 180 * 24 * time.Hour,
 		},
 		SystemAdminAddress: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),
 		Params:             DefaultParams(),
@@ -38,9 +43,6 @@ func DefaultGenesisState() GenesisState {
 }
 
 func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
-	if err := sdk.ValidateDenom(g.BondDenom); err != nil {
-		return sdkerrors.Wrap(err, "bond denom")
-	}
 	if g.SeedContracts {
 		if len(g.Contracts) != 0 {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "seed enabled but PoE contracts addresses provided")
@@ -48,6 +50,16 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		if len(g.Engagement) == 0 {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty engagement group")
 		}
+		if g.EngagmentContractConfig == nil {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty engagement contract config")
+		}
+		if err := g.EngagmentContractConfig.ValidateBasic(); err != nil {
+			return sdkerrors.Wrap(err, "engagement contract config")
+		}
+		if err := sdk.ValidateDenom(g.BondDenom); err != nil {
+			return sdkerrors.Wrap(err, "bond denom")
+		}
+
 		if g.ValsetContractConfig == nil {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty valset contract config")
 		}
@@ -129,6 +141,14 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 }
 
 // ValidateBasic ensure basic constraints
+func (c *EngagementContractConfig) ValidateBasic() error {
+	if c.Halflife.Truncate(time.Second) != c.Halflife {
+		return sdkerrors.Wrap(ErrInvalid, "halflife must not contain anything less than seconds")
+	}
+	return nil
+}
+
+// ValidateBasic ensure basic constraints
 func (c ValsetContractConfig) ValidateBasic() error {
 	if c.MaxValidators == 0 {
 		return sdkerrors.Wrap(ErrEmpty, "max validators")
@@ -138,6 +158,9 @@ func (c ValsetContractConfig) ValidateBasic() error {
 	}
 	if c.Scaling == 0 {
 		return sdkerrors.Wrap(ErrEmpty, "scaling")
+	}
+	if c.ValidatorsRewardRatio > 100 {
+		return sdkerrors.Wrap(ErrInvalid, "validator reward ratio must not be greater 100")
 	}
 
 	minFeePercentage := sdk.NewDecFromIntWithPrec(sdk.OneInt(), 16)

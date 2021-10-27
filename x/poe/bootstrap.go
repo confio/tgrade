@@ -45,11 +45,11 @@ type poeKeeper interface {
 //
 // * [tg4-group](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-group) - engagement group with weighted
 //  members
-//* [tg4-stake](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-stake) - validator group weighted by
+// * [tg4-stake](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-stake) - validator group weighted by
 //  staked amount
-//* [valset](https://github.com/confio/tgrade-contracts/tree/main/contracts/tgrade-valset) - privileged contract to map a
+// * [valset](https://github.com/confio/tgrade-contracts/tree/main/contracts/tgrade-valset) - privileged contract to map a
 //  trusted cw4 contract to the Tendermint validator set running the chain
-//* [mixer](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-mixer) - calculates the combined value of
+// * [mixer](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-mixer) - calculates the combined value of
 //  stake and engagement points. Source for the valset contract.
 func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
 	tg4EngagementInitMsg := contract.TG4EngagementInitMsg{
@@ -57,9 +57,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		Members:  make([]contract.TG4Member, len(gs.Engagement)),
 		Preauths: 1,
 		Token:    gs.BondDenom,
-		// TODO: allow us to configure halflife in Genesis
-		// now hardcoded as 180 days = 180 * 86400s
-		Halflife: 15552000,
+		Halflife: uint64(gs.EngagmentContractConfig.Halflife.Seconds()),
 	}
 	for i, v := range gs.Engagement {
 		tg4EngagementInitMsg.Members[i] = contract.TG4Member{
@@ -174,17 +172,16 @@ func newValsetInitMsg(
 	engagementID uint64,
 ) contract.ValsetInitMsg {
 	return contract.ValsetInitMsg{
-		Membership:    mixerContractAddr.String(),
-		MinWeight:     gs.ValsetContractConfig.MinWeight,
-		MaxValidators: gs.ValsetContractConfig.MaxValidators,
-		EpochLength:   uint64(gs.ValsetContractConfig.EpochLength.Seconds()),
-		EpochReward:   gs.ValsetContractConfig.EpochReward,
-		InitialKeys:   []contract.Validator{},
-		Scaling:       gs.ValsetContractConfig.Scaling,
-		FeePercentage: contract.DecimalFromPercentage(gs.ValsetContractConfig.FeePercentage),
-		// TODO: set AutoJail from genesis
-		// TODO: set ValidatorsRewardRatio from genesis (hardcode to 50% here)
-		ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
+		Membership:            mixerContractAddr.String(),
+		MinWeight:             gs.ValsetContractConfig.MinWeight,
+		MaxValidators:         gs.ValsetContractConfig.MaxValidators,
+		EpochLength:           uint64(gs.ValsetContractConfig.EpochLength.Seconds()),
+		EpochReward:           gs.ValsetContractConfig.EpochReward,
+		InitialKeys:           []contract.Validator{},
+		Scaling:               gs.ValsetContractConfig.Scaling,
+		FeePercentage:         contract.DecimalFromPercentage(gs.ValsetContractConfig.FeePercentage),
+		AutoUnjail:            gs.ValsetContractConfig.AutoUnjail,
+		ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(int64(gs.ValsetContractConfig.ValidatorsRewardRatio))),
 		DistributionContract:  engagementAddr.String(),
 		RewardsCodeId:         engagementID,
 	}

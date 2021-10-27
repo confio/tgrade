@@ -20,6 +20,7 @@
     - [PoEContractType](#confio.poe.v1beta1.PoEContractType)
   
 - [confio/poe/v1beta1/genesis.proto](#confio/poe/v1beta1/genesis.proto)
+    - [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig)
     - [GenesisState](#confio.poe.v1beta1.GenesisState)
     - [PoEContract](#confio.poe.v1beta1.PoEContract)
     - [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig)
@@ -230,6 +231,21 @@ PoEContractType type of PoE contract
 
 
 
+<a name="confio.poe.v1beta1.EngagementContractConfig"></a>
+
+### EngagementContractConfig
+EngagementContractConfig initial setup config
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `halflife` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
+
+
+
+
+
+
 <a name="confio.poe.v1beta1.GenesisState"></a>
 
 ### GenesisState
@@ -246,6 +262,7 @@ GenesisState - initial state of module
 | `engagement` | [TG4Member](#confio.poe.v1beta1.TG4Member) | repeated | Engagement weighted members of the engagement group. Validators should be in here. |
 | `stake_contract_config` | [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig) |  |  |
 | `valset_contract_config` | [ValsetContractConfig](#confio.poe.v1beta1.ValsetContractConfig) |  |  |
+| `engagment_contract_config` | [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig) |  |  |
 | `bond_denom` | [string](#string) |  | BondDenom defines the bondable coin denomination. |
 
 
@@ -318,6 +335,8 @@ ValsetContractConfig initial setup config
 | `epoch_reward` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
 | `scaling` | [uint32](#uint32) |  |  |
 | `fee_percentage` | [string](#string) |  |  |
+| `ValidatorsRewardRatio` | [uint32](#uint32) |  | ValidatorsRewardRatio in percentage |
+| `AutoUnjail` | [bool](#bool) |  | AutoUnjail if set to true, we will auto-unjail any validator after their jailtime is over. |
 
 
 
