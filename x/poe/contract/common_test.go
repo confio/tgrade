@@ -93,7 +93,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 	}, collectValidators
 }
 
-func resetTokenAmount(validators []stakingtypes.Validator) []stakingtypes.Validator {
+func clearTokenAmount(validators []stakingtypes.Validator) []stakingtypes.Validator {
 	for i, v := range validators {
 		v.Tokens = sdk.Int{}
 		validators[i] = v

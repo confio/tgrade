@@ -17,7 +17,7 @@ import (
 func TestQueryValidator(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example, vals := setupPoEContracts(t)
-	vals = resetTokenAmount(vals)
+	vals = clearTokenAmount(vals)
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	require.NoError(t, err)
@@ -66,7 +66,7 @@ func TestQueryValidator(t *testing.T) {
 func TestListValidators(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example, expValidators := setupPoEContracts(t)
-	expValidators = resetTokenAmount(expValidators)
+	expValidators = clearTokenAmount(expValidators)
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	require.NoError(t, err)
