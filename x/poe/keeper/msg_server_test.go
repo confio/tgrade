@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/confio/tgrade/x/poe/keeper/poetesting"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -116,6 +118,14 @@ func TestUpdateValidator(t *testing.T) {
 		SetValidatorInitialEngagementPointsFn: func(ctx sdk.Context, address sdk.AccAddress, value sdk.Coin) error {
 			return nil
 		},
+		ValsetContractFn: func(ctx sdk.Context) ValsetContract {
+			return poetesting.ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
+				v := types.ValidatorFixture(func(m *stakingtypes.Validator) {
+					m.OperatorAddress = myOperatorAddr.String()
+				})
+				return &v, nil
+			}}
+		},
 	}
 
 	desc := contract.MetadataFromDescription(stakingtypes.Description{
@@ -134,6 +144,7 @@ func TestUpdateValidator(t *testing.T) {
 	}}
 	specs := map[string]struct {
 		src    *types.MsgUpdateValidator
+		mock   poetesting.ValsetContractMock
 		exp    *contract.ValidatorMetadata
 		expErr *sdkerrors.Error
 	}{

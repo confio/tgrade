@@ -39,6 +39,7 @@ func ClearEmbeddedContracts() {
 type poeKeeper interface {
 	keeper.ContractSource
 	SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
+	ValsetContract(ctx sdk.Context) keeper.ValsetContract
 }
 
 // bootstrapPoEContracts stores and instantiates all PoE contracts:
@@ -135,8 +136,9 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "instantiate valset")
 	}
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeValset, valsetContractAddr)
+
 	// store distribution contract address
-	valsetCfg, err := contract.QueryValsetConfig(ctx, tk, valsetContractAddr)
+	valsetCfg, err := poeKeeper.ValsetContract(ctx).QueryConfig(ctx)
 	if err != nil {
 		return sdkerrors.Wrap(err, "query valset config")
 	}

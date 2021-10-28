@@ -12,7 +12,6 @@ import (
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/tendermint/tendermint/libs/log"
 
-	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
 )
 
@@ -86,16 +85,11 @@ func (k Keeper) GetPoESystemAdminAddress(ctx sdk.Context) sdk.AccAddress {
 
 // UnbondingTime returns the unbonding period from the staking contract
 func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
-	contractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	rsp, err := k.StakeContract(ctx).QueryStakingUnbondingPeriod(ctx)
 	if err != nil {
-		panic(fmt.Sprintf("get contract address: %s", err))
+		panic(fmt.Sprintf("unboding period: %s", err))
 	}
-
-	rsp, err := contract.QueryStakingUnbondingPeriod(ctx, k.twasmKeeper, contractAddr)
-	if err != nil {
-		panic(fmt.Sprintf("query unponding period from %s: %s", contractAddr.String(), err))
-	}
-	return time.Duration(rsp) * time.Second
+	return rsp
 }
 
 func (k Keeper) GetBondDenom(ctx sdk.Context) string {

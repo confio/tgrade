@@ -22,6 +22,7 @@ type PoEKeeper interface {
 	ContractSource
 	SetValidatorInitialEngagementPoints(ctx sdk.Context, address sdk.AccAddress, value sdk.Coin) error
 	GetBondDenom(ctx sdk.Context) string
+	ValsetContract(ctx sdk.Context) ValsetContract
 }
 
 type msgServer struct {
@@ -120,18 +121,11 @@ func (m msgServer) UpdateValidator(c context.Context, msg *types.MsgUpdateValida
 	}
 
 	// client sends a diff. we need to query the old description and merge it
-	current, err := contract.QueryValidator(ctx, m.twasmKeeper, valsetContractAddr, operatorAddress)
+	current, err := m.keeper.ValsetContract(ctx).QueryValidator(ctx, operatorAddress)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "query current description")
+		return nil, sdkerrors.Wrap(err, "query contract")
 	}
-	if current == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownAddress, "operator")
-	}
-	validator, err := current.ToValidator()
-	if err != nil {
-		return nil, sdkerrors.Wrap(err, "to validator")
-	}
-	newDescr, err := validator.Description.UpdateDescription(msg.Description)
+	newDescr, err := current.Description.UpdateDescription(msg.Description)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "merge description")
 	}
@@ -153,7 +147,6 @@ func (m msgServer) UpdateValidator(c context.Context, msg *types.MsgUpdateValida
 			sdk.NewAttribute(types.AttributeKeyMoniker, msg.Description.Moniker),
 		),
 	})
-
 	return &types.MsgUpdateValidatorResponse{}, nil
 }
 

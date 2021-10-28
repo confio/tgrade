@@ -2,60 +2,46 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/confio/tgrade/x/poe/keeper/poetesting"
+
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
-
-	"github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/poe/types"
 )
 
 func TestDelegatorValidators(t *testing.T) {
-	var myValsetContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 
-	contractSource := PoEKeeperMock{
-		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
-			require.Equal(t, types.PoEContractTypeValset, ctype)
-			return myValsetContract, nil
-		},
-	}
-
 	specs := map[string]struct {
-		src     *distributiontypes.QueryDelegatorValidatorsRequest
-		querier types.SmartQuerier
-		exp     *distributiontypes.QueryDelegatorValidatorsResponse
-		expErr  bool
+		src    *distributiontypes.QueryDelegatorValidatorsRequest
+		mock   poetesting.ValsetContractMock
+		exp    *distributiontypes.QueryDelegatorValidatorsResponse
+		expErr bool
 	}{
 		"delegation": {
 			src: &distributiontypes.QueryDelegatorValidatorsRequest{DelegatorAddress: myOperatorAddr.String()},
-			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
-				pubKey := ed25519.GenPrivKey().PubKey()
-				return json.Marshal(contract.ValidatorResponse{Validator: &contract.OperatorResponse{
-					Operator: myOperatorAddr.String(),
-					Pubkey:   contract.ValidatorPubkey{Ed25519: pubKey.Bytes()},
-					Metadata: contract.MetadataFromDescription(types.ValidatorFixture().Description),
-				}})
+			mock: poetesting.ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
+				return &stakingtypes.Validator{OperatorAddress: opAddr.String()}, nil
 			}},
 			exp: &distributiontypes.QueryDelegatorValidatorsResponse{Validators: []string{myOperatorAddr.String()}},
 		},
 		"unknown": {
 			src: &distributiontypes.QueryDelegatorValidatorsRequest{DelegatorAddress: myOperatorAddr.String()},
-			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
-				return json.Marshal(contract.ValidatorResponse{})
+			mock: poetesting.ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
+				return nil, nil
 			}},
 			exp: &distributiontypes.QueryDelegatorValidatorsResponse{Validators: []string{}},
 		},
 		"error": {
 			src: &distributiontypes.QueryDelegatorValidatorsRequest{DelegatorAddress: myOperatorAddr.String()},
-			querier: SmartQuerierMock{func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
+			mock: poetesting.ValsetContractMock{QueryValidatorFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
 				return nil, errors.New("testing")
 			}},
 			expErr: true,
@@ -64,9 +50,10 @@ func TestDelegatorValidators(t *testing.T) {
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 			ctx := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()))
+			poeKeeper := PoEKeeperMock{ValsetContractFn: func(ctx sdk.Context) ValsetContract { return spec.mock }}
 
 			// when
-			q := NewLegacyDistributionGRPCQuerier(contractSource, spec.querier)
+			q := NewLegacyDistributionGRPCQuerier(poeKeeper)
 			gotRes, gotErr := q.DelegatorValidators(ctx, spec.src)
 
 			// then

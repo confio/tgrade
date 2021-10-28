@@ -3,6 +3,11 @@ package contract
 import (
 	"encoding/json"
 	"testing"
+	"time"
+
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -86,23 +91,6 @@ type UnbondingPeriodResponse struct {
 	UnbondingPeriod uint64 `json:"unbonding_period"`
 }
 
-// QueryStakingUnbondingPeriod query the unbonding period from PoE staking contract
-func QueryStakingUnbondingPeriod(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.AccAddress) (uint64, error) {
-	query := TG4StakeQuery{UnbondingPeriod: &struct{}{}}
-	var response UnbondingPeriodResponse
-	err := doQuery(ctx, k, stakeAddr, query, &response)
-	return response.UnbondingPeriod, err
-}
-
-// QueryStakingUnbonding query PoE staking contract for unbonded self delegations
-// TODO: add pagination support here!
-func QueryStakingUnbonding(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.AccAddress, opAddr sdk.AccAddress) (TG4StakeClaimsResponse, error) {
-	query := TG4StakeQuery{Claims: &ListClaimsQuery{Address: opAddr.String()}}
-	var response TG4StakeClaimsResponse
-	err := doQuery(ctx, k, stakeAddr, query, &response)
-	return response, err
-}
-
 // QueryStakedAmount query PoE staking contract for bonded self delegation amount
 func QueryStakedAmount(ctx sdk.Context, k types.SmartQuerier, stakeAddr sdk.AccAddress, opAddr sdk.AccAddress) (TG4StakedAmountsResponse, error) {
 	query := TG4StakeQuery{Staked: &StakedQuery{Address: opAddr.String()}}
@@ -121,4 +109,71 @@ func doQuery(ctx sdk.Context, k types.SmartQuerier, contractAddr sdk.AccAddress,
 		return err
 	}
 	return json.Unmarshal(res, result)
+}
+
+type StakeContractAdapter struct {
+	contractAddr     sdk.AccAddress
+	contractQuerier  types.SmartQuerier
+	addressLookupErr error
+}
+
+// NewStakeContractAdapter constructor
+func NewStakeContractAdapter(contractAddr sdk.AccAddress, contractQuerier types.SmartQuerier, addressLookupErr error) *StakeContractAdapter {
+	return &StakeContractAdapter{contractAddr: contractAddr, contractQuerier: contractQuerier, addressLookupErr: addressLookupErr}
+}
+
+// QueryStakingUnbondingPeriod query the unbonding period from PoE staking contract
+func (v StakeContractAdapter) QueryStakingUnbondingPeriod(ctx sdk.Context) (time.Duration, error) {
+	if v.addressLookupErr != nil {
+		return 0, v.addressLookupErr
+	}
+
+	query := TG4StakeQuery{UnbondingPeriod: &struct{}{}}
+	var resp UnbondingPeriodResponse
+	err := doQuery(ctx, v.contractQuerier, v.contractAddr, query, &resp)
+	if err != nil {
+		return 0, sdkerrors.Wrap(err, "contract query")
+	}
+	return time.Duration(resp.UnbondingPeriod) * time.Second, nil
+}
+
+func (v StakeContractAdapter) QueryStakedAmount(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
+	query := TG4Query{Member: &MemberQuery{Addr: opAddr.String()}}
+	var resp TG4MemberResponse
+	err := doQuery(ctx, v.contractQuerier, v.contractAddr, query, &resp)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "contract query")
+	}
+	if resp.Weight == nil {
+		return nil, nil
+	}
+	amount := sdk.NewInt(int64(*resp.Weight))
+	// we should return Coin instead: https://github.com/confio/tgrade-contracts/issues/265
+	return &amount, nil
+}
+
+// QueryStakingUnbonding query PoE staking contract for unbonded self delegations
+// TODO: add pagination support here!
+func (v StakeContractAdapter) QueryStakingUnbonding(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
+	if v.addressLookupErr != nil {
+		return nil, v.addressLookupErr
+	}
+	query := TG4StakeQuery{Claims: &ListClaimsQuery{Address: opAddr.String()}}
+	var resp TG4StakeClaimsResponse
+	err := doQuery(ctx, v.contractQuerier, v.contractAddr, query, &resp)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "contract query")
+	}
+
+	// add all unbonded amounts
+	unbodings := make([]stakingtypes.UnbondingDelegationEntry, len(resp.Claims))
+	for i, v := range resp.Claims {
+		unbodings[i] = stakingtypes.UnbondingDelegationEntry{
+			InitialBalance: v.Amount,
+			CompletionTime: time.Unix(0, int64(v.ReleaseAt)).UTC(),
+			Balance:        v.Amount,
+			CreationHeight: int64(v.CreationHeight),
+		}
+	}
+	return unbodings, nil
 }

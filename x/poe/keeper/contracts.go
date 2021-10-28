@@ -1,7 +1,10 @@
 package keeper
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
@@ -13,5 +16,27 @@ type DistributionContract interface {
 
 func (k Keeper) DistributionContract(ctx sdk.Context) DistributionContract {
 	distContractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
-	return contract.NewDistributionContractImpl(distContractAddr, k.twasmKeeper, err)
+	return contract.NewDistributionContractAdapter(distContractAddr, k.twasmKeeper, err)
+}
+
+type ValsetContract interface {
+	ListValidators(ctx sdk.Context) ([]stakingtypes.Validator, error)
+	QueryValidator(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error)
+	QueryConfig(ctx sdk.Context) (*contract.ValsetConfigResponse, error)
+}
+
+func (k Keeper) ValsetContract(ctx sdk.Context) ValsetContract {
+	distContractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	return contract.NewValsetContractAdapter(distContractAddr, k.twasmKeeper, err)
+}
+
+type StakeContract interface {
+	QueryStakedAmount(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error)
+	QueryStakingUnbondingPeriod(ctx sdk.Context) (time.Duration, error)
+	QueryStakingUnbonding(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error)
+}
+
+func (k Keeper) StakeContract(ctx sdk.Context) StakeContract {
+	distContractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	return contract.NewStakeContractAdapter(distContractAddr, k.twasmKeeper, err)
 }

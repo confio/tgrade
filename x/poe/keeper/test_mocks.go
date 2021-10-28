@@ -11,7 +11,7 @@ import (
 )
 
 var _ PoEKeeper = PoEKeeperMock{}
-var _ stakingQuerierKeeper = PoEKeeperMock{}
+var _ stakingQuerierKeeper = &PoEKeeperMock{}
 
 // PoEKeeperMock mocks Keeper methods
 type PoEKeeperMock struct {
@@ -25,6 +25,8 @@ type PoEKeeperMock struct {
 	UnbondingTimeFn                       func(ctx sdk.Context) time.Duration
 	GetHistoricalInfoFn                   func(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool)
 	DistributionContractFn                func(ctx sdk.Context) DistributionContract
+	ValsetContractFn                      func(ctx sdk.Context) ValsetContract
+	StakeContractFn                       func(ctx sdk.Context) StakeContract
 }
 
 func (m PoEKeeperMock) setParams(ctx sdk.Context, params types.Params) {
@@ -61,6 +63,7 @@ func (m PoEKeeperMock) GetBondDenom(ctx sdk.Context) string {
 	}
 	return m.GetBondDenomFn(ctx)
 }
+
 func (m PoEKeeperMock) HistoricalEntries(ctx sdk.Context) uint32 {
 	if m.HistoricalEntriesFn == nil {
 		panic("not expected to be called")
@@ -68,18 +71,39 @@ func (m PoEKeeperMock) HistoricalEntries(ctx sdk.Context) uint32 {
 	return m.HistoricalEntriesFn(ctx)
 }
 
-func (m PoEKeeperMock) UnbondingTime(ctx sdk.Context) time.Duration {
-	if m.UnbondingTimeFn == nil {
-		panic("not expected to be called")
-	}
-	return m.UnbondingTimeFn(ctx)
-}
-
 func (m PoEKeeperMock) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
 	if m.GetHistoricalInfoFn == nil {
 		panic("not expected to be called")
 	}
 	return m.GetHistoricalInfoFn(ctx, height)
+}
+
+func (m PoEKeeperMock) SetValidatorInitialEngagementPoints(ctx sdk.Context, opAddr sdk.AccAddress, points sdk.Coin) error {
+	if m.SetValidatorInitialEngagementPointsFn == nil {
+		panic("not expected to be called")
+	}
+	return m.SetValidatorInitialEngagementPointsFn(ctx, opAddr, points)
+}
+
+func (m PoEKeeperMock) DistributionContract(ctx sdk.Context) DistributionContract {
+	if m.DistributionContractFn == nil {
+		panic("not expected to be called")
+	}
+	return m.DistributionContractFn(ctx)
+}
+
+func (m PoEKeeperMock) StakeContract(ctx sdk.Context) StakeContract {
+	if m.StakeContractFn == nil {
+		panic("not expected to be called")
+	}
+	return m.StakeContractFn(ctx)
+}
+
+func (m PoEKeeperMock) ValsetContract(ctx sdk.Context) ValsetContract {
+	if m.ValsetContractFn == nil {
+		panic("not expected to be called")
+	}
+	return m.ValsetContractFn(ctx)
 }
 
 // CapturedPoEContractAddress data type
@@ -108,20 +132,6 @@ func (m SmartQuerierMock) QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddres
 		panic("not expected to be called")
 	}
 	return m.QuerySmartFn(ctx, contractAddr, req)
-}
-
-func (m PoEKeeperMock) SetValidatorInitialEngagementPoints(ctx sdk.Context, opAddr sdk.AccAddress, points sdk.Coin) error {
-	if m.SetValidatorInitialEngagementPointsFn == nil {
-		panic("not expected to be called")
-	}
-	return m.SetValidatorInitialEngagementPointsFn(ctx, opAddr, points)
-}
-
-func (m PoEKeeperMock) DistributionContract(ctx sdk.Context) DistributionContract {
-	if m.DistributionContractFn == nil {
-		panic("not expected to be called")
-	}
-	return m.DistributionContractFn(ctx)
 }
 
 // return matching type or fail

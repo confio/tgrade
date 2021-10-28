@@ -2,9 +2,7 @@ package contract_test
 
 import (
 	"encoding/json"
-	"sort"
 	"testing"
-	"time"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -21,149 +19,6 @@ import (
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 )
-
-func TestListValidators(t *testing.T) {
-	// setup contracts and seed some data
-	ctx, example := keeper.CreateDefaultTestInput(t)
-	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
-
-	mutator, expValidators := withRandomValidators(t, ctx, example, 3)
-	gs := types.GenesisStateFixture(mutator)
-	expValidators = resetTokenAmount(expValidators)
-
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
-	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-
-	// when
-	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
-	require.NoError(t, err)
-	vals, err := contract.ListValidators(ctx, example.TWasmKeeper, contractAddr)
-
-	// then
-	require.NoError(t, err)
-	sort.Slice(expValidators, func(i, j int) bool {
-		return expValidators[i].OperatorAddress < expValidators[j].OperatorAddress
-	})
-	gotValidators := make([]stakingtypes.Validator, len(vals))
-	for i, v := range vals {
-		gotValidators[i], err = v.ToValidator()
-		require.NoError(t, err)
-	}
-	assert.Equal(t, expValidators, gotValidators)
-}
-
-func TestGetValidator(t *testing.T) {
-	// setup contracts and seed some data
-	ctx, example := keeper.CreateDefaultTestInput(t)
-	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
-
-	mutator, expValidators := withRandomValidators(t, ctx, example, 2)
-	gs := types.GenesisStateFixture(mutator)
-	expValidators = resetTokenAmount(expValidators)
-
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
-	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-
-	specs := map[string]struct {
-		operatorAddr string
-		expVal       stakingtypes.Validator
-		expEmpty     bool
-	}{
-		"query one validator": {
-			operatorAddr: expValidators[0].OperatorAddress,
-			expVal:       expValidators[0],
-		},
-		"query other validator": {
-			operatorAddr: expValidators[1].OperatorAddress,
-			expVal:       expValidators[1],
-		},
-		"query with unknown address": {
-			operatorAddr: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),
-			expEmpty:     true,
-		},
-		"query with invalid address": {
-			operatorAddr: "not an address",
-			expEmpty:     true,
-		},
-	}
-	for name, spec := range specs {
-		t.Run(name, func(t *testing.T) {
-			contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
-			require.NoError(t, err)
-			opAddr, _ := sdk.AccAddressFromBech32(spec.operatorAddr)
-
-			// when
-			val, err := contract.QueryValidator(ctx, example.TWasmKeeper, contractAddr, opAddr)
-
-			// then
-			if spec.expEmpty {
-				assert.Nil(t, val)
-				return
-			}
-			gotVal, err := val.ToValidator()
-			require.NoError(t, err)
-			assert.Equal(t, spec.expVal, gotVal)
-		})
-	}
-}
-
-func TestQueryUnbondingPeriod(t *testing.T) {
-	// setup contracts and seed some data
-	ctx, example := keeper.CreateDefaultTestInput(t)
-	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
-
-	mutator, _ := withRandomValidators(t, ctx, example, 1)
-	gs := types.GenesisStateFixture(mutator)
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
-	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-
-	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
-	require.NoError(t, err)
-	// when
-	res, err := contract.QueryStakingUnbondingPeriod(ctx, example.TWasmKeeper, contractAddr)
-
-	// then
-	const configuredTime uint64 = 21 * 24 * 60 * 60 // in bootstrap
-	assert.Equal(t, configuredTime, res)
-}
-
-func TestQueryValsetConfig(t *testing.T) {
-	// setup contracts and seed some data
-	ctx, example := keeper.CreateDefaultTestInput(t)
-	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
-
-	mutator, _ := withRandomValidators(t, ctx, example, 1)
-	gs := types.GenesisStateFixture(mutator)
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
-	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-
-	valsetContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
-	require.NoError(t, err)
-	mixerContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
-	require.NoError(t, err)
-
-	// when
-	res, err := contract.QueryValsetConfig(ctx, example.TWasmKeeper, valsetContractAddr)
-
-	// then
-	expConfig := &contract.ValsetConfigResponse{
-		Membership:            mixerContractAddr.String(),
-		MinWeight:             1,
-		MaxValidators:         100,
-		Scaling:               1,
-		EpochReward:           sdk.NewInt64Coin("utgd", 100000),
-		FeePercentage:         sdk.MustNewDecFromStr("0.50"),
-		ValidatorsRewardRatio: sdk.MustNewDecFromStr("0.50"),
-		DistributionContract:  "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhuc53mp6",
-		RewardsContract:       "cosmos1cnuw3f076wgdyahssdkd0g3nr96ckq8caf5mdm",
-		AutoUnjail:            false,
-	}
-	assert.Equal(t, expConfig, res)
-}
 
 func TestQueryValidatorSelfDelegation(t *testing.T) {
 	// setup contracts and seed some data
@@ -204,68 +59,6 @@ func TestQueryValidatorSelfDelegation(t *testing.T) {
 	}
 }
 
-func TestQueryValidatorUnboding(t *testing.T) {
-	// setup contracts and seed some data
-	ctx, example := keeper.CreateDefaultTestInput(t)
-	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
-
-	mutator, vals := withRandomValidators(t, ctx, example, 2)
-	gs := types.GenesisStateFixture(mutator)
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
-	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-
-	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
-	require.NoError(t, err)
-	op1Addr, err := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
-	require.NoError(t, err)
-
-	// unbond some tokens for operator 1
-	now := time.Now().UTC()
-	ctx = ctx.WithBlockTime(now).WithBlockHeight(12)
-	unbondedAmount := sdk.NewInt(10)
-	contract.UnbondDelegation(ctx, contractAddr, op1Addr, unbondedAmount, example.TWasmKeeper.GetContractKeeper())
-
-	op2Addr, err := sdk.AccAddressFromBech32(vals[1].OperatorAddress)
-	require.NoError(t, err)
-	unbodingPeriod, err := contract.QueryStakingUnbondingPeriod(ctx, example.TWasmKeeper, contractAddr)
-	require.NoError(t, err)
-	specs := map[string]struct {
-		srcOpAddr sdk.AccAddress
-		expResult contract.TG4StakeClaimsResponse
-	}{
-		"unbondings": {
-			srcOpAddr: op1Addr,
-			expResult: contract.TG4StakeClaimsResponse{Claims: []contract.TG4StakeClaim{
-				{
-					Addr:           op1Addr.String(),
-					Amount:         sdk.NewInt(10),
-					ReleaseAt:      uint64(now.Add(time.Duration(unbodingPeriod) * time.Second).UTC().UnixNano()),
-					CreationHeight: 12,
-				},
-			}},
-		},
-		"no unbondings with existing operator": {
-			srcOpAddr: op2Addr,
-			expResult: contract.TG4StakeClaimsResponse{Claims: []contract.TG4StakeClaim{}},
-		},
-		"unknown operator": {
-			srcOpAddr: rand.Bytes(sdk.AddrLen),
-			expResult: contract.TG4StakeClaimsResponse{Claims: []contract.TG4StakeClaim{}},
-		},
-	}
-	for name, spec := range specs {
-		t.Run(name, func(t *testing.T) {
-			// when
-			gotRes, gotErr := contract.QueryStakingUnbonding(ctx, example.TWasmKeeper, contractAddr, spec.srcOpAddr)
-			// then
-			require.NoError(t, gotErr)
-			require.NotNil(t, gotRes)
-			assert.Equal(t, spec.expResult, gotRes)
-		})
-	}
-}
-
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
 func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k keeper.Keeper, contractKeeper wasmtypes.ContractOpsKeeper, txDecoder sdk.TxDecoder) func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
 	t.Helper()
@@ -297,7 +90,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 				desc       stakingtypes.Description
 			)
 			f.NilChance(0).Fuzz(&power) // must be > 0 so that staked amount is > 0
-			f.Fuzz(&engagement)
+			f.NilChance(0).Fuzz(&engagement)
 			for len(desc.Moniker) < 3 { // ensure min length is met
 				f.Fuzz(&desc)
 			}

@@ -2,14 +2,12 @@ package keeper
 
 import (
 	"context"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
 )
 
@@ -18,16 +16,14 @@ var _ stakingtypes.QueryServer = &legacyStakingGRPCQuerier{}
 type stakingQuerierKeeper interface {
 	ViewKeeper
 	HistoricalEntries(ctx sdk.Context) uint32
-	UnbondingTime(ctx sdk.Context) time.Duration
 }
 type legacyStakingGRPCQuerier struct {
-	keeper          stakingQuerierKeeper
-	contractQuerier types.SmartQuerier
-	queryServer     types.QueryServer
+	keeper      stakingQuerierKeeper
+	queryServer types.QueryServer
 }
 
-func NewLegacyStakingGRPCQuerier(poeKeeper stakingQuerierKeeper, q types.SmartQuerier) *legacyStakingGRPCQuerier { //nolint:golint
-	return &legacyStakingGRPCQuerier{keeper: poeKeeper, contractQuerier: q, queryServer: NewGrpcQuerier(poeKeeper, q)}
+func NewLegacyStakingGRPCQuerier(poeKeeper stakingQuerierKeeper) *legacyStakingGRPCQuerier { //nolint:golint
+	return &legacyStakingGRPCQuerier{keeper: poeKeeper, queryServer: NewGrpcQuerier(poeKeeper)}
 }
 
 // Validators legacy support for querying all validators that match the given status
@@ -269,19 +265,18 @@ func (q legacyStakingGRPCQuerier) Params(c context.Context, req *stakingtypes.Qu
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 	ctx := sdk.UnwrapSDKContext(c)
-	valsetContractAddr, err := q.keeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	valsetConfig, err := q.keeper.ValsetContract(ctx).QueryConfig(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	valsetConfig, err := contract.QueryValsetConfig(ctx, q.contractQuerier, valsetContractAddr)
+	unbondingTime, err := q.keeper.StakeContract(ctx).QueryStakingUnbondingPeriod(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
 	return &stakingtypes.QueryParamsResponse{
 		Params: stakingtypes.Params{
-			UnbondingTime:     q.keeper.UnbondingTime(ctx),
-			MaxValidators:     uint32(valsetConfig.MaxValidators),
+			UnbondingTime:     unbondingTime,
+			MaxValidators:     valsetConfig.MaxValidators,
 			MaxEntries:        0,
 			HistoricalEntries: q.keeper.HistoricalEntries(ctx),
 			BondDenom:         q.keeper.GetBondDenom(ctx),

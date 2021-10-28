@@ -19,18 +19,18 @@ type FundsResponse struct {
 	Funds sdk.Coin
 }
 
-type DistributionContractImpl struct {
+type DistributionContractAdapter struct {
 	contractAddr     sdk.AccAddress
 	contractQuerier  types.SmartQuerier
 	addressLookupErr error
 }
 
-// NewDistributionContractImpl constructor
-func NewDistributionContractImpl(contractAddr sdk.AccAddress, contractQuerier types.SmartQuerier, addressLookupErr error) *DistributionContractImpl {
-	return &DistributionContractImpl{contractAddr: contractAddr, contractQuerier: contractQuerier, addressLookupErr: addressLookupErr}
+// NewDistributionContractAdapter constructor
+func NewDistributionContractAdapter(contractAddr sdk.AccAddress, contractQuerier types.SmartQuerier, addressLookupErr error) *DistributionContractAdapter {
+	return &DistributionContractAdapter{contractAddr: contractAddr, contractQuerier: contractQuerier, addressLookupErr: addressLookupErr}
 }
 
-func (d DistributionContractImpl) ValidatorOutstandingReward(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+func (d DistributionContractAdapter) ValidatorOutstandingReward(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
 	if d.addressLookupErr != nil {
 		return sdk.Coin{}, d.addressLookupErr
 	}

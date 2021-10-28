@@ -9,7 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/confio/tgrade/x/poe"
 	"github.com/confio/tgrade/x/poe/contract"
@@ -46,7 +45,7 @@ func TestQueryWithdrawableFunds(t *testing.T) {
 		"with rewards after epoche": {
 			setup: func(ctx sdk.Context) sdk.Context {
 				ctx = ctx.WithBlockTime(ctx.BlockTime().Add(types.DefaultGenesisState().ValsetContractConfig.EpochLength))
-				module.EndBlock(ctx, abci.RequestEndBlock{})
+				poe.EndBlocker(ctx, example.TWasmKeeper)
 				return ctx
 			},
 			src: opAddr,
@@ -64,7 +63,7 @@ func TestQueryWithdrawableFunds(t *testing.T) {
 			if spec.setup != nil {
 				tCtx = spec.setup(tCtx)
 			}
-			gotAmount, gotErr := contract.NewDistributionContractImpl(contractAddr, example.TWasmKeeper, nil).ValidatorOutstandingReward(tCtx, spec.src)
+			gotAmount, gotErr := contract.NewDistributionContractAdapter(contractAddr, example.TWasmKeeper, nil).ValidatorOutstandingReward(tCtx, spec.src)
 			if spec.expErr != nil {
 				assert.True(t, spec.expErr.Is(gotErr), "got %s", gotErr)
 				return

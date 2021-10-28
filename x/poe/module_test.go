@@ -59,10 +59,7 @@ func TestInitGenesis(t *testing.T) {
 	assert.Equal(t, myValidators.expStakingGroup(), gotMembers)
 
 	// and valset config
-	addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
-	require.NoError(t, err)
-
-	gotValsetConfig, err := contract.QueryValsetConfig(ctx, example.TWasmKeeper, addr)
+	gotValsetConfig, err := example.PoEKeeper.ValsetContract(ctx).QueryConfig(ctx)
 	require.NoError(t, err)
 
 	mixerAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
