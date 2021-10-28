@@ -107,8 +107,8 @@ func TestQueryValsetConfig(t *testing.T) {
 		EpochReward:           sdk.NewInt64Coin("utgd", 100000),
 		FeePercentage:         sdk.MustNewDecFromStr("0.50"),
 		ValidatorsRewardRatio: sdk.MustNewDecFromStr("0.50"),
-		DistributionContract:  "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhuc53mp6",
-		RewardsContract:       "cosmos1cnuw3f076wgdyahssdkd0g3nr96ckq8caf5mdm",
+		DistributionContract:  "cosmos1nc5tatafv6eyq7llkr2gv50ff9e22mnfapsq9f",
+		RewardsContract:       "cosmos18v47nqmhvejx3vc498pantg8vr435xa0ln6420",
 		AutoUnjail:            false,
 	}
 	assert.Equal(t, expConfig, res)

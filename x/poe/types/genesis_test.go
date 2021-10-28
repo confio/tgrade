@@ -61,18 +61,6 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
-		"empty system admin": {
-			source: GenesisStateFixture(func(m *GenesisState) {
-				m.SystemAdminAddress = ""
-			}),
-			expErr: true,
-		},
-		"invalid system admin": {
-			source: GenesisStateFixture(func(m *GenesisState) {
-				m.SystemAdminAddress = "invalid"
-			}),
-			expErr: true,
-		},
 		"valid gentx": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.GenTxs = []json.RawMessage{myGenTx}
@@ -248,7 +236,6 @@ func TestValidateValsetContractConfig(t *testing.T) {
 		})
 	}
 }
-
 func TestValidateStakeContractConfig(t *testing.T) {
 	specs := map[string]struct {
 		src    StakeContractConfig
@@ -290,6 +277,49 @@ func TestValidateStakeContractConfig(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
+			gotErr := spec.src.ValidateBasic()
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+		})
+	}
+}
+
+func TestTestValidateOversightCommitteeContractConfig(t *testing.T) {
+	specs := map[string]struct {
+		src    *OversightCommitteeContractConfig
+		expErr bool
+	}{
+		"empty initial members": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.InitialMembers = []string{}
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+		"nil initial members": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.InitialMembers = nil
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+		"empty initial member address": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.InitialMembers = []string{""}
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+		"invalid initial member address": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.InitialMembers = []string{"invalid"}
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+
 			gotErr := spec.src.ValidateBasic()
 			if spec.expErr {
 				require.Error(t, gotErr)

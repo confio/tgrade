@@ -12,7 +12,7 @@ tag="$1"
 GITHUB_API_TOKEN=${GITHUB_API_TOKEN:-"$(security find-generic-password -a "$USER" -s "github_api_key" -w)"}
 
 rm -f version.txt
-for contract in tg4_engagement tgrade_valset tg4_mixer tg4_stake; do
+for contract in tg4_engagement tgrade_valset tg4_mixer tg4_stake tgrade_trusted_circle tgrade_gov_reflect; do
   echo "Download $contract"
   list_asset_url="https://api.github.com/repos/confio/tgrade-contracts/releases/tags/${tag}"
   # get url for artifact with name==$artifact

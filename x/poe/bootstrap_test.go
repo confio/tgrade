@@ -25,41 +25,52 @@ func TestBootstrapPoEContracts(t *testing.T) {
 	var (
 		defaultLimit     uint64 = 20
 		expFeePercentage        = contract.DecimalFromProMille(500)
-		mySystemAdmin           = types.RandomAccAddress().String()
 		myUser                  = types.RandomAccAddress().String()
 		myOtherUser             = types.RandomAccAddress().String()
 	)
 
 	var (
-		engagementContractAddr   = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 1)
-		stakingContractAdddr     = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 2)
-		mixerContractAddr        = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 3)
-		valsetContractAddr       = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)
-		distributionContractAddr = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 5)
+		oversightCommitteeContractAddr = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 1)
+		engagementContractAddr         = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 2)
+		stakingContractAdddr           = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 3)
+		mixerContractAddr              = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 4)
+		valsetContractAddr             = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 5)
+		distributionContractAddr       = wasmkeeper.BuildContractAddress(twasmtesting.DefaultCaptureInstantiateFnCodeID, 6)
 	)
 
 	specs := map[string]struct {
-		genesis           types.GenesisState
-		expEngagementInit contract.TG4EngagementInitMsg
-		expStakerInit     contract.TG4StakeInitMsg
-		expValsetInit     contract.ValsetInitMsg
-		expErr            bool
+		genesis                   types.GenesisState
+		expOversightCommitteeInit contract.TrustedCircleInitMsg
+		expEngagementInit         contract.TG4EngagementInitMsg
+		expStakerInit             contract.TG4StakeInitMsg
+		expValsetInit             contract.ValsetInitMsg
+		expErr                    bool
 	}{
 		"all contracts setup": {
 			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
-				m.SystemAdminAddress = mySystemAdmin
 				m.Engagement = []types.TG4Member{{Address: myUser, Weight: 10}, {Address: myOtherUser, Weight: 11}}
 				m.ValsetContractConfig.FeePercentage = sdk.NewDec(50)
 			}),
+			expOversightCommitteeInit: contract.TrustedCircleInitMsg{
+				Name:                      "",
+				EscrowAmount:              sdk.Int{},
+				VotingPeriod:              0,
+				Quorum:                    sdk.Dec{},
+				Threshold:                 sdk.Dec{},
+				AllowEndEarly:             false,
+				InitialMembers:            nil,
+				DenyList:                  "",
+				EditTrustedCircleDisabled: false,
+			},
 			expEngagementInit: contract.TG4EngagementInitMsg{
-				Admin:    mySystemAdmin,
+				Admin:    oversightCommitteeContractAddr.String(),
 				Preauths: 1,
 				Members:  []contract.TG4Member{{Addr: myUser, Weight: 10}, {Addr: myOtherUser, Weight: 11}},
 				Token:    "utgd",
 				Halflife: 15552000,
 			},
 			expStakerInit: contract.TG4StakeInitMsg{
-				Admin:           mySystemAdmin,
+				Admin:           oversightCommitteeContractAddr.String(),
 				Denom:           "utgd",
 				MinBond:         1,
 				TokensPerWeight: 1,
@@ -77,7 +88,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				FeePercentage:         expFeePercentage,
 				InitialKeys:           []contract.Validator{},
 				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
-				RewardsCodeId:         1,
+				RewardsCodeID:         1,
 				DistributionContract:  engagementContractAddr.String(),
 			},
 		},
@@ -87,10 +98,12 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			cFn, capCreate := twasmtesting.CaptureCreateFn()
 			iFn, capInst := twasmtesting.CaptureInstantiateFn()
 			pFn, capPin := twasmtesting.CapturePinCodeFn()
+			uFn, capAdminUpdates := captureAdminUpdates()
 			cm := twasmtesting.ContractOpsKeeperMock{
-				CreateFn:      cFn,
-				InstantiateFn: iFn,
-				PinCodeFn:     pFn,
+				CreateFn:              cFn,
+				InstantiateFn:         iFn,
+				PinCodeFn:             pFn,
+				UpdateContractAdminFn: uFn,
 			}
 
 			spFn, capPriv := CaptureSetPrivilegedFn()
@@ -133,14 +146,16 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			require.Len(t, *capInst, 4)
 
 			var (
-				gotEngagementInit contract.TG4EngagementInitMsg
-				gotStakerInit     contract.TG4StakeInitMsg
-				gotMixerInit      contract.TG4MixerInitMsg
-				gotValsetInit     contract.ValsetInitMsg
+				gotOversightCommitteeInit contract.TrustedCircleInitMsg
+				gotEngagementInit         contract.TG4EngagementInitMsg
+				gotStakerInit             contract.TG4StakeInitMsg
+				gotMixerInit              contract.TG4MixerInitMsg
+				gotValsetInit             contract.ValsetInitMsg
 			)
-			for i, ref := range []interface{}{&gotEngagementInit, &gotStakerInit, &gotMixerInit, &gotValsetInit} {
+			for i, ref := range []interface{}{&gotOversightCommitteeInit, &gotEngagementInit, &gotStakerInit, &gotMixerInit, &gotValsetInit} {
 				require.NoError(t, json.Unmarshal((*capInst)[i].InitMsg, ref))
 			}
+			assert.Equal(t, spec.expOversightCommitteeInit, gotOversightCommitteeInit)
 			assert.Equal(t, spec.expEngagementInit, gotEngagementInit)
 			assert.Equal(t, spec.expStakerInit, gotStakerInit)
 			assert.Equal(t, spec.expValsetInit, gotValsetInit)
@@ -159,14 +174,30 @@ func TestBootstrapPoEContracts(t *testing.T) {
 
 			// and contract addr stored for types
 			assert.Equal(t, []keeper.CapturedPoEContractAddress{
+				{Ctype: types.PoEContractTypeOversightCommittee, ContractAddr: oversightCommitteeContractAddr},
 				{Ctype: types.PoEContractTypeEngagement, ContractAddr: engagementContractAddr},
 				{Ctype: types.PoEContractTypeStaking, ContractAddr: stakingContractAdddr},
 				{Ctype: types.PoEContractTypeMixer, ContractAddr: mixerContractAddr},
 				{Ctype: types.PoEContractTypeValset, ContractAddr: valsetContractAddr},
 				{Ctype: types.PoEContractTypeDistribution, ContractAddr: distributionContractAddr},
 			}, *capSetAddr)
+
+			expUpdates := []capturedContractAdminUpdate{{oversightCommitteeContractAddr, oversightCommitteeContractAddr}}
+			assert.Equal(t, expUpdates, *capAdminUpdates)
 		})
 	}
+}
+
+type capturedContractAdminUpdate struct {
+	contractAddr, newAdmin sdk.AccAddress
+}
+
+func captureAdminUpdates() (func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newAdmin sdk.AccAddress) error, *[]capturedContractAdminUpdate) {
+	var result []capturedContractAdminUpdate
+	return func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newAdmin sdk.AccAddress) error {
+		result = append(result, capturedContractAdminUpdate{contractAddr: contractAddress, newAdmin: newAdmin})
+		return nil
+	}, &result
 }
 
 func TestCreateValsetInitMsg(t *testing.T) {
@@ -190,7 +221,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				Scaling:               1,
 				FeePercentage:         contract.DecimalFromProMille(500),
 				InitialKeys:           []contract.Validator{},
-				RewardsCodeId:         engagementID,
+				RewardsCodeID:         engagementID,
 				DistributionContract:  engagementAddr.String(),
 				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},
@@ -210,7 +241,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				Scaling:               1,
 				FeePercentage:         contract.DecimalFromProMille(501),
 				InitialKeys:           []contract.Validator{},
-				RewardsCodeId:         engagementID,
+				RewardsCodeID:         engagementID,
 				DistributionContract:  engagementAddr.String(),
 				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},
@@ -230,7 +261,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				Scaling:               1,
 				FeePercentage:         contract.DecimalFromProMille(1),
 				InitialKeys:           []contract.Validator{},
-				RewardsCodeId:         engagementID,
+				RewardsCodeID:         engagementID,
 				DistributionContract:  engagementAddr.String(),
 				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},
@@ -250,7 +281,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				Scaling:               1,
 				FeePercentage:         &minDecimal,
 				InitialKeys:           []contract.Validator{},
-				RewardsCodeId:         engagementID,
+				RewardsCodeID:         engagementID,
 				DistributionContract:  engagementAddr.String(),
 				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
 			},

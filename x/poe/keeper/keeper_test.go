@@ -64,14 +64,6 @@ func TestSetGetPoEContractAddress(t *testing.T) {
 	}
 }
 
-func TestSetGetPoESystemAdmin(t *testing.T) {
-	ctx, _, k := createMinTestInput(t)
-	require.Empty(t, k.GetPoESystemAdminAddress(ctx))
-	var myAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
-	k.setPoESystemAdminAddress(ctx, myAddr)
-	assert.Equal(t, myAddr, k.GetPoESystemAdminAddress(ctx))
-}
-
 func TestIteratePoEContracts(t *testing.T) {
 	ctx, _, k := createMinTestInput(t)
 	storedTypes := make(map[types.PoEContractType]sdk.AccAddress)

@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -229,6 +230,9 @@ func createTestInput(
 	poeKeeper := NewKeeper(appCodec, keyPoE, poeSubsp, twasmKeeper)
 	router.AddRoute(sdk.NewRoute(twasmtypes.RouterKey, wasm.NewHandler(twasmKeeper.GetContractKeeper())))
 
+	// TODO: remove after https://github.com/confio/tgrade-contracts/issues/269
+	var emptyAddr sdk.AccAddress = bytes.Repeat([]byte{0}, sdk.AddrLen)
+	bankKeeper.SetBalance(ctx, emptyAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(1_000_000_000)))
 	keepers := TestKeepers{
 		AccountKeeper:  authKeeper,
 		TWasmKeeper:    &twasmKeeper,

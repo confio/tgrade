@@ -41,16 +41,16 @@ type ValsetInitMsg struct {
 	InitialKeys   []Validator `json:"initial_keys"`
 	Scaling       uint32      `json:"scaling,omitempty"`
 	// Percentage of total accumulated fees which is subtracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
-	FeePercentage *sdk.Dec `json:"fee_percentage,string,omitempty"`
+	FeePercentage *sdk.Dec `json:"fee_percentage,omitempty"`
 	// If set to true, we will auto-unjail any validator after their jailtime is over.
 	AutoUnjail bool `json:"auto_unjail"`
 	// What percentage of the rewards (fees + inflation) go to validators. The rest go to distribution contract (below)
-	ValidatorsRewardRatio *sdk.Dec `json:"validators_reward_ratio,string,omitempty"`
+	ValidatorsRewardRatio *sdk.Dec `json:"validators_reward_ratio,omitempty"`
 	// This contract receives the rewards that don't go to the validator (set ot tg4-engagement)
 	DistributionContract string `json:"distribution_contract,omitempty"`
 	// This is the code-id of the cw2222-compliant contract used to handle rewards for the validators
 	// Generally should the the tg4-engagement code id
-	RewardsCodeId uint64 `json:"rewards_code_id"`
+	RewardsCodeID uint64 `json:"rewards_code_id"`
 }
 
 func (m ValsetInitMsg) Json(t *testing.T) string {

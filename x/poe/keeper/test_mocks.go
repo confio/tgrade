@@ -18,7 +18,6 @@ type PoEKeeperMock struct {
 	GetPoEContractAddressFn               func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error)
 	SetValidatorInitialEngagementPointsFn func(ctx sdk.Context, address sdk.AccAddress, value sdk.Coin) error
 	SetPoEContractAddressFn               func(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
-	setPoESystemAdminAddressFn            func(ctx sdk.Context, admin sdk.AccAddress)
 	setParamsFn                           func(ctx sdk.Context, params types.Params)
 	GetBondDenomFn                        func(ctx sdk.Context) string
 	HistoricalEntriesFn                   func(ctx sdk.Context) uint32
@@ -48,13 +47,6 @@ func (m PoEKeeperMock) SetPoEContractAddress(ctx sdk.Context, ctype types.PoECon
 		panic("not expected to be called")
 	}
 	m.SetPoEContractAddressFn(ctx, ctype, contractAddr)
-}
-
-func (m PoEKeeperMock) setPoESystemAdminAddress(ctx sdk.Context, admin sdk.AccAddress) {
-	if m.setPoESystemAdminAddressFn == nil {
-		panic("not expected to be called")
-	}
-	m.setPoESystemAdminAddressFn(ctx, admin)
 }
 
 func (m PoEKeeperMock) GetBondDenom(ctx sdk.Context) string {

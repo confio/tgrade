@@ -1,19 +1,20 @@
 package types
 
 import (
+	"bytes"
 	"errors"
 	"time"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/tendermint/tendermint/libs/rand"
 )
 
 const DefaultBondDenom = "utgd"
 
 // DefaultGenesisState default values
 func DefaultGenesisState() GenesisState {
+	emptyAddr := sdk.AccAddress(bytes.Repeat([]byte{0}, sdk.AddrLen)).String()
 	return GenesisState{
 		SeedContracts: true,
 		BondDenom:     DefaultBondDenom,
@@ -37,8 +38,17 @@ func DefaultGenesisState() GenesisState {
 		EngagmentContractConfig: &EngagementContractConfig{
 			Halflife: 180 * 24 * time.Hour,
 		},
-		SystemAdminAddress: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),
-		Params:             DefaultParams(),
+		OversightCommitteeContractConfig: &OversightCommitteeContractConfig{
+			Name:           "Oversight Committee",
+			EscrowAmount:   sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+			VotingPeriod:   1,
+			Quorum:         sdk.NewDec(50),
+			Threshold:      sdk.NewDec(66),
+			AllowEndEarly:  true,
+			DisableEdit:    false,
+			InitialMembers: []string{emptyAddr},
+		},
+		Params: DefaultParams(),
 	}
 }
 
@@ -66,6 +76,7 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		if err := g.ValsetContractConfig.ValidateBasic(); err != nil {
 			return sdkerrors.Wrap(err, "valset contract config")
 		}
+
 		if g.StakeContractConfig == nil {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty stake contract config")
 		}
@@ -76,6 +87,15 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "rewards not in bonded denom")
 		}
 
+		if g.OversightCommitteeContractConfig == nil {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty oversight committee contract config")
+		}
+		if err := g.OversightCommitteeContractConfig.ValidateBasic(); err != nil {
+			return sdkerrors.Wrap(err, "oversight committee config")
+		}
+		if g.OversightCommitteeContractConfig.EscrowAmount.Denom != g.BondDenom {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "escrow not in bonded denom")
+		}
 	} else {
 		return errors.New("not supported, yet")
 		//if len(g.Contracts) == 0 {
@@ -99,9 +119,6 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		//if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
 		//	return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
 		//}
-	}
-	if _, err := sdk.AccAddressFromBech32(g.SystemAdminAddress); err != nil {
-		return sdkerrors.Wrap(err, "system admin address")
 	}
 
 	uniqueEngagementMembers := make(map[string]struct{}, len(g.Engagement))
@@ -193,6 +210,53 @@ func (c PoEContract) ValidateBasic() error {
 		return sdkerrors.Wrap(err, "address")
 	}
 	return sdkerrors.Wrap(c.ContractType.ValidateBasic(), "contract type")
+}
+
+const (
+	minNameLength   = 2
+	maxNameLength   = 100
+	minEscrowAmount = 999_999
+)
+
+// ValidateBasic ensure basic constraints
+func (c OversightCommitteeContractConfig) ValidateBasic() error {
+	if l := len(c.Name); l < minNameLength {
+		return sdkerrors.Wrap(ErrEmpty, "name")
+	} else if l > maxNameLength {
+		return sdkerrors.Wrapf(ErrInvalid, "name length > %d", maxNameLength)
+	}
+	if c.EscrowAmount.Amount.LTE(sdk.NewInt(minEscrowAmount)) {
+		return sdkerrors.Wrapf(ErrInvalid, "escrow amount must be greater %d", minEscrowAmount)
+	}
+	if c.VotingPeriod == 0 {
+		return sdkerrors.Wrap(ErrEmpty, "voting period")
+	}
+	if c.Quorum.IsNil() || c.Quorum.IsZero() {
+		return sdkerrors.Wrap(ErrEmpty, "quorum")
+	}
+	if c.Quorum.GT(sdk.NewDec(100)) {
+		return sdkerrors.Wrap(ErrEmpty, "quorum")
+	}
+	if c.Threshold.IsNil() || c.Threshold.IsZero() {
+		return sdkerrors.Wrap(ErrEmpty, "threshold")
+	}
+	if c.Threshold.GT(sdk.NewDec(100)) {
+		return sdkerrors.Wrap(ErrEmpty, "threshold")
+	}
+	if len(c.InitialMembers) == 0 {
+		return sdkerrors.Wrap(ErrEmpty, "initial members")
+	}
+	for _, v := range c.InitialMembers {
+		if _, err := sdk.AccAddressFromBech32(v); err != nil {
+			return sdkerrors.Wrapf(ErrInvalid, "address: %s", v)
+		}
+	}
+	if c.DenyListContractAddress != "" {
+		if _, err := sdk.AccAddressFromBech32(c.DenyListContractAddress); err != nil {
+			return sdkerrors.Wrap(ErrInvalid, "deny list contract address")
+		}
+	}
+	return nil
 }
 
 // ValidateBasic ensure basic constraints
