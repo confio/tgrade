@@ -36,7 +36,7 @@ func ClearEmbeddedContracts() {
 	tg4Stake = nil
 	tg4Mixer = nil
 	tgValset = nil
-	tgValset = nil
+	tgTrustedCircles = nil
 }
 
 type poeKeeper interface {
@@ -81,20 +81,20 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 stake contract")
 	}
-	tg4StakerInitMsg := newStakeInitMsg(gs, systemAdminAddr)
-	stakersContractAddr, _, err := k.Instantiate(ctx, stakeCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(tg4StakerInitMsg), "stakers", nil)
+	tg4StakeInitMsg := newStakeInitMsg(gs, systemAdminAddr)
+	stakeContractAddr, _, err := k.Instantiate(ctx, stakeCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(tg4StakeInitMsg), "stakers", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 stake")
 	}
-	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeStaking, stakersContractAddr)
-	if err := tk.SetPrivileged(ctx, stakersContractAddr); err != nil {
-		return sdkerrors.Wrap(err, "grant privileges to staker contract")
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeStaking, stakeContractAddr)
+	if err := tk.SetPrivileged(ctx, stakeContractAddr); err != nil {
+		return sdkerrors.Wrap(err, "grant privileges to stake contract")
 	}
 
 	// setup mixer contract
 	tg4MixerInitMsg := contract.TG4MixerInitMsg{
 		LeftGroup:  engagementContractAddr.String(),
-		RightGroup: stakersContractAddr.String(),
+		RightGroup: stakeContractAddr.String(),
 		// TODO: allow to configure the other types.
 		// We need to analyze benchmarks and discuss first.
 		// This maintains same behavior
@@ -123,8 +123,8 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 
 	valsetInitMsg := newValsetInitMsg(gs, mixerContractAddr, engagementContractAddr, engagementCodeID)
-	valsetJson := mustMarshalJson(valsetInitMsg)
-	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, systemAdminAddr, systemAdminAddr, valsetJson, "valset", nil)
+	valsetJSON := mustMarshalJson(valsetInitMsg)
+	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, systemAdminAddr, systemAdminAddr, valsetJSON, "valset", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate valset")
 	}

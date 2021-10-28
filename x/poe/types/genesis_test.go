@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -104,9 +105,21 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
+		"engagement contract not set": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.EngagmentContractConfig = nil
+			}),
+			expErr: true,
+		},
 		"invalid engagement contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.EngagmentContractConfig.Halflife = time.Nanosecond
+			}),
+			expErr: true,
+		},
+		"valset contract config not set": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.ValsetContractConfig = nil
 			}),
 			expErr: true,
 		},
@@ -116,9 +129,39 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
+		"invalid valset contract denom": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.ValsetContractConfig.EpochReward = sdk.NewCoin("alx", m.ValsetContractConfig.EpochReward.Amount)
+			}),
+			expErr: true,
+		},
+		"stake contract config not set": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.StakeContractConfig = nil
+			}),
+			expErr: true,
+		},
 		"invalid stake contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.StakeContractConfig.UnbondingPeriod = 0
+			}),
+			expErr: true,
+		},
+		"oversight committee contract config not set": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig = nil
+			}),
+			expErr: true,
+		},
+		"invalid oversight committee contract config": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.Name = ""
+			}),
+			expErr: true,
+		},
+		"invalid oversight committee contract denom": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.EscrowAmount = sdk.NewCoin("alx", m.OversightCommitteeContractConfig.EscrowAmount.Amount)
 			}),
 			expErr: true,
 		},
@@ -301,10 +344,72 @@ func TestValidateStakeContractConfig(t *testing.T) {
 
 func TestTestValidateOversightCommitteeContractConfig(t *testing.T) {
 	specs := map[string]struct {
-		src    *OversightCommitteeContractConfig
+		src    OversightCommitteeContractConfig
 		expErr bool
 	}{
-		// TODO
+		"default": {
+			src: *DefaultGenesisState().OversightCommitteeContractConfig,
+		},
+		"name too short": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.Name = "a"
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+		"name too long": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.Name = strings.Repeat("a", 101)
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+		"voting period empty": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingPeriod = 0
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+		"quorum empty": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.Quorum = sdk.Dec{}
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+		"quorum zero": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.Quorum = sdk.ZeroDec()
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+		"quorum greater max": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.Quorum = sdk.NewDec(101)
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+		"threshold empty": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.Threshold = sdk.Dec{}
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+		"threshold zero": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.Threshold = sdk.ZeroDec()
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+		"threshold greater max": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.Threshold = sdk.NewDec(101)
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+		"deny contract address not an address": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.DenyListContractAddress = "not-an-address"
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {

@@ -126,8 +126,6 @@ func setGenesis(gapp *TgradeApp) error {
 }
 
 func TestIBCKeeperLazyInitialization(t *testing.T) {
-	// todo: enable after https://github.com/confio/tgrade-contracts/issues/269
-	t.Skip("Alex: deactivated for OC bootstrap issue")
 	db := db.NewMemDB()
 	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, EmptyBaseAppOptions{}, emptyWasmOpts)
 	genesisState := NewDefaultGenesisState()
