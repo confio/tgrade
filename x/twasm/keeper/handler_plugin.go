@@ -13,14 +13,16 @@ import (
 	"github.com/confio/tgrade/x/twasm/types"
 )
 
-// tgradeKeeper defines a subset of Keeper
-type tgradeKeeper interface {
+// TgradeWasmHandlerKeeper defines a subset of Keeper
+type TgradeWasmHandlerKeeper interface {
 	IsPrivileged(ctx sdk.Context, contract sdk.AccAddress) bool
 	appendToPrivilegedContracts(ctx sdk.Context, privilegeType types.PrivilegeType, contractAddress sdk.AccAddress) (uint8, error)
 	removePrivilegeRegistration(ctx sdk.Context, privilegeType types.PrivilegeType, pos uint8, contractAddr sdk.AccAddress) bool
 	setContractDetails(ctx sdk.Context, contract sdk.AccAddress, details *types.TgradeContractDetails) error
 	GetContractInfo(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
 }
+
+// minter is a subset of bank keeper
 type minter interface {
 	MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error
 	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
@@ -30,14 +32,14 @@ var _ wasmkeeper.Messenger = TgradeHandler{}
 
 // TgradeHandler is a custom message handler plugin for wasmd.
 type TgradeHandler struct {
-	keeper    tgradeKeeper
+	keeper    TgradeWasmHandlerKeeper
 	minter    minter
 	govRouter govtypes.Router
 	cdc       codec.Marshaler
 }
 
 // NewTgradeHandler constructor
-func NewTgradeHandler(cdc codec.Marshaler, keeper tgradeKeeper, bankKeeper minter, govRouter govtypes.Router) *TgradeHandler {
+func NewTgradeHandler(cdc codec.Marshaler, keeper TgradeWasmHandlerKeeper, bankKeeper minter, govRouter govtypes.Router) *TgradeHandler {
 	return &TgradeHandler{cdc: cdc, keeper: keeper, govRouter: govRouter, minter: bankKeeper}
 }
 

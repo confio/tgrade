@@ -10,7 +10,14 @@ import (
 	"github.com/confio/tgrade/x/poe/keeper"
 )
 
-func StakingQuerier(poeKeeper keeper.Keeper) func(ctx sdk.Context, request *wasmvmtypes.StakingQuery) ([]byte, error) {
+type ViewKeeper interface {
+	GetBondDenom(ctx sdk.Context) string
+	DistributionContract(ctx sdk.Context) keeper.DistributionContract
+	ValsetContract(ctx sdk.Context) keeper.ValsetContract
+	StakeContract(ctx sdk.Context) keeper.StakeContract
+}
+
+func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmtypes.StakingQuery) ([]byte, error) {
 	return func(ctx sdk.Context, request *wasmvmtypes.StakingQuery) ([]byte, error) {
 		if request.BondedDenom != nil {
 			denom := poeKeeper.GetBondDenom(ctx)

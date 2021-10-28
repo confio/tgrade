@@ -601,7 +601,7 @@ func noopRegisterHook(m *handlerTgradeKeeperMock, mutators ...func(*wasmtypes.Co
 	}
 }
 
-var _ tgradeKeeper = handlerTgradeKeeperMock{}
+var _ TgradeWasmHandlerKeeper = handlerTgradeKeeperMock{}
 
 type handlerTgradeKeeperMock struct {
 	IsPrivilegedFn                func(ctx sdk.Context, contract sdk.AccAddress) bool

@@ -4,6 +4,10 @@ import (
 	"testing"
 	"time"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
@@ -202,7 +206,26 @@ func createTestInput(
 
 	stakingAdapter := stakingadapter.NewStakingAdapter(nil, nil)
 	twasmSubspace := paramsKeeper.Subspace(twasmtypes.DefaultParamspace)
-	twasmKeeper := twasmkeeper.NewKeeper(
+
+	var twasmKeeper twasmkeeper.Keeper
+	handler := wasmkeeper.WithMessageHandlerDecorator(func(nested wasmkeeper.Messenger) wasmkeeper.Messenger {
+		return wasmkeeper.NewMessageHandlerChain(
+			// disable staking messages
+			wasmkeeper.MessageHandlerFunc(func(ctx sdk.Context, contractAddr sdk.AccAddress, contractIBCPortID string, msg wasmvmtypes.CosmosMsg) (events []sdk.Event, data [][]byte, err error) {
+				if msg.Staking != nil {
+					return nil, nil, sdkerrors.Wrap(wasmtypes.ErrExecuteFailed, "not supported, yet")
+				}
+				return nil, nil, wasmtypes.ErrUnknownMsg
+			}),
+			nested,
+			// append our custom message handler
+			twasmkeeper.NewTgradeHandler(appCodec, &twasmKeeper, bankKeeper, nil),
+		)
+	})
+
+	opts = append([]wasmkeeper.Option{handler}, opts...)
+
+	twasmKeeper = twasmkeeper.NewKeeper(
 		appCodec,
 		keyWasm,
 		twasmSubspace,
