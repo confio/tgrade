@@ -52,9 +52,8 @@ func TestQueryWithdrawableFunds(t *testing.T) {
 			exp: sdk.NewCoin("utgd", sdk.NewInt(49999)),
 		},
 		"unknown address": {
-			src:    rand.Bytes(sdk.AddrLen),
-			exp:    sdk.NewCoin("utgd", sdk.ZeroInt()),
-			expErr: types.ErrNotFound,
+			src: rand.Bytes(sdk.AddrLen),
+			exp: sdk.NewCoin("utgd", sdk.ZeroInt()),
 		},
 	}
 	for name, spec := range specs {
