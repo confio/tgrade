@@ -61,6 +61,18 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
+		"empty system admin": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.SystemAdminAddress = ""
+			}),
+			expErr: true,
+		},
+		"invalid system admin": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.SystemAdminAddress = "invalid"
+			}),
+			expErr: true,
+		},
 		"valid gentx": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.GenTxs = []json.RawMessage{myGenTx}
@@ -292,30 +304,7 @@ func TestTestValidateOversightCommitteeContractConfig(t *testing.T) {
 		src    *OversightCommitteeContractConfig
 		expErr bool
 	}{
-		"empty initial members": {
-			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.InitialMembers = []string{}
-			}).OversightCommitteeContractConfig,
-			expErr: true,
-		},
-		"nil initial members": {
-			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.InitialMembers = nil
-			}).OversightCommitteeContractConfig,
-			expErr: true,
-		},
-		"empty initial member address": {
-			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.InitialMembers = []string{""}
-			}).OversightCommitteeContractConfig,
-			expErr: true,
-		},
-		"invalid initial member address": {
-			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.InitialMembers = []string{"invalid"}
-			}).OversightCommitteeContractConfig,
-			expErr: true,
-		},
+		// TODO
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {

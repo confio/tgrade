@@ -10,9 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
 
-	"github.com/confio/tgrade/x/poe"
 	"github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 )
 
@@ -107,22 +105,9 @@ func TestQueryValsetConfig(t *testing.T) {
 		EpochReward:           sdk.NewInt64Coin("utgd", 100000),
 		FeePercentage:         sdk.MustNewDecFromStr("0.50"),
 		ValidatorsRewardRatio: sdk.MustNewDecFromStr("0.50"),
-		DistributionContract:  "cosmos1nc5tatafv6eyq7llkr2gv50ff9e22mnfapsq9f",
-		RewardsContract:       "cosmos18v47nqmhvejx3vc498pantg8vr435xa0ln6420",
+		DistributionContract:  "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhuc53mp6",
+		RewardsContract:       "cosmos1cnuw3f076wgdyahssdkd0g3nr96ckq8caf5mdm",
 		AutoUnjail:            false,
 	}
 	assert.Equal(t, expConfig, res)
-}
-
-func setupPoEContracts(t *testing.T) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator) {
-	ctx, example := keeper.CreateDefaultTestInput(t)
-	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
-
-	mutator, expValidators := withRandomValidators(t, ctx, example, 3)
-	gs := types.GenesisStateFixture(mutator)
-
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
-	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-	return ctx, example, expValidators
 }

@@ -8,22 +8,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
 
-	"github.com/confio/tgrade/x/poe"
 	"github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 )
 
 func TestSetEngagementPoints(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example := keeper.CreateDefaultTestInput(t)
-	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
-
-	mutator, _ := withRandomValidators(t, ctx, example, 2)
-	gs := types.GenesisStateFixture(mutator)
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
-	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
+	ctx, example, _ := setupPoEContracts(t)
 
 	myOperatorAddr := rand.Bytes(sdk.AddrLen)
 	engContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
@@ -42,14 +33,7 @@ func TestSetEngagementPoints(t *testing.T) {
 
 func TestBondDelegation(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example := keeper.CreateDefaultTestInput(t)
-	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
-
-	mutator, vals := withRandomValidators(t, ctx, example, 1)
-	gs := types.GenesisStateFixture(mutator)
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
-	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
+	ctx, example, vals := setupPoEContracts(t)
 
 	myOperatorAddr, _ := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
 	// fund account
@@ -71,14 +55,7 @@ func TestBondDelegation(t *testing.T) {
 
 func TestUnbondDelegation(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example := keeper.CreateDefaultTestInput(t)
-	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
-
-	mutator, vals := withRandomValidators(t, ctx, example, 1)
-	gs := types.GenesisStateFixture(mutator)
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
-	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
+	ctx, example, vals := setupPoEContracts(t)
 
 	myOperatorAddr, _ := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
 	stakingContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)

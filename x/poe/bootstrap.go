@@ -1,7 +1,6 @@
 package poe
 
 import (
-	"bytes"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -57,36 +56,18 @@ type poeKeeper interface {
 // * [mixer](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-mixer) - calculates the combined value of
 //  stake and engagement points. Source for the valset contract.
 func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
-	// init trusted circle for oversight committee
-	var emptyAddr sdk.AccAddress = bytes.Repeat([]byte{0}, sdk.AddrLen)
-	ocCodeID, err := k.Create(ctx, emptyAddr, tgTrustedCircles, &wasmtypes.AllowEverybody)
+	systemAdminAddr, err := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	if err != nil {
-		return sdkerrors.Wrap(err, "store tg trusted circle contract")
-	}
-	ocInitMsg := newTrustedCircleInitMsg(gs)
-
-	// TODO: remove after https://github.com/confio/tgrade-contracts/issues/269
-	todoDeposit := sdk.NewCoins(gs.OversightCommitteeContractConfig.EscrowAmount)
-	ocContractAddr, _, err := k.Instantiate(ctx, ocCodeID, emptyAddr, emptyAddr, mustMarshalJson(ocInitMsg), "oversight_committee", todoDeposit)
-	if err != nil {
-		return sdkerrors.Wrap(err, "instantiate tg4 engagement")
-	}
-
-	if err := k.UpdateContractAdmin(ctx, ocContractAddr, emptyAddr, ocContractAddr); err != nil {
-		return sdkerrors.Wrap(err, "set admin for trusted circle contract")
-	}
-	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeOversightCommittee, ocContractAddr)
-	if err := k.PinCode(ctx, ocCodeID); err != nil {
-		return sdkerrors.Wrap(err, "pin tg trusted circle contract")
+		return sdkerrors.Wrap(err, "system admin")
 	}
 
 	// setup engagement contract
-	tg4EngagementInitMsg := newEngagementInitMsg(gs, ocContractAddr)
-	engagementCodeID, err := k.Create(ctx, ocContractAddr, tg4Engagement, &wasmtypes.AllowEverybody)
+	tg4EngagementInitMsg := newEngagementInitMsg(gs, systemAdminAddr)
+	engagementCodeID, err := k.Create(ctx, systemAdminAddr, tg4Engagement, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 engagement contract")
 	}
-	engagementContractAddr, _, err := k.Instantiate(ctx, engagementCodeID, ocContractAddr, ocContractAddr, mustMarshalJson(tg4EngagementInitMsg), "engagement", nil)
+	engagementContractAddr, _, err := k.Instantiate(ctx, engagementCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(tg4EngagementInitMsg), "engagement", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 engagement")
 	}
@@ -96,12 +77,12 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 
 	// setup stake contract
-	stakeCodeID, err := k.Create(ctx, ocContractAddr, tg4Stake, &wasmtypes.AllowEverybody)
+	stakeCodeID, err := k.Create(ctx, systemAdminAddr, tg4Stake, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 stake contract")
 	}
-	tg4StakerInitMsg := newStakeInitMsg(gs, ocContractAddr)
-	stakersContractAddr, _, err := k.Instantiate(ctx, stakeCodeID, ocContractAddr, ocContractAddr, mustMarshalJson(tg4StakerInitMsg), "stakers", nil)
+	tg4StakerInitMsg := newStakeInitMsg(gs, systemAdminAddr)
+	stakersContractAddr, _, err := k.Instantiate(ctx, stakeCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(tg4StakerInitMsg), "stakers", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 stake")
 	}
@@ -121,11 +102,11 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 			GeometricMean: &struct{}{},
 		},
 	}
-	mixerCodeID, err := k.Create(ctx, ocContractAddr, tg4Mixer, &wasmtypes.AllowEverybody)
+	mixerCodeID, err := k.Create(ctx, systemAdminAddr, tg4Mixer, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 mixer contract")
 	}
-	mixerContractAddr, _, err := k.Instantiate(ctx, mixerCodeID, ocContractAddr, ocContractAddr, mustMarshalJson(tg4MixerInitMsg), "poe", nil)
+	mixerContractAddr, _, err := k.Instantiate(ctx, mixerCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(tg4MixerInitMsg), "poe", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 mixer")
 	}
@@ -136,14 +117,14 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 
 	// setup valset contract
-	valSetCodeID, err := k.Create(ctx, ocContractAddr, tgValset, &wasmtypes.AllowEverybody)
+	valSetCodeID, err := k.Create(ctx, systemAdminAddr, tgValset, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store valset contract")
 	}
 
 	valsetInitMsg := newValsetInitMsg(gs, mixerContractAddr, engagementContractAddr, engagementCodeID)
 	valsetJson := mustMarshalJson(valsetInitMsg)
-	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, ocContractAddr, ocContractAddr, valsetJson, "valset", nil)
+	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, systemAdminAddr, systemAdminAddr, valsetJson, "valset", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate valset")
 	}
@@ -165,6 +146,23 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "grant privileges to valset contract")
 	}
 
+	// init trusted circle for oversight committee
+	ocCodeID, err := k.Create(ctx, systemAdminAddr, tgTrustedCircles, &wasmtypes.AllowEverybody)
+	if err != nil {
+		return sdkerrors.Wrap(err, "store tg trusted circle contract")
+	}
+	ocInitMsg := newTrustedCircleInitMsg(gs)
+	deposit := sdk.NewCoins(gs.OversightCommitteeContractConfig.EscrowAmount)
+	ocContractAddr, _, err := k.Instantiate(ctx, ocCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(ocInitMsg), "oversight_committee", deposit)
+	if err != nil {
+		return sdkerrors.Wrap(err, "instantiate tg4 engagement")
+	}
+
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeOversightCommittee, ocContractAddr)
+	if err := k.PinCode(ctx, ocCodeID); err != nil {
+		return sdkerrors.Wrap(err, "pin tg trusted circle contract")
+	}
+
 	return nil
 }
 
@@ -177,15 +175,15 @@ func newTrustedCircleInitMsg(gs types.GenesisState) contract.TrustedCircleInitMs
 		Quorum:                    *contract.DecimalFromPercentage(cfg.Quorum),
 		Threshold:                 *contract.DecimalFromPercentage(cfg.Threshold),
 		AllowEndEarly:             cfg.AllowEndEarly,
-		InitialMembers:            cfg.InitialMembers,
+		InitialMembers:            []string{}, // no non voting members
 		DenyList:                  cfg.DenyListContractAddress,
-		EditTrustedCircleDisabled: cfg.DisableEdit,
+		EditTrustedCircleDisabled: true, // product requirement for OC
 	}
 }
 
-func newEngagementInitMsg(gs types.GenesisState, ocContractAddr sdk.AccAddress) contract.TG4EngagementInitMsg {
+func newEngagementInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.TG4EngagementInitMsg {
 	tg4EngagementInitMsg := contract.TG4EngagementInitMsg{
-		Admin:    ocContractAddr.String(),
+		Admin:    adminAddr.String(),
 		Members:  make([]contract.TG4Member, len(gs.Engagement)),
 		Preauths: 1,
 		Token:    gs.BondDenom,
@@ -200,10 +198,10 @@ func newEngagementInitMsg(gs types.GenesisState, ocContractAddr sdk.AccAddress) 
 	return tg4EngagementInitMsg
 }
 
-func newStakeInitMsg(gs types.GenesisState, ocContractAddr sdk.AccAddress) contract.TG4StakeInitMsg {
+func newStakeInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.TG4StakeInitMsg {
 	var claimLimit = uint64(gs.StakeContractConfig.ClaimAutoreturnLimit)
 	return contract.TG4StakeInitMsg{
-		Admin:           ocContractAddr.String(),
+		Admin:           adminAddr.String(),
 		Denom:           gs.BondDenom,
 		MinBond:         gs.StakeContractConfig.MinBond,
 		TokensPerWeight: gs.StakeContractConfig.TokensPerWeight,

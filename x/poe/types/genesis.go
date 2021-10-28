@@ -1,20 +1,19 @@
 package types
 
 import (
-	"bytes"
 	"errors"
 	"time"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/tendermint/tendermint/libs/rand"
 )
 
 const DefaultBondDenom = "utgd"
 
 // DefaultGenesisState default values
 func DefaultGenesisState() GenesisState {
-	emptyAddr := sdk.AccAddress(bytes.Repeat([]byte{0}, sdk.AddrLen)).String()
 	return GenesisState{
 		SeedContracts: true,
 		BondDenom:     DefaultBondDenom,
@@ -39,16 +38,15 @@ func DefaultGenesisState() GenesisState {
 			Halflife: 180 * 24 * time.Hour,
 		},
 		OversightCommitteeContractConfig: &OversightCommitteeContractConfig{
-			Name:           "Oversight Committee",
-			EscrowAmount:   sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
-			VotingPeriod:   1,
-			Quorum:         sdk.NewDec(50),
-			Threshold:      sdk.NewDec(66),
-			AllowEndEarly:  true,
-			DisableEdit:    false,
-			InitialMembers: []string{emptyAddr},
+			Name:          "Oversight Committee",
+			EscrowAmount:  sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+			VotingPeriod:  1,
+			Quorum:        sdk.NewDec(50),
+			Threshold:     sdk.NewDec(66),
+			AllowEndEarly: true,
 		},
-		Params: DefaultParams(),
+		SystemAdminAddress: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),
+		Params:             DefaultParams(),
 	}
 }
 
@@ -119,6 +117,9 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		//if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
 		//	return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
 		//}
+	}
+	if _, err := sdk.AccAddressFromBech32(g.SystemAdminAddress); err != nil {
+		return sdkerrors.Wrap(err, "system admin address")
 	}
 
 	uniqueEngagementMembers := make(map[string]struct{}, len(g.Engagement))
@@ -242,14 +243,6 @@ func (c OversightCommitteeContractConfig) ValidateBasic() error {
 	}
 	if c.Threshold.GT(sdk.NewDec(100)) {
 		return sdkerrors.Wrap(ErrEmpty, "threshold")
-	}
-	if len(c.InitialMembers) == 0 {
-		return sdkerrors.Wrap(ErrEmpty, "initial members")
-	}
-	for _, v := range c.InitialMembers {
-		if _, err := sdk.AccAddressFromBech32(v); err != nil {
-			return sdkerrors.Wrapf(ErrInvalid, "address: %s", v)
-		}
 	}
 	if c.DenyListContractAddress != "" {
 		if _, err := sdk.AccAddressFromBech32(c.DenyListContractAddress); err != nil {

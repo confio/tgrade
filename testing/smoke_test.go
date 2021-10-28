@@ -35,8 +35,8 @@ func TestSmokeTest(t *testing.T) {
 	t.Log("Query wasm code list")
 	qResult := cli.CustomQuery("q", "wasm", "list-code")
 	codes := gjson.Get(qResult, "code_infos.#.code_id").Array()
-	const poeContractCount = 5
-	const poeCodeCount = 4
+	const poeContractCount = 6
+	const poeCodeCount = 5
 	require.Len(t, codes, poeCodeCount+1, qResult)
 	require.Equal(t, int64(poeCodeCount+1), codes[poeCodeCount].Int(), "sequential ids")
 	codeID := strconv.Itoa(poeCodeCount + 1)

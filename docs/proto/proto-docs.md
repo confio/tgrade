@@ -215,7 +215,7 @@ PoEContractType type of PoE contract
 | ENGAGEMENT | 3 |  |
 | MIXER | 4 |  |
 | DISTRIBUTION | 5 |  |
-| TRUSTED_CIRCLE | 6 |  |
+| OVERSIGHT_COMMITTEE | 6 |  |
 
 
  <!-- end enums -->
@@ -259,6 +259,7 @@ GenesisState - initial state of module
 | `params` | [Params](#confio.poe.v1beta1.Params) |  | params defines all the parameter of the module |
 | `seed_contracts` | [bool](#bool) |  | SeedContracts when enabled stores and instantiates the Proof of Engagement contracts on the chain. |
 | `gen_txs` | [bytes](#bytes) | repeated | GenTxs defines the genesis transactions to create a validator. |
+| `system_admin_address` | [string](#string) |  | SystemAdminAddress single address that is set as admin for the PoE contracts in seed mode. |
 | `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated | Contracts Poe contract addresses and types when used with state dump in non seed mode. |
 | `engagement` | [TG4Member](#confio.poe.v1beta1.TG4Member) | repeated | Engagement weighted members of the engagement group. Validators should be in here. |
 | `stake_contract_config` | [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig) |  |  |
@@ -286,9 +287,7 @@ OversightCommitteeContractConfig initial setup config for the trusted circle
 | `quorum` | [string](#string) |  | Quorum voting quorum percentage (0-100) |
 | `threshold` | [string](#string) |  | Threshold voting threshold percentage (0-100) |
 | `allow_end_early` | [bool](#bool) |  | AllowEndEarly If true, and absolute threshold and quorum are met, we can end before voting period finished. (Recommended value: true, unless you have special needs) |
-| `initial_members` | [string](#string) | repeated | InitialMembers is a list of non-voting members to be added to the TRUSTED_CIRCLE upon creation |
 | `deny_list_contract_address` | [string](#string) |  | DenyListContractAddress is an optional cw4 contract with list of addresses denied to be part of TrustedCircle |
-| `disable_edit` | [bool](#bool) |  | DisableEdit If true, no further adjustments may happen. |
 
 
 

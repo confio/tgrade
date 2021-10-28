@@ -26,6 +26,10 @@ message GenesisState {
     (gogoproto.moretags) = "yaml:\"gentxs\""
   ];
 
+  // SystemAdminAddress single address that is set as admin for the PoE
+  // contracts in seed mode.
+  string system_admin_address = 4;
+
   // Contracts Poe contract addresses and types when used with state dump in non
   // seed mode.
   repeated PoEContract contracts = 5 [
@@ -116,14 +120,9 @@ message OversightCommitteeContractConfig {
   // end before voting period finished. (Recommended value: true, unless you
   // have special needs)
   bool allow_end_early = 6;
-  // InitialMembers is a list of non-voting members to be added to the
-  // TRUSTED_CIRCLE upon creation
-  repeated string initial_members = 7;
   // DenyListContractAddress is an optional cw4 contract with list of addresses
   // denied to be part of TrustedCircle
-  string deny_list_contract_address = 8;
-  // DisableEdit If true, no further adjustments may happen.
-  bool disable_edit = 9;
+  string deny_list_contract_address = 7;
 }
 
 // PoEContract address and type information

@@ -4,7 +4,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -221,14 +220,9 @@ func InitTestnet(
 				_ = os.RemoveAll(outputDir)
 				return err
 			}
-			coins := sdk.Coins{sdk.NewCoin(stakingToken, sdk.NewInt(1_000_000_000))}
+			coins := sdk.Coins{sdk.NewCoin(stakingToken, sdk.NewInt(100_000_000_000))}
 			genBalances = append(genBalances, banktypes.Balance{Address: adminAddr.String(), Coins: coins.Sort()})
 			genAccounts = append(genAccounts, authtypes.NewBaseAccount(adminAddr, nil, 0, 0))
-
-			// TODO: remove after https://github.com/confio/tgrade-contracts/issues/269
-			var emptyAddr sdk.AccAddress = bytes.Repeat([]byte{0}, sdk.AddrLen)
-			genBalances = append(genBalances, banktypes.Balance{Address: emptyAddr.String(), Coins: coins.Sort()})
-			genAccounts = append(genAccounts, authtypes.NewBaseAccount(emptyAddr, nil, 0, 0))
 		}
 
 		info := map[string]string{"secret": secret}
@@ -349,7 +343,7 @@ func initGenFiles(
 			Weight:  uint64(len(genAccounts) - i), // unique weight
 		})
 	}
-	poeGenesisState.OversightCommitteeContractConfig.InitialMembers = []string{admin.String()}
+	poeGenesisState.SystemAdminAddress = admin.String()
 	poetypes.SetGenesisStateInAppState(clientCtx.JSONMarshaler, appGenState, poeGenesisState)
 
 	appGenStateJSON, err := json.MarshalIndent(appGenState, "", "  ")
