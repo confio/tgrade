@@ -9,13 +9,13 @@ type TrustedCircleInitMsg struct { //nolint:maligned
 	EscrowAmount sdk.Int `json:"escrow_amount"`
 	// VotingPeriod Voting period in days
 	VotingPeriod uint32 `json:"voting_period"`
-	// Quorum  voting quorum percentage (0-100)
+	// Quorum voting quorum (0.0-1.0)
 	Quorum sdk.Dec `json:"quorum"`
-	// Threshold voting threshold percentage (0-100)
+	// Threshold voting threshold (0.0-1.0)
 	Threshold sdk.Dec `json:"threshold"`
 	// AllowEndEarly If true, and absolute threshold and quorum are met, we can end before voting period finished.
 	// (Recommended value: true, unless you have special needs)
-	AllowEndEarly bool `json:"allow_end_early"`
+	AllowEndEarly bool `json:"allow_end_early,omitempty"`
 	// InitialMembers is a list of non-voting members to be added to the TRUSTED_CIRCLE upon creation
 	InitialMembers []string `json:"initial_members"`
 	// DenyList is an optional cw4 contract with list of addresses denied to be part of TrustedCircle
