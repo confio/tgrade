@@ -37,7 +37,7 @@ func TestInitTrustedCircle(t *testing.T) {
 	}
 	initBz, err := json.Marshal(init)
 	require.NoError(t, err)
-
+	t.Log(string(initBz))
 	codeID, err := contractKeeper.Create(ctx, creator, tgTrustedCircles, nil)
 	require.NoError(t, err)
 	// when

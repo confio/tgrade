@@ -55,6 +55,7 @@ type poeKeeper interface {
 //  trusted cw4 contract to the Tendermint validator set running the chain
 // * [mixer](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-mixer) - calculates the combined value of
 //  stake and engagement points. Source for the valset contract.
+// * [trusted circle](https://github.com/confio/tgrade-contracts/tree/main/contracts/tgrade-trusted-circle) - oversight community
 func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
 	systemAdminAddr, err := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	if err != nil {
@@ -146,7 +147,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "grant privileges to valset contract")
 	}
 
-	// init trusted circle for oversight committee
+	// setup trusted circle for oversight community
 	ocCodeID, err := k.Create(ctx, systemAdminAddr, tgTrustedCircles, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg trusted circle contract")
