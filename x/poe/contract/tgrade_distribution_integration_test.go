@@ -12,20 +12,12 @@ import (
 
 	"github.com/confio/tgrade/x/poe"
 	"github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 )
 
 func TestQueryWithdrawableFunds(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example := keeper.CreateDefaultTestInput(t)
-	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
-
-	mutator, vals := withRandomValidators(t, ctx, example, 1)
-	gs := types.GenesisStateFixture(mutator)
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
-	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
+	ctx, example, vals := setupPoEContracts(t)
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
 	require.NoError(t, err)
@@ -33,14 +25,14 @@ func TestQueryWithdrawableFunds(t *testing.T) {
 	require.NoError(t, err)
 
 	specs := map[string]struct {
-		setup  func(ctx sdk.Context) sdk.Context
-		src    sdk.AccAddress
-		exp    sdk.Coin
-		expErr *sdkerrors.Error
+		setup      func(ctx sdk.Context) sdk.Context
+		src        sdk.AccAddress
+		expRewards bool
+		expErr     *sdkerrors.Error
 	}{
 		"empty rewards": {
-			src: opAddr,
-			exp: sdk.NewCoin("utgd", sdk.ZeroInt()),
+			src:        opAddr,
+			expRewards: false,
 		},
 		"with rewards after epoche": {
 			setup: func(ctx sdk.Context) sdk.Context {
@@ -48,13 +40,12 @@ func TestQueryWithdrawableFunds(t *testing.T) {
 				poe.EndBlocker(ctx, example.TWasmKeeper)
 				return ctx
 			},
-			src: opAddr,
-			exp: sdk.NewCoin("utgd", sdk.NewInt(49999)),
+			src:        opAddr,
+			expRewards: true,
 		},
 		"unknown address": {
-			src:    rand.Bytes(sdk.AddrLen),
-			exp:    sdk.NewCoin("utgd", sdk.ZeroInt()),
-			expErr: types.ErrNotFound,
+			src:        rand.Bytes(sdk.AddrLen),
+			expRewards: false,
 		},
 	}
 	for name, spec := range specs {
@@ -69,7 +60,12 @@ func TestQueryWithdrawableFunds(t *testing.T) {
 				return
 			}
 			require.NoError(t, gotErr)
-			assert.Equal(t, spec.exp, gotAmount)
+
+			if spec.expRewards {
+				assert.True(t, gotAmount.IsGTE(sdk.NewCoin("utgd", sdk.OneInt())))
+			} else {
+				assert.Equal(t, sdk.NewCoin("utgd", sdk.ZeroInt()), gotAmount)
+			}
 		})
 	}
 }

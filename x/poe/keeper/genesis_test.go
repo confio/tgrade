@@ -15,7 +15,6 @@ import (
 func TestInitGenesis(t *testing.T) {
 	initBech32Prefixes()
 
-	var myAddr = types.RandomAccAddress()
 	txConfig := types.MakeEncodingConfig(t).TxConfig
 
 	specs := map[string]struct {
@@ -29,7 +28,6 @@ func TestInitGenesis(t *testing.T) {
 		"all good": {
 			src: types.GenesisStateFixture(func(m *types.GenesisState) {
 				m.GenTxs = []json.RawMessage{[]byte(`{"body":{"messages":[{"@type":"/confio.poe.v1beta1.MsgCreateValidator","description":{"moniker":"node0","identity":"","website":"","security_contact":"","details":""},"operator_address":"tgrade18c4hs0jaxt3n0mlyc205zdea63rmfa26exytvg","pubkey":{"@type":"/cosmos.crypto.ed25519.PubKey","key":"xcxXzdJU7TIi6oxO/EOj09l54C/tKEwlDtDKgic10PA="},"value":{"denom":"utgd","amount":"100000000"}}],"memo":"a5ba21794f6f8a9167dcc49bc79a0b948c6ad386@192.168.178.24:16656","timeout_height":"0","extension_options":[],"non_critical_extension_options":[]},"auth_info":{"signer_infos":[{"public_key":{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"Av1jOQcVuiH/SlDOFBjnqzh7BH8nR6aFz92tcBbpXrmq"},"mode_info":{"single":{"mode":"SIGN_MODE_DIRECT"}},"sequence":"0"}],"fee":{"amount":[],"gas_limit":"0","payer":"","granter":""}},"signatures":["8saPPRQWq6WungLPNH0acgoar1eQWWCu3NmWKMDqHQxD7Ea3F4eRvEgFiK6K7g1WFmNnK4PTw0CNwRyErBEzLg=="]}`)}
-				m.SystemAdminAddress = myAddr.String()
 			},
 			),
 			expDeliveredGenTxCount: 1,
@@ -38,7 +36,6 @@ func TestInitGenesis(t *testing.T) {
 		"deliver genTX failed": {
 			src: types.GenesisStateFixture(func(m *types.GenesisState) {
 				m.GenTxs = []json.RawMessage{[]byte(`{}`)}
-				m.SystemAdminAddress = myAddr.String()
 			}),
 			expErr:                 true,
 			expDeliveredGenTxCount: 1,
@@ -53,13 +50,9 @@ func TestInitGenesis(t *testing.T) {
 			}
 			ctx := sdk.Context{}
 			cFn, capAddrs := CaptureSetPoEContractAddressFn()
-			var capturedAdminAddr sdk.AccAddress
 			var capaturedParams types.Params
 			m := PoEKeeperMock{
 				SetPoEContractAddressFn: cFn,
-				setPoESystemAdminAddressFn: func(ctx sdk.Context, admin sdk.AccAddress) {
-					capturedAdminAddr = admin
-				},
 				setParamsFn: func(ctx sdk.Context, params types.Params) {
 					capaturedParams = params
 				},
@@ -72,7 +65,6 @@ func TestInitGenesis(t *testing.T) {
 			require.NoError(t, gotErr)
 			assert.Len(t, capturedTxs, spec.expDeliveredGenTxCount)
 			assert.Equal(t, spec.expContracts, *capAddrs)
-			assert.Equal(t, spec.src.SystemAdminAddress, capturedAdminAddr.String())
 			assert.Equal(t, spec.expParams, capaturedParams)
 		})
 	}

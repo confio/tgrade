@@ -220,7 +220,7 @@ func InitTestnet(
 				_ = os.RemoveAll(outputDir)
 				return err
 			}
-			coins := sdk.Coins{sdk.NewCoin(stakingToken, sdk.NewInt(1000000))}
+			coins := sdk.Coins{sdk.NewCoin(stakingToken, sdk.NewInt(100_000_000_000))}
 			genBalances = append(genBalances, banktypes.Balance{Address: adminAddr.String(), Coins: coins.Sort()})
 			genAccounts = append(genAccounts, authtypes.NewBaseAccount(adminAddr, nil, 0, 0))
 		}

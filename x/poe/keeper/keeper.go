@@ -73,16 +73,6 @@ func (k Keeper) IteratePoEContracts(ctx sdk.Context, cb func(types.PoEContractTy
 	}
 }
 
-func (k Keeper) setPoESystemAdminAddress(ctx sdk.Context, admin sdk.AccAddress) {
-	store := ctx.KVStore(k.storeKey)
-	store.Set(types.SystemAdminPrefix, admin.Bytes())
-}
-
-func (k Keeper) GetPoESystemAdminAddress(ctx sdk.Context) sdk.AccAddress {
-	store := ctx.KVStore(k.storeKey)
-	return store.Get(types.SystemAdminPrefix)
-}
-
 // UnbondingTime returns the unbonding period from the staking contract
 func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
 	rsp, err := k.StakeContract(ctx).QueryStakingUnbondingPeriod(ctx)

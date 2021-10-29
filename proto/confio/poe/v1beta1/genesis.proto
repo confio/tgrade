@@ -53,6 +53,8 @@ message GenesisState {
       [ (gogoproto.jsontag) = "engagment_contract_config,omitempty" ];
   // BondDenom defines the bondable coin denomination.
   string bond_denom = 10 [ (gogoproto.moretags) = "yaml:\"bond_denom\"" ];
+  OversightCommitteeContractConfig oversight_committee_contract_config = 11
+      [ (gogoproto.jsontag) = "oversight_committee_contract_config,omitempty" ];
 }
 
 // StakeContractConfig initial setup config
@@ -72,7 +74,13 @@ message ValsetContractConfig {
   google.protobuf.Duration epoch_length = 3
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
   cosmos.base.v1beta1.Coin epoch_reward = 4 [ (gogoproto.nullable) = false ];
+  // Scaling is the factor to multiply cw4-group weights to produce the
+  // Tendermint validator power
   uint32 scaling = 5;
+  // Feepercentage is the percentage of total accumulated fees that is
+  // subtracted from tokens minted as rewards. 50% by default. To disable this
+  // feature just set it to 0 (which effectively means that fees don't affect
+  // the per-epoch reward).
   string fee_percentage = 6 [
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
@@ -88,6 +96,33 @@ message ValsetContractConfig {
 message EngagementContractConfig {
   google.protobuf.Duration halflife = 1
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+}
+
+// OversightCommitteeContractConfig initial setup config for the trusted circle
+message OversightCommitteeContractConfig {
+  // Name of TRUSTED_CIRCLE
+  string name = 1;
+  // EscrowAmount The required escrow amount, in the default denom (utgd)
+  cosmos.base.v1beta1.Coin escrow_amount = 2 [ (gogoproto.nullable) = false ];
+  // VotingPeriod Voting period in days
+  uint32 voting_period = 3;
+  // Quorum  voting quorum percentage (0-100)
+  string quorum = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
+  ];
+  // Threshold voting threshold percentage (0-100)
+  string threshold = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
+  ];
+  // AllowEndEarly If true, and absolute threshold and quorum are met, we can
+  // end before voting period finished. (Recommended value: true, unless you
+  // have special needs)
+  bool allow_end_early = 6;
+  // DenyListContractAddress is an optional cw4 contract with list of addresses
+  // denied to be part of TrustedCircle
+  string deny_list_contract_address = 7;
 }
 
 // PoEContract address and type information

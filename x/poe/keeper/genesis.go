@@ -16,7 +16,6 @@ type DeliverTxFn func(abci.RequestDeliverTx) abci.ResponseDeliverTx
 // initer is subset of keeper to set initial state
 type initer interface {
 	SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
-	setPoESystemAdminAddress(ctx sdk.Context, admin sdk.AccAddress)
 	setParams(ctx sdk.Context, params types.Params)
 }
 
@@ -34,12 +33,6 @@ func InitGenesis(
 	//	keeper.SetPoEContractAddress(ctx, v.ContractType, addr)
 	//}
 	keeper.setParams(ctx, genesisState.Params)
-	admin, err := sdk.AccAddressFromBech32(genesisState.SystemAdminAddress)
-	if err != nil {
-		return sdkerrors.Wrap(err, "admin")
-	}
-	keeper.setPoESystemAdminAddress(ctx, admin)
-
 	if len(genesisState.GenTxs) > 0 {
 		if err := DeliverGenTxs(genesisState.GenTxs, deliverTx, txEncodingConfig); err != nil {
 			return sdkerrors.Wrap(err, "deliver gentx")

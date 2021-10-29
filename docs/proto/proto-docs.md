@@ -22,6 +22,7 @@
 - [confio/poe/v1beta1/genesis.proto](#confio/poe/v1beta1/genesis.proto)
     - [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig)
     - [GenesisState](#confio.poe.v1beta1.GenesisState)
+    - [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig)
     - [PoEContract](#confio.poe.v1beta1.PoEContract)
     - [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig)
     - [TG4Member](#confio.poe.v1beta1.TG4Member)
@@ -214,6 +215,7 @@ PoEContractType type of PoE contract
 | ENGAGEMENT | 3 |  |
 | MIXER | 4 |  |
 | DISTRIBUTION | 5 |  |
+| OVERSIGHT_COMMITTEE | 6 |  |
 
 
  <!-- end enums -->
@@ -264,6 +266,28 @@ GenesisState - initial state of module
 | `valset_contract_config` | [ValsetContractConfig](#confio.poe.v1beta1.ValsetContractConfig) |  |  |
 | `engagment_contract_config` | [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig) |  |  |
 | `bond_denom` | [string](#string) |  | BondDenom defines the bondable coin denomination. |
+| `oversight_committee_contract_config` | [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig) |  |  |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.OversightCommitteeContractConfig"></a>
+
+### OversightCommitteeContractConfig
+OversightCommitteeContractConfig initial setup config for the trusted circle
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `name` | [string](#string) |  | Name of TRUSTED_CIRCLE |
+| `escrow_amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | EscrowAmount The required escrow amount, in the default denom (utgd) |
+| `voting_period` | [uint32](#uint32) |  | VotingPeriod Voting period in days |
+| `quorum` | [string](#string) |  | Quorum voting quorum percentage (0-100) |
+| `threshold` | [string](#string) |  | Threshold voting threshold percentage (0-100) |
+| `allow_end_early` | [bool](#bool) |  | AllowEndEarly If true, and absolute threshold and quorum are met, we can end before voting period finished. (Recommended value: true, unless you have special needs) |
+| `deny_list_contract_address` | [string](#string) |  | DenyListContractAddress is an optional cw4 contract with list of addresses denied to be part of TrustedCircle |
 
 
 
@@ -333,8 +357,8 @@ ValsetContractConfig initial setup config
 | `max_validators` | [uint32](#uint32) |  |  |
 | `epoch_length` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
 | `epoch_reward` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
-| `scaling` | [uint32](#uint32) |  |  |
-| `fee_percentage` | [string](#string) |  |  |
+| `scaling` | [uint32](#uint32) |  | Scaling is the factor to multiply cw4-group weights to produce the Tendermint validator power |
+| `fee_percentage` | [string](#string) |  | Feepercentage is the percentage of total accumulated fees that is subtracted from tokens minted as rewards. 50% by default. To disable this feature just set it to 0 (which effectively means that fees don't affect the per-epoch reward). |
 | `ValidatorsRewardRatio` | [uint32](#uint32) |  | ValidatorsRewardRatio in percentage |
 | `AutoUnjail` | [bool](#bool) |  | AutoUnjail if set to true, we will auto-unjail any validator after their jailtime is over. |
 

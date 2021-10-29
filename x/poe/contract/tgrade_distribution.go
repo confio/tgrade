@@ -1,8 +1,6 @@
 package contract
 
 import (
-	"strings"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/confio/tgrade/x/poe/types"
@@ -38,15 +36,7 @@ func (d DistributionContractAdapter) ValidatorOutstandingReward(ctx sdk.Context,
 	var resp FundsResponse
 	err := doQuery(ctx, d.contractQuerier, d.contractAddr, query, &resp)
 	if err != nil {
-		return sdk.Coin{}, castError(err)
+		return sdk.Coin{}, err
 	}
 	return resp.Funds, err
-}
-
-func castError(err error) error {
-	const notFound = "tg4_engagement::state::WithdrawAdjustment not found"
-	if strings.HasPrefix(err.Error(), notFound) {
-		return types.ErrNotFound
-	}
-	return err
 }

@@ -37,6 +37,8 @@ func TestInitGenesis(t *testing.T) {
 	const numValidators = 15
 	mutator, myValidators := withRandomValidators(t, ctx, example, numValidators)
 	gs := types.GenesisStateFixture(mutator)
+	adminAddr, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
+	example.BankKeeper.SetBalance(ctx, adminAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
 
 	// when
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)

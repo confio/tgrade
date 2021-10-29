@@ -16,7 +16,6 @@ const (
 
 // nolint
 var (
-	SystemAdminPrefix = []byte{0x01}
-	ContractPrefix    = []byte{0x02}
-	HistoricalInfoKey = []byte{0x03}
+	ContractPrefix    = []byte{0x01}
+	HistoricalInfoKey = []byte{0x02}
 )

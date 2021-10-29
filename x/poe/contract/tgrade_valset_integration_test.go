@@ -10,16 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
 
-	"github.com/confio/tgrade/x/poe"
 	"github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 )
 
 func TestQueryValidator(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example, vals := setupPoEContracts(t)
-	vals = resetTokenAmount(vals)
+	vals = clearTokenAmount(vals)
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	require.NoError(t, err)
@@ -68,7 +66,7 @@ func TestQueryValidator(t *testing.T) {
 func TestListValidators(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example, expValidators := setupPoEContracts(t)
-	expValidators = resetTokenAmount(expValidators)
+	expValidators = clearTokenAmount(expValidators)
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	require.NoError(t, err)
@@ -112,17 +110,4 @@ func TestQueryValsetConfig(t *testing.T) {
 		AutoUnjail:            false,
 	}
 	assert.Equal(t, expConfig, res)
-}
-
-func setupPoEContracts(t *testing.T) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator) {
-	ctx, example := keeper.CreateDefaultTestInput(t)
-	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
-
-	mutator, expValidators := withRandomValidators(t, ctx, example, 3)
-	gs := types.GenesisStateFixture(mutator)
-
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
-	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-	return ctx, example, expValidators
 }
