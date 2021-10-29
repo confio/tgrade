@@ -38,7 +38,7 @@ func DefaultGenesisState() GenesisState {
 			Halflife: 180 * 24 * time.Hour,
 		},
 		OversightCommitteeContractConfig: &OversightCommitteeContractConfig{
-			Name:          "Oversight Committee",
+			Name:          "Oversight Community",
 			EscrowAmount:  sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
 			VotingPeriod:  1,
 			Quorum:        sdk.NewDec(50),
@@ -214,7 +214,7 @@ func (c PoEContract) ValidateBasic() error {
 }
 
 const (
-	minNameLength   = 2
+	minNameLength   = 1
 	maxNameLength   = 100
 	minEscrowAmount = 999_999
 )

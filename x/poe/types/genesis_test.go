@@ -350,9 +350,9 @@ func TestTestValidateOversightCommitteeContractConfig(t *testing.T) {
 		"default": {
 			src: *DefaultGenesisState().OversightCommitteeContractConfig,
 		},
-		"name too short": {
+		"name empty": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.Name = "a"
+				m.OversightCommitteeContractConfig.Name = ""
 			}).OversightCommitteeContractConfig,
 			expErr: true,
 		},

@@ -83,7 +83,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				DistributionContract:  engagementContractAddr.String(),
 			},
 			expOversightCommitteeInit: contract.TrustedCircleInitMsg{
-				Name:                      "Oversight Committee",
+				Name:                      "Oversight Community",
 				EscrowAmount:              sdk.NewInt(1_000_000),
 				VotingPeriod:              1,
 				Quorum:                    sdk.NewDecWithPrec(50, 2),
