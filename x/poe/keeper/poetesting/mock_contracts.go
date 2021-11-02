@@ -51,7 +51,7 @@ func (m ValsetContractMock) QueryConfig(ctx types.Context) (*contract.ValsetConf
 	return m.QueryConfigFn(ctx)
 }
 
-//var _ keeper.StakeContract = StakeContractMock{}
+// var _ keeper.StakeContract = StakeContractMock{}
 
 type StakeContractMock struct {
 	QueryStakingUnbondingPeriodFn func(ctx types.Context) (time.Duration, error)

@@ -21,6 +21,10 @@ func SetupWasmHandlers(cdc codec.Marshaler,
 	result twasmkeeper.TgradeWasmHandlerKeeper,
 	poeKeeper poewasm.ViewKeeper,
 ) []wasmkeeper.Option {
+	queryPluginOpt := wasmkeeper.WithQueryPlugins(&wasmkeeper.QueryPlugins{
+		Staking: poewasm.StakingQuerier(poeKeeper),
+	})
+
 	extMessageHandlerOpt := wasmkeeper.WithMessageHandlerDecorator(func(nested wasmkeeper.Messenger) wasmkeeper.Messenger {
 		return wasmkeeper.NewMessageHandlerChain(
 			// disable staking messages
@@ -35,16 +39,8 @@ func SetupWasmHandlers(cdc codec.Marshaler,
 			twasmkeeper.NewTgradeHandler(cdc, result, bankKeeper, govRouter),
 		)
 	})
-	extQueryHandlerOpt := wasmkeeper.WithQueryHandlerDecorator(func(nested wasmkeeper.WasmVMQueryHandler) wasmkeeper.WasmVMQueryHandler {
-		return wasmkeeper.WasmVMQueryHandlerFn(func(ctx sdk.Context, caller sdk.AccAddress, request wasmvmtypes.QueryRequest) ([]byte, error) {
-			if request.Staking != nil {
-				return poewasm.StakingQuerier(poeKeeper)(ctx, request.Staking)
-			}
-			return nested.HandleQuery(ctx, caller, request)
-		})
-	})
 	return []wasm.Option{
+		queryPluginOpt,
 		extMessageHandlerOpt,
-		extQueryHandlerOpt,
 	}
 }

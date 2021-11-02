@@ -26,6 +26,7 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 			}
 			return json.Marshal(res)
 		}
+		zero := sdk.ZeroDec().String()
 		if request.AllValidators != nil {
 			validators, err := poeKeeper.ValsetContract(ctx).ListValidators(ctx)
 			if err != nil {
@@ -35,9 +36,9 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 			for i, v := range validators {
 				wasmVals[i] = wasmvmtypes.Validator{
 					Address:       v.OperatorAddress,
-					Commission:    v.Commission.Rate.String(),
-					MaxCommission: v.Commission.MaxRate.String(),
-					MaxChangeRate: v.Commission.MaxChangeRate.String(),
+					Commission:    zero,
+					MaxCommission: zero,
+					MaxChangeRate: zero,
 				}
 			}
 			res := wasmvmtypes.AllValidatorsResponse{
@@ -58,9 +59,9 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 			if v != nil {
 				res.Validator = &wasmvmtypes.Validator{
 					Address:       v.OperatorAddress,
-					Commission:    v.Commission.Rate.String(),
-					MaxCommission: v.Commission.MaxRate.String(),
-					MaxChangeRate: v.Commission.MaxChangeRate.String(),
+					Commission:    zero,
+					MaxCommission: zero,
+					MaxChangeRate: zero,
 				}
 			}
 			return json.Marshal(res)
@@ -89,7 +90,7 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 			if err != nil {
 				return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, request.Delegation.Delegator)
 			}
-			validator, err := sdk.ValAddressFromBech32(request.Delegation.Validator)
+			validator, err := sdk.AccAddressFromBech32(request.Delegation.Validator)
 			if err != nil {
 				return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, request.Delegation.Validator)
 			}
