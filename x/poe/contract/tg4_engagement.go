@@ -7,9 +7,10 @@ import (
 // TG4EngagementInitMsg contract init message
 // See https://github.com/confio/tgrade-contracts/blob/v0.5.0-alpha/contracts/tg4-engagement/src/msg.rs
 type TG4EngagementInitMsg struct {
-	Admin    string      `json:"admin,omitempty"`
-	Members  []TG4Member `json:"members"`
-	Preauths uint64      `json:"preauths,omitempty"`
+	Admin            string      `json:"admin,omitempty"`
+	Members          []TG4Member `json:"members"`
+	PreAuths         uint64      `json:"preauths,omitempty"`
+	PreAuthsSlashing uint64      `json:"preauths_slashing,omitempty"`
 	// Halflife is measured in seconds
 	Halflife uint64 `json:"halflife,omitempty"`
 	Token    string `json:"token"`

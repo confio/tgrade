@@ -184,11 +184,12 @@ func newTrustedCircleInitMsg(gs types.GenesisState) contract.TrustedCircleInitMs
 
 func newEngagementInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.TG4EngagementInitMsg {
 	tg4EngagementInitMsg := contract.TG4EngagementInitMsg{
-		Admin:    adminAddr.String(),
-		Members:  make([]contract.TG4Member, len(gs.Engagement)),
-		Preauths: 1,
-		Token:    gs.BondDenom,
-		Halflife: uint64(gs.EngagmentContractConfig.Halflife.Seconds()),
+		Admin:            adminAddr.String(),
+		Members:          make([]contract.TG4Member, len(gs.Engagement)),
+		PreAuths:         1,
+		PreAuthsSlashing: 1,
+		Token:            gs.BondDenom,
+		Halflife:         uint64(gs.EngagmentContractConfig.Halflife.Seconds()),
 	}
 	for i, v := range gs.Engagement {
 		tg4EngagementInitMsg.Members[i] = contract.TG4Member{
@@ -202,13 +203,14 @@ func newEngagementInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contr
 func newStakeInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.TG4StakeInitMsg {
 	var claimLimit = uint64(gs.StakeContractConfig.ClaimAutoreturnLimit)
 	return contract.TG4StakeInitMsg{
-		Admin:           adminAddr.String(),
-		Denom:           gs.BondDenom,
-		MinBond:         gs.StakeContractConfig.MinBond,
-		TokensPerWeight: gs.StakeContractConfig.TokensPerWeight,
-		UnbondingPeriod: uint64(gs.StakeContractConfig.UnbondingPeriod.Seconds()),
-		AutoReturnLimit: &claimLimit,
-		Preauths:        uint64(gs.StakeContractConfig.PreAuths),
+		Admin:            adminAddr.String(),
+		Denom:            gs.BondDenom,
+		MinBond:          gs.StakeContractConfig.MinBond,
+		TokensPerWeight:  gs.StakeContractConfig.TokensPerWeight,
+		UnbondingPeriod:  uint64(gs.StakeContractConfig.UnbondingPeriod.Seconds()),
+		AutoReturnLimit:  &claimLimit,
+		PreAuths:         1,
+		PreAuthsSlashing: 1,
 	}
 }
 

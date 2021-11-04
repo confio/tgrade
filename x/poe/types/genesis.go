@@ -22,7 +22,6 @@ func DefaultGenesisState() GenesisState {
 			TokensPerWeight:      1,
 			UnbondingPeriod:      time.Hour * 21 * 24,
 			ClaimAutoreturnLimit: 20,
-			PreAuths:             1,
 		},
 		ValsetContractConfig: &ValsetContractConfig{
 			MinWeight:             1,

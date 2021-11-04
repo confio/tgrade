@@ -322,7 +322,6 @@ StakeContractConfig initial setup config
 | `tokens_per_weight` | [uint64](#uint64) |  |  |
 | `unbonding_period` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
 | `claim_autoreturn_limit` | [uint32](#uint32) |  |  |
-| `pre_auths` | [uint32](#uint32) |  |  |
 
 
 
