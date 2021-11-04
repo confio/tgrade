@@ -11,6 +11,7 @@ import (
 )
 
 type DistributionContract interface {
+	// ValidatorOutstandingReward returns amount or 0 for an unknown address
 	ValidatorOutstandingReward(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error)
 }
 
@@ -31,8 +32,10 @@ func (k Keeper) ValsetContract(ctx sdk.Context) ValsetContract {
 }
 
 type StakeContract interface {
+	// QueryStakedAmount returns amount in default denom or nil value for an unknown address
 	QueryStakedAmount(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error)
 	QueryStakingUnbondingPeriod(ctx sdk.Context) (time.Duration, error)
+	// QueryStakingUnbonding returns the unbondings or empty list for an unknown address
 	QueryStakingUnbonding(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error)
 }
 

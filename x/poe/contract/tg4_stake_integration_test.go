@@ -33,6 +33,66 @@ func TestQueryUnbondingPeriod(t *testing.T) {
 	assert.Equal(t, configuredTime, res)
 }
 
+func TestQueryStakedAmount(t *testing.T) {
+	// setup contracts and seed some data
+	ctx, example, _ := setupPoEContracts(t)
+	contractKeeper := example.TWasmKeeper.GetContractKeeper()
+	stakingContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	require.NoError(t, err)
+	contractAdapter := contract.NewStakeContractAdapter(stakingContractAddr, example.TWasmKeeper, nil)
+
+	// fund account
+	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	example.BankKeeper.SetBalances(ctx, myOperatorAddr, sdk.NewCoins(sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100))))
+
+	var oneInt = sdk.OneInt()
+	specs := map[string]struct {
+		addr      sdk.AccAddress
+		expAmount *sdk.Int
+		setup     func(ctx sdk.Context)
+		expErr    bool
+	}{
+		"address has staked amount": {
+			addr: myOperatorAddr,
+			setup: func(ctx sdk.Context) {
+				err := contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())), contractKeeper)
+				require.NoError(t, err)
+			},
+			expAmount: &oneInt,
+		},
+		"address had formerly staked amount": {
+			addr: myOperatorAddr,
+			setup: func(ctx sdk.Context) {
+				err := contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())), contractKeeper)
+				require.NoError(t, err)
+				err = contract.UnbondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.OneInt(), contractKeeper)
+				require.NoError(t, err)
+			},
+			expAmount: nil,
+		},
+		"unknown address": {
+			addr:      rand.Bytes(sdk.AddrLen),
+			setup:     func(ctx sdk.Context) {},
+			expAmount: nil,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			tCtx, _ := ctx.CacheContext()
+			spec.setup(tCtx)
+			// when
+			gotAmount, gotErr := contractAdapter.QueryStakedAmount(tCtx, spec.addr)
+			// then
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+			assert.Equal(t, spec.expAmount, gotAmount, "exp %s but got %s", spec.expAmount, gotAmount)
+		})
+	}
+}
+
 func TestQueryValidatorUnboding(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example, vals := setupPoEContracts(t)

@@ -77,11 +77,11 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 			}
 			var res wasmvmtypes.AllDelegationsResponse
 			if stakedAmount != nil {
-				res.Delegations = append(res.Delegations, wasmvmtypes.Delegation{
+				res.Delegations = []wasmvmtypes.Delegation{{
 					Delegator: delegator.String(),
 					Validator: delegator.String(),
 					Amount:    wasmvmtypes.NewCoin(stakedAmount.Uint64(), poeKeeper.GetBondDenom(ctx)),
-				})
+				}}
 			}
 			return json.Marshal(res)
 		}
@@ -102,22 +102,27 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 			stakeContract := poeKeeper.StakeContract(ctx)
 			stakedAmount, err := stakeContract.QueryStakedAmount(ctx, delegator)
 			if err != nil {
-				return nil, err
+				return nil, sdkerrors.Wrap(err, "query staked amount")
 			}
-			if stakedAmount != nil {
-				stakedCoin := wasmvmtypes.NewCoin(stakedAmount.Uint64(), poeKeeper.GetBondDenom(ctx))
+			reward, err := poeKeeper.DistributionContract(ctx).ValidatorOutstandingReward(ctx, delegator)
+			if err != nil {
+				return nil, sdkerrors.Wrap(err, "query outstanding reward")
+			}
+			if stakedAmount == nil {
+				zeroInt := sdk.ZeroInt()
+				stakedAmount = &zeroInt
+			}
+			// there can be unclaimed rewards while all stacked amounts were unbound
+			if stakedAmount.GT(sdk.ZeroInt()) || reward.Amount.GT(sdk.ZeroInt()) {
+				bondDenom := poeKeeper.GetBondDenom(ctx)
+				stakedCoin := wasmvmtypes.NewCoin(stakedAmount.Uint64(), bondDenom)
 				res.Delegation = &wasmvmtypes.FullDelegation{
 					Delegator:          delegator.String(),
 					Validator:          delegator.String(),
 					Amount:             stakedCoin,
-					CanRedelegate:      stakedCoin,
-					AccumulatedRewards: nil,
+					CanRedelegate:      wasmvmtypes.NewCoin(0, bondDenom),
+					AccumulatedRewards: wasmvmtypes.Coins{wasmvmtypes.NewCoin(reward.Amount.Uint64(), reward.Denom)},
 				}
-				reward, err := poeKeeper.DistributionContract(ctx).ValidatorOutstandingReward(ctx, delegator)
-				if err != nil {
-					return nil, err
-				}
-				res.Delegation.AccumulatedRewards = wasmvmtypes.Coins{wasmvmtypes.NewCoin(reward.Amount.Uint64(), reward.Denom)}
 			}
 			return json.Marshal(res)
 		}

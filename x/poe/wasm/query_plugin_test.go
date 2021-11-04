@@ -164,32 +164,14 @@ func TestStakingQuerier(t *testing.T) {
     ],
     "can_redelegate": {
       "denom": "alx",
-      "amount": "1"
+      "amount": "0"
     }
   }
 }
 `,
 		},
 		"query delegation - address do not match - return empty result": {
-			src: wasmvmtypes.StakingQuery{Delegation: &wasmvmtypes.DelegationQuery{Delegator: "cosmos1yq8zt83jznmp94jkj65yvfz9n52akmxt52ehm3", Validator: "cosmos17emnuddq662fpxpnd43ch0396452d48vc8ufsw"}},
-			mock: ViewKeeperMock{
-				StakeContractFn: func(ctx sdk.Context) keeper.StakeContract {
-					return poetesting.StakeContractMock{
-						QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
-							myValue := sdk.OneInt()
-							return &myValue, nil
-						},
-					}
-				},
-				GetBondDenomFn: func(ctx sdk.Context) string {
-					return "alx"
-				},
-				DistributionContractFn: func(ctx sdk.Context) keeper.DistributionContract {
-					return poetesting.DistributionContractMock{ValidatorOutstandingRewardFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
-						return sdk.NewCoin("alx", sdk.NewInt(2)), nil
-					}}
-				},
-			},
+			src:     wasmvmtypes.StakingQuery{Delegation: &wasmvmtypes.DelegationQuery{Delegator: "cosmos1yq8zt83jznmp94jkj65yvfz9n52akmxt52ehm3", Validator: "cosmos17emnuddq662fpxpnd43ch0396452d48vc8ufsw"}},
 			expJson: `{}`,
 		},
 		"query delegation - unknown address return empty result": {
@@ -202,8 +184,10 @@ func TestStakingQuerier(t *testing.T) {
 						},
 					}
 				},
-				GetBondDenomFn: func(ctx sdk.Context) string {
-					return "alx"
+				DistributionContractFn: func(ctx sdk.Context) keeper.DistributionContract {
+					return poetesting.DistributionContractMock{ValidatorOutstandingRewardFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+						return sdk.NewCoin("alx", sdk.ZeroInt()), nil
+					}}
 				},
 			},
 			expJson: `{}`,
@@ -215,6 +199,47 @@ func TestStakingQuerier(t *testing.T) {
 		"query delegation - invalid validator address": {
 			src:    wasmvmtypes.StakingQuery{Delegation: &wasmvmtypes.DelegationQuery{Delegator: "cosmos1yq8zt83jznmp94jkj65yvfz9n52akmxt52ehm3", Validator: "not a valid address"}},
 			expErr: true,
+		},
+		"query delegation - no staking, pending rewards": {
+			src: wasmvmtypes.StakingQuery{Delegation: &wasmvmtypes.DelegationQuery{Delegator: "cosmos1yq8zt83jznmp94jkj65yvfz9n52akmxt52ehm3", Validator: "cosmos1yq8zt83jznmp94jkj65yvfz9n52akmxt52ehm3"}},
+			mock: ViewKeeperMock{
+				StakeContractFn: func(ctx sdk.Context) keeper.StakeContract {
+					return poetesting.StakeContractMock{
+						QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
+							return nil, nil
+						},
+					}
+				},
+				GetBondDenomFn: func(ctx sdk.Context) string {
+					return "alx"
+				},
+				DistributionContractFn: func(ctx sdk.Context) keeper.DistributionContract {
+					return poetesting.DistributionContractMock{ValidatorOutstandingRewardFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+						return sdk.NewCoin("alx", sdk.NewInt(2)), nil
+					}}
+				},
+			},
+			expJson: `{
+  "delegation": {
+    "delegator": "cosmos1yq8zt83jznmp94jkj65yvfz9n52akmxt52ehm3",
+    "validator": "cosmos1yq8zt83jznmp94jkj65yvfz9n52akmxt52ehm3",
+    "amount": {
+      "denom": "alx",
+      "amount": "0"
+    },
+    "accumulated_rewards": [
+      {
+        "denom": "alx",
+        "amount": "2"
+      }
+    ],
+    "can_redelegate": {
+      "denom": "alx",
+      "amount": "0"
+    }
+  }
+}
+`,
 		},
 		"unknown query": {
 			src:    wasmvmtypes.StakingQuery{},
