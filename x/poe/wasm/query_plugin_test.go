@@ -1,8 +1,9 @@
 package wasm
 
 import (
-	"github.com/confio/tgrade/x/twasm/types"
 	"testing"
+
+	"github.com/confio/tgrade/x/twasm/types"
 
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
