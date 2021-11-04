@@ -5,9 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// ContractAddress
-//
-// Deprecated: will be public in wasmd
+// ContractAddress generator function. Same as in wasm
 func ContractAddress(codeID, instanceID uint64) sdk.AccAddress {
 	return wasmkeeper.BuildContractAddress(codeID, instanceID)
 }

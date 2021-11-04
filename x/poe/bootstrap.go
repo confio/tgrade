@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/confio/tgrade/x/twasm"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -26,6 +28,8 @@ var (
 	tgValset []byte
 	//go:embed contract/tgrade_trusted_circle.wasm
 	tgTrustedCircles []byte
+	//go:embed contract/tgrade_oc_proposals.wasm
+	tgOCGovProposalsCircles []byte
 	//go:embed contract/version.txt
 	contractVersion []byte
 )
@@ -62,8 +66,11 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "system admin")
 	}
 
+	// precalculate contract address for bootstrap without updates
+	expOCGovProposalContractAddr := twasm.ContractAddress(3, 3)
+
 	// setup engagement contract
-	tg4EngagementInitMsg := newEngagementInitMsg(gs, systemAdminAddr)
+	tg4EngagementInitMsg := newEngagementInitMsg(gs, expOCGovProposalContractAddr)
 	engagementCodeID, err := k.Create(ctx, systemAdminAddr, tg4Engagement, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 engagement contract")
@@ -75,6 +82,44 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeEngagement, engagementContractAddr)
 	if err := k.PinCode(ctx, engagementCodeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tg4 engagement contract")
+	}
+	logger := keeper.ModuleLogger(ctx)
+	logger.Info("engagement group contract", "address", engagementContractAddr, "code_id", engagementCodeID)
+
+	// setup trusted circle for oversight community
+	ocCodeID, err := k.Create(ctx, systemAdminAddr, tgTrustedCircles, &wasmtypes.AllowEverybody)
+	if err != nil {
+		return sdkerrors.Wrap(err, "store tg trusted circle contract")
+	}
+	ocInitMsg := newOCInitMsg(gs)
+	deposit := sdk.NewCoins(gs.OversightCommitteeContractConfig.EscrowAmount)
+	ocContractAddr, _, err := k.Instantiate(ctx, ocCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(ocInitMsg), "oversight_committee", deposit)
+	if err != nil {
+		return sdkerrors.Wrap(err, "instantiate tg trusted circle contract")
+	}
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunity, ocContractAddr)
+	if err := k.PinCode(ctx, ocCodeID); err != nil {
+		return sdkerrors.Wrap(err, "pin tg trusted circle contract")
+	}
+	logger.Info("oversight community contract", "address", ocContractAddr, "code_id", ocCodeID)
+
+	// setup oversight community gov proposals contract
+	ocGovCodeID, err := k.Create(ctx, systemAdminAddr, tgOCGovProposalsCircles, &wasmtypes.AllowEverybody)
+	if err != nil {
+		return sdkerrors.Wrap(err, "store tg oc gov proposals contract: ")
+	}
+	ocGovInitMsg := newOCGovProposalsInitMsg(gs, ocContractAddr, engagementContractAddr)
+	ocGovProposalsContractAddr, _, err := k.Instantiate(ctx, ocGovCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(ocGovInitMsg), "oversight_committee gov proposals", deposit)
+	if err != nil {
+		return sdkerrors.Wrap(err, "instantiate tg oc gov proposals contract")
+	}
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunityGovProposals, ocGovProposalsContractAddr)
+	if err := k.PinCode(ctx, ocGovCodeID); err != nil {
+		return sdkerrors.Wrap(err, "pin tg oc gov proposals contract")
+	}
+	logger.Info("oversight community gov proposal contract", "address", ocGovProposalsContractAddr, "code_id", ocGovCodeID)
+	if !expOCGovProposalContractAddr.Equals(ocGovProposalsContractAddr) { // sanity check
+		return sdkerrors.Wrapf(types.ErrInvalid, "calculated gov proposal contract address does not match instance: %s", expOCGovProposalContractAddr)
 	}
 
 	// setup stake contract
@@ -91,6 +136,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err := tk.SetPrivileged(ctx, stakeContractAddr); err != nil {
 		return sdkerrors.Wrap(err, "grant privileges to stake contract")
 	}
+	logger.Info("stake contract", "address", stakeContractAddr, "code_id", stakeCodeID)
 
 	// setup mixer contract
 	tg4MixerInitMsg := contract.TG4MixerInitMsg{
@@ -112,10 +158,10 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "instantiate tg4 mixer")
 	}
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeMixer, mixerContractAddr)
-
 	if err := k.PinCode(ctx, mixerCodeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tg4 mixer contract")
 	}
+	logger.Info("mixer contract", "address", mixerContractAddr, "code_id", mixerCodeID)
 
 	// setup valset contract
 	valSetCodeID, err := k.Create(ctx, systemAdminAddr, tgValset, &wasmtypes.AllowEverybody)
@@ -146,28 +192,12 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err := tk.SetPrivileged(ctx, valsetContractAddr); err != nil {
 		return sdkerrors.Wrap(err, "grant privileges to valset contract")
 	}
-
-	// setup trusted circle for oversight community
-	ocCodeID, err := k.Create(ctx, systemAdminAddr, tgTrustedCircles, &wasmtypes.AllowEverybody)
-	if err != nil {
-		return sdkerrors.Wrap(err, "store tg trusted circle contract")
-	}
-	ocInitMsg := newTrustedCircleInitMsg(gs)
-	deposit := sdk.NewCoins(gs.OversightCommitteeContractConfig.EscrowAmount)
-	ocContractAddr, _, err := k.Instantiate(ctx, ocCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(ocInitMsg), "oversight_committee", deposit)
-	if err != nil {
-		return sdkerrors.Wrap(err, "instantiate tg4 engagement")
-	}
-
-	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeOversightCommittee, ocContractAddr)
-	if err := k.PinCode(ctx, ocCodeID); err != nil {
-		return sdkerrors.Wrap(err, "pin tg trusted circle contract")
-	}
-
+	logger.Info("valset contract", "address", valsetContractAddr, "code_id", valSetCodeID)
 	return nil
 }
 
-func newTrustedCircleInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
+// build instantiate message for the trusted circle contract that contains the oversight committee
+func newOCInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
 	cfg := gs.OversightCommitteeContractConfig
 	return contract.TrustedCircleInitMsg{
 		Name:                      cfg.Name,
@@ -179,6 +209,21 @@ func newTrustedCircleInitMsg(gs types.GenesisState) contract.TrustedCircleInitMs
 		InitialMembers:            []string{}, // no non voting members
 		DenyList:                  cfg.DenyListContractAddress,
 		EditTrustedCircleDisabled: true, // product requirement for OC
+	}
+}
+
+// build instantiate message for OC Proposals contract
+func newOCGovProposalsInitMsg(gs types.GenesisState, ocContract, engagementContract sdk.AccAddress) contract.OCProposalsInitMsg {
+	cfg := gs.OversightCommitteeContractConfig
+	return contract.OCProposalsInitMsg{
+		GroupContractAddress:     ocContract.String(),
+		EngagemenContractAddress: engagementContract.String(),
+		VotingRules: contract.VotingRules{
+			VotingPeriod:  cfg.VotingPeriod,
+			Quorum:        *contract.DecimalFromPercentage(cfg.Quorum),
+			Threshold:     *contract.DecimalFromPercentage(cfg.Threshold),
+			AllowEndEarly: cfg.AllowEndEarly,
+		},
 	}
 }
 

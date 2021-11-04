@@ -15,6 +15,7 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
+// TG4StakeInitMsg instantiation message
 // See https://github.com/confio/tgrade-contracts/blob/v0.5.0-alpha/contracts/tg4-stake/src/msg.rs
 type TG4StakeInitMsg struct {
 	Admin           string `json:"admin,omitempty"`

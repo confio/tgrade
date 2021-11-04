@@ -25,8 +25,11 @@ enum PoEContractType {
   MIXER = 4 [ (gogoproto.enumvalue_customname) = "PoEContractTypeMixer" ];
   DISTRIBUTION = 5
       [ (gogoproto.enumvalue_customname) = "PoEContractTypeDistribution" ];
-  OVERSIGHT_COMMITTEE = 6 [ (gogoproto.enumvalue_customname) =
-                                "PoEContractTypeOversightCommittee" ];
+  OVERSIGHT_COMMUNITY = 6 [ (gogoproto.enumvalue_customname) =
+                                "PoEContractTypeOversightCommunity" ];
+  OVERSIGHT_COMMUNITY_PROPOSALS = 7
+      [ (gogoproto.enumvalue_customname) =
+            "PoEContractTypeOversightCommunityGovProposals" ];
 }
 
 // Params defines the parameters for the PoE module.

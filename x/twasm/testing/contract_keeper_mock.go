@@ -114,13 +114,18 @@ type CapturedInstantiateCalls struct {
 const DefaultCaptureInstantiateFnCodeID uint64 = 0
 
 // CaptureInstantiateFn records all calls in the returned slice
-func CaptureInstantiateFn() (func(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins) (sdk.AccAddress, []byte, error), *[]CapturedInstantiateCalls) {
-	var nextInstanceID uint64
+func CaptureInstantiateFn(codeIDs ...uint64) (func(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins) (sdk.AccAddress, []byte, error), *[]CapturedInstantiateCalls) {
+	var callCounter uint64
 	var captured []CapturedInstantiateCalls
 	return func(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins) (sdk.AccAddress, []byte, error) {
 		captured = append(captured, CapturedInstantiateCalls{CodeID: codeID, Creator: creator, Admin: admin, InitMsg: initMsg, Label: label, Deposit: deposit})
-		nextInstanceID++
-		return twasm.ContractAddress(DefaultCaptureInstantiateFnCodeID, nextInstanceID), nil, nil
+		callCounter++
+		nextInstanceID := callCounter
+		nextCodeID := DefaultCaptureInstantiateFnCodeID
+		if len(codeIDs) != 0 {
+			nextCodeID = codeIDs[callCounter-1]
+		}
+		return twasm.ContractAddress(nextCodeID, nextInstanceID), nil, nil
 	}, &captured
 }
 

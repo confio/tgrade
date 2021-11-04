@@ -215,7 +215,8 @@ PoEContractType type of PoE contract
 | ENGAGEMENT | 3 |  |
 | MIXER | 4 |  |
 | DISTRIBUTION | 5 |  |
-| OVERSIGHT_COMMITTEE | 6 |  |
+| OVERSIGHT_COMMUNITY | 6 |  |
+| OVERSIGHT_COMMUNITY_PROPOSALS | 7 |  |
 
 
  <!-- end enums -->

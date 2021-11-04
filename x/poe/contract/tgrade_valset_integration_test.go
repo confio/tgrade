@@ -4,6 +4,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/confio/tgrade/x/twasm"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
@@ -105,8 +107,8 @@ func TestQueryValsetConfig(t *testing.T) {
 		EpochReward:           sdk.NewInt64Coin("utgd", 100000),
 		FeePercentage:         sdk.MustNewDecFromStr("0.50"),
 		ValidatorsRewardRatio: sdk.MustNewDecFromStr("0.50"),
-		DistributionContract:  "cosmos14hj2tavq8fpesdwxxcu44rty3hh90vhuc53mp6",
-		RewardsContract:       "cosmos1cnuw3f076wgdyahssdkd0g3nr96ckq8caf5mdm",
+		DistributionContract:  twasm.ContractAddress(1, 1).String(),
+		RewardsContract:       twasm.ContractAddress(1, 7).String(),
 		AutoUnjail:            false,
 	}
 	assert.Equal(t, expConfig, res)
