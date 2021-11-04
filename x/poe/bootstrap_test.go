@@ -60,7 +60,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			}),
 			expEngagementInit: contract.TG4EngagementInitMsg{
 				Admin:            ocGovProposalContractAddr.String(),
-				PreAuths:         1,
+				PreAuthsHooks:    1,
 				PreAuthsSlashing: 1,
 				Members:          []contract.TG4Member{{Addr: myUser, Weight: 10}, {Addr: myOtherUser, Weight: 11}},
 				Token:            "utgd",
@@ -73,7 +73,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				TokensPerWeight:  1,
 				UnbondingPeriod:  21 * 24 * 60 * 60,
 				AutoReturnLimit:  &defaultLimit,
-				PreAuths:         1,
+				PreAuthsHooks:    1,
 				PreAuthsSlashing: 1,
 			},
 			expValsetInit: contract.ValsetInitMsg{

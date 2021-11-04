@@ -9,7 +9,7 @@ import (
 type TG4EngagementInitMsg struct {
 	Admin            string      `json:"admin,omitempty"`
 	Members          []TG4Member `json:"members"`
-	PreAuths         uint64      `json:"preauths,omitempty"`
+	PreAuthsHooks    uint64      `json:"preauths_hooks,omitempty"`
 	PreAuthsSlashing uint64      `json:"preauths_slashing,omitempty"`
 	// Halflife is measured in seconds
 	Halflife uint64 `json:"halflife,omitempty"`

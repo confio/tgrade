@@ -231,7 +231,7 @@ func newEngagementInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contr
 	tg4EngagementInitMsg := contract.TG4EngagementInitMsg{
 		Admin:            adminAddr.String(),
 		Members:          make([]contract.TG4Member, len(gs.Engagement)),
-		PreAuths:         1,
+		PreAuthsHooks:    1,
 		PreAuthsSlashing: 1,
 		Token:            gs.BondDenom,
 		Halflife:         uint64(gs.EngagmentContractConfig.Halflife.Seconds()),
@@ -254,7 +254,7 @@ func newStakeInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.T
 		TokensPerWeight:  gs.StakeContractConfig.TokensPerWeight,
 		UnbondingPeriod:  uint64(gs.StakeContractConfig.UnbondingPeriod.Seconds()),
 		AutoReturnLimit:  &claimLimit,
-		PreAuths:         1,
+		PreAuthsHooks:    1,
 		PreAuthsSlashing: 1,
 	}
 }

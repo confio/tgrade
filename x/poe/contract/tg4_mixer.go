@@ -11,7 +11,7 @@ import (
 type TG4MixerInitMsg struct {
 	LeftGroup        string        `json:"left_group"`
 	RightGroup       string        `json:"right_group"`
-	PreAuths         uint64        `json:"preauths,omitempty"`
+	PreAuthsHooks    uint64        `json:"preauths_hooks,omitempty"`
 	PreAuthsSlashing uint64        `json:"preauths_slashing,omitempty"`
 	FunctionType     MixerFunction `json:"function_type"`
 }
