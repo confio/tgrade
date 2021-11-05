@@ -10,16 +10,26 @@ import (
 	"testing"
 	"time"
 
+	testingcontract "github.com/confio/tgrade/testing/contract"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 
-	testingcontracts "github.com/confio/tgrade/x/poe/contract"
+	poecontracts "github.com/confio/tgrade/x/poe/contract"
 	poetypes "github.com/confio/tgrade/x/poe/types"
 )
 
 func TestProofOfEngagementSetup(t *testing.T) {
+	// scenario:
+	//   given: PoE contracts are setup
+	//   when: validator is removed from engagement group
+	//         via OC gov proposal
+	//   then: it is also removed from the active set in tendermint
+	//    and: no rewards distributed to it
+
+	t.Skip("Alex: there is currently no way in OC gov proposals to remove engagement points")
 	sut.ResetChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 
@@ -28,12 +38,12 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	var (
 		tg4AdminAddr = cli.GetKeyAddr("systemadmin")
 	)
-	engagementGroup := make([]testingcontracts.TG4Member, sut.nodesCount)
+	engagementGroup := make([]poecontracts.TG4Member, sut.nodesCount)
 	stakedAmounts := make([]uint64, sut.nodesCount)
 	sut.withEachNodeHome(func(i int, home string) {
 		clix := NewTgradeCliX(t, sut.rpcAddr, sut.chainID, filepath.Join(workDir, home), verbose)
 		addr := clix.GetKeyAddr(fmt.Sprintf("node%d", i))
-		engagementGroup[i] = testingcontracts.TG4Member{
+		engagementGroup[i] = poecontracts.TG4Member{
 			Addr:   addr,
 			Weight: uint64(sut.nodesCount - i), // unique weight
 		}
@@ -55,11 +65,11 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	require.Len(t, validators, sut.nodesCount, qResult)
 	t.Log("got query result", qResult)
 
-	sortedMember := testingcontracts.SortByWeightDesc(engagementGroup)
+	sortedMember := poecontracts.SortByWeightDesc(engagementGroup)
 	assertValidatorsUpdated(t, sortedMember, stakedAmounts, sut.nodesCount)
 
 	if sut.nodesCount < 4 {
-		t.Skip("4 nodes required")
+		t.Skip("4 nodes min required for > 2/3 alive")
 	}
 	initialValBalances := make(map[string]int64, len(sortedMember))
 	for _, v := range sortedMember {
@@ -68,7 +78,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	initialSupply := cli.QueryTotalSupply("utgd")
 
 	// And when removed from **engagement** group
-	engagementUpdateMsg := testingcontracts.UpdateMembersMsg{
+	engagementUpdateMsg := poecontracts.UpdateMembersMsg{
 		Remove: []string{sortedMember[0].Addr},
 	}
 	eResult := cli.Execute(engagementGroupAddr, engagementUpdateMsg.Json(t), tg4AdminAddr)
@@ -101,12 +111,12 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	assert.Equal(t, "newMoniker", gjson.Get(qResult, "description.moniker").String())
 }
 
-func TestPoEAddPostGenesisValidator(t *testing.T) {
+func TestPoEAddPostGenesisValidatorWithAutoEngagementPoints(t *testing.T) {
 	// Scenario:
-	// given a running chain
-	// when a create-validator message is submitted with self delegation amount > min
-	// then the validator gets engagement points automatically
-	// and is added to the active validator set
+	//   given: a running chain
+	//   when: a create-validator message is submitted with self delegation amount > min
+	//   then: the validator gets engagement points automatically
+	//    and: is added to the active validator set
 	sut.ResetChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 	sut.ModifyGenesisJson(t,
@@ -129,14 +139,83 @@ func TestPoEAddPostGenesisValidator(t *testing.T) {
 	AwaitValsetEpochCompleted(t)
 
 	// then
-	valResult := cli.GetTendermintValidatorSet()
-	var found bool
-	for _, v := range valResult.Validators {
-		if v.PubKey.Equals(newPubKey) {
-			found = true
-			break
-		}
-	}
+	valResult, found := cli.IsInTendermintValset(newPubKey)
+	assert.True(t, found, "not in validator set : %#v", valResult)
+}
+
+func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T) {
+	// Scenario:
+	//   given: a running chain
+	//   when: a create-validator message is submitted but no EP distributed automatically
+	//   then: the validator is not in the active set
+	//    and
+	//   when: an OC gov proposal adds EP
+	//   then: is added to the active validator set
+	sut.ResetChain(t)
+	cli := NewTgradeCli(t, sut, verbose)
+	sut.ModifyGenesisJson(t,
+		SetPoEParamsMutator(t, poetypes.NewParams(100, 0, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(5))))),
+	)
+	sut.StartChain(t)
+	systemAdminAddr := cli.GetKeyAddr("systemadmin")
+	engagementGroupAddr := gjson.Get(cli.CustomQuery("q", "poe", "contract-address", "ENGAGEMENT"), "address").String()
+
+	newNode := sut.AddFullnode(t)
+	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
+	opAddr := cli.AddKey("newOperator")
+	cli.FundAddress(opAddr, "1000utgd")
+	newPubKey, pubKeyAddr := loadValidatorPubKeyForNode(t, sut, sut.nodesCount-1)
+	t.Logf("new operator address %s", opAddr)
+
+	// when
+	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd",
+		"--pubkey="+pubKeyAddr, "--from=newOperator")
+	RequireTxSuccess(t, txResult)
+	// wait for msg execution
+	sut.AwaitNextBlock(t)
+	AwaitValsetEpochCompleted(t)
+
+	// then
+	valResult, found := cli.IsInTendermintValset(newPubKey)
+	assert.False(t, found, "in validator set : %#v", valResult)
+
+	// and new operator should not be in engagement group
+	query := poecontracts.TG4Query{Member: &poecontracts.MemberQuery{Addr: opAddr}}
+	qResult := cli.CustomQuery("q", "wasm", "contract-state", "smart", engagementGroupAddr, toJson(t, query))
+	assert.Empty(t, gjson.Get(qResult, "data.weight").String(), qResult)
+
+	// and when
+	// val operator added to engagement group via gov
+	ocGovPropContractAddr := cli.GetPoEContractAddress("OVERSIGHT_COMMUNITY_PROPOSALS")
+	msgBz := toJson(t, testingcontract.OCGovProposalMsg{
+		Propose: &testingcontract.OCGovProposalSubmit{
+			Title:       "Add my validator",
+			Description: "testing",
+			Proposal: testingcontract.Proposal{
+				GrantEngagement: testingcontract.EngagementMember{
+					Addr:   opAddr,
+					Weight: 10,
+				},
+			},
+		},
+	})
+	execRsp := cli.Execute(ocGovPropContractAddr, msgBz, systemAdminAddr)
+	RequireTxSuccess(t, execRsp)
+	AwaitValsetEpochCompleted(t)
+
+	msgBz = toJson(t, testingcontract.OCGovProposalMsg{
+		Execute: &testingcontract.OCGovProposalExecute{ProposalID: 1},
+	})
+	RequireTxSuccess(t, cli.Execute(ocGovPropContractAddr, msgBz, systemAdminAddr))
+	AwaitValsetEpochCompleted(t)
+
+	// then new operator should be in engagement group
+	qResult = cli.CustomQuery("q", "wasm", "contract-state", "smart", engagementGroupAddr, toJson(t, query))
+	assert.Equal(t, int64(10), gjson.Get(qResult, "data.weight").Int(), qResult)
+	AwaitValsetEpochCompleted(t)
+
+	// and in new validator set
+	valResult, found = cli.IsInTendermintValset(newPubKey)
 	assert.True(t, found, "not in validator set : %#v", valResult)
 }
 
@@ -299,7 +378,7 @@ func TestPoEQueries(t *testing.T) {
 	}
 }
 
-func assertValidatorsUpdated(t *testing.T, sortedMember []testingcontracts.TG4Member, stakedAmounts []uint64, expValidators int) {
+func assertValidatorsUpdated(t *testing.T, sortedMember []poecontracts.TG4Member, stakedAmounts []uint64, expValidators int) {
 	t.Helper()
 	v := sut.RPCClient(t).Validators()
 	require.Len(t, v, expValidators, "got %#v", v)

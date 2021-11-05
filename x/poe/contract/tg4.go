@@ -105,3 +105,8 @@ func QueryTG4Admin(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress
 	}
 	return sdk.AccAddressFromBech32(response.Admin)
 }
+
+// TG4UpdateAdminMsg update admin message
+type TG4UpdateAdminMsg struct {
+	NewAdmin *string `json:"admin,omitempty"`
+}

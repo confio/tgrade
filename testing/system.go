@@ -25,6 +25,8 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
+const sutEpochDuration = time.Second
+
 var workDir string
 
 // SystemUnderTest blockchain provisioning
@@ -302,7 +304,7 @@ func (s *SystemUnderTest) ResetChain(t *testing.T) {
 
 	// reset all validataor nodes
 	s.ForEachNodeExecAndWait(t, []string{"unsafe-reset-all"})
-	s.ModifyGenesisJson(t, SetEpochLength(t, time.Second))
+	s.ModifyGenesisJson(t, SetEpochLength(t, sutEpochDuration))
 }
 
 // ModifyGenesisCLI executes the CLI commands to modify the genesis
@@ -464,9 +466,11 @@ func (s *SystemUnderTest) AddFullnode(t *testing.T) Node {
 	s.nodesCount++
 	nodeNumber := s.nodesCount - 1
 	nodePath := s.nodePath(nodeNumber)
+	_ = os.RemoveAll(nodePath) // drop any legacy path, just in case
+
 	// prepare new node
 	moniker := fmt.Sprintf("node%d", nodeNumber)
-	args := []string{"init", moniker, "--home", nodePath}
+	args := []string{"init", moniker, "--home", nodePath, "--overwrite"}
 	s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
 	cmd := exec.Command(
 		locateExecutable("tgrade"),
@@ -474,7 +478,7 @@ func (s *SystemUnderTest) AddFullnode(t *testing.T) Node {
 	)
 	cmd.Dir = workDir
 	s.watchLogs(nodeNumber, cmd)
-	require.NoError(t, cmd.Run(), "node %d", nodeNumber)
+	require.NoError(t, cmd.Run(), "failed to start node with id %d", nodeNumber)
 	saveGenesis(t, nodePath, []byte(s.ReadGenesisJson(t)))
 
 	// quick hack: copy config and overwrite by start params

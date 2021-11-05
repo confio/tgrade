@@ -40,3 +40,12 @@ func (k Keeper) StakeContract(ctx sdk.Context) StakeContract {
 	distContractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	return contract.NewStakeContractAdapter(distContractAddr, k.twasmKeeper, err)
 }
+
+type EngagementContract interface {
+	UpdateAdmin(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error
+}
+
+func (k Keeper) EngagementContract(ctx sdk.Context) EngagementContract {
+	engContractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
+	return contract.NewEngagementContractAdapter(engContractAddr, k.twasmKeeper, err)
+}

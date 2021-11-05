@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/confio/tgrade/x/twasm"
-
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -47,6 +45,7 @@ type poeKeeper interface {
 	keeper.ContractSource
 	SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress)
 	ValsetContract(ctx sdk.Context) keeper.ValsetContract
+	EngagementContract(ctx sdk.Context) keeper.EngagementContract
 }
 
 // bootstrapPoEContracts stores and instantiates all PoE contracts:
@@ -66,11 +65,8 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "system admin")
 	}
 
-	// precalculate contract address for bootstrap without updates
-	expOCGovProposalContractAddr := twasm.ContractAddress(3, 3)
-
 	// setup engagement contract
-	tg4EngagementInitMsg := newEngagementInitMsg(gs, expOCGovProposalContractAddr)
+	tg4EngagementInitMsg := newEngagementInitMsg(gs, systemAdminAddr)
 	engagementCodeID, err := k.Create(ctx, systemAdminAddr, tg4Engagement, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 engagement contract")
@@ -118,8 +114,10 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "pin tg oc gov proposals contract")
 	}
 	logger.Info("oversight community gov proposal contract", "address", ocGovProposalsContractAddr, "code_id", ocGovCodeID)
-	if !expOCGovProposalContractAddr.Equals(ocGovProposalsContractAddr) { // sanity check
-		return sdkerrors.Wrapf(types.ErrInvalid, "calculated gov proposal contract address does not match instance: %s", expOCGovProposalContractAddr)
+
+	err = poeKeeper.EngagementContract(ctx).UpdateAdmin(ctx, ocGovProposalsContractAddr, systemAdminAddr)
+	if err != nil {
+		return sdkerrors.Wrap(err, "set new engagement contract admin")
 	}
 
 	// setup stake contract

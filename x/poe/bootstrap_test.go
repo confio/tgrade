@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/confio/tgrade/x/poe/keeper/poetesting"
@@ -324,6 +326,10 @@ type twasmKeeperMock struct {
 	SudoFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
 	SetPrivilegedFn         func(ctx sdk.Context, contractAddr sdk.AccAddress) error
 	HasPrivilegedContractFn func(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error)
+}
+
+func (m twasmKeeperMock) GetContractKeeper() wasmtypes.ContractOpsKeeper {
+	panic("implement me")
 }
 
 func (m twasmKeeperMock) IteratePrivilegedContractsByType(ctx sdk.Context, privilegeType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {

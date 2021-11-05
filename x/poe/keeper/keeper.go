@@ -15,20 +15,15 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-type TwasmKeeper interface {
-	types.SmartQuerier
-	types.Sudoer
-}
-
 type Keeper struct {
 	marshaler   codec.Marshaler
 	storeKey    sdk.StoreKey
 	paramStore  paramtypes.Subspace
-	twasmKeeper TwasmKeeper
+	twasmKeeper types.TWasmKeeper
 }
 
 // NewKeeper constructor
-func NewKeeper(marshaler codec.Marshaler, key sdk.StoreKey, paramSpace paramtypes.Subspace, twasmK TwasmKeeper) Keeper {
+func NewKeeper(marshaler codec.Marshaler, key sdk.StoreKey, paramSpace paramtypes.Subspace, twasmK types.TWasmKeeper) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())

@@ -4,6 +4,7 @@
 package testing
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -13,6 +14,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -140,6 +143,12 @@ func ContractBech32Address(codeID, instanceID uint64) string {
 
 func AwaitValsetEpochCompleted(t *testing.T) {
 	// wait for update manifests in valset (epoch has completed)
-	time.Sleep(time.Second)
+	time.Sleep(sutEpochDuration)
 	sut.AwaitNextBlock(t)
+}
+
+func toJson(t *testing.T, o interface{}) string {
+	bz, err := json.Marshal(o)
+	require.NoError(t, err)
+	return string(bz)
 }
