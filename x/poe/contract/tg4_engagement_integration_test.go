@@ -3,11 +3,13 @@ package contract_test
 import (
 	_ "embed"
 	"encoding/json"
-	"github.com/confio/tgrade/x/poe/keeper"
+	"testing"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
-	"testing"
+
+	"github.com/confio/tgrade/x/poe/keeper"
 
 	"github.com/confio/tgrade/x/poe/contract"
 )
@@ -29,7 +31,7 @@ func TestEngagementUpdateAdmin(t *testing.T) {
 		Admin: systemAdminAddr.String(),
 		Members: []contract.TG4Member{{
 			Addr:   newAddress.String(), // test only passes with new admin address in the group
-			Weight: 0,
+			Weight: 1,
 		}},
 		PreAuthsHooks:    1,
 		PreAuthsSlashing: 1,
@@ -42,6 +44,7 @@ func TestEngagementUpdateAdmin(t *testing.T) {
 	require.NoError(t, err)
 
 	engagementContract := contract.NewEngagementContractAdapter(engagementContractAddr, example.TWasmKeeper, nil)
+
 	// when
 	gotErr := engagementContract.UpdateAdmin(ctx, newAddress, systemAdminAddr)
 	require.NoError(t, gotErr)

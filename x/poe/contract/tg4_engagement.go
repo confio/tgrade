@@ -31,7 +31,7 @@ type TG4EngagementSudoMsg struct {
 }
 
 // TG4EngagementExecute execute message
-//See https://github.com/confio/tgrade-contracts/blob/v0.5.0-alpha/contracts/tg4-engagement/src/msg.rs
+// See https://github.com/confio/tgrade-contracts/blob/v0.5.0-alpha/contracts/tg4-engagement/src/msg.rs
 type TG4EngagementExecute struct {
 	UpdateMembers *UpdateMembersMsg  `json:"update_members,omitempty"`
 	UpdateAdmin   *TG4UpdateAdminMsg `json:"update_admin,omitempty"`
@@ -78,5 +78,4 @@ func (a EngagementContractAdapter) UpdateAdmin(ctx sdk.Context, newAdmin, sender
 		UpdateAdmin: &TG4UpdateAdminMsg{NewAdmin: &bech32AdminAddr},
 	}
 	return a.doExecute(ctx, msg, sender)
-
 }

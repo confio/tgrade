@@ -168,9 +168,8 @@ func (a EngagementContractAdapter) doExecute(ctx sdk.Context, msg interface{}, s
 	}
 	msgBz, err := json.Marshal(msg)
 	if err != nil {
-		return sdkerrors.Wrap(err, "encode sudo msg")
+		return sdkerrors.Wrap(err, "encode execute msg")
 	}
-
-	_, err = a.twasmKeeper.GetContractKeeper().Execute(ctx, a.contractAddr, msgBz, sender, coin)
+	_, err = a.twasmKeeper.GetContractKeeper().Execute(ctx, a.contractAddr, sender, msgBz, coin)
 	return sdkerrors.Wrap(err, "execute")
 }

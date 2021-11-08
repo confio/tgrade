@@ -61,7 +61,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				m.ValsetContractConfig.FeePercentage = sdk.NewDec(50)
 			}),
 			expEngagementInit: contract.TG4EngagementInitMsg{
-				Admin:            ocGovProposalContractAddr.String(),
+				Admin:            mySystemAdmin, // updated later
 				PreAuthsHooks:    1,
 				PreAuthsSlashing: 1,
 				Members:          []contract.TG4Member{{Addr: myUser, Weight: 10}, {Addr: myOtherUser, Weight: 11}},
@@ -119,7 +119,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			cFn, capCreate := twasmtesting.CaptureCreateFn()
 			iFn, capInst := twasmtesting.CaptureInstantiateFn(1, 2, 3, 4, 5, 6, 7, 8)
 			pFn, capPin := twasmtesting.CapturePinCodeFn()
-			uFn, capAdminUpdates := captureAdminUpdates()
+			uFn, capAdminUpdates := captureWasmAdminUpdates()
 			cm := twasmtesting.ContractOpsKeeperMock{
 				CreateFn:              cFn,
 				InstantiateFn:         iFn,
@@ -145,6 +145,19 @@ func TestBootstrapPoEContracts(t *testing.T) {
 					return poetesting.ValsetContractMock{QueryConfigFn: func(ctx sdk.Context) (*contract.ValsetConfigResponse, error) {
 						return &contract.ValsetConfigResponse{DistributionContract: distributionContractAddr.String()}, nil
 					}}
+				},
+				EngagementContractFn: func(ctx sdk.Context) keeper.EngagementContract {
+					return poetesting.EngagementContractMock{
+						UpdateAdminFn: func(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
+							assert.Equal(t, ocGovProposalContractAddr, newAdmin)
+							assert.Equal(t, mySystemAdmin, sender.String())
+							return nil
+						},
+					}
+				},
+				GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
+					require.Equal(t, types.PoEContractTypeEngagement, ctype)
+					return engagementContractAddr, nil
 				},
 			}
 			// when
@@ -216,7 +229,7 @@ type capturedContractAdminUpdate struct {
 	contractAddr, newAdmin sdk.AccAddress
 }
 
-func captureAdminUpdates() (func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newAdmin sdk.AccAddress) error, *[]capturedContractAdminUpdate) {
+func captureWasmAdminUpdates() (func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newAdmin sdk.AccAddress) error, *[]capturedContractAdminUpdate) {
 	var result []capturedContractAdminUpdate
 	return func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newAdmin sdk.AccAddress) error {
 		result = append(result, capturedContractAdminUpdate{contractAddr: contractAddress, newAdmin: newAdmin})
