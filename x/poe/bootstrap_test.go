@@ -53,6 +53,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		expOversightCommitteeInit contract.TrustedCircleInitMsg
 		expOCGovProposalsInit     contract.OCProposalsInitMsg
 		expErr                    bool
+		expMixerInit              contract.TG4MixerInitMsg
 	}{
 		"all contracts setup": {
 			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
@@ -110,6 +111,14 @@ func TestBootstrapPoEContracts(t *testing.T) {
 					Quorum:        sdk.NewDecWithPrec(50, 2),
 					Threshold:     sdk.NewDecWithPrec(66, 2),
 					AllowEndEarly: true,
+				},
+			},
+			expMixerInit: contract.TG4MixerInitMsg{
+				PreAuthsSlashing: 1,
+				LeftGroup:        engagementContractAddr.String(),
+				RightGroup:       stakingContractAdddr.String(),
+				FunctionType: contract.MixerFunction{
+					GeometricMean: &struct{}{},
 				},
 			},
 		},
@@ -195,14 +204,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			assert.Equal(t, spec.expValsetInit, gotValsetInit)
 			assert.Equal(t, spec.expOversightCommitteeInit, gotOCInit)
 			assert.Equal(t, spec.expOCGovProposalsInit, gotOCGovProposalInit)
-			expMixerInit := contract.TG4MixerInitMsg{
-				LeftGroup:  engagementContractAddr.String(),
-				RightGroup: stakingContractAdddr.String(),
-				FunctionType: contract.MixerFunction{
-					GeometricMean: &struct{}{},
-				},
-			}
-			assert.Equal(t, expMixerInit, gotMixerInit)
+			assert.Equal(t, spec.expMixerInit, gotMixerInit)
 
 			// and pinned
 			assert.Equal(t, []uint64{1, 2, 3, 5}, *capPin)
