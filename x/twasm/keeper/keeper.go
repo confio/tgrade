@@ -111,6 +111,6 @@ func (k Keeper) getContractDetails(ctx sdk.Context, contract sdk.AccAddress) (*t
 }
 
 // GetContractKeeper returns the contract keeper instance with default permissions set
-func (k *Keeper) GetContractKeeper() wasmtypes.ContractOpsKeeper {
+func (k Keeper) GetContractKeeper() wasmtypes.ContractOpsKeeper {
 	return k.contractKeeper
 }

@@ -28,12 +28,12 @@ type PoEKeeper interface {
 type msgServer struct {
 	keeper         PoEKeeper
 	contractKeeper wasmtypes.ContractOpsKeeper
-	twasmKeeper    TwasmKeeper
+	twasmKeeper    types.TWasmKeeper
 }
 
 // NewMsgServerImpl returns an implementation of the bank MsgServer interface
 // for the provided Keeper.
-func NewMsgServerImpl(poeKeeper PoEKeeper, contractKeeper wasmtypes.ContractOpsKeeper, twasmKeeper TwasmKeeper) types.MsgServer {
+func NewMsgServerImpl(poeKeeper PoEKeeper, contractKeeper wasmtypes.ContractOpsKeeper, twasmKeeper types.TWasmKeeper) types.MsgServer {
 	return &msgServer{keeper: poeKeeper, contractKeeper: contractKeeper, twasmKeeper: twasmKeeper}
 }
 

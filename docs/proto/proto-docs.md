@@ -215,7 +215,8 @@ PoEContractType type of PoE contract
 | ENGAGEMENT | 3 |  |
 | MIXER | 4 |  |
 | DISTRIBUTION | 5 |  |
-| OVERSIGHT_COMMITTEE | 6 |  |
+| OVERSIGHT_COMMUNITY | 6 |  |
+| OVERSIGHT_COMMUNITY_PROPOSALS | 7 |  |
 
 
  <!-- end enums -->
@@ -322,7 +323,6 @@ StakeContractConfig initial setup config
 | `tokens_per_weight` | [uint64](#uint64) |  |  |
 | `unbonding_period` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
 | `claim_autoreturn_limit` | [uint32](#uint32) |  |  |
-| `pre_auths` | [uint32](#uint32) |  |  |
 
 
 

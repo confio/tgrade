@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	"github.com/confio/tgrade/x/twasm"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -75,8 +75,8 @@ func TestInitGenesis(t *testing.T) {
 		FeePercentage:         sdk.MustNewDecFromStr("0.50"),
 		ValidatorsRewardRatio: sdk.MustNewDecFromStr("0.50"),
 		EpochReward:           sdk.NewInt64Coin("utgd", 100000),
-		DistributionContract:  wasmkeeper.BuildContractAddress(1, 1).String(),
-		RewardsContract:       wasmkeeper.BuildContractAddress(1, 5).String(),
+		DistributionContract:  twasm.ContractAddress(1, 1).String(),
+		RewardsContract:       twasm.ContractAddress(1, 7).String(),
 		AutoUnjail:            false,
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)

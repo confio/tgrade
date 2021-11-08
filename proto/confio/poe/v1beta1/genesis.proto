@@ -64,7 +64,6 @@ message StakeContractConfig {
   google.protobuf.Duration unbonding_period = 3
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
   uint32 claim_autoreturn_limit = 4;
-  uint32 pre_auths = 5;
 }
 
 // ValsetContractConfig initial setup config

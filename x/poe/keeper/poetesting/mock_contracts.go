@@ -9,7 +9,7 @@ import (
 	"github.com/confio/tgrade/x/poe/contract"
 )
 
-//var _ keeper.DistributionContract = DistributionContractMock{}
+// var _ keeper.DistributionContract = DistributionContractMock{}
 
 type DistributionContractMock struct {
 	ValidatorOutstandingRewardFn func(ctx types.Context, addr types.AccAddress) (types.Coin, error)
@@ -22,7 +22,7 @@ func (m DistributionContractMock) ValidatorOutstandingReward(ctx types.Context, 
 	return m.ValidatorOutstandingRewardFn(ctx, addr)
 }
 
-//var _ keeper.ValsetContract = ValsetContractMock{}
+// var _ keeper.ValsetContract = ValsetContractMock{}
 
 type ValsetContractMock struct {
 	QueryValidatorFn func(ctx types.Context, opAddr types.AccAddress) (*stakingtypes.Validator, error)
@@ -77,4 +77,17 @@ func (m StakeContractMock) QueryStakingUnbonding(ctx types.Context, opAddr types
 		panic("not expected to be called")
 	}
 	return m.QueryStakingUnbondingFn(ctx, opAddr)
+}
+
+// var _ keeper.EngagementContract = EngagementContractMock{}
+
+type EngagementContractMock struct {
+	UpdateAdminFn func(ctx types.Context, newAdmin, sender types.AccAddress) error
+}
+
+func (m EngagementContractMock) UpdateAdmin(ctx types.Context, newAdmin, sender types.AccAddress) error {
+	if m.UpdateAdminFn == nil {
+		panic("not expected to be called")
+	}
+	return m.UpdateAdminFn(ctx, newAdmin, sender)
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
+// TG4StakeInitMsg instantiation message
 // See https://github.com/confio/tgrade-contracts/blob/v0.5.0-alpha/contracts/tg4-stake/src/msg.rs
 type TG4StakeInitMsg struct {
 	Admin           string `json:"admin,omitempty"`
@@ -23,8 +24,9 @@ type TG4StakeInitMsg struct {
 	// UnbondingPeriod unbonding period in seconds
 	UnbondingPeriod uint64 `json:"unbonding_period"`
 	// AutoReturnLimit limits how much claims would be automatically returned at end of block, 20 by default. Setting this to 0 disables auto returning claims.
-	AutoReturnLimit *uint64 `json:"auto_return_limit,omitempty"`
-	Preauths        uint64  `json:"preauths,omitempty"`
+	AutoReturnLimit  *uint64 `json:"auto_return_limit,omitempty"`
+	PreAuthsHooks    uint64  `json:"preauths_hooks,omitempty"`
+	PreAuthsSlashing uint64  `json:"preauths_slashing,omitempty"`
 }
 
 // TG4StakeExecute staking contract execute messages

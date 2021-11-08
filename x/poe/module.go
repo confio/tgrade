@@ -105,9 +105,8 @@ type AppModule struct {
 
 // twasmKeeper subset of keeper to decouple from twasm module
 type twasmKeeper interface {
+	types.TWasmKeeper
 	endBlockKeeper
-	types.SmartQuerier
-	types.Sudoer
 	SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) error
 	HasPrivilegedContract(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error)
 }

@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -180,6 +182,19 @@ func (c TgradeCli) GetPoEContractAddress(v string) string {
 	addr := gjson.Get(qRes, "address").String()
 	require.NotEmpty(c.t, addr, "got %q", addr)
 	return addr
+}
+
+// IsInTendermintValset returns true when the giben pub key is in the current active tendermint validator set
+func (c TgradeCli) IsInTendermintValset(valPubKey cryptotypes.PubKey) (rpc.ResultValidatorsOutput, bool) {
+	valResult := c.GetTendermintValidatorSet()
+	var found bool
+	for _, v := range valResult.Validators {
+		if v.PubKey.Equals(valPubKey) {
+			found = true
+			break
+		}
+	}
+	return valResult, found
 }
 
 // RequireTxSuccess require the received response to contain the success code

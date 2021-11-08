@@ -10,7 +10,7 @@ import (
 )
 
 // NewHandler constructor
-func NewHandler(k keeper.PoEKeeper, contractKeeper wasmtypes.ContractOpsKeeper, tk keeper.TwasmKeeper) sdk.Handler {
+func NewHandler(k keeper.PoEKeeper, contractKeeper wasmtypes.ContractOpsKeeper, tk types.TWasmKeeper) sdk.Handler {
 	return newHandler(keeper.NewMsgServerImpl(k, contractKeeper, tk))
 }
 

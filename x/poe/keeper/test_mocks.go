@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -26,6 +28,7 @@ type PoEKeeperMock struct {
 	DistributionContractFn                func(ctx sdk.Context) DistributionContract
 	ValsetContractFn                      func(ctx sdk.Context) ValsetContract
 	StakeContractFn                       func(ctx sdk.Context) StakeContract
+	EngagementContractFn                  func(ctx sdk.Context) EngagementContract
 }
 
 func (m PoEKeeperMock) setParams(ctx sdk.Context, params types.Params) {
@@ -98,6 +101,13 @@ func (m PoEKeeperMock) ValsetContract(ctx sdk.Context) ValsetContract {
 	return m.ValsetContractFn(ctx)
 }
 
+func (m PoEKeeperMock) EngagementContract(ctx sdk.Context) EngagementContract {
+	if m.EngagementContractFn == nil {
+		panic("not expected to be called")
+	}
+	return m.EngagementContractFn(ctx)
+}
+
 // CapturedPoEContractAddress data type
 type CapturedPoEContractAddress struct {
 	Ctype        types.PoEContractType
@@ -153,12 +163,13 @@ func SwitchPoEContractAddressFn(t *testing.T, myValsetContract sdk.AccAddress, m
 	}
 }
 
-var _ TwasmKeeper = TwasmKeeperMock{}
+var _ types.TWasmKeeper = TwasmKeeperMock{}
 
 // TwasmKeeperMock mock smart queries and sudo calls
 type TwasmKeeperMock struct {
-	QuerySmartFn func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
-	SudoFn       func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
+	QuerySmartFn        func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error)
+	SudoFn              func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
+	GetContractKeeperFn func() wasmtypes.ContractOpsKeeper
 }
 
 func (m TwasmKeeperMock) QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
@@ -173,4 +184,11 @@ func (m TwasmKeeperMock) Sudo(ctx sdk.Context, contractAddress sdk.AccAddress, m
 		panic("not expected to be called")
 	}
 	return m.SudoFn(ctx, contractAddress, msg)
+}
+
+func (m TwasmKeeperMock) GetContractKeeper() wasmtypes.ContractOpsKeeper {
+	if m.GetContractKeeperFn == nil {
+		panic("not expected to be called")
+	}
+	return m.GetContractKeeperFn()
 }

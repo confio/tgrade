@@ -148,3 +148,28 @@ func convertToTendermintPubKey(key ValidatorPubkey) (crypto.PublicKey, error) {
 		return crypto.PublicKey{}, types.ErrValidatorPubKeyTypeNotSupported
 	}
 }
+
+// ContractAdapter is the base contract adapter type that contains common methods to interact with the contract
+type ContractAdapter struct {
+	contractAddr     sdk.AccAddress
+	twasmKeeper      types.TWasmKeeper
+	addressLookupErr error
+}
+
+// NewContractAdapter constructor
+func NewContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWasmKeeper, addressLookupErr error) ContractAdapter {
+	return ContractAdapter{contractAddr: contractAddr, twasmKeeper: twasmKeeper, addressLookupErr: addressLookupErr}
+}
+
+// send message via execute entry point
+func (a EngagementContractAdapter) doExecute(ctx sdk.Context, msg interface{}, sender sdk.AccAddress, coin ...sdk.Coin) error {
+	if err := a.addressLookupErr; err != nil {
+		return err
+	}
+	msgBz, err := json.Marshal(msg)
+	if err != nil {
+		return sdkerrors.Wrap(err, "encode execute msg")
+	}
+	_, err = a.twasmKeeper.GetContractKeeper().Execute(ctx, a.contractAddr, sender, msgBz, coin)
+	return sdkerrors.Wrap(err, "execute")
+}

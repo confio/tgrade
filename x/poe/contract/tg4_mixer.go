@@ -7,12 +7,13 @@ import (
 )
 
 // TG4MixerInitMsg contract init message
-//See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-mixer/schema/instantiate_msg.json
+// See https://github.com/confio/tgrade-contracts/blob/main/contracts/tg4-mixer/schema/instantiate_msg.json
 type TG4MixerInitMsg struct {
-	LeftGroup    string        `json:"left_group"`
-	RightGroup   string        `json:"right_group"`
-	Preauths     uint64        `json:"preauths,omitempty"`
-	FunctionType MixerFunction `json:"function_type"`
+	LeftGroup        string        `json:"left_group"`
+	RightGroup       string        `json:"right_group"`
+	PreAuthsHooks    uint64        `json:"preauths_hooks,omitempty"`
+	PreAuthsSlashing uint64        `json:"preauths_slashing,omitempty"`
+	FunctionType     MixerFunction `json:"function_type"`
 }
 
 type MixerFunction struct {
