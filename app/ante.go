@@ -28,10 +28,12 @@ func NewAnteHandler(
 	paramStore paramtypes.Subspace,
 	contractSource poekeeper.ContractSource,
 ) sdk.AnteHandler {
+	var max sdk.Gas = 3_000_000
 	// initial version copied from sdk https://github.com/cosmos/cosmos-sdk/blob/v0.42.9/x/auth/ante/ante.go
 	// globalfee was added and poe.NewDeductFeeDecorator replaces ante.NewDeductFeeDecorator
 	return sdk.ChainAnteDecorators(
 		ante.NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
+		NewLimitSimulationGasDecorator(&max),
 		wasmkeeper.NewCountTXDecorator(txCounterStoreKey),
 		ante.NewRejectExtensionOptionsDecorator(),
 		ante.NewMempoolFeeDecorator(),
