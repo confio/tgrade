@@ -32,6 +32,7 @@ import (
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 	tmtime "github.com/tendermint/tendermint/types/time"
 
 	poeclient "github.com/confio/tgrade/x/poe/client"
@@ -352,10 +353,13 @@ func initGenFiles(
 	}
 
 	genDoc := types.GenesisDoc{
-		ChainID:    chainID,
-		AppState:   appGenStateJSON,
-		Validators: nil,
+		ChainID:         chainID,
+		AppState:        appGenStateJSON,
+		Validators:      nil,
+		ConsensusParams: tmtypes.DefaultConsensusParams(),
 	}
+	genDoc.ConsensusParams.Block.MaxGas = 100_000_000 // any value is better then infinte
+
 	// quick & dirty solution to set our denom instead of sdk default
 	genDoc.AppState = []byte(strings.Replace(string(genDoc.AppState), "\"stake\"", fmt.Sprintf("%q", stakingToken), -1))
 
@@ -414,11 +418,10 @@ func collectGenFiles(
 			// set the canonical application state (they should not differ)
 			appState = nodeAppState
 		}
-
-		genFile := nodeConfig.GenesisFile()
-
 		// overwrite each validator's genesis file to have a canonical genesis time
-		if err := genutil.ExportGenesisFileWithTime(genFile, chainID, nil, appState, genTime); err != nil {
+		genDoc.GenesisTime = genTime
+		genFile := nodeConfig.GenesisFile()
+		if err := genDoc.SaveAs(genFile); err != nil {
 			return err
 		}
 	}
