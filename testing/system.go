@@ -449,7 +449,7 @@ func (s SystemUnderTest) AllNodes(t *testing.T) []Node {
 		result[i] = Node{
 			ID:      strings.TrimSpace(out[0]),
 			IP:      ip,
-			RPCPort: 25567 + i, // as defined in testnet command
+			RPCPort: 26657 + i, // as defined in testnet command
 			P2PPort: 16656 + i, // as defined in testnet command
 		}
 	}
@@ -529,6 +529,9 @@ type Node struct {
 
 func (n Node) PeerAddr() string {
 	return fmt.Sprintf("%s@%s:%d", n.ID, n.IP, n.P2PPort)
+}
+func (n Node) RPCAddr() string {
+	return fmt.Sprintf("tcp://%s:%d", n.IP, n.RPCPort)
 }
 
 // locateExecutable looks up the binary on the OS path.
