@@ -194,7 +194,7 @@ func (m msgServer) Undelegate(c context.Context, msg *types.MsgUndelegate) (*typ
 	if msg.Amount.Denom != m.keeper.GetBondDenom(ctx) {
 		return nil, sdkerrors.Wrap(types.ErrInvalid, "denom")
 	}
-	err = contract.UnbondDelegation(ctx, stakingContractAddr, operatorAddress, msg.Amount.Amount, m.contractKeeper)
+	err = contract.UnbondDelegation(ctx, stakingContractAddr, operatorAddress, msg.Amount, m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "unbond delegation")
 	}

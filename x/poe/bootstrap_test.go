@@ -104,8 +104,8 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				InitialMembers:            []string{},
 			},
 			expOCGovProposalsInit: contract.OCProposalsInitMsg{
-				GroupContractAddress:     ocContractAddr.String(),
-				EngagemenContractAddress: engagementContractAddr.String(),
+				GroupContractAddress:      ocContractAddr.String(),
+				EngagementContractAddress: engagementContractAddr.String(),
 				VotingRules: contract.VotingRules{
 					VotingPeriod:  1,
 					Quorum:        sdk.NewDecWithPrec(50, 2),

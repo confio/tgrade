@@ -4,11 +4,13 @@ import sdk "github.com/cosmos/cosmos-sdk/types"
 
 // OCProposalsInitMsg instantiation message
 type OCProposalsInitMsg struct {
+	VotingRules VotingRules `json:"rules"`
 	// GroupContractAddress is the group contract that contains the member list
 	GroupContractAddress string `json:"group_addr"`
-	// EngagemenContractAddress is the engagement contract that contains list for engagement rewards
-	EngagemenContractAddress string      `json:"engagement_addr"`
-	VotingRules              VotingRules `json:"rules"`
+	// EngagementContractAddress is the engagement contract that contains list for engagement rewards
+	EngagementContractAddress string `json:"engagement_addr"`
+	// ValsetContractAddress is the valset contract that we execute slashing on
+	ValsetContractAddress string `json:"valset_addr"`
 }
 
 // VotingRules voting rules

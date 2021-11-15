@@ -79,6 +79,8 @@ type TG4ValsetExecute struct {
 	// Unjails validator. Admin can unjail anyone anytime, others can unjail only themselves and
 	// only if the jail period passed.
 	Unjail *UnjailMsg `json:"unjail,omitempty"`
+	// UpdateAdmin set a new admin address
+	UpdateAdmin *TG4UpdateAdminMsg `json:"update_admin,omitempty"`
 }
 
 type JailMsg struct {
@@ -261,14 +263,17 @@ func SimulateActiveValidators(ctx sdk.Context, k types.SmartQuerier, valset sdk.
 }
 
 type ValsetContractAdapter struct {
-	contractAddr     sdk.AccAddress
-	contractQuerier  types.SmartQuerier
-	addressLookupErr error
+	ContractAdapter
 }
 
 // NewValsetContractAdapter constructor
-func NewValsetContractAdapter(contractAddr sdk.AccAddress, contractQuerier types.SmartQuerier, addressLookupErr error) *ValsetContractAdapter {
-	return &ValsetContractAdapter{contractAddr: contractAddr, contractQuerier: contractQuerier, addressLookupErr: addressLookupErr}
+func NewValsetContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWasmKeeper, addressLookupErr error) *ValsetContractAdapter {
+	return &ValsetContractAdapter{
+		ContractAdapter: NewContractAdapter(
+			contractAddr,
+			twasmKeeper,
+			addressLookupErr,
+		)}
 }
 
 func (v ValsetContractAdapter) QueryValidator(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
@@ -277,7 +282,7 @@ func (v ValsetContractAdapter) QueryValidator(ctx sdk.Context, opAddr sdk.AccAdd
 	}
 	query := ValsetQuery{Validator: &ValidatorQuery{Operator: opAddr.String()}}
 	var rsp ValidatorResponse
-	err := doQuery(ctx, v.contractQuerier, v.contractAddr, query, &rsp)
+	err := doQuery(ctx, v.twasmKeeper, v.contractAddr, query, &rsp)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "contract query")
 	}
@@ -294,7 +299,7 @@ func (v ValsetContractAdapter) ListValidators(ctx sdk.Context) ([]stakingtypes.V
 	}
 	query := ValsetQuery{ListValidators: &ListValidatorsQuery{Limit: 30}}
 	var rsp ListValidatorsResponse
-	err := doQuery(ctx, v.contractQuerier, v.contractAddr, query, &rsp)
+	err := doQuery(ctx, v.twasmKeeper, v.contractAddr, query, &rsp)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "contract query")
 	}
@@ -316,9 +321,18 @@ func (v ValsetContractAdapter) QueryConfig(ctx sdk.Context) (*ValsetConfigRespon
 	}
 	query := ValsetQuery{Config: &struct{}{}}
 	var rsp ValsetConfigResponse
-	err := doQuery(ctx, v.contractQuerier, v.contractAddr, query, &rsp)
+	err := doQuery(ctx, v.twasmKeeper, v.contractAddr, query, &rsp)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "contract query")
 	}
 	return &rsp, err
+}
+
+// UpdateAdmin sets a new admin address
+func (v ValsetContractAdapter) UpdateAdmin(ctx sdk.Context, newAdmin sdk.AccAddress, sender sdk.AccAddress) error {
+	bech32AdminAddr := newAdmin.String()
+	msg := TG4ValsetExecute{
+		UpdateAdmin: &TG4UpdateAdminMsg{NewAdmin: &bech32AdminAddr},
+	}
+	return v.doExecute(ctx, msg, sender)
 }
