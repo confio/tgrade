@@ -24,6 +24,7 @@ type ValsetContract interface {
 	ListValidators(ctx sdk.Context) ([]stakingtypes.Validator, error)
 	QueryValidator(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error)
 	QueryConfig(ctx sdk.Context) (*contract.ValsetConfigResponse, error)
+	UpdateAdmin(ctx sdk.Context, new sdk.AccAddress, sender sdk.AccAddress) error
 }
 
 func (k Keeper) ValsetContract(ctx sdk.Context) ValsetContract {
