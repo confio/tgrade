@@ -361,6 +361,7 @@ ValsetContractConfig initial setup config
 | `fee_percentage` | [string](#string) |  | Feepercentage is the percentage of total accumulated fees that is subtracted from tokens minted as rewards. 50% by default. To disable this feature just set it to 0 (which effectively means that fees don't affect the per-epoch reward). |
 | `ValidatorsRewardRatio` | [uint32](#uint32) |  | ValidatorsRewardRatio in percentage |
 | `AutoUnjail` | [bool](#bool) |  | AutoUnjail if set to true, we will auto-unjail any validator after their jailtime is over. |
+| `double_sign_slash_ratio` | [string](#string) |  | DoubleSignSlashRatio Validators who are caught double signing are jailed forever and their bonded tokens are slashed based on this value. |
 
 
 

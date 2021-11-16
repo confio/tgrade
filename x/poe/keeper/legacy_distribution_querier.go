@@ -15,7 +15,7 @@ import (
 var _ distributiontypes.QueryServer = &legacyDistributionGRPCQuerier{}
 
 type legacyDistributionGRPCQuerier struct {
-	keeper      ContractSource
+	keeper      ViewKeeper
 	queryServer types.QueryServer
 }
 
@@ -46,7 +46,7 @@ func (q legacyDistributionGRPCQuerier) ValidatorCommission(c context.Context, re
 		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
 	}
 	if _, err := sdk.AccAddressFromBech32(req.ValidatorAddress); err != nil {
-		return nil, status.Error(codes.InvalidArgument, "delegator address invalid")
+		return nil, status.Error(codes.InvalidArgument, "operator address invalid")
 	}
 
 	return &distributiontypes.QueryValidatorCommissionResponse{
@@ -61,11 +61,25 @@ func (q legacyDistributionGRPCQuerier) ValidatorSlashes(c context.Context, req *
 	if req.ValidatorAddress == "" {
 		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
 	}
-	if _, err := sdk.AccAddressFromBech32(req.ValidatorAddress); err != nil {
-		return nil, status.Error(codes.InvalidArgument, "delegator address invalid")
+	opAddr, err := sdk.AccAddressFromBech32(req.ValidatorAddress)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "operator address invalid")
 	}
-
-	return &distributiontypes.QueryValidatorSlashesResponse{}, nil
+	ctx := sdk.UnwrapSDKContext(c)
+	got, err := q.keeper.ValsetContract(ctx).ListValidatorSlashing(ctx, opAddr)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	slashes := make([]distributiontypes.ValidatorSlashEvent, len(got))
+	for i, s := range got {
+		slashes[i] = distributiontypes.ValidatorSlashEvent{
+			ValidatorPeriod: s.Height,
+			Fraction:        s.Portion,
+		}
+	}
+	return &distributiontypes.QueryValidatorSlashesResponse{
+		Slashes: slashes,
+	}, nil
 }
 
 func (q legacyDistributionGRPCQuerier) DelegationRewards(c context.Context, req *distributiontypes.QueryDelegationRewardsRequest) (*distributiontypes.QueryDelegationRewardsResponse, error) {

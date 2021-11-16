@@ -76,7 +76,7 @@ func TestInitGenesis(t *testing.T) {
 		ValidatorsRewardRatio: sdk.MustNewDecFromStr("0.50"),
 		EpochReward:           sdk.NewInt64Coin("utgd", 100000),
 		DistributionContract:  twasm.ContractAddress(1, 1).String(),
-		RewardsContract:       twasm.ContractAddress(1, 7).String(),
+		RewardsContract:       twasm.ContractAddress(1, 6).String(),
 		AutoUnjail:            false,
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)
