@@ -62,7 +62,7 @@ func TestUnbondDelegation(t *testing.T) {
 	require.NoError(t, err)
 
 	// when
-	err = contract.UnbondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.OneInt(), example.TWasmKeeper.GetContractKeeper())
+	err = contract.UnbondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt()), example.TWasmKeeper.GetContractKeeper())
 
 	// then
 	require.NoError(t, err)

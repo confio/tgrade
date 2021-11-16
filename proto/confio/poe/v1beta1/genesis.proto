@@ -89,6 +89,13 @@ message ValsetContractConfig {
   // AutoUnjail if set to true, we will auto-unjail any validator after their
   // jailtime is over.
   bool AutoUnjail = 8;
+
+  // DoubleSignSlashRatio Validators who are caught double signing are jailed
+  // forever and their bonded tokens are slashed based on this value.
+  string double_sign_slash_ratio = 9 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
+  ];
 }
 
 // EngagementContractConfig initial setup config
