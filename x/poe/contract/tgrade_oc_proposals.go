@@ -1,6 +1,95 @@
 package contract
 
-import sdk "github.com/cosmos/cosmos-sdk/types"
+import (
+	"github.com/confio/tgrade/x/poe/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+)
+
+type OCProposalsContractAdapter struct {
+	ContractAdapter
+}
+
+// NewOCProposalsContractAdapter constructor
+func NewOCProposalsContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWasmKeeper, addressLookupErr error) *OCProposalsContractAdapter {
+	return &OCProposalsContractAdapter{
+		ContractAdapter: NewContractAdapter(
+			contractAddr,
+			twasmKeeper,
+			addressLookupErr,
+		)}
+}
+
+// LatestProposal gets info on the last proposal made, easy way to get the ProposalID
+func (v OCProposalsContractAdapter) LatestProposal(ctx sdk.Context) (*OCProposalResponse, error) {
+	query := OCProposalsQuery{ReverseProposals: &ListProposalQuery{Limit: 1}}
+	var rsp OCProposalListResponse
+	err := v.doQuery(ctx, query, &rsp)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "contract query")
+	}
+	if len(rsp.Proposals) == 0 {
+		return nil, nil
+	}
+	return &rsp.Proposals[0], nil
+}
+
+// ProposeSlash creates a proposal to slash this account
+// Use LatestProposal after to get the ProposalID
+func (v OCProposalsContractAdapter) ProposeSlash(ctx sdk.Context, member sdk.AccAddress, portion sdk.Dec, sender sdk.AccAddress) error {
+	msg := OCProposalsExecuteMsg{
+		Propose: &ProposalMsg{
+			Title:       "Slash them",
+			Description: "Slash them harder!",
+			Proposal: OversightProposal{
+				Slash: &SlashProposal{
+					Member:  member.String(),
+					Portion: portion,
+				},
+			},
+		},
+	}
+	return v.doExecute(ctx, msg, sender)
+}
+
+// ProposeGrant creates a proposal to grant engagement to this account
+// Use LatestProposal after to get the ProposalID
+func (v OCProposalsContractAdapter) ProposeGrant(ctx sdk.Context, grantee sdk.AccAddress, points uint64, sender sdk.AccAddress) error {
+	msg := OCProposalsExecuteMsg{
+		Propose: &ProposalMsg{
+			Title:       "Slash them",
+			Description: "Slash them harder!",
+			Proposal: OversightProposal{
+				GrantEngagement: &GrantEngagementProposal{
+					Member: grantee.String(),
+					Points: points,
+				},
+			},
+		},
+	}
+	return v.doExecute(ctx, msg, sender)
+}
+
+// VoteProposal votes on a proposal
+func (v OCProposalsContractAdapter) VoteProposal(ctx sdk.Context, proposalID uint64, vote Vote, sender sdk.AccAddress) error {
+	msg := OCProposalsExecuteMsg{
+		Vote: &VoteMsg{
+			ProposalID: proposalID,
+			Vote:       vote,
+		},
+	}
+	return v.doExecute(ctx, msg, sender)
+}
+
+// ExecuteProposal executes a previously passed proposal
+func (v OCProposalsContractAdapter) ExecuteProposal(ctx sdk.Context, proposalID uint64, sender sdk.AccAddress) error {
+	msg := OCProposalsExecuteMsg{
+		Execute: &ProposalID{
+			ProposalID: proposalID,
+		},
+	}
+	return v.doExecute(ctx, msg, sender)
+}
 
 // OCProposalsInitMsg instantiation message
 type OCProposalsInitMsg struct {
@@ -26,7 +115,7 @@ type VotingRules struct {
 	AllowEndEarly bool `json:"allow_end_early"`
 }
 
-type ExecuteMsg struct {
+type OCProposalsExecuteMsg struct {
 	Propose *ProposalMsg `json:"propose,omitempty"`
 	Vote    *VoteMsg     `json:"vote,omitempty"`
 	Execute *ProposalID  `json:"execute,omitempty"`
@@ -63,7 +152,7 @@ type ProposalID struct {
 	ProposalID uint64 `json:"proposal_id"`
 }
 
-type QueryMsg struct {
+type OCProposalsQuery struct {
 	// Returns VotingRules
 	Rules *struct{} `json:"rules,omitempty"`
 	// Returns OCProposalResponse
