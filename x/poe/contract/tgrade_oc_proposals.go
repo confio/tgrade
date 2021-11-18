@@ -25,3 +25,49 @@ type VotingRules struct {
 	// (Recommended value: true, unless you have special needs)
 	AllowEndEarly bool `json:"allow_end_early"`
 }
+
+type ExecuteMsg struct {
+	Propose *ProposalMsg `json:"propose,omitempty"`
+	Vote    *VoteMsg     `json:"vote,omitempty"`
+	Execute *ProposalID  `json:"execute,omitempty"`
+	Close   *ProposalID  `json:"close,omitempty"`
+}
+
+type ProposalMsg struct {
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	Proposal    OversightProposal `json:"proposal"`
+}
+
+type OversightProposal struct {
+	GrantEngagement *GrantEngagementProposal `json:"grant_engagement,omitempty"`
+	Slash           *SlashProposal           `json:"slash,omitempty"`
+}
+
+type GrantEngagementProposal struct {
+	Member string `json:"member"`
+	Points uint64 `json:"points"`
+}
+
+type SlashProposal struct {
+	Member  string  `json:"member"`
+	Portion sdk.Dec `json:"portion"`
+}
+
+type VoteMsg struct {
+	Vote       Vote   `json:"vote"`
+	ProposalID uint64 `json:"proposal_id"`
+}
+
+type Vote string
+
+const (
+	YES_VOTE     Vote = "yes"
+	NO_VOTE      Vote = "no"
+	ABSTAIN_VOTE Vote = "abstain"
+	VETO_VOTE    Vote = "veto"
+)
+
+type ProposalID struct {
+	ProposalID uint64 `json:"proposal_id"`
+}
