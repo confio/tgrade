@@ -59,6 +59,105 @@ type VoteMsg struct {
 	ProposalID uint64 `json:"proposal_id"`
 }
 
+type ProposalID struct {
+	ProposalID uint64 `json:"proposal_id"`
+}
+
+type QueryMsg struct {
+	// Returns VotingRules
+	Rules *struct{} `json:"rules,omitempty"`
+	// Returns OCProposalResponse
+	Proposal *ProposalID `json:"proposal,omitempty"`
+	// Returns OCProposalListResponse
+	ListProposals *ListProposalQuery `json:"list_proposals,omitempty"`
+	// Returns OCProposalListResponse
+	ReverseProposals *ListProposalQuery `json:"reverse_proposals,omitempty"`
+	// Returns VoteResponse
+	Vote *VoteQuery `json:"vote,omitempty"`
+	// Returns VoteListResponse
+	ListVotes *ListVotesQuery `json:"list_votes,omitempty"`
+	// Returns VoterResponse
+	Voter *VoterQuery `json:"voter,omitempty"`
+	// Returns VoterListResponse
+	ListVoters *ListVotersQuery `json:"list_voters,omitempty"`
+}
+
+type ListProposalQuery struct {
+	StartAfter uint64 `json:"start_after,omitempty"`
+	Limit      uint32 `json:"limit,omitempty"`
+}
+
+type VoteQuery struct {
+	ProposalID uint64 `json:"proposal_id"`
+	Voter      string `json:"voter"`
+}
+
+type ListVotesQuery struct {
+	ProposalID uint64 `json:"proposal_id"`
+	StartAfter string `json:"start_after,omitempty"`
+	Limit      uint32 `json:"limit,omitempty"`
+}
+
+type VoterQuery struct {
+	Address string `json:"address"`
+}
+
+type ListVotersQuery struct {
+	StartAfter string `json:"start_after,omitempty"`
+	Limit      uint32 `json:"limit,omitempty"`
+}
+
+type OCProposalResponse struct {
+	ID          uint64            `json:"id"`
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	Proposal    OversightProposal `json:"proposal"`
+	Status      Status            `json:"status"`
+	// TODO: clarify this format
+	// Expires     EXP               `json:"expires"`
+	Rules       VotingRules `json:"rules"`
+	TotalWeight uint64      `json:"total_weight"`
+	Votes       Votes       `json:"votes"`
+}
+
+type Votes struct {
+	Yes     uint64 `json:"yes"`
+	No      uint64 `json:"no"`
+	Abstain uint64 `json:"abstain"`
+	Veto    uint64 `json:"veto"`
+}
+
+type OCProposalListResponse struct {
+	Proposals []OCProposalResponse `json:"proposals"`
+}
+
+type VoteListResponse struct {
+	Votes []VoteInfo `json:"votes"`
+}
+
+type VoteInfo struct {
+	Voter  string `json:"voter"`
+	Vote   Vote   `json:"vote"`
+	Weight uint64 `json:"weight"`
+}
+
+type VoteResponse struct {
+	Vote *VoteInfo `json:"vote,omitempty"`
+}
+
+type VoterResponse struct {
+	Weight *uint64 `json:"weight"`
+}
+
+type VoterListResponse struct {
+	Voters []VoterDetail `json:"voters"`
+}
+
+type VoterDetail struct {
+	Addr   string `json:"addr"`
+	Weight uint64 `json:"weight"`
+}
+
 type Vote string
 
 const (
@@ -68,6 +167,12 @@ const (
 	VETO_VOTE    Vote = "veto"
 )
 
-type ProposalID struct {
-	ProposalID uint64 `json:"proposal_id"`
-}
+type Status string
+
+const (
+	STATUS_PENDING  Status = "pending"
+	STATUS_OPEN     Status = "open"
+	STATUS_REJECTED Status = "rejected"
+	STATUS_PASSED   Status = "passed"
+	STATUS_EXECUTED Status = "executed"
+)
