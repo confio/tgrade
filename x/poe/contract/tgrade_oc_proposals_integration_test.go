@@ -28,11 +28,15 @@ func TestSlashValidator(t *testing.T) {
 	require.NotNil(t, points)
 	t.Logf("Initial Engagement: %d", *points)
 
-	// get system admin
+	// get system admin (better way?)
+	gs := types.GenesisStateFixture()
+	systemAdmin, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
+
 	info := example.TWasmKeeper.GetContractInfo(ctx, engageAddr)
 	require.NotNil(t, info)
-	systemAdmin, err := sdk.AccAddressFromBech32(info.Admin)
+	admin, err := sdk.AccAddressFromBech32(info.Admin)
 	require.NoError(t, err)
+	assert.Equal(t, systemAdmin.String(), admin.String())
 
 	// slash some
 	props := contract.NewOCProposalsContractAdapter(ocProposeAddr, example.TWasmKeeper, nil)
