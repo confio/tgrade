@@ -403,6 +403,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 		app.accountKeeper, app.bankKeeper, authante.DefaultSigVerificationGasConsumer,
 		encodingConfig.TxConfig.SignModeHandler(), keys[wasm.StoreKey], app.ibcKeeper.ChannelKeeper,
 		app.getSubspace(globalfee.ModuleName), app.poeKeeper,
+		twasmConfig.WasmConfig,
 	)
 	app.SetAnteHandler(anteHandler)
 	app.SetEndBlocker(app.EndBlocker)
