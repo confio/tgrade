@@ -211,7 +211,7 @@ func newOCInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
 		Quorum:                    *contract.DecimalFromPercentage(cfg.Quorum),
 		Threshold:                 *contract.DecimalFromPercentage(cfg.Threshold),
 		AllowEndEarly:             cfg.AllowEndEarly,
-		InitialMembers:            []string{}, // no non voting members
+		InitialMembers:            []string{}, // sender is added to OC by default in the contract
 		DenyList:                  cfg.DenyListContractAddress,
 		EditTrustedCircleDisabled: true, // product requirement for OC
 	}

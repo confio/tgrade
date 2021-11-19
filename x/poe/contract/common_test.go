@@ -17,14 +17,14 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-func setupPoEContracts(t *testing.T) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator) {
+func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator) {
 	t.Helper()
 	ctx, example := keeper.CreateDefaultTestInput(t)
 	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
 	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
 
 	mutator, expValidators := withRandomValidators(t, ctx, example, 3)
-	gs := types.GenesisStateFixture(mutator)
+	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
 	adminAddress, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	example.BankKeeper.SetBalances(ctx, adminAddress, sdk.NewCoins(sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000))))
 

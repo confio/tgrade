@@ -1,6 +1,7 @@
 package contract_test
 
 import (
+	"github.com/tendermint/tendermint/libs/rand"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,8 +13,9 @@ import (
 )
 
 func TestSlashValidator(t *testing.T) {
+	var systemAdmin sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 	// setup contracts and seed some data
-	ctx, example, vals := setupPoEContracts(t)
+	ctx, example, vals := setupPoEContracts(t, setSystemAdminMutator(systemAdmin))
 
 	ocProposeAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunityGovProposals)
 	require.NoError(t, err)
@@ -27,10 +29,6 @@ func TestSlashValidator(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, points)
 	t.Logf("Initial Engagement: %d", *points)
-
-	// get system admin (better way?)
-	gs := types.GenesisStateFixture()
-	systemAdmin, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 
 	info := example.TWasmKeeper.GetContractInfo(ctx, engageAddr)
 	require.NotNil(t, info)
@@ -60,4 +58,10 @@ func TestSlashValidator(t *testing.T) {
 	// this is not always the same as half due to rounding
 	expected := *points - (*points / 2)
 	assert.Equal(t, expected, *slashed)
+}
+
+func setSystemAdminMutator(admin sdk.AccAddress) func(m *types.GenesisState) {
+	return func(m *types.GenesisState) {
+		m.SystemAdminAddress = admin.String()
+	}
 }
