@@ -43,9 +43,7 @@ func TestSlashValidator(t *testing.T) {
 
 	info := example.TWasmKeeper.GetContractInfo(ctx, engageAddr)
 	require.NotNil(t, info)
-	admin, err := sdk.AccAddressFromBech32(info.Admin)
-	require.NoError(t, err)
-	assert.Equal(t, systemAdmin.String(), admin.String())
+	assert.Equal(t, systemAdmin.String(), info.Admin)
 
 	// slash some
 	props := contract.NewOCProposalsContractAdapter(ocProposeAddr, example.TWasmKeeper, nil)
