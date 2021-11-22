@@ -39,6 +39,7 @@ func ClearEmbeddedContracts() {
 	tg4Mixer = nil
 	tgValset = nil
 	tgTrustedCircles = nil
+	tgOCGovProposalsCircles = nil
 }
 
 type poeKeeper interface {
