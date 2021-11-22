@@ -3,6 +3,8 @@ package contract
 import (
 	"encoding/json"
 
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -88,11 +90,11 @@ func CallEndBlockWithValidatorUpdate(ctx sdk.Context, contractAddr sdk.AccAddres
 
 // UnbondDelegation unbond the given amount from the operators self delegation
 // Amount must be in bonding token denom
-func UnbondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, operatorAddress sdk.AccAddress, amount sdk.Int, k types.Executor) error {
-	if amount.IsNil() || amount.IsZero() || amount.IsNegative() || !amount.IsInt64() {
+func UnbondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, operatorAddress sdk.AccAddress, amount sdk.Coin, k types.Executor) error {
+	if amount.Amount.IsNil() || amount.IsZero() || amount.IsNegative() || !amount.Amount.IsInt64() {
 		return sdkerrors.Wrap(types.ErrInvalid, "amount")
 	}
-	msg := TG4StakeExecute{Unbond: &Unbond{Tokens: amount}}
+	msg := TG4StakeExecute{Unbond: &Unbond{Tokens: wasmvmtypes.NewCoin(amount.Amount.Uint64(), amount.Denom)}}
 	msgBz, err := json.Marshal(msg)
 	if err != nil {
 		return sdkerrors.Wrap(err, "TG4StakeExecute message")
@@ -162,7 +164,7 @@ func NewContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWasmKeep
 }
 
 // send message via execute entry point
-func (a EngagementContractAdapter) doExecute(ctx sdk.Context, msg interface{}, sender sdk.AccAddress, coin ...sdk.Coin) error {
+func (a ContractAdapter) doExecute(ctx sdk.Context, msg interface{}, sender sdk.AccAddress, coin ...sdk.Coin) error {
 	if err := a.addressLookupErr; err != nil {
 		return err
 	}
@@ -172,4 +174,19 @@ func (a EngagementContractAdapter) doExecute(ctx sdk.Context, msg interface{}, s
 	}
 	_, err = a.twasmKeeper.GetContractKeeper().Execute(ctx, a.contractAddr, sender, msgBz, coin)
 	return sdkerrors.Wrap(err, "execute")
+}
+
+func (a ContractAdapter) doQuery(ctx sdk.Context, query interface{}, result interface{}) error {
+	if err := a.addressLookupErr; err != nil {
+		return err
+	}
+	bz, err := json.Marshal(query)
+	if err != nil {
+		return err
+	}
+	res, err := a.twasmKeeper.QuerySmart(ctx, a.contractAddr, bz)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(res, result)
 }

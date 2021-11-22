@@ -40,7 +40,7 @@ type TG4StakeExecute struct {
 // Unbond will start the unbonding process for the given number of tokens. The sender immediately loses weight from these tokens, and can claim them back to his wallet after `unbonding_period`",
 type Unbond struct {
 	// Tokens are the amount to unbond
-	Tokens sdk.Int `json:"tokens"`
+	Tokens wasmvmtypes.Coin `json:"tokens"`
 }
 
 // TG4StakeQuery contains some custom queries for the tg4-stake contract.

@@ -32,6 +32,7 @@ func DefaultGenesisState() GenesisState {
 			FeePercentage:         sdk.NewDec(50),
 			AutoUnjail:            false,
 			ValidatorsRewardRatio: 50,
+			DoubleSignSlashRatio:  sdk.NewDec(50),
 		},
 		EngagmentContractConfig: &EngagementContractConfig{
 			Halflife: 180 * 24 * time.Hour,
@@ -39,9 +40,9 @@ func DefaultGenesisState() GenesisState {
 		OversightCommitteeContractConfig: &OversightCommitteeContractConfig{
 			Name:          "Oversight Community",
 			EscrowAmount:  sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
-			VotingPeriod:  1,
-			Quorum:        sdk.NewDec(50),
-			Threshold:     sdk.NewDec(66),
+			VotingPeriod:  30,
+			Quorum:        sdk.NewDec(51),
+			Threshold:     sdk.NewDec(55),
 			AllowEndEarly: true,
 		},
 		SystemAdminAddress: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),

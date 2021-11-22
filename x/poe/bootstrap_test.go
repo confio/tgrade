@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -27,6 +28,15 @@ import (
 
 func TestBootstrapPoEContracts(t *testing.T) {
 	var (
+		engagementContractAddr    = wasmkeeper.BuildContractAddress(1, 1)
+		ocContractAddr            = wasmkeeper.BuildContractAddress(2, 2)
+		stakingContractAdddr      = wasmkeeper.BuildContractAddress(3, 3)
+		mixerContractAddr         = wasmkeeper.BuildContractAddress(4, 4)
+		valsetContractAddr        = wasmkeeper.BuildContractAddress(5, 5)
+		distributionContractAddr  = wasmkeeper.BuildContractAddress(1, 6) // created by a contract so not really persisted
+		ocGovProposalContractAddr = wasmkeeper.BuildContractAddress(6, 6) // instanceID = 7
+	)
+	var (
 		defaultLimit     uint64 = 20
 		expFeePercentage        = contract.DecimalFromProMille(500)
 		mySystemAdmin           = types.RandomAccAddress().String()
@@ -34,34 +44,17 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		myOtherUser             = types.RandomAccAddress().String()
 	)
 
-	var (
-		engagementContractAddr    = wasmkeeper.BuildContractAddress(1, 1)
-		ocContractAddr            = wasmkeeper.BuildContractAddress(2, 2)
-		ocGovProposalContractAddr = wasmkeeper.BuildContractAddress(3, 3)
-		stakingContractAdddr      = wasmkeeper.BuildContractAddress(4, 4)
-		mixerContractAddr         = wasmkeeper.BuildContractAddress(5, 5)
-		valsetContractAddr        = wasmkeeper.BuildContractAddress(6, 6)
-		distributionContractAddr  = wasmkeeper.BuildContractAddress(1, 7) // created by a contract so not really persisted
-
-	)
-
-	specs := map[string]struct {
-		genesis                   types.GenesisState
-		expEngagementInit         contract.TG4EngagementInitMsg
-		expStakerInit             contract.TG4StakeInitMsg
-		expValsetInit             contract.ValsetInitMsg
-		expOversightCommitteeInit contract.TrustedCircleInitMsg
-		expOCGovProposalsInit     contract.OCProposalsInitMsg
-		expErr                    bool
-		expMixerInit              contract.TG4MixerInitMsg
-	}{
-		"all contracts setup": {
-			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
-				m.SystemAdminAddress = mySystemAdmin
-				m.Engagement = []types.TG4Member{{Address: myUser, Weight: 10}, {Address: myOtherUser, Weight: 11}}
-				m.ValsetContractConfig.FeePercentage = sdk.NewDec(50)
-			}),
-			expEngagementInit: contract.TG4EngagementInitMsg{
+	type contractSetup struct {
+		expInitMsg   interface{}
+		wasmFile     string
+		contractAddr sdk.AccAddress
+		codeID       uint64
+		pinned       bool
+		privileged   bool
+	}
+	allContracts := map[types.PoEContractType]contractSetup{
+		types.PoEContractTypeEngagement: {
+			expInitMsg: contract.TG4EngagementInitMsg{
 				Admin:            mySystemAdmin, // updated later
 				PreAuthsHooks:    1,
 				PreAuthsSlashing: 1,
@@ -69,7 +62,30 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				Token:            "utgd",
 				Halflife:         15552000,
 			},
-			expStakerInit: contract.TG4StakeInitMsg{
+			wasmFile:     "tg4_engagement.wasm",
+			contractAddr: engagementContractAddr,
+			codeID:       1,
+			pinned:       true,
+		},
+		types.PoEContractTypeOversightCommunity: {
+			expInitMsg: contract.TrustedCircleInitMsg{
+				Name:                      "Oversight Community",
+				EscrowAmount:              sdk.NewInt(1_000_000),
+				VotingPeriod:              30,
+				Quorum:                    sdk.NewDecWithPrec(51, 2),
+				Threshold:                 sdk.NewDecWithPrec(55, 2),
+				AllowEndEarly:             true,
+				DenyList:                  "",
+				EditTrustedCircleDisabled: true,
+				InitialMembers:            []string{},
+			},
+			wasmFile:     "tgrade_trusted_circle.wasm",
+			contractAddr: ocContractAddr,
+			codeID:       2,
+			pinned:       true,
+		},
+		types.PoEContractTypeStaking: {
+			expInitMsg: contract.TG4StakeInitMsg{
 				Admin:            mySystemAdmin,
 				Denom:            "utgd",
 				MinBond:          1,
@@ -79,7 +95,28 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				PreAuthsHooks:    1,
 				PreAuthsSlashing: 1,
 			},
-			expValsetInit: contract.ValsetInitMsg{
+			wasmFile:     "tg4_stake.wasm",
+			contractAddr: stakingContractAdddr,
+			codeID:       3,
+			privileged:   true,
+		},
+		types.PoEContractTypeMixer: {
+			expInitMsg: contract.TG4MixerInitMsg{
+				PreAuthsSlashing: 1,
+				LeftGroup:        engagementContractAddr.String(),
+				RightGroup:       stakingContractAdddr.String(),
+				FunctionType: contract.MixerFunction{
+					GeometricMean: &struct{}{},
+				},
+			},
+			wasmFile:     "tg4_mixer.wasm",
+			contractAddr: mixerContractAddr,
+			codeID:       4,
+			pinned:       true,
+		},
+		types.PoEContractTypeValset: {
+			expInitMsg: contract.ValsetInitMsg{
+				Admin:                 mySystemAdmin,
 				Membership:            mixerContractAddr.String(),
 				MinWeight:             1,
 				MaxValidators:         100,
@@ -92,139 +129,135 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				RewardsCodeID:         1,
 				DistributionContract:  engagementContractAddr.String(),
 			},
-			expOversightCommitteeInit: contract.TrustedCircleInitMsg{
-				Name:                      "Oversight Community",
-				EscrowAmount:              sdk.NewInt(1_000_000),
-				VotingPeriod:              1,
-				Quorum:                    sdk.NewDecWithPrec(50, 2),
-				Threshold:                 sdk.NewDecWithPrec(66, 2),
-				AllowEndEarly:             true,
-				DenyList:                  "",
-				EditTrustedCircleDisabled: true,
-				InitialMembers:            []string{},
-			},
-			expOCGovProposalsInit: contract.OCProposalsInitMsg{
-				GroupContractAddress:     ocContractAddr.String(),
-				EngagemenContractAddress: engagementContractAddr.String(),
+			wasmFile:     "tgrade_valset.wasm",
+			contractAddr: valsetContractAddr,
+			codeID:       5,
+			privileged:   true,
+		},
+		types.PoEContractTypeDistribution: {
+			codeID:       1,
+			contractAddr: distributionContractAddr,
+		},
+		types.PoEContractTypeOversightCommunityGovProposals: {
+			expInitMsg: contract.OCProposalsInitMsg{
+				ValsetContractAddress:     valsetContractAddr.String(),
+				GroupContractAddress:      ocContractAddr.String(),
+				EngagementContractAddress: engagementContractAddr.String(),
 				VotingRules: contract.VotingRules{
-					VotingPeriod:  1,
-					Quorum:        sdk.NewDecWithPrec(50, 2),
-					Threshold:     sdk.NewDecWithPrec(66, 2),
+					VotingPeriod:  30,
+					Quorum:        sdk.NewDecWithPrec(51, 2),
+					Threshold:     sdk.NewDecWithPrec(55, 2),
 					AllowEndEarly: true,
 				},
 			},
-			expMixerInit: contract.TG4MixerInitMsg{
-				PreAuthsSlashing: 1,
-				LeftGroup:        engagementContractAddr.String(),
-				RightGroup:       stakingContractAdddr.String(),
-				FunctionType: contract.MixerFunction{
-					GeometricMean: &struct{}{},
-				},
-			},
+			wasmFile:     "tgrade_oc_proposals.wasm",
+			contractAddr: ocGovProposalContractAddr,
+			codeID:       6,
+			pinned:       true,
 		},
 	}
-	for name, spec := range specs {
-		t.Run(name, func(t *testing.T) {
-			cFn, capCreate := twasmtesting.CaptureCreateFn()
-			iFn, capInst := twasmtesting.CaptureInstantiateFn(1, 2, 3, 4, 5, 6, 7, 8)
-			pFn, capPin := twasmtesting.CapturePinCodeFn()
-			uFn, capAdminUpdates := captureWasmAdminUpdates()
-			cm := twasmtesting.ContractOpsKeeperMock{
-				CreateFn:              cFn,
-				InstantiateFn:         iFn,
-				PinCodeFn:             pFn,
-				UpdateContractAdminFn: uFn,
-			}
-
-			spFn, capPriv := CaptureSetPrivilegedFn()
-			tm := twasmKeeperMock{
-				SetPrivilegedFn: spFn,
-				QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
-					require.Equal(t, valsetContractAddr, contractAddr)
-					cfg := contract.ValsetConfigResponse{
-						DistributionContract: distributionContractAddr.String(),
-					}
-					return json.Marshal(cfg)
-				},
-			}
-			sFn, capSetAddr := keeper.CaptureSetPoEContractAddressFn()
-			pm := keeper.PoEKeeperMock{
-				SetPoEContractAddressFn: sFn,
-				ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
-					return poetesting.ValsetContractMock{QueryConfigFn: func(ctx sdk.Context) (*contract.ValsetConfigResponse, error) {
-						return &contract.ValsetConfigResponse{DistributionContract: distributionContractAddr.String()}, nil
-					}}
-				},
-				EngagementContractFn: func(ctx sdk.Context) keeper.EngagementContract {
-					return poetesting.EngagementContractMock{
-						UpdateAdminFn: func(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
-							assert.Equal(t, ocGovProposalContractAddr, newAdmin)
-							assert.Equal(t, mySystemAdmin, sender.String())
-							return nil
-						},
-					}
-				},
-				GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
-					require.Equal(t, types.PoEContractTypeEngagement, ctype)
-					return engagementContractAddr, nil
-				},
-			}
-			// when
-			ctx := sdk.Context{}.WithLogger(log.TestingLogger())
-			gotErr := bootstrapPoEContracts(ctx, cm, tm, pm, spec.genesis)
-			// then
-			if spec.expErr {
-				require.Error(t, gotErr)
-				return
-			}
-			require.NoError(t, gotErr)
-			// and assert all codes got uploaded
-			require.Equal(t, 6, len(*capCreate))
-			for i, f := range []string{"tg4_engagement.wasm", "tgrade_trusted_circle.wasm", "tgrade_oc_proposals.wasm", "tg4_stake.wasm", "tg4_mixer.wasm", "tgrade_valset.wasm"} {
-				c, err := ioutil.ReadFile(filepath.Join("contract", f))
-				require.NoError(t, err)
-				assert.Equal(t, c, (*capCreate)[i].WasmCode)
-			}
-			// and contracts proper instantiated
-			require.Len(t, *capInst, 6)
-
-			var (
-				gotEngagementInit    contract.TG4EngagementInitMsg
-				gotOCInit            contract.TrustedCircleInitMsg
-				gotOCGovProposalInit contract.OCProposalsInitMsg
-				gotStakerInit        contract.TG4StakeInitMsg
-				gotMixerInit         contract.TG4MixerInitMsg
-				gotValsetInit        contract.ValsetInitMsg
-			)
-			for i, ref := range []interface{}{&gotEngagementInit, &gotOCInit, &gotOCGovProposalInit, &gotStakerInit, &gotMixerInit, &gotValsetInit} {
-				require.NoError(t, json.Unmarshal((*capInst)[i].InitMsg, ref))
-			}
-			assert.Equal(t, spec.expEngagementInit, gotEngagementInit)
-			assert.Equal(t, spec.expStakerInit, gotStakerInit)
-			assert.Equal(t, spec.expValsetInit, gotValsetInit)
-			assert.Equal(t, spec.expOversightCommitteeInit, gotOCInit)
-			assert.Equal(t, spec.expOCGovProposalsInit, gotOCGovProposalInit)
-			assert.Equal(t, spec.expMixerInit, gotMixerInit)
-
-			// and pinned
-			assert.Equal(t, []uint64{1, 2, 3, 5}, *capPin)
-			// or privileged
-			require.Equal(t, []sdk.AccAddress{stakingContractAdddr, valsetContractAddr}, *capPriv)
-
-			// and contract addr stored for types
-			assert.Equal(t, []keeper.CapturedPoEContractAddress{
-				{Ctype: types.PoEContractTypeEngagement, ContractAddr: engagementContractAddr},
-				{Ctype: types.PoEContractTypeOversightCommunity, ContractAddr: ocContractAddr},
-				{Ctype: types.PoEContractTypeOversightCommunityGovProposals, ContractAddr: ocGovProposalContractAddr},
-				{Ctype: types.PoEContractTypeStaking, ContractAddr: stakingContractAdddr},
-				{Ctype: types.PoEContractTypeMixer, ContractAddr: mixerContractAddr},
-				{Ctype: types.PoEContractTypeValset, ContractAddr: valsetContractAddr},
-				{Ctype: types.PoEContractTypeDistribution, ContractAddr: distributionContractAddr},
-			}, *capSetAddr)
-
-			assert.Empty(t, *capAdminUpdates)
-		})
+	expContractSetup := make([]contractSetup, 0, len(allContracts))
+	bootstrapOrder := []types.PoEContractType{
+		types.PoEContractTypeEngagement,
+		types.PoEContractTypeOversightCommunity,
+		types.PoEContractTypeStaking,
+		types.PoEContractTypeMixer,
+		types.PoEContractTypeValset,
+		types.PoEContractTypeDistribution,
+		types.PoEContractTypeOversightCommunityGovProposals,
 	}
+	for _, v := range bootstrapOrder {
+		if allContracts[v].expInitMsg == nil { // skip all that are not setup externally
+			continue
+		}
+		expContractSetup = append(expContractSetup, allContracts[v])
+	}
+	// setup mocks
+	cFn, capCreate := twasmtesting.CaptureCreateFn()
+	iFn, capInst := twasmtesting.CaptureInstantiateFn(1, 2, 3, 4, 5, 6, 7, 8)
+	pFn, capPin := twasmtesting.CapturePinCodeFn()
+	uFn, capWasmAdminUpdates := captureWasmAdminUpdates()
+	cm := twasmtesting.ContractOpsKeeperMock{
+		CreateFn:              cFn,
+		InstantiateFn:         iFn,
+		PinCodeFn:             pFn,
+		UpdateContractAdminFn: uFn,
+	}
+
+	spFn, capPriv := CaptureSetPrivilegedFn()
+	tm := twasmKeeperMock{
+		SetPrivilegedFn: spFn,
+	}
+	sFn, capSetAddr := keeper.CaptureSetPoEContractAddressFn()
+	pm := keeper.PoEKeeperMock{
+		SetPoEContractAddressFn: sFn,
+		ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
+			return poetesting.ValsetContractMock{
+				QueryConfigFn: func(ctx sdk.Context) (*contract.ValsetConfigResponse, error) {
+					return &contract.ValsetConfigResponse{RewardsContract: distributionContractAddr.String()}, nil
+				},
+				UpdateAdminFn: func(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
+					assert.Equal(t, ocGovProposalContractAddr, newAdmin)
+					assert.Equal(t, mySystemAdmin, sender.String())
+					return nil
+				},
+			}
+		},
+		EngagementContractFn: func(ctx sdk.Context) keeper.EngagementContract {
+			return poetesting.EngagementContractMock{
+				UpdateAdminFn: func(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
+					assert.Equal(t, ocGovProposalContractAddr, newAdmin)
+					assert.Equal(t, mySystemAdmin, sender.String())
+					return nil
+				},
+			}
+		},
+		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
+			require.Equal(t, types.PoEContractTypeEngagement, ctype)
+			return engagementContractAddr, nil
+		},
+	}
+
+	// when
+	ctx := sdk.Context{}.WithLogger(log.TestingLogger())
+	genesis := types.GenesisStateFixture(func(m *types.GenesisState) {
+		m.SystemAdminAddress = mySystemAdmin
+		m.Engagement = []types.TG4Member{{Address: myUser, Weight: 10}, {Address: myOtherUser, Weight: 11}}
+	})
+	gotErr := bootstrapPoEContracts(ctx, cm, tm, pm, genesis)
+
+	// then
+	require.NoError(t, gotErr)
+
+	pos, pos2 := 0, 0
+	for i, e := range expContractSetup {
+		// and assert all codes got uploaded
+		c, err := ioutil.ReadFile(filepath.Join("contract", e.wasmFile))
+		require.NoError(t, err)
+		require.Equal(t, c, (*capCreate)[i].WasmCode, e.wasmFile)
+		// and contracts proper instantiated
+		got := reflect.New(reflect.TypeOf(e.expInitMsg))
+		require.NoError(t, json.Unmarshal((*capInst)[i].InitMsg, got.Interface()), "unmarshal json back to original type: %d", i)
+		require.Equal(t, e.expInitMsg, got.Elem().Interface())
+		// and code cache set
+		switch {
+		case e.pinned:
+			require.Equal(t, e.codeID, (*capPin)[pos])
+			pos++
+		case e.privileged:
+			require.Equal(t, e.contractAddr, (*capPriv)[pos2])
+			pos2++
+		default:
+			t.Fatal("not pinned or privileged")
+		}
+	}
+
+	// and all contract addr stored for types
+	for i, v := range bootstrapOrder {
+		require.Equal(t, v, (*capSetAddr)[i].Ctype)
+		require.Equal(t, allContracts[v].contractAddr, (*capSetAddr)[i].ContractAddr)
+	}
+	assert.Empty(t, *capWasmAdminUpdates)
 }
 
 type capturedContractAdminUpdate struct {
@@ -244,6 +277,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 	minDecimal := sdk.NewDec(1).QuoInt64(1_000_000_000_000_000_000)
 	engagementID := uint64(7)
 	engagementAddr := types.RandomAccAddress()
+	systemAdmin := types.RandomAccAddress()
 
 	specs := map[string]struct {
 		genesis types.GenesisState
@@ -252,6 +286,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 		"default": {
 			genesis: types.DefaultGenesisState(),
 			exp: contract.ValsetInitMsg{
+				Admin:                 systemAdmin.String(),
 				Membership:            mixerContractAddr.String(),
 				MinWeight:             1,
 				MaxValidators:         100,
@@ -272,6 +307,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
+				Admin:                 systemAdmin.String(),
 				Membership:            mixerContractAddr.String(),
 				MinWeight:             1,
 				MaxValidators:         100,
@@ -292,6 +328,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
+				Admin:                 systemAdmin.String(),
 				Membership:            mixerContractAddr.String(),
 				MinWeight:             1,
 				MaxValidators:         100,
@@ -312,6 +349,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
+				Admin:                 systemAdmin.String(),
 				Membership:            mixerContractAddr.String(),
 				MinWeight:             1,
 				MaxValidators:         100,
@@ -328,7 +366,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			got := newValsetInitMsg(spec.genesis, mixerContractAddr, engagementAddr, engagementID)
+			got := newValsetInitMsg(spec.genesis, systemAdmin, mixerContractAddr, engagementAddr, engagementID)
 			assert.Equal(t, spec.exp, got)
 		})
 	}

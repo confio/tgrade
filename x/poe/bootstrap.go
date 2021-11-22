@@ -99,27 +99,6 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 	logger.Info("oversight community contract", "address", ocContractAddr, "code_id", ocCodeID)
 
-	// setup oversight community gov proposals contract
-	ocGovCodeID, err := k.Create(ctx, systemAdminAddr, tgOCGovProposalsCircles, &wasmtypes.AllowEverybody)
-	if err != nil {
-		return sdkerrors.Wrap(err, "store tg oc gov proposals contract: ")
-	}
-	ocGovInitMsg := newOCGovProposalsInitMsg(gs, ocContractAddr, engagementContractAddr)
-	ocGovProposalsContractAddr, _, err := k.Instantiate(ctx, ocGovCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(ocGovInitMsg), "oversight_committee gov proposals", deposit)
-	if err != nil {
-		return sdkerrors.Wrap(err, "instantiate tg oc gov proposals contract")
-	}
-	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunityGovProposals, ocGovProposalsContractAddr)
-	if err := k.PinCode(ctx, ocGovCodeID); err != nil {
-		return sdkerrors.Wrap(err, "pin tg oc gov proposals contract")
-	}
-	logger.Info("oversight community gov proposal contract", "address", ocGovProposalsContractAddr, "code_id", ocGovCodeID)
-
-	err = poeKeeper.EngagementContract(ctx).UpdateAdmin(ctx, ocGovProposalsContractAddr, systemAdminAddr)
-	if err != nil {
-		return sdkerrors.Wrap(err, "set new engagement contract admin")
-	}
-
 	// setup stake contract
 	stakeCodeID, err := k.Create(ctx, systemAdminAddr, tg4Stake, &wasmtypes.AllowEverybody)
 	if err != nil {
@@ -168,7 +147,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "store valset contract")
 	}
 
-	valsetInitMsg := newValsetInitMsg(gs, mixerContractAddr, engagementContractAddr, engagementCodeID)
+	valsetInitMsg := newValsetInitMsg(gs, systemAdminAddr, mixerContractAddr, engagementContractAddr, engagementCodeID)
 	valsetJSON := mustMarshalJson(valsetInitMsg)
 	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, systemAdminAddr, systemAdminAddr, valsetJSON, "valset", nil)
 	if err != nil {
@@ -182,7 +161,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "query valset config")
 	}
 
-	distrAddr, err := sdk.AccAddressFromBech32(valsetCfg.DistributionContract)
+	distrAddr, err := sdk.AccAddressFromBech32(valsetCfg.RewardsContract)
 	if err != nil {
 		return sdkerrors.Wrap(err, "distribution contract address")
 	}
@@ -192,6 +171,33 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "grant privileges to valset contract")
 	}
 	logger.Info("valset contract", "address", valsetContractAddr, "code_id", valSetCodeID)
+
+	// setup oversight community gov proposals contract
+	ocGovCodeID, err := k.Create(ctx, systemAdminAddr, tgOCGovProposalsCircles, &wasmtypes.AllowEverybody)
+	if err != nil {
+		return sdkerrors.Wrap(err, "store tg oc gov proposals contract: ")
+	}
+	ocGovInitMsg := newOCGovProposalsInitMsg(gs, ocContractAddr, engagementContractAddr, valsetContractAddr)
+	ocGovProposalsContractAddr, _, err := k.Instantiate(ctx, ocGovCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(ocGovInitMsg), "oversight_committee gov proposals", deposit)
+	if err != nil {
+		return sdkerrors.Wrap(err, "instantiate tg oc gov proposals contract")
+	}
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunityGovProposals, ocGovProposalsContractAddr)
+	if err := k.PinCode(ctx, ocGovCodeID); err != nil {
+		return sdkerrors.Wrap(err, "pin tg oc gov proposals contract")
+	}
+	logger.Info("oversight community gov proposal contract", "address", ocGovProposalsContractAddr, "code_id", ocGovCodeID)
+
+	err = poeKeeper.EngagementContract(ctx).UpdateAdmin(ctx, ocGovProposalsContractAddr, systemAdminAddr)
+	if err != nil {
+		return sdkerrors.Wrap(err, "set new engagement contract admin")
+	}
+
+	err = poeKeeper.ValsetContract(ctx).UpdateAdmin(ctx, ocGovProposalsContractAddr, systemAdminAddr)
+	if err != nil {
+		return sdkerrors.Wrap(err, "set new valset contract admin")
+	}
+
 	return nil
 }
 
@@ -205,18 +211,19 @@ func newOCInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
 		Quorum:                    *contract.DecimalFromPercentage(cfg.Quorum),
 		Threshold:                 *contract.DecimalFromPercentage(cfg.Threshold),
 		AllowEndEarly:             cfg.AllowEndEarly,
-		InitialMembers:            []string{}, // no non voting members
+		InitialMembers:            []string{}, // sender is added to OC by default in the contract
 		DenyList:                  cfg.DenyListContractAddress,
 		EditTrustedCircleDisabled: true, // product requirement for OC
 	}
 }
 
 // build instantiate message for OC Proposals contract
-func newOCGovProposalsInitMsg(gs types.GenesisState, ocContract, engagementContract sdk.AccAddress) contract.OCProposalsInitMsg {
+func newOCGovProposalsInitMsg(gs types.GenesisState, ocContract, engagementContract, valsetContract sdk.AccAddress) contract.OCProposalsInitMsg {
 	cfg := gs.OversightCommitteeContractConfig
 	return contract.OCProposalsInitMsg{
-		GroupContractAddress:     ocContract.String(),
-		EngagemenContractAddress: engagementContract.String(),
+		GroupContractAddress:      ocContract.String(),
+		ValsetContractAddress:     valsetContract.String(),
+		EngagementContractAddress: engagementContract.String(),
 		VotingRules: contract.VotingRules{
 			VotingPeriod:  cfg.VotingPeriod,
 			Quorum:        *contract.DecimalFromPercentage(cfg.Quorum),
@@ -260,21 +267,24 @@ func newStakeInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.T
 
 func newValsetInitMsg(
 	gs types.GenesisState,
+	admin sdk.AccAddress,
 	mixerContractAddr sdk.AccAddress,
 	engagementAddr sdk.AccAddress,
 	engagementCodeID uint64,
 ) contract.ValsetInitMsg {
+	config := gs.ValsetContractConfig
 	return contract.ValsetInitMsg{
+		Admin:                 admin.String(),
 		Membership:            mixerContractAddr.String(),
-		MinWeight:             gs.ValsetContractConfig.MinWeight,
-		MaxValidators:         gs.ValsetContractConfig.MaxValidators,
-		EpochLength:           uint64(gs.ValsetContractConfig.EpochLength.Seconds()),
-		EpochReward:           gs.ValsetContractConfig.EpochReward,
+		MinWeight:             config.MinWeight,
+		MaxValidators:         config.MaxValidators,
+		EpochLength:           uint64(config.EpochLength.Seconds()),
+		EpochReward:           config.EpochReward,
 		InitialKeys:           []contract.Validator{},
-		Scaling:               gs.ValsetContractConfig.Scaling,
-		FeePercentage:         contract.DecimalFromPercentage(gs.ValsetContractConfig.FeePercentage),
-		AutoUnjail:            gs.ValsetContractConfig.AutoUnjail,
-		ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(int64(gs.ValsetContractConfig.ValidatorsRewardRatio))),
+		Scaling:               config.Scaling,
+		FeePercentage:         contract.DecimalFromPercentage(config.FeePercentage),
+		AutoUnjail:            config.AutoUnjail,
+		ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(int64(config.ValidatorsRewardRatio))),
 		DistributionContract:  engagementAddr.String(),
 		RewardsCodeID:         engagementCodeID,
 	}

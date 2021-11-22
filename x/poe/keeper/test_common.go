@@ -184,7 +184,7 @@ func createTestInput(
 	bankParams := banktypes.DefaultParams()
 	bankParams = bankParams.SetSendEnabledParam("utgd", true)
 	bankKeeper.SetParams(ctx, bankParams)
-	bankKeeper.SetSupply(ctx, banktypes.NewSupply(sdk.NewCoins(sdk.NewCoin("utgd", sdk.ZeroInt()))))
+	bankKeeper.SetSupply(ctx, banktypes.NewSupply(sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(1_000_000_000_000)))))
 
 	capabilityKeeper := capabilitykeeper.NewKeeper(appCodec, keyCapability, keyCapabilityTransient)
 	scopedIBCKeeper := capabilityKeeper.ScopeToModule(ibchost.ModuleName)
