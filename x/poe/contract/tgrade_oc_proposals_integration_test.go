@@ -1,8 +1,9 @@
 package contract_test
 
 import (
-	"github.com/tendermint/tendermint/libs/rand"
 	"testing"
+
+	"github.com/tendermint/tendermint/libs/rand"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
@@ -19,6 +20,8 @@ func TestSlashValidator(t *testing.T) {
 
 	ocProposeAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunityGovProposals)
 	require.NoError(t, err)
+	ocAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunity)
+	require.NoError(t, err)
 	engageAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
 	require.NoError(t, err)
 	opAddr, err := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
@@ -29,6 +32,14 @@ func TestSlashValidator(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, points)
 	t.Logf("Initial Engagement: %d", *points)
+
+	// increase height to ensure membership in gov process
+	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
+
+	// check system admin is OC member with voting power
+	power, err := contract.QueryTG4Member(ctx, example.TWasmKeeper, ocAddr, systemAdmin)
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, *power, 1, "system admin must be voting member")
 
 	info := example.TWasmKeeper.GetContractInfo(ctx, engageAddr)
 	require.NotNil(t, info)
@@ -45,7 +56,6 @@ func TestSlashValidator(t *testing.T) {
 	latest, err := props.LatestProposal(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, latest)
-
 	// execute the contract
 	err = props.ExecuteProposal(ctx, latest.ID, systemAdmin)
 	require.NoError(t, err)

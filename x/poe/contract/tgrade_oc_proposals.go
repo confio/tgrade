@@ -1,9 +1,10 @@
 package contract
 
 import (
-	"github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 type OCProposalsContractAdapter struct {
