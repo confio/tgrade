@@ -23,7 +23,7 @@ func SetupWasmHandlers(cdc codec.Marshaler,
 ) []wasmkeeper.Option {
 	queryPluginOpt := wasmkeeper.WithQueryPlugins(&wasmkeeper.QueryPlugins{
 		Staking: poewasm.StakingQuerier(poeKeeper),
-		Custom: poewasm.CustomQuerier(poeKeeper),
+		Custom:  poewasm.CustomQuerier(poeKeeper),
 	})
 
 	extMessageHandlerOpt := wasmkeeper.WithMessageHandlerDecorator(func(nested wasmkeeper.Messenger) wasmkeeper.Messenger {
