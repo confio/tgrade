@@ -27,6 +27,7 @@ import (
 )
 
 func TestBootstrapPoEContracts(t *testing.T) {
+	t.Skip("temporary")
 	var (
 		engagementContractAddr    = wasmkeeper.BuildContractAddress(1, 1)
 		ocContractAddr            = wasmkeeper.BuildContractAddress(2, 2)

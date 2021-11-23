@@ -20,13 +20,16 @@
     - [PoEContractType](#confio.poe.v1beta1.PoEContractType)
   
 - [confio/poe/v1beta1/genesis.proto](#confio/poe/v1beta1/genesis.proto)
+    - [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig)
     - [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig)
     - [GenesisState](#confio.poe.v1beta1.GenesisState)
     - [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig)
     - [PoEContract](#confio.poe.v1beta1.PoEContract)
     - [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig)
     - [TG4Member](#confio.poe.v1beta1.TG4Member)
+    - [ValidatorVotingContractConfig](#confio.poe.v1beta1.ValidatorVotingContractConfig)
     - [ValsetContractConfig](#confio.poe.v1beta1.ValsetContractConfig)
+    - [VotingRules](#confio.poe.v1beta1.VotingRules)
   
 - [confio/poe/v1beta1/query.proto](#confio/poe/v1beta1/query.proto)
     - [QueryContractAddressRequest](#confio.poe.v1beta1.QueryContractAddressRequest)
@@ -217,6 +220,8 @@ PoEContractType type of PoE contract
 | DISTRIBUTION | 5 |  |
 | OVERSIGHT_COMMUNITY | 6 |  |
 | OVERSIGHT_COMMUNITY_PROPOSALS | 7 |  |
+| COMMUNITY_POOL | 8 |  |
+| VALIDATOR_VOTING | 9 |  |
 
 
  <!-- end enums -->
@@ -231,6 +236,21 @@ PoEContractType type of PoE contract
 <p align="right"><a href="#top">Top</a></p>
 
 ## confio/poe/v1beta1/genesis.proto
+
+
+
+<a name="confio.poe.v1beta1.CommunityPoolContractConfig"></a>
+
+### CommunityPoolContractConfig
+CommunityPoolContractConfig initial setup config for the contract
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `voting_rules` | [VotingRules](#confio.poe.v1beta1.VotingRules) |  | VotingRules rules for the tally |
+
+
+
 
 
 
@@ -268,6 +288,8 @@ GenesisState - initial state of module
 | `engagment_contract_config` | [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig) |  |  |
 | `bond_denom` | [string](#string) |  | BondDenom defines the bondable coin denomination. |
 | `oversight_committee_contract_config` | [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig) |  |  |
+| `community_pool_contract_config` | [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig) |  |  |
+| `validator_voting_contract_config` | [ValidatorVotingContractConfig](#confio.poe.v1beta1.ValidatorVotingContractConfig) |  |  |
 
 
 
@@ -284,10 +306,7 @@ OversightCommitteeContractConfig initial setup config for the trusted circle
 | ----- | ---- | ----- | ----------- |
 | `name` | [string](#string) |  | Name of TRUSTED_CIRCLE |
 | `escrow_amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | EscrowAmount The required escrow amount, in the default denom (utgd) |
-| `voting_period` | [uint32](#uint32) |  | VotingPeriod Voting period in days |
-| `quorum` | [string](#string) |  | Quorum voting quorum percentage (0-100) |
-| `threshold` | [string](#string) |  | Threshold voting threshold percentage (0-100) |
-| `allow_end_early` | [bool](#bool) |  | AllowEndEarly If true, and absolute threshold and quorum are met, we can end before voting period finished. (Recommended value: true, unless you have special needs) |
+| `voting_rules` | [VotingRules](#confio.poe.v1beta1.VotingRules) |  | VotingRules rules for the tally |
 | `deny_list_contract_address` | [string](#string) |  | DenyListContractAddress is an optional cw4 contract with list of addresses denied to be part of TrustedCircle |
 
 
@@ -345,6 +364,21 @@ TG4Member member of the Engagement group.
 
 
 
+<a name="confio.poe.v1beta1.ValidatorVotingContractConfig"></a>
+
+### ValidatorVotingContractConfig
+ValidatorVotingContractConfig CommunityPoolContractConfig
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `voting_rules` | [VotingRules](#confio.poe.v1beta1.VotingRules) |  | VotingRules rules for the tally |
+
+
+
+
+
+
 <a name="confio.poe.v1beta1.ValsetContractConfig"></a>
 
 ### ValsetContractConfig
@@ -362,6 +396,24 @@ ValsetContractConfig initial setup config
 | `ValidatorsRewardRatio` | [uint32](#uint32) |  | ValidatorsRewardRatio in percentage |
 | `AutoUnjail` | [bool](#bool) |  | AutoUnjail if set to true, we will auto-unjail any validator after their jailtime is over. |
 | `double_sign_slash_ratio` | [string](#string) |  | DoubleSignSlashRatio Validators who are caught double signing are jailed forever and their bonded tokens are slashed based on this value. |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.VotingRules"></a>
+
+### VotingRules
+VotingRules contains configuration for the tally.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `voting_period` | [uint32](#uint32) |  | VotingPeriod Voting period in days |
+| `quorum` | [string](#string) |  | Quorum voting quorum percentage (0-100) |
+| `threshold` | [string](#string) |  | Threshold voting threshold percentage (0-100) |
+| `allow_end_early` | [bool](#bool) |  | AllowEndEarly If true, and absolute threshold and quorum are met, we can end before voting period finished. (Recommended value: true, unless you have special needs) |
 
 
 

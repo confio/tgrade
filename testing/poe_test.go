@@ -172,7 +172,7 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 		"--pubkey="+pubKeyAddr, "--from=newOperator")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
-	sut.AwaitNextBlock(t)
+	sut.AwaitNextBlock(t, defaultWaitTime*2)
 	AwaitValsetEpochCompleted(t)
 
 	// then
