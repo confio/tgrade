@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	"github.com/confio/tgrade/x/poe/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -15,6 +16,7 @@ type ViewKeeper interface {
 	DistributionContract(ctx sdk.Context) keeper.DistributionContract
 	ValsetContract(ctx sdk.Context) keeper.ValsetContract
 	StakeContract(ctx sdk.Context) keeper.StakeContract
+	GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error)
 }
 
 func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmtypes.StakingQuery) ([]byte, error) {
@@ -127,5 +129,41 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 			return json.Marshal(res)
 		}
 		return nil, wasmvmtypes.UnsupportedRequest{Kind: "unknown Staking variant"}
+	}
+}
+
+type ContractAddrResponse struct {
+	Addr sdk.AccAddress `json:"address"`
+}
+
+func CustomQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
+	return func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
+		// Map from json to object
+		// Map request to a ContractAddressQuery object
+		type PoEContractAddressQuery struct {
+			ContractType string `json:"contract_type"`
+		}
+		var contractQuery PoEContractAddressQuery
+		if err := json.Unmarshal(request, &contractQuery); err != nil {
+			return nil, sdkerrors.Wrap(err, "custom querier")
+		}
+
+		// Map type to protobuf enum
+		contractType := contractQuery.ContractType
+		ctype := types.PoEContractTypeFrom(contractType)
+
+		// Use poeKeeper to find contract address by given type
+		addr, err := poeKeeper.GetPoEContractAddress(ctx, ctype)
+		if err != nil {
+			return nil, sdkerrors.Wrap(err, "custom querier")
+		}
+
+		// Map result back to response object
+		res := ContractAddrResponse{
+			Addr: addr,
+		}
+
+		// Return serialized result
+		return json.Marshal(res)
 	}
 }
