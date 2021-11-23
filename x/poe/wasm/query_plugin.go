@@ -133,6 +133,14 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 	}
 }
 
+type PoEContractAddressQuery struct {
+	ContractType string `json:"contract_type"`
+}
+
+type TgradeQuery struct {
+	PoEContractAddress *PoEContractAddressQuery `json:"poe_contract_address,omitempty"`
+}
+
 type ContractAddrResponse struct {
 	Addr sdk.AccAddress `json:"address"`
 }
@@ -141,30 +149,34 @@ func CustomQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request json.RawM
 	return func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
 		// Map from json to object
 		// Map request to a ContractAddressQuery object
-		type PoEContractAddressQuery struct {
-			ContractType string `json:"contract_type"`
-		}
-		var contractQuery PoEContractAddressQuery
+		var contractQuery TgradeQuery
+
 		if err := json.Unmarshal(request, &contractQuery); err != nil {
-			return nil, sdkerrors.Wrap(err, "custom querier")
+			return nil, sdkerrors.Wrap(err, "tgrade query")
 		}
 
-		// Map type to protobuf enum
-		contractType := contractQuery.ContractType
-		ctype := types.PoEContractTypeFrom(contractType)
+		if contractQuery.PoEContractAddress != nil {
+			// Map type to protobuf enum
+			ctype := types.PoEContractTypeFrom(contractQuery.PoEContractAddress.ContractType)
 
-		// Use poeKeeper to find contract address by given type
-		addr, err := poeKeeper.GetPoEContractAddress(ctx, ctype)
-		if err != nil {
-			return nil, sdkerrors.Wrap(err, "custom querier")
+			// Use poeKeeper to find contract address by given type
+			addr, err := poeKeeper.GetPoEContractAddress(ctx, ctype)
+			if err != nil {
+				return nil, sdkerrors.Wrap(err, "poe contract address query")
+			}
+
+			// Map result back to response object
+			res := ContractAddrResponse{
+				Addr: addr,
+			}
+
+			// Return serialized result
+			if marshal, err := json.Marshal(res); err != nil {
+				return nil, sdkerrors.Wrap(err, "poe contract address query response")
+			} else {
+				return marshal, nil
+			}
 		}
-
-		// Map result back to response object
-		res := ContractAddrResponse{
-			Addr: addr,
-		}
-
-		// Return serialized result
-		return json.Marshal(res)
+		return nil, nil
 	}
 }
