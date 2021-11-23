@@ -261,10 +261,11 @@ func TestStakingQuerier(t *testing.T) {
 }
 
 type ViewKeeperMock struct {
-	GetBondDenomFn         func(ctx sdk.Context) string
-	DistributionContractFn func(ctx sdk.Context) keeper.DistributionContract
-	ValsetContractFn       func(ctx sdk.Context) keeper.ValsetContract
-	StakeContractFn        func(ctx sdk.Context) keeper.StakeContract
+	GetBondDenomFn          func(ctx sdk.Context) string
+	DistributionContractFn  func(ctx sdk.Context) keeper.DistributionContract
+	ValsetContractFn        func(ctx sdk.Context) keeper.ValsetContract
+	StakeContractFn         func(ctx sdk.Context) keeper.StakeContract
+	GetPoEContractAddressFn func(ctx sdk.Context, contractType poetypes.PoEContractType) (sdk.AccAddress, error)
 }
 
 func (m ViewKeeperMock) GetBondDenom(ctx sdk.Context) string {
@@ -293,4 +294,8 @@ func (m ViewKeeperMock) StakeContract(ctx sdk.Context) keeper.StakeContract {
 		panic("not expected to be called")
 	}
 	return m.StakeContractFn(ctx)
+}
+
+func (m ViewKeeperMock) GetPoEContractAddress(ctx sdk.Context, ctype poetypes.PoEContractType) (sdk.AccAddress, error) {
+	panic("implement me")
 }
