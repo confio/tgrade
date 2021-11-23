@@ -147,8 +147,7 @@ type ContractAddrResponse struct {
 
 func CustomQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
 	return func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
-		// Map from json to object
-		// Map request to a ContractAddressQuery object
+		// Map request to a TgradeQuery object
 		var contractQuery TgradeQuery
 
 		if err := json.Unmarshal(request, &contractQuery); err != nil {
@@ -171,12 +170,12 @@ func CustomQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request json.RawM
 			}
 
 			// Return serialized result
-			if marshal, err := json.Marshal(res); err != nil {
+			bz, err := json.Marshal(res)
+			if err != nil {
 				return nil, sdkerrors.Wrap(err, "poe contract address query response")
-			} else {
-				return marshal, nil
 			}
+			return bz, nil
 		}
-		return nil, nil
+		return nil, wasmvmtypes.UnsupportedRequest{Kind: "unknown poe query variant"}
 	}
 }
