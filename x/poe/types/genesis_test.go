@@ -44,6 +44,14 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
+		"seed with invalid weight in engagement group": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.Engagement = []TG4Member{
+					{Address: RandomAccAddress().String(), Weight: 0},
+				}
+			}),
+			expErr: true,
+		},
 		"seed with legacy contracts": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.Contracts = []PoEContract{{ContractType: PoEContractTypeValset, Address: RandomAccAddress().String()}}
@@ -162,6 +170,30 @@ func TestValidateGenesis(t *testing.T) {
 		"invalid oversight committee contract denom": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.OversightCommitteeContractConfig.EscrowAmount = sdk.NewCoin("alx", m.OversightCommitteeContractConfig.EscrowAmount.Amount)
+			}),
+			expErr: true,
+		},
+		"community pool contract config not set": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.CommunityPoolContractConfig = nil
+			}),
+			expErr: true,
+		},
+		"invalid community pool contract config": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.CommunityPoolContractConfig.VotingRules.VotingPeriod = 0
+			}),
+			expErr: true,
+		},
+		"validator voting contract config not set": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.ValidatorVotingContractConfig = nil
+			}),
+			expErr: true,
+		},
+		"invalid validator voting contract config": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.ValidatorVotingContractConfig.VotingRules.VotingPeriod = 0
 			}),
 			expErr: true,
 		},
@@ -362,6 +394,12 @@ func TestValidateOversightCommitteeContractConfig(t *testing.T) {
 			}).OversightCommitteeContractConfig,
 			expErr: true,
 		},
+		"escrow amount too low": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.EscrowAmount = sdk.NewCoin(DefaultBondDenom, sdk.NewInt(999_999))
+			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
 		"voting rules invalid": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
 				m.OversightCommitteeContractConfig.VotingRules.VotingPeriod = 0
@@ -377,7 +415,6 @@ func TestValidateOversightCommitteeContractConfig(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-
 			gotErr := spec.src.ValidateBasic()
 			if spec.expErr {
 				require.Error(t, gotErr)

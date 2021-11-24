@@ -233,11 +233,42 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "instantiate validator voting")
 	}
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeValidatorVoting, validatorVotingContractAddr)
-	if err := tk.SetPrivileged(ctx, valsetContractAddr); err != nil {
-		return sdkerrors.Wrap(err, "grant privileges to validator voting contract")
+
+	// todo: contract requires GovProposalExecutor ConsensusParamChanger permissions which are not implemented
+	// if err := tk.SetPrivileged(ctx, validatorVotingContractAddr); err != nil {
+	//	return sdkerrors.Wrap(err, "grant privileges to validator voting contract")
+	// }
+	if err := k.PinCode(ctx, validatorVotingCodeID); err != nil {
+		return sdkerrors.Wrap(err, "pin validator voting contract")
 	}
+
 	logger.Info("validator voting contract", "address", validatorVotingContractAddr, "code_id", validatorVotingCodeID)
 
+	if err := setAllPoEContractsInstanceAdmin(ctx, k, poeKeeper, systemAdminAddr, validatorVotingContractAddr); err != nil {
+		return sdkerrors.Wrap(err, "set new instance admin")
+	}
+	return nil
+}
+
+// set new admin for all PoE contracts
+func setAllPoEContractsInstanceAdmin(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, poeKeeper poeKeeper, oldAdminAddr, newAdminAddr sdk.AccAddress) error {
+	// set new admin for all contracts
+	for name, v := range types.PoEContractType_value {
+		contractType := types.PoEContractType(v)
+		if contractType == types.PoEContractTypeUndefined {
+			continue
+		}
+		if contractType == types.PoEContractTypeDistribution {
+			continue // disabled due to https://github.com/confio/tgrade-contracts/issues/353
+		}
+		addr, err := poeKeeper.GetPoEContractAddress(ctx, contractType)
+		if err != nil {
+			return sdkerrors.Wrapf(err, "failed to find contract address for %s", name)
+		}
+		if err := k.UpdateContractAdmin(ctx, addr, oldAdminAddr, newAdminAddr); err != nil {
+			return sdkerrors.Wrapf(err, "%s contract", name)
+		}
+	}
 	return nil
 }
 

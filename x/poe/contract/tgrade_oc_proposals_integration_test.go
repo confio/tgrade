@@ -41,10 +41,6 @@ func TestSlashValidator(t *testing.T) {
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, *power, 1, "system admin must be voting member")
 
-	info := example.TWasmKeeper.GetContractInfo(ctx, engageAddr)
-	require.NotNil(t, info)
-	assert.Equal(t, systemAdmin.String(), info.Admin)
-
 	// slash some
 	props := contract.NewOCProposalsContractAdapter(ocProposeAddr, example.TWasmKeeper, nil)
 	err = props.ProposeSlash(ctx, opAddr, *contract.DecimalFromProMille(500), systemAdmin)

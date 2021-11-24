@@ -49,10 +49,10 @@ func DefaultGenesisState() GenesisState {
 		},
 		CommunityPoolContractConfig: &CommunityPoolContractConfig{
 			VotingRules: VotingRules{
-				VotingPeriod:  14,
-				Quorum:        sdk.NewDec(40),
-				Threshold:     sdk.NewDec(55),
-				AllowEndEarly: false,
+				VotingPeriod:  21,
+				Quorum:        sdk.NewDec(10),
+				Threshold:     sdk.NewDec(60),
+				AllowEndEarly: true,
 			},
 		},
 		ValidatorVotingContractConfig: &ValidatorVotingContractConfig{
