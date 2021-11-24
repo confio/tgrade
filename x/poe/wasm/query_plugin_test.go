@@ -270,7 +270,7 @@ func TestCustomQuerier(t *testing.T) {
 	specs := map[string]struct {
 		src     json.RawMessage
 		mock    ViewKeeper
-		expJson string
+		expJSON string
 		expErr  bool
 	}{
 		"empty query": {
@@ -313,7 +313,7 @@ func TestCustomQuerier(t *testing.T) {
 					}
 					return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract type")
 				}},
-			expJson: `{"address": "` + sdk.AccAddress("staking_addr").String() + `"}`,
+			expJSON: `{"address": "` + sdk.AccAddress("staking_addr").String() + `"}`,
 		},
 		"undefined contract type (UNDEFINED)": {
 			src: []byte(`{ "poe_contract_address": { "contract_type": "UNDEFINED"} }`),
@@ -339,7 +339,7 @@ func TestCustomQuerier(t *testing.T) {
 				return
 			}
 			require.NoError(t, gotErr)
-			assert.JSONEq(t, spec.expJson, string(gotRsp), string(gotRsp))
+			assert.JSONEq(t, spec.expJSON, string(gotRsp), string(gotRsp))
 		})
 	}
 }
