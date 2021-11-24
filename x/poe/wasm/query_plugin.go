@@ -147,29 +147,22 @@ type ContractAddrResponse struct {
 
 func CustomQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
 	return func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
-		// Map request to a TgradeQuery object
 		var contractQuery TgradeQuery
-
 		if err := json.Unmarshal(request, &contractQuery); err != nil {
 			return nil, sdkerrors.Wrap(err, "tgrade query")
 		}
 
 		if contractQuery.PoEContractAddress != nil {
-			// Map type to protobuf enum
 			ctype := types.PoEContractTypeFrom(contractQuery.PoEContractAddress.ContractType)
 
-			// Use poeKeeper to find contract address by given type
 			addr, err := poeKeeper.GetPoEContractAddress(ctx, ctype)
 			if err != nil {
 				return nil, sdkerrors.Wrap(err, "poe contract address query")
 			}
 
-			// Map result back to response object
 			res := ContractAddrResponse{
 				Addr: addr,
 			}
-
-			// Return serialized result
 			bz, err := json.Marshal(res)
 			if err != nil {
 				return nil, sdkerrors.Wrap(err, "poe contract address query response")
