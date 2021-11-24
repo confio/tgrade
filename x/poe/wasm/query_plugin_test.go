@@ -273,6 +273,17 @@ func TestCustomQuerier(t *testing.T) {
 		expJSON string
 		expErr  bool
 	}{
+		"valid contract type (STAKING)": {
+			src: []byte(`{ "poe_contract_address": { "contract_type": "STAKING"} }`),
+			mock: ViewKeeperMock{
+				GetPoEContractAddressFn: func(ctx sdk.Context, contractType poetypes.PoEContractType) (sdk.AccAddress, error) {
+					if contractType == poetypes.PoEContractTypeStaking {
+						return sdk.AccAddress("staking_addr"), nil
+					}
+					return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract type")
+				}},
+			expJSON: `{"address": "` + sdk.AccAddress("staking_addr").String() + `"}`,
+		},
 		"empty query": {
 			src:    []byte(``),
 			mock:   ViewKeeperMock{},
@@ -303,17 +314,6 @@ func TestCustomQuerier(t *testing.T) {
 					return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract type")
 				}},
 			expErr: true,
-		},
-		"valid contract type (STAKING)": {
-			src: []byte(`{ "poe_contract_address": { "contract_type": "STAKING"} }`),
-			mock: ViewKeeperMock{
-				GetPoEContractAddressFn: func(ctx sdk.Context, contractType poetypes.PoEContractType) (sdk.AccAddress, error) {
-					if contractType == poetypes.PoEContractTypeStaking {
-						return sdk.AccAddress("staking_addr"), nil
-					}
-					return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract type")
-				}},
-			expJSON: `{"address": "` + sdk.AccAddress("staking_addr").String() + `"}`,
 		},
 		"undefined contract type (UNDEFINED)": {
 			src: []byte(`{ "poe_contract_address": { "contract_type": "UNDEFINED"} }`),
