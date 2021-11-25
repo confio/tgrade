@@ -302,17 +302,17 @@ func (v VotingRules) ValidateBasic() error {
 	if v.VotingPeriod == 0 {
 		return sdkerrors.Wrap(ErrEmpty, "voting period")
 	}
-	if v.Quorum.IsNil() || v.Quorum.IsZero() {
-		return sdkerrors.Wrap(ErrEmpty, "quorum")
+	if v.Quorum.IsNil() || v.Quorum.LT(sdk.OneDec()) {
+		return sdkerrors.Wrap(ErrInvalid, "quorum must be > 0")
 	}
 	if v.Quorum.GT(sdk.NewDec(100)) {
-		return sdkerrors.Wrap(ErrEmpty, "quorum")
+		return sdkerrors.Wrap(ErrInvalid, "quorum must be <=100")
 	}
-	if v.Threshold.IsNil() || v.Threshold.IsZero() {
-		return sdkerrors.Wrap(ErrEmpty, "threshold")
+	if v.Threshold.IsNil() || v.Threshold.LT(sdk.NewDec(50)) {
+		return sdkerrors.Wrap(ErrInvalid, "threshold must be => 50")
 	}
 	if v.Threshold.GT(sdk.NewDec(100)) {
-		return sdkerrors.Wrap(ErrEmpty, "threshold")
+		return sdkerrors.Wrap(ErrInvalid, "threshold must be <=100")
 	}
 
 	return nil

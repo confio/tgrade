@@ -154,12 +154,12 @@ message TG4Member {
 message VotingRules {
   // VotingPeriod Voting period in days
   uint32 voting_period = 1;
-  // Quorum  voting quorum percentage (0-100)
+  // Quorum  voting quorum percentage (1-100)
   string quorum = 2 [
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
   ];
-  // Threshold voting threshold percentage (0-100)
+  // Threshold voting threshold percentage (50-100)
   string threshold = 3 [
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"

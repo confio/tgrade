@@ -244,14 +244,14 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 
 	logger.Info("validator voting contract", "address", validatorVotingContractAddr, "code_id", validatorVotingCodeID)
 
-	if err := setAllPoEContractsInstanceAdmin(ctx, k, poeKeeper, systemAdminAddr, validatorVotingContractAddr); err != nil {
+	if err := setAllPoEContractsInstanceMigrators(ctx, k, poeKeeper, systemAdminAddr, validatorVotingContractAddr); err != nil {
 		return sdkerrors.Wrap(err, "set new instance admin")
 	}
 	return nil
 }
 
-// set new admin for all PoE contracts
-func setAllPoEContractsInstanceAdmin(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, poeKeeper poeKeeper, oldAdminAddr, newAdminAddr sdk.AccAddress) error {
+// set new migrator for all PoE contracts
+func setAllPoEContractsInstanceMigrators(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, poeKeeper poeKeeper, oldAdminAddr, newAdminAddr sdk.AccAddress) error {
 	// set new admin for all contracts
 	for name, v := range types.PoEContractType_value {
 		contractType := types.PoEContractType(v)

@@ -451,11 +451,21 @@ func TestValidateVotingRules(t *testing.T) {
 			}).OversightCommitteeContractConfig.VotingRules,
 			expErr: true,
 		},
-		"quorum zero": {
+		"quorum at min": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.OneDec()
+			}).OversightCommitteeContractConfig.VotingRules,
+		},
+		"quorum less than min": {
 			src: GenesisStateFixture(func(m *GenesisState) {
 				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.ZeroDec()
 			}).OversightCommitteeContractConfig.VotingRules,
 			expErr: true,
+		},
+		"quorum at max": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.NewDec(100)
+			}).OversightCommitteeContractConfig.VotingRules,
 		},
 		"quorum greater max": {
 			src: GenesisStateFixture(func(m *GenesisState) {
@@ -469,11 +479,21 @@ func TestValidateVotingRules(t *testing.T) {
 			}).OversightCommitteeContractConfig.VotingRules,
 			expErr: true,
 		},
-		"threshold zero": {
+		"threshold at min": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.ZeroDec()
+				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(50)
+			}).OversightCommitteeContractConfig.VotingRules,
+		},
+		"threshold lower min": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(49)
 			}).OversightCommitteeContractConfig.VotingRules,
 			expErr: true,
+		},
+		"threshold at max": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(100)
+			}).OversightCommitteeContractConfig.VotingRules,
 		},
 		"threshold greater max": {
 			src: GenesisStateFixture(func(m *GenesisState) {
