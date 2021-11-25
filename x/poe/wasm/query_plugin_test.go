@@ -8,8 +8,6 @@ import (
 
 	"encoding/json"
 
-	"github.com/confio/tgrade/x/twasm/types"
-
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -22,7 +20,6 @@ import (
 )
 
 func TestStakingQuerier(t *testing.T) {
-	t.Log(types.RandomBech32Address(t))
 	specs := map[string]struct {
 		src     wasmvmtypes.StakingQuery
 		mock    ViewKeeper
@@ -266,7 +263,6 @@ func TestStakingQuerier(t *testing.T) {
 }
 
 func TestCustomQuerier(t *testing.T) {
-	t.Log(types.RandomBech32Address(t))
 	specs := map[string]struct {
 		src     json.RawMessage
 		mock    ViewKeeper
