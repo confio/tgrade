@@ -35,6 +35,8 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		valsetContractAddr        = wasmkeeper.BuildContractAddress(5, 5)
 		distributionContractAddr  = wasmkeeper.BuildContractAddress(1, 6) // created by a contract so not really persisted
 		ocGovProposalContractAddr = wasmkeeper.BuildContractAddress(6, 6) // instanceID = 7
+		communityPoolContractAddr = wasmkeeper.BuildContractAddress(7, 7)
+		valVotingContractAddr     = wasmkeeper.BuildContractAddress(8, 8)
 	)
 	var (
 		defaultLimit     uint64 = 20
@@ -155,6 +157,39 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			codeID:       6,
 			pinned:       true,
 		},
+		types.PoEContractTypeCommunityPool: {
+			expInitMsg: contract.CommunityPoolInitMsg{
+				VotingRules: contract.VotingRules{
+					VotingPeriod:  21,
+					Quorum:        sdk.NewDecWithPrec(10, 2),
+					Threshold:     sdk.NewDecWithPrec(60, 2),
+					AllowEndEarly: true,
+				},
+				GroupAddress: engagementContractAddr.String(),
+				DELME:        "to-be-removed",
+			},
+			wasmFile:     "tgrade_community_pool.wasm",
+			contractAddr: communityPoolContractAddr,
+			codeID:       7,
+			pinned:       true,
+		},
+		types.PoEContractTypeValidatorVoting: {
+			expInitMsg: contract.ValidatorVotingInitMsg{
+				VotingRules: contract.VotingRules{
+					VotingPeriod:  14,
+					Quorum:        sdk.NewDecWithPrec(40, 2),
+					Threshold:     sdk.NewDecWithPrec(66, 2),
+					AllowEndEarly: true,
+				},
+				GroupAddress: distributionContractAddr.String(),
+				DELME:        "to-be-removed",
+			},
+			wasmFile:     "tgrade_validator_voting.wasm",
+			contractAddr: valVotingContractAddr,
+			codeID:       8,
+			pinned:       true,
+			//privileged:   true, // TODO: enable
+		},
 	}
 	expContractSetup := make([]contractSetup, 0, len(allContracts))
 	bootstrapOrder := []types.PoEContractType{
@@ -165,6 +200,8 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		types.PoEContractTypeValset,
 		types.PoEContractTypeDistribution,
 		types.PoEContractTypeOversightCommunityGovProposals,
+		types.PoEContractTypeCommunityPool,
+		types.PoEContractTypeValidatorVoting,
 	}
 	for _, v := range bootstrapOrder {
 		if allContracts[v].expInitMsg == nil { // skip all that are not setup externally
@@ -213,8 +250,8 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			}
 		},
 		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
-			require.Equal(t, types.PoEContractTypeEngagement, ctype)
-			return engagementContractAddr, nil
+			require.Contains(t, allContracts, ctype)
+			return allContracts[ctype].contractAddr, nil
 		},
 	}
 
@@ -257,7 +294,18 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		require.Equal(t, v, (*capSetAddr)[i].Ctype)
 		require.Equal(t, allContracts[v].contractAddr, (*capSetAddr)[i].ContractAddr)
 	}
-	assert.Empty(t, *capWasmAdminUpdates)
+	// todo: enable distribution type when https://github.com/confio/tgrade-contracts/issues/353
+	delete(allContracts, types.PoEContractTypeDistribution)
+	assert.Len(t, *capWasmAdminUpdates, len(allContracts))
+	gotUpdates := make(map[string]sdk.AccAddress, len(allContracts))
+	for _, v := range *capWasmAdminUpdates {
+		gotUpdates[v.contractAddr.String()] = v.newAdmin
+	}
+	expUpdates := make(map[string]sdk.AccAddress, len(allContracts))
+	for _, v := range allContracts {
+		expUpdates[v.contractAddr.String()] = valVotingContractAddr
+	}
+	assert.Equal(t, expUpdates, gotUpdates)
 }
 
 type capturedContractAdminUpdate struct {

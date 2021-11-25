@@ -44,6 +44,14 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
+		"seed with invalid weight in engagement group": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.Engagement = []TG4Member{
+					{Address: RandomAccAddress().String(), Weight: 0},
+				}
+			}),
+			expErr: true,
+		},
 		"seed with legacy contracts": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.Contracts = []PoEContract{{ContractType: PoEContractTypeValset, Address: RandomAccAddress().String()}}
@@ -162,6 +170,30 @@ func TestValidateGenesis(t *testing.T) {
 		"invalid oversight committee contract denom": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.OversightCommitteeContractConfig.EscrowAmount = sdk.NewCoin("alx", m.OversightCommitteeContractConfig.EscrowAmount.Amount)
+			}),
+			expErr: true,
+		},
+		"community pool contract config not set": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.CommunityPoolContractConfig = nil
+			}),
+			expErr: true,
+		},
+		"invalid community pool contract config": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.CommunityPoolContractConfig.VotingRules.VotingPeriod = 0
+			}),
+			expErr: true,
+		},
+		"validator voting contract config not set": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.ValidatorVotingContractConfig = nil
+			}),
+			expErr: true,
+		},
+		"invalid validator voting contract config": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.ValidatorVotingContractConfig.VotingRules.VotingPeriod = 0
 			}),
 			expErr: true,
 		},
@@ -342,7 +374,7 @@ func TestValidateStakeContractConfig(t *testing.T) {
 	}
 }
 
-func TestTestValidateOversightCommitteeContractConfig(t *testing.T) {
+func TestValidateOversightCommitteeContractConfig(t *testing.T) {
 	specs := map[string]struct {
 		src    OversightCommitteeContractConfig
 		expErr bool
@@ -362,45 +394,15 @@ func TestTestValidateOversightCommitteeContractConfig(t *testing.T) {
 			}).OversightCommitteeContractConfig,
 			expErr: true,
 		},
-		"voting period empty": {
+		"escrow amount too low": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingPeriod = 0
+				m.OversightCommitteeContractConfig.EscrowAmount = sdk.NewCoin(DefaultBondDenom, sdk.NewInt(999_999))
 			}).OversightCommitteeContractConfig,
 			expErr: true,
 		},
-		"quorum empty": {
+		"voting rules invalid": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.Quorum = sdk.Dec{}
-			}).OversightCommitteeContractConfig,
-			expErr: true,
-		},
-		"quorum zero": {
-			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.Quorum = sdk.ZeroDec()
-			}).OversightCommitteeContractConfig,
-			expErr: true,
-		},
-		"quorum greater max": {
-			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.Quorum = sdk.NewDec(101)
-			}).OversightCommitteeContractConfig,
-			expErr: true,
-		},
-		"threshold empty": {
-			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.Threshold = sdk.Dec{}
-			}).OversightCommitteeContractConfig,
-			expErr: true,
-		},
-		"threshold zero": {
-			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.Threshold = sdk.ZeroDec()
-			}).OversightCommitteeContractConfig,
-			expErr: true,
-		},
-		"threshold greater max": {
-			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.Threshold = sdk.NewDec(101)
+				m.OversightCommitteeContractConfig.VotingRules.VotingPeriod = 0
 			}).OversightCommitteeContractConfig,
 			expErr: true,
 		},
@@ -408,6 +410,95 @@ func TestTestValidateOversightCommitteeContractConfig(t *testing.T) {
 			src: *GenesisStateFixture(func(m *GenesisState) {
 				m.OversightCommitteeContractConfig.DenyListContractAddress = "not-an-address"
 			}).OversightCommitteeContractConfig,
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			gotErr := spec.src.ValidateBasic()
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+		})
+	}
+}
+
+func TestValidateVotingRules(t *testing.T) {
+	specs := map[string]struct {
+		src    VotingRules
+		expErr bool
+	}{
+		"default oc": {
+			src: DefaultGenesisState().OversightCommitteeContractConfig.VotingRules,
+		},
+		"default community pool": {
+			src: DefaultGenesisState().CommunityPoolContractConfig.VotingRules,
+		},
+		"default validator voting": {
+			src: DefaultGenesisState().ValidatorVotingContractConfig.VotingRules,
+		},
+		"voting period empty": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.VotingPeriod = 0
+			}).OversightCommitteeContractConfig.VotingRules,
+			expErr: true,
+		},
+		"quorum empty": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.Dec{}
+			}).OversightCommitteeContractConfig.VotingRules,
+			expErr: true,
+		},
+		"quorum at min": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.OneDec()
+			}).OversightCommitteeContractConfig.VotingRules,
+		},
+		"quorum less than min": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.ZeroDec()
+			}).OversightCommitteeContractConfig.VotingRules,
+			expErr: true,
+		},
+		"quorum at max": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.NewDec(100)
+			}).OversightCommitteeContractConfig.VotingRules,
+		},
+		"quorum greater max": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.NewDec(101)
+			}).OversightCommitteeContractConfig.VotingRules,
+			expErr: true,
+		},
+		"threshold empty": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.Dec{}
+			}).OversightCommitteeContractConfig.VotingRules,
+			expErr: true,
+		},
+		"threshold at min": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(50)
+			}).OversightCommitteeContractConfig.VotingRules,
+		},
+		"threshold lower min": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(49)
+			}).OversightCommitteeContractConfig.VotingRules,
+			expErr: true,
+		},
+		"threshold at max": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(100)
+			}).OversightCommitteeContractConfig.VotingRules,
+		},
+		"threshold greater max": {
+			src: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(101)
+			}).OversightCommitteeContractConfig.VotingRules,
 			expErr: true,
 		},
 	}

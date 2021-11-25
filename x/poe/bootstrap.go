@@ -28,6 +28,10 @@ var (
 	tgTrustedCircles []byte
 	//go:embed contract/tgrade_oc_proposals.wasm
 	tgOCGovProposalsCircles []byte
+	//go:embed contract/tgrade_community_pool.wasm
+	tgCommunityPool []byte
+	//go:embed contract/tgrade_validator_voting.wasm
+	tgValidatorVoting []byte
 	//go:embed contract/version.txt
 	contractVersion []byte
 )
@@ -39,6 +43,9 @@ func ClearEmbeddedContracts() {
 	tg4Mixer = nil
 	tgValset = nil
 	tgTrustedCircles = nil
+	tgOCGovProposalsCircles = nil
+	tgCommunityPool = nil
+	tgValidatorVoting = nil
 }
 
 type poeKeeper interface {
@@ -49,16 +56,7 @@ type poeKeeper interface {
 }
 
 // bootstrapPoEContracts stores and instantiates all PoE contracts:
-//
-// * [tg4-group](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-group) - engagement group with weighted
-//  members
-// * [tg4-stake](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-stake) - validator group weighted by
-//  staked amount
-// * [valset](https://github.com/confio/tgrade-contracts/tree/main/contracts/tgrade-valset) - privileged contract to map a
-//  trusted cw4 contract to the Tendermint validator set running the chain
-// * [mixer](https://github.com/confio/tgrade-contracts/tree/main/contracts/tg4-mixer) - calculates the combined value of
-//  stake and engagement points. Source for the valset contract.
-// * [trusted circle](https://github.com/confio/tgrade-contracts/tree/main/contracts/tgrade-trusted-circle) - oversight community
+// See https://github.com/confio/tgrade-contracts/blob/main/docs/Architecture.md#multi-level-governance for an overview
 func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
 	systemAdminAddr, err := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	if err != nil {
@@ -198,6 +196,79 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "set new valset contract admin")
 	}
 
+	// setup community pool
+	//
+	communityPoolCodeID, err := k.Create(ctx, systemAdminAddr, tgCommunityPool, &wasmtypes.AllowEverybody)
+	if err != nil {
+		return sdkerrors.Wrap(err, "store community pool contract")
+	}
+	communityPoolInitMsg := contract.CommunityPoolInitMsg{
+		VotingRules:  toContractVotingRules(gs.CommunityPoolContractConfig.VotingRules),
+		GroupAddress: engagementContractAddr.String(),
+		DELME:        "to-be-removed",
+	}
+	communityPoolContractAddr, _, err := k.Instantiate(ctx, communityPoolCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(communityPoolInitMsg), "stakers", nil)
+	if err != nil {
+		return sdkerrors.Wrap(err, "instantiate community pool")
+	}
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeCommunityPool, communityPoolContractAddr)
+	if err := k.PinCode(ctx, communityPoolCodeID); err != nil {
+		return sdkerrors.Wrap(err, "pin community pool contract")
+	}
+	logger.Info("community pool contract", "address", communityPoolContractAddr, "code_id", communityPoolCodeID)
+
+	// setup validator voting contract
+	//
+	validatorVotingCodeID, err := k.Create(ctx, systemAdminAddr, tgValidatorVoting, &wasmtypes.AllowEverybody)
+	if err != nil {
+		return sdkerrors.Wrap(err, "store validator voting contract")
+	}
+	validatorVotingInitMsg := contract.ValidatorVotingInitMsg{
+		VotingRules:  toContractVotingRules(gs.ValidatorVotingContractConfig.VotingRules),
+		GroupAddress: distrAddr.String(),
+		DELME:        "to-be-removed",
+	}
+	validatorVotingContractAddr, _, err := k.Instantiate(ctx, validatorVotingCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(validatorVotingInitMsg), "stakers", nil)
+	if err != nil {
+		return sdkerrors.Wrap(err, "instantiate validator voting")
+	}
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeValidatorVoting, validatorVotingContractAddr)
+
+	// todo: contract requires GovProposalExecutor ConsensusParamChanger permissions which are not implemented
+	// if err := tk.SetPrivileged(ctx, validatorVotingContractAddr); err != nil {
+	//	return sdkerrors.Wrap(err, "grant privileges to validator voting contract")
+	// }
+	if err := k.PinCode(ctx, validatorVotingCodeID); err != nil {
+		return sdkerrors.Wrap(err, "pin validator voting contract")
+	}
+
+	logger.Info("validator voting contract", "address", validatorVotingContractAddr, "code_id", validatorVotingCodeID)
+
+	if err := setAllPoEContractsInstanceMigrators(ctx, k, poeKeeper, systemAdminAddr, validatorVotingContractAddr); err != nil {
+		return sdkerrors.Wrap(err, "set new instance admin")
+	}
+	return nil
+}
+
+// set new migrator for all PoE contracts
+func setAllPoEContractsInstanceMigrators(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, poeKeeper poeKeeper, oldAdminAddr, newAdminAddr sdk.AccAddress) error {
+	// set new admin for all contracts
+	for name, v := range types.PoEContractType_value {
+		contractType := types.PoEContractType(v)
+		if contractType == types.PoEContractTypeUndefined {
+			continue
+		}
+		if contractType == types.PoEContractTypeDistribution {
+			continue // disabled due to https://github.com/confio/tgrade-contracts/issues/353
+		}
+		addr, err := poeKeeper.GetPoEContractAddress(ctx, contractType)
+		if err != nil {
+			return sdkerrors.Wrapf(err, "failed to find contract address for %s", name)
+		}
+		if err := k.UpdateContractAdmin(ctx, addr, oldAdminAddr, newAdminAddr); err != nil {
+			return sdkerrors.Wrapf(err, "%s contract", name)
+		}
+	}
 	return nil
 }
 
@@ -207,10 +278,10 @@ func newOCInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
 	return contract.TrustedCircleInitMsg{
 		Name:                      cfg.Name,
 		EscrowAmount:              cfg.EscrowAmount.Amount,
-		VotingPeriod:              cfg.VotingPeriod,
-		Quorum:                    *contract.DecimalFromPercentage(cfg.Quorum),
-		Threshold:                 *contract.DecimalFromPercentage(cfg.Threshold),
-		AllowEndEarly:             cfg.AllowEndEarly,
+		VotingPeriod:              cfg.VotingRules.VotingPeriod,
+		Quorum:                    *contract.DecimalFromPercentage(cfg.VotingRules.Quorum),
+		Threshold:                 *contract.DecimalFromPercentage(cfg.VotingRules.Threshold),
+		AllowEndEarly:             cfg.VotingRules.AllowEndEarly,
 		InitialMembers:            []string{}, // sender is added to OC by default in the contract
 		DenyList:                  cfg.DenyListContractAddress,
 		EditTrustedCircleDisabled: true, // product requirement for OC
@@ -224,12 +295,7 @@ func newOCGovProposalsInitMsg(gs types.GenesisState, ocContract, engagementContr
 		GroupContractAddress:      ocContract.String(),
 		ValsetContractAddress:     valsetContract.String(),
 		EngagementContractAddress: engagementContract.String(),
-		VotingRules: contract.VotingRules{
-			VotingPeriod:  cfg.VotingPeriod,
-			Quorum:        *contract.DecimalFromPercentage(cfg.Quorum),
-			Threshold:     *contract.DecimalFromPercentage(cfg.Threshold),
-			AllowEndEarly: cfg.AllowEndEarly,
-		},
+		VotingRules:               toContractVotingRules(cfg.VotingRules),
 	}
 }
 
@@ -306,4 +372,14 @@ func mustMarshalJson(s interface{}) []byte {
 		panic(fmt.Sprintf("failed to marshal json: %s", err))
 	}
 	return jsonBz
+}
+
+// map to contract object
+func toContractVotingRules(votingRules types.VotingRules) contract.VotingRules {
+	return contract.VotingRules{
+		VotingPeriod:  votingRules.VotingPeriod,
+		Quorum:        *contract.DecimalFromPercentage(votingRules.Quorum),
+		Threshold:     *contract.DecimalFromPercentage(votingRules.Threshold),
+		AllowEndEarly: votingRules.AllowEndEarly,
+	}
 }

@@ -38,12 +38,30 @@ func DefaultGenesisState() GenesisState {
 			Halflife: 180 * 24 * time.Hour,
 		},
 		OversightCommitteeContractConfig: &OversightCommitteeContractConfig{
-			Name:          "Oversight Community",
-			EscrowAmount:  sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
-			VotingPeriod:  30,
-			Quorum:        sdk.NewDec(51),
-			Threshold:     sdk.NewDec(55),
-			AllowEndEarly: true,
+			Name:         "Oversight Community",
+			EscrowAmount: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+			VotingRules: VotingRules{
+				VotingPeriod:  30,
+				Quorum:        sdk.NewDec(51),
+				Threshold:     sdk.NewDec(55),
+				AllowEndEarly: true,
+			},
+		},
+		CommunityPoolContractConfig: &CommunityPoolContractConfig{
+			VotingRules: VotingRules{
+				VotingPeriod:  21,
+				Quorum:        sdk.NewDec(10),
+				Threshold:     sdk.NewDec(60),
+				AllowEndEarly: true,
+			},
+		},
+		ValidatorVotingContractConfig: &ValidatorVotingContractConfig{
+			VotingRules: VotingRules{
+				VotingPeriod:  14,
+				Quorum:        sdk.NewDec(40),
+				Threshold:     sdk.NewDec(66),
+				AllowEndEarly: true,
+			},
 		},
 		SystemAdminAddress: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),
 		Params:             DefaultParams(),
@@ -93,6 +111,18 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		}
 		if g.OversightCommitteeContractConfig.EscrowAmount.Denom != g.BondDenom {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "escrow not in bonded denom")
+		}
+		if g.CommunityPoolContractConfig == nil {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty community pool contract config")
+		}
+		if err := g.CommunityPoolContractConfig.ValidateBasic(); err != nil {
+			return sdkerrors.Wrap(err, "community pool config")
+		}
+		if g.ValidatorVotingContractConfig == nil {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty validator voting contract config")
+		}
+		if err := g.ValidatorVotingContractConfig.ValidateBasic(); err != nil {
+			return sdkerrors.Wrap(err, "validator voting config")
 		}
 	} else {
 		return errors.New("not supported, yet")
@@ -229,25 +259,29 @@ func (c OversightCommitteeContractConfig) ValidateBasic() error {
 	if c.EscrowAmount.Amount.LTE(sdk.NewInt(minEscrowAmount)) {
 		return sdkerrors.Wrapf(ErrInvalid, "escrow amount must be greater %d", minEscrowAmount)
 	}
-	if c.VotingPeriod == 0 {
-		return sdkerrors.Wrap(ErrEmpty, "voting period")
-	}
-	if c.Quorum.IsNil() || c.Quorum.IsZero() {
-		return sdkerrors.Wrap(ErrEmpty, "quorum")
-	}
-	if c.Quorum.GT(sdk.NewDec(100)) {
-		return sdkerrors.Wrap(ErrEmpty, "quorum")
-	}
-	if c.Threshold.IsNil() || c.Threshold.IsZero() {
-		return sdkerrors.Wrap(ErrEmpty, "threshold")
-	}
-	if c.Threshold.GT(sdk.NewDec(100)) {
-		return sdkerrors.Wrap(ErrEmpty, "threshold")
+	if err := c.VotingRules.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "voting rules")
 	}
 	if c.DenyListContractAddress != "" {
 		if _, err := sdk.AccAddressFromBech32(c.DenyListContractAddress); err != nil {
 			return sdkerrors.Wrap(ErrInvalid, "deny list contract address")
 		}
+	}
+	return nil
+}
+
+// ValidateBasic ensure basic constraints
+func (c CommunityPoolContractConfig) ValidateBasic() error {
+	if err := c.VotingRules.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "voting rules")
+	}
+	return nil
+}
+
+// ValidateBasic ensure basic constraints
+func (c ValidatorVotingContractConfig) ValidateBasic() error {
+	if err := c.VotingRules.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "voting rules")
 	}
 	return nil
 }
@@ -260,5 +294,26 @@ func (c TG4Member) ValidateBasic() error {
 	if c.Weight == 0 {
 		return sdkerrors.Wrap(wasmtypes.ErrInvalid, "weight")
 	}
+	return nil
+}
+
+// ValidateBasic ensure basic constraints
+func (v VotingRules) ValidateBasic() error {
+	if v.VotingPeriod == 0 {
+		return sdkerrors.Wrap(ErrEmpty, "voting period")
+	}
+	if v.Quorum.IsNil() || v.Quorum.LT(sdk.OneDec()) {
+		return sdkerrors.Wrap(ErrInvalid, "quorum must be > 0")
+	}
+	if v.Quorum.GT(sdk.NewDec(100)) {
+		return sdkerrors.Wrap(ErrInvalid, "quorum must be <=100")
+	}
+	if v.Threshold.IsNil() || v.Threshold.LT(sdk.NewDec(50)) {
+		return sdkerrors.Wrap(ErrInvalid, "threshold must be => 50")
+	}
+	if v.Threshold.GT(sdk.NewDec(100)) {
+		return sdkerrors.Wrap(ErrInvalid, "threshold must be <=100")
+	}
+
 	return nil
 }

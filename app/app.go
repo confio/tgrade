@@ -277,8 +277,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
-	// TODO: add tgrade here soon
-	supportedFeatures := "staking,stargate,iterator"
+	supportedFeatures := "staking,stargate,iterator,tgrade"
 
 	wasmOpts = append(SetupWasmHandlers(appCodec, app.bankKeeper, govRouter, &app.twasmKeeper, &app.poeKeeper), wasmOpts...)
 

@@ -55,6 +55,10 @@ message GenesisState {
   string bond_denom = 10 [ (gogoproto.moretags) = "yaml:\"bond_denom\"" ];
   OversightCommitteeContractConfig oversight_committee_contract_config = 11
       [ (gogoproto.jsontag) = "oversight_committee_contract_config,omitempty" ];
+  CommunityPoolContractConfig community_pool_contract_config = 12
+      [ (gogoproto.jsontag) = "community_pool_contract_config,omitempty" ];
+  ValidatorVotingContractConfig validator_voting_contract_config = 13
+      [ (gogoproto.jsontag) = "validator_voting_contract_config,omitempty" ];
 }
 
 // StakeContractConfig initial setup config
@@ -110,25 +114,25 @@ message OversightCommitteeContractConfig {
   string name = 1;
   // EscrowAmount The required escrow amount, in the default denom (utgd)
   cosmos.base.v1beta1.Coin escrow_amount = 2 [ (gogoproto.nullable) = false ];
-  // VotingPeriod Voting period in days
-  uint32 voting_period = 3;
-  // Quorum  voting quorum percentage (0-100)
-  string quorum = 4 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
-  ];
-  // Threshold voting threshold percentage (0-100)
-  string threshold = 5 [
-    (gogoproto.nullable) = false,
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
-  ];
-  // AllowEndEarly If true, and absolute threshold and quorum are met, we can
-  // end before voting period finished. (Recommended value: true, unless you
-  // have special needs)
-  bool allow_end_early = 6;
+
+  // VotingRules rules for the tally
+  VotingRules voting_rules = 3 [ (gogoproto.nullable) = false ];
+
   // DenyListContractAddress is an optional cw4 contract with list of addresses
   // denied to be part of TrustedCircle
-  string deny_list_contract_address = 7;
+  string deny_list_contract_address = 4;
+}
+
+// CommunityPoolContractConfig initial setup config for the contract
+message CommunityPoolContractConfig {
+  // VotingRules rules for the tally
+  VotingRules voting_rules = 1 [ (gogoproto.nullable) = false ];
+}
+
+// ValidatorVotingContractConfig CommunityPoolContractConfig
+message ValidatorVotingContractConfig {
+  // VotingRules rules for the tally
+  VotingRules voting_rules = 1 [ (gogoproto.nullable) = false ];
 }
 
 // PoEContract address and type information
@@ -144,4 +148,24 @@ message TG4Member {
   // Address is the bech32 address string
   string address = 1 [ (gogoproto.jsontag) = "json" ];
   uint64 weight = 2 [ (gogoproto.jsontag) = "weight" ];
+}
+
+// VotingRules contains configuration for the tally.
+message VotingRules {
+  // VotingPeriod Voting period in days
+  uint32 voting_period = 1;
+  // Quorum  voting quorum percentage (1-100)
+  string quorum = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
+  ];
+  // Threshold voting threshold percentage (50-100)
+  string threshold = 3 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
+  ];
+  // AllowEndEarly If true, and absolute threshold and quorum are met, we can
+  // end before voting period finished. (Recommended value: true, unless you
+  // have special needs)
+  bool allow_end_early = 4;
 }
