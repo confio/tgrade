@@ -3,7 +3,10 @@ package wasm
 import (
 	"testing"
 
-	"github.com/confio/tgrade/x/twasm/types"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	"encoding/json"
 
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,7 +20,6 @@ import (
 )
 
 func TestStakingQuerier(t *testing.T) {
-	t.Log(types.RandomBech32Address(t))
 	specs := map[string]struct {
 		src     wasmvmtypes.StakingQuery
 		mock    ViewKeeper
@@ -260,11 +262,90 @@ func TestStakingQuerier(t *testing.T) {
 	}
 }
 
+func TestCustomQuerier(t *testing.T) {
+	specs := map[string]struct {
+		src     json.RawMessage
+		mock    ViewKeeper
+		expJSON string
+		expErr  bool
+	}{
+		"valid contract type (STAKING)": {
+			src: []byte(`{ "poe_contract_address": { "contract_type": "STAKING"} }`),
+			mock: ViewKeeperMock{
+				GetPoEContractAddressFn: func(ctx sdk.Context, contractType poetypes.PoEContractType) (sdk.AccAddress, error) {
+					if contractType == poetypes.PoEContractTypeStaking {
+						return sdk.AccAddress("staking_addr"), nil
+					}
+					return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract type")
+				}},
+			expJSON: `{"address": "` + sdk.AccAddress("staking_addr").String() + `"}`,
+		},
+		"empty query": {
+			src:    []byte(``),
+			mock:   ViewKeeperMock{},
+			expErr: true,
+		},
+		"empty query json": {
+			src:    []byte(`{}`),
+			mock:   ViewKeeperMock{},
+			expErr: true,
+		},
+		"broken query": {
+			src:    []byte(`{ `),
+			mock:   ViewKeeperMock{},
+			expErr: true,
+		},
+		"not a poe_contract_address query": {
+			src:    []byte(`{ "another_query": { "contract_type": "STAKING"} }`),
+			mock:   ViewKeeperMock{},
+			expErr: true,
+		},
+		"not a valid contract type (staking)": {
+			src: []byte(`{ "poe_contract_address": { "contract_type": "staking"} }`),
+			mock: ViewKeeperMock{
+				GetPoEContractAddressFn: func(ctx sdk.Context, contractType poetypes.PoEContractType) (sdk.AccAddress, error) {
+					if contractType == poetypes.PoEContractTypeStaking {
+						return sdk.AccAddress("staking_addr"), nil
+					}
+					return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract type")
+				}},
+			expErr: true,
+		},
+		"undefined contract type (UNDEFINED)": {
+			src: []byte(`{ "poe_contract_address": { "contract_type": "UNDEFINED"} }`),
+			mock: ViewKeeperMock{
+				GetPoEContractAddressFn: func(ctx sdk.Context, contractType poetypes.PoEContractType) (sdk.AccAddress, error) {
+					if contractType == poetypes.PoEContractTypeStaking {
+						return sdk.AccAddress("staking_addr"), nil
+					}
+					if contractType == poetypes.PoEContractTypeUndefined {
+						return nil, sdkerrors.Wrap(wasmtypes.ErrInvalid, "contract type")
+					}
+					return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract type")
+				}},
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			q := CustomQuerier(spec.mock)
+			gotRsp, gotErr := q(sdk.Context{}, spec.src)
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+			assert.JSONEq(t, spec.expJSON, string(gotRsp), string(gotRsp))
+		})
+	}
+}
+
 type ViewKeeperMock struct {
-	GetBondDenomFn         func(ctx sdk.Context) string
-	DistributionContractFn func(ctx sdk.Context) keeper.DistributionContract
-	ValsetContractFn       func(ctx sdk.Context) keeper.ValsetContract
-	StakeContractFn        func(ctx sdk.Context) keeper.StakeContract
+	GetBondDenomFn          func(ctx sdk.Context) string
+	DistributionContractFn  func(ctx sdk.Context) keeper.DistributionContract
+	ValsetContractFn        func(ctx sdk.Context) keeper.ValsetContract
+	StakeContractFn         func(ctx sdk.Context) keeper.StakeContract
+	GetPoEContractAddressFn func(ctx sdk.Context, contractType poetypes.PoEContractType) (sdk.AccAddress, error)
 }
 
 func (m ViewKeeperMock) GetBondDenom(ctx sdk.Context) string {
@@ -293,4 +374,11 @@ func (m ViewKeeperMock) StakeContract(ctx sdk.Context) keeper.StakeContract {
 		panic("not expected to be called")
 	}
 	return m.StakeContractFn(ctx)
+}
+
+func (m ViewKeeperMock) GetPoEContractAddress(ctx sdk.Context, ctype poetypes.PoEContractType) (sdk.AccAddress, error) {
+	if m.GetPoEContractAddressFn == nil {
+		panic("not expected to be called")
+	}
+	return m.GetPoEContractAddressFn(ctx, ctype)
 }
