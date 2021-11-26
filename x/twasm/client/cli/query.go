@@ -22,18 +22,13 @@ func GetQueryCmd() *cobra.Command {
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
+
 	queryCmd.AddCommand(
 		GetCmdShowPrivilegedContracts(),
 		GetCmdListPrivilegedContracts(),
-
-		// wasm
-		wasmcli.GetCmdListCode(),
-		wasmcli.GetCmdListContractByCode(),
-		wasmcli.GetCmdQueryCode(),
-		wasmcli.GetCmdGetContractInfo(),
-		wasmcli.GetCmdGetContractHistory(),
-		wasmcli.GetCmdGetContractState(),
 	)
+	// add all wasmd queries
+	queryCmd.AddCommand(wasmcli.GetQueryCmd().Commands()...)
 	return queryCmd
 }
 
