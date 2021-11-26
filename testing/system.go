@@ -298,13 +298,17 @@ func (s *SystemUnderTest) AwaitNextBlock(t *testing.T, timeout ...time.Duration)
 	}
 }
 
-// ResetChain stops and clears all nodes state via 'unsafe-reset-all' when dirty or forced
-func (s *SystemUnderTest) ResetChain(t *testing.T, force ...interface{}) {
-	t.Helper()
-	if len(force) == 0 && !s.dirty {
-		return
+// ResetDirtyChain reset chain when non default setup or state (dirty)
+func (s *SystemUnderTest) ResetDirtyChain(t *testing.T) {
+	if s.IsDirty() {
+		s.ResetChain(t)
 	}
-	t.Log("Reset dirty chain")
+}
+
+// ResetChain stops and clears all nodes state via 'unsafe-reset-all'
+func (s *SystemUnderTest) ResetChain(t *testing.T) {
+	t.Helper()
+	t.Log("Reset chain")
 	s.StopChain()
 	restoreOriginalGenesis(t, *s)
 	restoreOriginalKeyring(t, *s)
@@ -318,19 +322,23 @@ func (s *SystemUnderTest) ResetChain(t *testing.T, force ...interface{}) {
 
 	// reset all validataor nodes
 	s.ForEachNodeExecAndWait(t, []string{"unsafe-reset-all"})
-	s.ModifyGenesisJson(t, SetEpochLength(t, sutEpochDuration))
+	s.currentHeight = 0
+	s.modifyGenesisJSON(t,
+		SetEpochLength(t, sutEpochDuration),
+		SetConsensusMaxGas(t, 10_000_000),
+	)
 	s.dirty = false
 }
 
 // ModifyGenesisCLI executes the CLI commands to modify the genesis
 func (s *SystemUnderTest) ModifyGenesisCLI(t *testing.T, cmds ...[]string) {
-	s.dirty = true
 	s.ForEachNodeExecAndWait(t, cmds...)
+	s.MarkDirty()
 }
 
 type GenesisMutator func([]byte) []byte
 
-// ModifyGenesisJson executes the callbacks to update the json representation
+// ModifyGenesisJSON resets the chain and executes the callbacks to update the json representation
 // The mutator callbacks after each other receive the genesis as raw bytes and return the updated genesis for the next.
 // example:
 // 	return func(genesis []byte) []byte {
@@ -338,7 +346,14 @@ type GenesisMutator func([]byte) []byte
 //		state, _ := sjson.SetRawBytes(genesis, "app_state.globalfee.params.minimum_gas_prices", val)
 //		return state
 //	}
-func (s *SystemUnderTest) ModifyGenesisJson(t *testing.T, mutators ...GenesisMutator) {
+func (s *SystemUnderTest) ModifyGenesisJSON(t *testing.T, mutators ...GenesisMutator) {
+	s.ResetChain(t)
+	s.modifyGenesisJSON(t, mutators...)
+}
+
+// modify json without enforcing a reset
+func (s *SystemUnderTest) modifyGenesisJSON(t *testing.T, mutators ...GenesisMutator) {
+	require.Empty(t, s.currentHeight, "forced chain reset required")
 	current, err := ioutil.ReadFile(filepath.Join(workDir, s.nodePath(0), "config", "genesis.json"))
 	require.NoError(t, err)
 	for _, m := range mutators {
@@ -350,8 +365,8 @@ func (s *SystemUnderTest) ModifyGenesisJson(t *testing.T, mutators ...GenesisMut
 	s.MarkDirty()
 }
 
-// ReadGenesisJson returns current genesis.json content as raw string
-func (s *SystemUnderTest) ReadGenesisJson(t *testing.T) string {
+// ReadGenesisJSON returns current genesis.json content as raw string
+func (s *SystemUnderTest) ReadGenesisJSON(t *testing.T) string {
 	content, err := ioutil.ReadFile(filepath.Join(workDir, s.nodePath(0), "config", "genesis.json"))
 	require.NoError(t, err)
 	return string(content)
@@ -497,7 +512,7 @@ func (s *SystemUnderTest) AddFullnode(t *testing.T) Node {
 	cmd.Dir = workDir
 	s.watchLogs(nodeNumber, cmd)
 	require.NoError(t, cmd.Run(), "failed to start node with id %d", nodeNumber)
-	saveGenesis(t, nodePath, []byte(s.ReadGenesisJson(t)))
+	saveGenesis(t, nodePath, []byte(s.ReadGenesisJSON(t)))
 
 	// quick hack: copy config and overwrite by start params
 	configFile := filepath.Join(workDir, nodePath, "config", "config.toml")

@@ -18,10 +18,8 @@ import (
 )
 
 func TestRecursiveMsgsExternalTrigger(t *testing.T) {
-	sut.ResetChain(t)
-	sut.ModifyGenesisJson(t, SetConsensusMaxGas(t, 10_000_000))
+	sut.ResetDirtyChain(t)
 	sut.StartChain(t)
-
 	cli := NewTgradeCli(t, sut, verbose)
 
 	codeID := cli.StoreWasm("testing/contract/hackatom.wasm")
@@ -54,10 +52,8 @@ func TestRecursiveMsgsExternalTrigger(t *testing.T) {
 }
 
 func TestRecursiveSmartQuery(t *testing.T) {
-	sut.ResetChain(t)
-	sut.ModifyGenesisJson(t, SetConsensusMaxGas(t, 10_000_000))
+	sut.ResetDirtyChain(t)
 	sut.StartChain(t)
-
 	cli := NewTgradeCli(t, sut, verbose)
 
 	initMsg := fmt.Sprintf(`{"verifier":%q, "beneficiary":%q}`, randomBech32Addr(), randomBech32Addr())
@@ -74,10 +70,8 @@ func TestRecursiveSmartQuery(t *testing.T) {
 }
 
 func TestRecursiveMsgsEmittedByContractInSimulation(t *testing.T) {
-	sut.ResetChain(t)
-	sut.ModifyGenesisJson(t, SetConsensusMaxGas(t, 10_000_000))
+	sut.ResetDirtyChain(t)
 	sut.StartChain(t)
-
 	cli := NewTgradeCli(t, sut, verbose)
 
 	reflectContractAddr := cli.InstantiateWasm(cli.StoreWasm("testing/contract/reflect.wasm"), "{}")

@@ -30,7 +30,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	//    and: no rewards distributed to it
 
 	t.Skip("Alex: there is currently no way in OC gov proposals to remove engagement points")
-	sut.ResetChain(t)
+	sut.ResetDirtyChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 
 	// contract addresses are deterministic. You can get a list of all contracts in genesis via
@@ -117,9 +117,8 @@ func TestPoEAddPostGenesisValidatorWithAutoEngagementPoints(t *testing.T) {
 	//   when: a create-validator message is submitted with self delegation amount > min
 	//   then: the validator gets engagement points automatically
 	//    and: is added to the active validator set
-	sut.ResetChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
-	sut.ModifyGenesisJson(t,
+	sut.ModifyGenesisJSON(t,
 		SetPoEParamsMutator(t, poetypes.NewParams(100, 10, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(5))))),
 	)
 	sut.StartChain(t)
@@ -151,9 +150,8 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 	//    and
 	//   when: an OC gov proposal adds EP
 	//   then: is added to the active validator set
-	sut.ResetChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
-	sut.ModifyGenesisJson(t,
+	sut.ModifyGenesisJSON(t,
 		SetPoEParamsMutator(t, poetypes.NewParams(100, 0, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(5))))),
 	)
 	sut.StartChain(t)
@@ -225,8 +223,7 @@ func TestPoESelfDelegate(t *testing.T) {
 	// when a validator adds stake
 	// then their staked amount increases by that amount
 	// and the total power increases
-
-	sut.ResetChain(t)
+	sut.ResetDirtyChain(t)
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 
@@ -260,9 +257,8 @@ func TestPoEUndelegate(t *testing.T) {
 	// when unboding time expired
 	// then claims got executed automatically
 
-	sut.ResetChain(t)
-	unbodingPeriod := 15 * time.Second
-	sut.ModifyGenesisJson(t, SetUnbodingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin("utgd", sdk.ZeroInt())))
+	unbodingPeriod := 5 * time.Second
+	sut.ModifyGenesisJSON(t, SetUnbodingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin("utgd", sdk.ZeroInt())))
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 
@@ -319,7 +315,7 @@ func TestPoEUndelegate(t *testing.T) {
 }
 
 func TestPoEQueries(t *testing.T) {
-	sut.ResetChain(t)
+	sut.ResetDirtyChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 	sut.StartChain(t)
 	specs := map[string]struct {
