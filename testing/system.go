@@ -46,6 +46,7 @@ type SystemUnderTest struct {
 	out               io.Writer
 	verbose           bool
 	ChainStarted      bool
+	dirty             bool // requires full reset when marked dirty
 }
 
 func NewSystemUnderTest(verbose bool, nodesCount int, blockTime time.Duration) *SystemUnderTest {
@@ -122,6 +123,16 @@ func (s *SystemUnderTest) StartChain(t *testing.T, xargs ...string) {
 		}),
 	)
 	s.AwaitNextBlock(t)
+}
+
+// MarkDirty whole chain will be reset when marked dirty
+func (s *SystemUnderTest) MarkDirty() {
+	s.dirty = true
+}
+
+// IsDirty true when non default genesis or other state modification were applied that might create incompatibility for tests
+func (s SystemUnderTest) IsDirty() bool {
+	return s.dirty
 }
 
 // watchLogs stores stdout/stderr in a file and in a ring buffer to output the last n lines on test error
@@ -287,10 +298,13 @@ func (s *SystemUnderTest) AwaitNextBlock(t *testing.T, timeout ...time.Duration)
 	}
 }
 
-// ResetChain stops and clears all nodes state via 'unsafe-reset-all'
-func (s *SystemUnderTest) ResetChain(t *testing.T) {
+// ResetChain stops and clears all nodes state via 'unsafe-reset-all' when dirty or forced
+func (s *SystemUnderTest) ResetChain(t *testing.T, force ...interface{}) {
 	t.Helper()
-	t.Log("ResetChain chain")
+	if len(force) == 0 && !s.dirty {
+		return
+	}
+	t.Log("Reset dirty chain")
 	s.StopChain()
 	restoreOriginalGenesis(t, *s)
 	restoreOriginalKeyring(t, *s)
@@ -305,10 +319,12 @@ func (s *SystemUnderTest) ResetChain(t *testing.T) {
 	// reset all validataor nodes
 	s.ForEachNodeExecAndWait(t, []string{"unsafe-reset-all"})
 	s.ModifyGenesisJson(t, SetEpochLength(t, sutEpochDuration))
+	s.dirty = false
 }
 
 // ModifyGenesisCLI executes the CLI commands to modify the genesis
 func (s *SystemUnderTest) ModifyGenesisCLI(t *testing.T, cmds ...[]string) {
+	s.dirty = true
 	s.ForEachNodeExecAndWait(t, cmds...)
 }
 
@@ -330,7 +346,8 @@ func (s *SystemUnderTest) ModifyGenesisJson(t *testing.T, mutators ...GenesisMut
 	}
 	out := storeTempFile(t, current)
 	defer os.Remove(out.Name())
-	s.SetGenesis(t, out.Name())
+	s.setGenesis(t, out.Name())
+	s.MarkDirty()
 }
 
 // ReadGenesisJson returns current genesis.json content as raw string
@@ -340,8 +357,9 @@ func (s *SystemUnderTest) ReadGenesisJson(t *testing.T) string {
 	return string(content)
 }
 
-// SetGenesis copy genesis file to all nodes
-func (s *SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
+// setGenesis copy genesis file to all nodes
+func (s *SystemUnderTest) setGenesis(t *testing.T, srcPath string) {
+
 	in, err := os.Open(srcPath)
 	require.NoError(t, err)
 	defer in.Close()
@@ -677,7 +695,7 @@ func CaptureAllEventsConsumer(t *testing.T, optMaxWaitTime ...time.Duration) (c 
 // restoreOriginalGenesis replace nodes genesis by the one created on setup
 func restoreOriginalGenesis(t *testing.T, s SystemUnderTest) {
 	src := filepath.Join(workDir, s.nodePath(0), "config", "genesis.json.orig")
-	s.SetGenesis(t, src)
+	s.setGenesis(t, src)
 }
 
 // restoreOriginalKeyring replaces test keyring with original

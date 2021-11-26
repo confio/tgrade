@@ -16,7 +16,7 @@ import (
 // Scenario: add WASM code as part of genesis and pin it in VM cache forever
 //           for faster execution.
 func TestGenesisCodePin(t *testing.T) {
-	sut.ResetChain(t)
+	sut.ResetChain(t, true)
 	// WASM code 1-5 is present.
 	sut.ModifyGenesisCLI(t,
 		[]string{"wasm-genesis-flags", "set-pinned", "1"},

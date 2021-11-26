@@ -13,7 +13,7 @@ import (
 )
 
 func TestGlobalFee(t *testing.T) {
-	sut.ResetChain(t)
+	sut.ResetChain(t, true)
 	sut.ModifyGenesisJson(t, SetGlobalMinFee(t,
 		sdk.NewDecCoinFromDec("utgd", sdk.NewDecWithPrec(1, 3)),
 		sdk.NewDecCoinFromDec("node0token", sdk.NewDecWithPrec(1, 4))),
