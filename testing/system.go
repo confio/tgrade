@@ -100,13 +100,13 @@ func (s *SystemUnderTest) SetupChain() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to load genesis: %s", err))
 	}
-	genesisBz, err = sjson.SetRawBytes(genesisBz, "app_state.poe.stake_contract_config.unbonding_period", []byte(fmt.Sprintf("%q", sutEpochDuration)))
+	genesisBz, err = sjson.SetRawBytes(genesisBz, "app_state.poe.valset_contract_config.epoch_length", []byte(fmt.Sprintf(`%q`, sutEpochDuration.String())))
 	if err != nil {
-		panic(fmt.Sprintf("failed set unbonding period: %s", err))
+		panic(fmt.Sprintf("failed set epoche length: %s", err))
 	}
 	genesisBz, err = sjson.SetRawBytes(genesisBz, "consensus_params.block.max_gas", []byte(fmt.Sprintf(`"%d"`, 10_000_000)))
 	if err != nil {
-		panic(fmt.Sprintf("failed set bloc max gas: %s", err))
+		panic(fmt.Sprintf("failed set block max gas: %s", err))
 	}
 	s.withEachNodeHome(func(i int, home string) {
 		if err := saveGenesis(home, genesisBz); err != nil {
