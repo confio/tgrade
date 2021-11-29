@@ -59,15 +59,12 @@ func (q grpcQuerier) Validators(c context.Context, req *stakingtypes.QueryValida
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if req.Pagination != nil {
-		return nil, status.Error(codes.Unimplemented, "pagination not supported, yet")
-	}
 	if req.Status != "" {
 		return nil, status.Error(codes.Unimplemented, "status not supported, yet")
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
-	vals, err := q.keeper.ValsetContract(ctx).ListValidators(ctx)
+	vals, err := q.keeper.ValsetContract(ctx).ListValidators(ctx, req.Pagination)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

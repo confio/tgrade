@@ -3,6 +3,8 @@ package wasm
 import (
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -37,7 +39,7 @@ func TestStakingQuerier(t *testing.T) {
 			src: wasmvmtypes.StakingQuery{AllValidators: &wasmvmtypes.AllValidatorsQuery{}},
 			mock: ViewKeeperMock{ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
 				return poetesting.ValsetContractMock{
-					ListValidatorsFn: func(ctx sdk.Context) ([]stakingtypes.Validator, error) {
+					ListValidatorsFn: func(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
 						resp := []stakingtypes.Validator{
 							poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
 								m.OperatorAddress = "myOperatorAddress"
@@ -53,7 +55,7 @@ func TestStakingQuerier(t *testing.T) {
 			src: wasmvmtypes.StakingQuery{AllValidators: &wasmvmtypes.AllValidatorsQuery{}},
 			mock: ViewKeeperMock{ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
 				return poetesting.ValsetContractMock{
-					ListValidatorsFn: func(ctx sdk.Context) ([]stakingtypes.Validator, error) {
+					ListValidatorsFn: func(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
 						resp := []stakingtypes.Validator{
 							poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
 								m.OperatorAddress = "myOperatorAddress"

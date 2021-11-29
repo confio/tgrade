@@ -74,7 +74,8 @@ func TestListValidators(t *testing.T) {
 	require.NoError(t, err)
 
 	// when
-	gotValidators, err := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx)
+	// FIXME? Add pagination
+	gotValidators, err := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx, nil)
 
 	// then
 	require.NoError(t, err)

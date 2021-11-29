@@ -31,7 +31,8 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 		}
 		zero := sdk.ZeroDec().String()
 		if request.AllValidators != nil {
-			validators, err := poeKeeper.ValsetContract(ctx).ListValidators(ctx)
+			// FIXME: Support `ListValidators` pagination
+			validators, err := poeKeeper.ValsetContract(ctx).ListValidators(ctx, nil)
 			if err != nil {
 				return nil, err
 			}

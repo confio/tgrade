@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptosecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -303,8 +305,14 @@ func (v ValsetContractAdapter) QueryValidator(ctx sdk.Context, opAddr sdk.AccAdd
 }
 
 // ListValidators query all validators
-func (v ValsetContractAdapter) ListValidators(ctx sdk.Context) ([]stakingtypes.Validator, error) {
-	query := ValsetQuery{ListValidators: &ListValidatorsQuery{Limit: 30}}
+func (v ValsetContractAdapter) ListValidators(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
+	var startAfter = ""
+	var limit = 30
+	if pagination != nil {
+		startAfter = string(pagination.Key)
+		limit = int(pagination.Limit)
+	}
+	query := ValsetQuery{ListValidators: &ListValidatorsQuery{StartAfter: startAfter, Limit: limit}}
 	var rsp ListValidatorsResponse
 	err := v.doQuery(ctx, query, &rsp)
 	if err != nil {
