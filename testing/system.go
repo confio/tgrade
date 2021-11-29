@@ -17,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tidwall/sjson"
+
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/sync"
@@ -68,6 +70,7 @@ func (s *SystemUnderTest) SetupChain() {
 	if err := os.RemoveAll(filepath.Join(workDir, s.outputDir)); err != nil {
 		panic(err.Error())
 	}
+
 	args := []string{
 		"testnet",
 		"--chain-id=" + s.chainID,
@@ -89,9 +92,29 @@ func (s *SystemUnderTest) SetupChain() {
 		panic(fmt.Sprintf("unexpected error :%#+v, output: %s", err, string(out)))
 	}
 	s.Log(string(out))
+	s.nodesCount = s.initialNodesCount
+
+	// modify genesis with system test defaults
+	src := filepath.Join(workDir, s.nodePath(0), "config", "genesis.json")
+	genesisBz, err := ioutil.ReadFile(src)
+	if err != nil {
+		panic(fmt.Sprintf("failed to load genesis: %s", err))
+	}
+	genesisBz, err = sjson.SetRawBytes(genesisBz, "app_state.poe.stake_contract_config.unbonding_period", []byte(fmt.Sprintf("%q", sutEpochDuration)))
+	if err != nil {
+		panic(fmt.Sprintf("failed set unbonding period: %s", err))
+	}
+	genesisBz, err = sjson.SetRawBytes(genesisBz, "consensus_params.block.max_gas", []byte(fmt.Sprintf(`"%d"`, 10_000_000)))
+	if err != nil {
+		panic(fmt.Sprintf("failed set bloc max gas: %s", err))
+	}
+	s.withEachNodeHome(func(i int, home string) {
+		if err := saveGenesis(home, genesisBz); err != nil {
+			panic(err)
+		}
+	})
 
 	// backup genesis
-	src := filepath.Join(workDir, s.nodePath(0), "config", "genesis.json")
 	dest := filepath.Join(workDir, s.nodePath(0), "config", "genesis.json.orig")
 	if _, err := copyFile(src, dest); err != nil {
 		panic(fmt.Sprintf("copy failed :%#+v", err))
@@ -323,10 +346,6 @@ func (s *SystemUnderTest) ResetChain(t *testing.T) {
 	// reset all validataor nodes
 	s.ForEachNodeExecAndWait(t, []string{"unsafe-reset-all"})
 	s.currentHeight = 0
-	s.modifyGenesisJSON(t,
-		SetEpochLength(t, sutEpochDuration),
-		SetConsensusMaxGas(t, 10_000_000),
-	)
 	s.dirty = false
 }
 
@@ -384,18 +403,25 @@ func (s *SystemUnderTest) setGenesis(t *testing.T, srcPath string) {
 	require.NoError(t, err)
 
 	s.withEachNodeHome(func(i int, home string) {
-		saveGenesis(t, home, buf.Bytes())
+		require.NoError(t, saveGenesis(home, buf.Bytes()))
 	})
 }
 
-func saveGenesis(t *testing.T, home string, content []byte) {
+func saveGenesis(home string, content []byte) error {
 	out, err := os.Create(filepath.Join(workDir, home, "config", "genesis.json"))
-	require.NoError(t, err)
+	if err != nil {
+		return fmt.Errorf("out file: %w", err)
+	}
 	defer out.Close()
 
-	_, err = io.Copy(out, bytes.NewReader(content))
-	require.NoError(t, err)
-	require.NoError(t, out.Close())
+	if _, err = io.Copy(out, bytes.NewReader(content)); err != nil {
+		return fmt.Errorf("write out file: %w", err)
+	}
+
+	if err = out.Close(); err != nil {
+		return fmt.Errorf("close out file: %w", err)
+	}
+	return nil
 }
 
 // ForEachNodeExecAndWait runs the given tgrade commands for all cluster nodes synchronously
@@ -513,7 +539,7 @@ func (s *SystemUnderTest) AddFullnode(t *testing.T) Node {
 	cmd.Dir = workDir
 	s.watchLogs(nodeNumber, cmd)
 	require.NoError(t, cmd.Run(), "failed to start node with id %d", nodeNumber)
-	saveGenesis(t, nodePath, []byte(s.ReadGenesisJSON(t)))
+	require.NoError(t, saveGenesis(nodePath, []byte(s.ReadGenesisJSON(t))))
 
 	// quick hack: copy config and overwrite by start params
 	configFile := filepath.Join(workDir, nodePath, "config", "config.toml")

@@ -36,15 +36,16 @@ func TestRecursiveMsgsExternalTrigger(t *testing.T) {
 		},
 		"tx": { // tx will be rejected by Tendermint in post abci checkTX operation
 			gas:           strconv.Itoa(math.MaxInt64),
-			expErrMatcher: ErrTimeoutMatcher,
+			expErrMatcher: ErrPostFailedMatcher,
 		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
+			cli := NewTgradeCli(t, sut, verbose)
 			execMsg := `{"message_loop":{}}`
 			for _, n := range sut.AllNodes(t) {
 				cli.WithRunErrorMatcher(spec.expErrMatcher).WithNodeAddress(n.RPCAddr()).
-					Execute(contractAddr, execMsg, defaultSrcAddr, "--gas="+spec.gas, "--broadcast-mode=async")
+					Execute(contractAddr, execMsg, defaultSrcAddr, "--gas="+spec.gas, "--broadcast-mode=sync")
 			}
 			sut.AwaitNextBlock(t)
 		})

@@ -92,11 +92,18 @@ func (c TgradeCli) run(args []string) string {
 	if c.Debug {
 		c.t.Logf("+++ running `tgrade %s`", strings.Join(args, " "))
 	}
-	cmd := exec.Command(locateExecutable("tgrade"), args...) //nolint:gosec
-	cmd.Dir = workDir
-	out, err := cmd.CombinedOutput()
-	c.assertErrorFn(c.t, err, string(out))
-	return string(out)
+	gotOut, gotErr := func() (out []byte, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("recovered from panc: %w", r)
+			}
+		}()
+		cmd := exec.Command(locateExecutable("tgrade"), args...) //nolint:gosec
+		cmd.Dir = workDir
+		return cmd.CombinedOutput()
+	}()
+	c.assertErrorFn(c.t, gotErr, string(gotOut))
+	return string(gotOut)
 }
 
 func (c TgradeCli) withQueryFlags(args ...string) []string {
@@ -294,6 +301,11 @@ var (
 	// ErrTimeoutMatcher requires time out message
 	ErrTimeoutMatcher RunErrorAssert = func(t require.TestingT, err error, args ...interface{}) {
 		const expMsg = "timed out waiting for tx to be included in a block"
+		expErrWithMsg(t, err, args, expMsg)
+	}
+	// ErrPostFailedMatcher requires post failed
+	ErrPostFailedMatcher RunErrorAssert = func(t require.TestingT, err error, args ...interface{}) {
+		const expMsg = "post failed"
 		expErrWithMsg(t, err, args, expMsg)
 	}
 )
