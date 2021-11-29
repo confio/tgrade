@@ -4,15 +4,10 @@
 package testing
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
 	"testing"
-
-	testingcontract "github.com/confio/tgrade/testing/contract"
-
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -36,7 +31,7 @@ func TestRecursiveMsgsExternalTrigger(t *testing.T) {
 		},
 		"tx": { // tx will be rejected by Tendermint in post abci checkTX operation
 			gas:           strconv.Itoa(math.MaxInt64),
-			expErrMatcher: ErrPostFailedMatcher,
+			expErrMatcher: ErrTimeoutMatcher,
 		},
 	}
 	for name, spec := range specs {
@@ -66,45 +61,6 @@ func TestRecursiveSmartQuery(t *testing.T) {
 	for _, n := range sut.AllNodes(t) {
 		cli.WithRunErrorMatcher(ErrOutOfGasMatcher).WithNodeAddress(n.RPCAddr()).
 			QuerySmart(maliciousContractAddr, msg)
-	}
-	sut.AwaitNextBlock(t)
-}
-
-func TestRecursiveMsgsEmittedByContractInSimulation(t *testing.T) {
-	sut.ResetDirtyChain(t)
-	sut.StartChain(t)
-	cli := NewTgradeCli(t, sut, verbose)
-
-	reflectContractAddr := cli.InstantiateWasm(cli.StoreWasm("testing/contract/reflect.wasm"), "{}")
-
-	initMsg := fmt.Sprintf(`{"verifier":%q, "beneficiary":%q}`, randomBech32Addr(), randomBech32Addr())
-	maliciousContractAddr := cli.InstantiateWasm(cli.StoreWasm("testing/contract/hackatom.wasm"), initMsg)
-
-	payloadMsg := wasmvmtypes.CosmosMsg{
-		Wasm: &wasmvmtypes.WasmMsg{
-			Execute: &wasmvmtypes.ExecuteMsg{
-				ContractAddr: maliciousContractAddr,
-				Msg:          []byte(`{"message_loop":{}}`),
-			},
-		},
-	}
-	reflectMsg := testingcontract.ReflectHandleMsg{
-		ReflectSubMsg: &testingcontract.ReflectSubPayload{
-			Msgs: []wasmvmtypes.SubMsg{{
-				ID:      1,
-				Msg:     payloadMsg,
-				ReplyOn: wasmvmtypes.ReplyAlways,
-			}},
-		},
-	}
-
-	execMsgBz, err := json.Marshal(reflectMsg)
-	require.NoError(t, err)
-
-	// when
-	for _, n := range sut.AllNodes(t) {
-		cli.WithRunErrorMatcher(ErrOutOfGasMatcher).WithNodeAddress(n.RPCAddr()).
-			Execute(reflectContractAddr, string(execMsgBz), defaultSrcAddr, "--gas=auto")
 	}
 	sut.AwaitNextBlock(t)
 }
