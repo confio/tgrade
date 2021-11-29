@@ -12,7 +12,7 @@ func AddGenesisWasmMsgCmd(defaultNodeHome string) *cobra.Command {
 	txCmd := &cobra.Command{
 		Use:                        "wasm-genesis-message",
 		Short:                      "Wasm genesis message subcommands",
-		Aliases:                    []string{"wasm-genesis-msg", "wasm-genesis-messages"},
+		Aliases:                    []string{"wasm-genesis-msg", "wasm-genesis-messages", "add-wasm-genesis-message"},
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
