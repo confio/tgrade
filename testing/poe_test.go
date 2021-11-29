@@ -253,11 +253,11 @@ func TestPoEUndelegate(t *testing.T) {
 	// when a validator unbonds stake
 	// then their staked amount decreases by that amount
 	// and the total power decreases
-	// and unbonded amount still locked until auto unbonding
+	// and unbonded amount still locked until auto unbonding happens
 	// when unboding time expired
 	// then claims got executed automatically
 
-	unbodingPeriod := 5 * time.Second
+	unbodingPeriod := 10 * time.Second // not too short so that claims not get auto unbonded
 	sut.ModifyGenesisJSON(t, SetUnbodingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin("utgd", sdk.ZeroInt())))
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
@@ -274,7 +274,6 @@ func TestPoEUndelegate(t *testing.T) {
 	RequireTxSuccess(t, txResult)
 	// wait for msg executions
 	sut.AwaitNextBlock(t)
-	unbondingStart := time.Now()
 	AwaitValsetEpochCompleted(t)
 
 	// then
@@ -288,7 +287,7 @@ func TestPoEUndelegate(t *testing.T) {
 
 	// account balance not increased, yet
 	balanceAfter := cli.QueryBalance(cli.GetKeyAddr("node0"), "utgd")
-	assert.Equal(t, balanceBefore, balanceAfter)
+	require.Equal(t, balanceBefore, balanceAfter)
 
 	// but unbonding delegations pending
 	qRes = cli.CustomQuery("q", "poe", "unbonding-delegations", cli.GetKeyAddr("node0"))
@@ -301,14 +300,17 @@ func TestPoEUndelegate(t *testing.T) {
 	assert.Equal(t, int64(200000), amounts[1].Int())
 
 	// and when unboding time expired
-	time.Sleep(unbodingPeriod - time.Since(unbondingStart))
-	sut.AwaitNextBlock(t)
-
-	// then auto claimed
-	balanceAfter = cli.QueryBalance(cli.GetKeyAddr("node0"), "utgd")
 	expBalance := balanceBefore + 100000 + 200000
-	assert.Equal(t, expBalance, balanceAfter)
-
+	balanceAfter = 0
+	for i := 0; i < int(unbodingPeriod/sut.blockTime); i++ {
+		balanceAfter = cli.QueryBalance(cli.GetKeyAddr("node0"), "utgd")
+		if balanceAfter == expBalance {
+			break
+		}
+		sut.AwaitNextBlock(t)
+	}
+	// then auto claimed
+	require.Equal(t, expBalance, balanceAfter)
 	qRes = cli.CustomQuery("q", "poe", "unbonding-delegations", cli.GetKeyAddr("node0"))
 	entries = gjson.Get(qRes, "entries").Array()
 	assert.Len(t, entries, 0, qRes)

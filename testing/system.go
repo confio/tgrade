@@ -496,6 +496,7 @@ func (s *SystemUnderTest) resetBuffers() {
 
 // AddFullnode starts a new fullnode that connects to the existing chain but is not a validator.
 func (s *SystemUnderTest) AddFullnode(t *testing.T) Node {
+	s.MarkDirty()
 	s.nodesCount++
 	nodeNumber := s.nodesCount - 1
 	nodePath := s.nodePath(nodeNumber)
