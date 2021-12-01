@@ -40,10 +40,14 @@ func TestStakingQuerier(t *testing.T) {
 			mock: ViewKeeperMock{ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
 				return poetesting.ValsetContractMock{
 					ListValidatorsFn: func(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
-						resp := []stakingtypes.Validator{
-							poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
-								m.OperatorAddress = "myOperatorAddress"
-							}),
+						var resp []stakingtypes.Validator
+						operator := "myOperatorAddress"
+						if pagination == nil || string(pagination.Key) != operator {
+							resp = []stakingtypes.Validator{
+								poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
+									m.OperatorAddress = operator
+								}),
+							}
 						}
 						return resp, nil
 					},
@@ -56,13 +60,17 @@ func TestStakingQuerier(t *testing.T) {
 			mock: ViewKeeperMock{ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
 				return poetesting.ValsetContractMock{
 					ListValidatorsFn: func(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
-						resp := []stakingtypes.Validator{
-							poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
-								m.OperatorAddress = "myOperatorAddress"
-							}),
-							poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
-								m.OperatorAddress = "myOtherOperatorAddress"
-							}),
+						operator := "myOtherOperatorAddress"
+						var resp []stakingtypes.Validator
+						if pagination == nil || string(pagination.Key) != operator {
+							resp = []stakingtypes.Validator{
+								poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
+									m.OperatorAddress = "myOperatorAddress"
+								}),
+								poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
+									m.OperatorAddress = operator
+								}),
+							}
 						}
 						return resp, nil
 					},
