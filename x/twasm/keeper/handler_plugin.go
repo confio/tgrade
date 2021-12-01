@@ -201,7 +201,7 @@ func (h TgradeHandler) handleMintToken(ctx sdk.Context, contractAddr sdk.AccAddr
 	)}, nil
 }
 
-// handle consensus parameters modificatoin message
+// handle the consensus parameters update message
 func (h TgradeHandler) handleConsensusParamsUpdate(ctx sdk.Context, contractAddr sdk.AccAddress, pUpdate *contract.ConsensusParamsUpdate) ([]sdk.Event, error) {
 	if err := h.assertHasPrivilege(ctx, contractAddr, types.PrivilegeConsensusParamChanger); err != nil {
 		return nil, err
