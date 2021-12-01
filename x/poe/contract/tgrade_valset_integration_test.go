@@ -4,6 +4,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
+
 	"github.com/confio/tgrade/x/twasm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -74,7 +76,6 @@ func TestListValidators(t *testing.T) {
 	require.NoError(t, err)
 
 	// when
-	// FIXME? Add pagination
 	gotValidators, err := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx, nil)
 
 	// then
@@ -83,6 +84,43 @@ func TestListValidators(t *testing.T) {
 		return expValidators[i].OperatorAddress < expValidators[j].OperatorAddress
 	})
 	assert.Equal(t, expValidators, gotValidators)
+}
+
+func TestListValidatorsPagination(t *testing.T) {
+	// Setup contracts and seed some data. Creates three random validators
+	ctx, example, expValidators := setupPoEContracts(t)
+	expValidators = clearTokenAmount(expValidators)
+	var limit uint64 = 2
+	pagination := query.PageRequest{Limit: limit}
+
+	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	require.NoError(t, err)
+
+	// when
+	gotValidators, err := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx, &pagination)
+
+	// then
+	require.NoError(t, err)
+	sort.Slice(expValidators, func(i, j int) bool {
+		return expValidators[i].OperatorAddress < expValidators[j].OperatorAddress
+	})
+	assert.Equal(t, expValidators[:limit], gotValidators)
+
+	// and when
+	pagination.Key = []byte(gotValidators[len(gotValidators)-1].OperatorAddress)
+	gotValidators, err = contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx, &pagination)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, expValidators[limit:], gotValidators)
+
+	// and when
+	pagination.Key = []byte(gotValidators[len(gotValidators)-1].OperatorAddress)
+	gotValidators, err = contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx, &pagination)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 0, len(gotValidators))
 }
 
 func TestQueryValsetConfig(t *testing.T) {

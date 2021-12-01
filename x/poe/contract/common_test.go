@@ -50,7 +50,7 @@ func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k keeper.Keeper, con
 	}
 }
 
-// return genesis mutator that adds the given mumber of validators to the genesis
+// return genesis mutator that adds the given number of validators to the genesis
 func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeepers, numValidators int) (func(m *types.GenesisState), []stakingtypes.Validator) {
 	collectValidators := make([]stakingtypes.Validator, numValidators)
 	return func(m *types.GenesisState) {
