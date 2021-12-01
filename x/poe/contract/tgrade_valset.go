@@ -307,7 +307,7 @@ func (v ValsetContractAdapter) QueryValidator(ctx sdk.Context, opAddr sdk.AccAdd
 // ListValidators query all validators
 func (v ValsetContractAdapter) ListValidators(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
 	var startAfter = ""
-	var limit = 30
+	var limit = 0
 	if pagination != nil {
 		startAfter = string(pagination.Key)
 		limit = int(pagination.Limit)
