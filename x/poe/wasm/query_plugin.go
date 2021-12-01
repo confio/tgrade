@@ -3,6 +3,8 @@ package wasm
 import (
 	"encoding/json"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
+
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -31,19 +33,26 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 		}
 		zero := sdk.ZeroDec().String()
 		if request.AllValidators != nil {
-			// FIXME: Support `ListValidators` pagination
-			validators, err := poeKeeper.ValsetContract(ctx).ListValidators(ctx, nil)
+			var wasmVals []wasmvmtypes.Validator
+			pagination := query.PageRequest{}
+		start:
+			validatorsBatch, err := poeKeeper.ValsetContract(ctx).ListValidators(ctx, &pagination)
 			if err != nil {
 				return nil, err
 			}
-			wasmVals := make([]wasmvmtypes.Validator, len(validators))
-			for i, v := range validators {
-				wasmVals[i] = wasmvmtypes.Validator{
+			for _, v := range validatorsBatch {
+				wasmVals = append(wasmVals, wasmvmtypes.Validator{
 					Address:       v.OperatorAddress,
 					Commission:    zero,
 					MaxCommission: zero,
 					MaxChangeRate: zero,
-				}
+				},
+				)
+			}
+			if len(validatorsBatch) > 0 {
+				last := validatorsBatch[len(validatorsBatch)-1]
+				pagination.Key = []byte(last.OperatorAddress)
+				goto start
 			}
 			res := wasmvmtypes.AllValidatorsResponse{
 				Validators: wasmVals,
