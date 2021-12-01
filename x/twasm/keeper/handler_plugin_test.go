@@ -105,7 +105,7 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 			minterMock := NoopMinterMock()
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
-			h := NewTgradeHandler(cdc, mock, minterMock, govRouter)
+			h := NewTgradeHandler(cdc, mock, minterMock, nil, govRouter)
 			em := sdk.NewEventManager()
 			ctx := sdk.Context{}.WithEventManager(em)
 
@@ -322,7 +322,7 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			capturedDetails, capturedRegistrations, capturedUnRegistrations = nil, nil, nil
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
-			h := NewTgradeHandler(nil, mock, nil, nil)
+			h := NewTgradeHandler(nil, mock, nil, nil, nil)
 			var ctx sdk.Context
 			gotErr := h.handlePrivilege(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -416,7 +416,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
 			router := &CapturingGovRouter{}
-			h := NewTgradeHandler(cdc, mock, nil, router)
+			h := NewTgradeHandler(cdc, mock, nil, nil, router)
 			var ctx sdk.Context
 			gotErr := h.handleGovProposalExecution(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -563,7 +563,7 @@ func TestHandleMintToken(t *testing.T) {
 			mock := MinterMock{MintCoinsFn: mintFn, SendCoinsFromModuleToAccountFn: sendFn}
 			keeperMock := handlerTgradeKeeperMock{}
 			spec.setup(&keeperMock)
-			h := NewTgradeHandler(cdc, keeperMock, mock, nil)
+			h := NewTgradeHandler(cdc, keeperMock, mock, nil, nil)
 			var ctx sdk.Context
 			gotEvts, gotErr := h.handleMintToken(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)

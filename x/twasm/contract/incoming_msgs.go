@@ -11,14 +11,16 @@ import (
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
-	"github.com/confio/tgrade/x/twasm/types"
+	"github.com/confio/tgrade/x/poe/types"
+	twasmtypes "github.com/confio/tgrade/x/twasm/types"
 )
 
 // TgradeMsg messages coming from a contract
 type TgradeMsg struct {
-	Privilege          *PrivilegeMsg       `json:"privilege,omitempty"`
-	ExecuteGovProposal *ExecuteGovProposal `json:"execute_gov_proposal,omitempty"`
-	MintTokens         *MintTokens         `json:"mint_tokens,omitempty"`
+	Privilege          *PrivilegeMsg          `json:"privilege,omitempty"`
+	ExecuteGovProposal *ExecuteGovProposal    `json:"execute_gov_proposal,omitempty"`
+	MintTokens         *MintTokens            `json:"mint_tokens,omitempty"`
+	ConsensusParams    *ConsensusParamsUpdate `json:"consensus_params,omitempty"`
 }
 
 // UnmarshalWithAny from json to Go objects with cosmos-sdk Any types that have their objects/ interfaces unpacked and
@@ -35,8 +37,8 @@ func (p *TgradeMsg) UnmarshalWithAny(bz []byte, unpacker codectypes.AnyUnpacker)
 }
 
 type PrivilegeMsg struct {
-	Request types.PrivilegeType `json:"request,omitempty"`
-	Release types.PrivilegeType `json:"release,omitempty"`
+	Request twasmtypes.PrivilegeType `json:"request,omitempty"`
+	Release twasmtypes.PrivilegeType `json:"release,omitempty"`
 }
 
 // ExecuteGovProposal will execute an approved proposal in the Cosmos SDK "Gov Router".
@@ -227,10 +229,10 @@ type proposalContent struct {
 	IBCClientUpdate *ibcclienttypes.ClientUpdateProposal `json:"ibc_client_update"`
 
 	// See https://github.com/confio/tgrade/blob/privileged_contracts_5/proto/confio/twasm/v1beta1/proposal.proto
-	PromoteToPrivilegedContract *types.PromoteToPrivilegedContractProposal `json:"promote_to_privileged_contract"`
+	PromoteToPrivilegedContract *twasmtypes.PromoteToPrivilegedContractProposal `json:"promote_to_privileged_contract"`
 
 	// See https://github.com/confio/tgrade/blob/privileged_contracts_5/proto/confio/twasm/v1beta1/proposal.proto
-	DemotePrivilegedContract *types.DemotePrivilegedContractProposal `json:"demote_privileged_contract"`
+	DemotePrivilegedContract *twasmtypes.DemotePrivilegedContractProposal `json:"demote_privileged_contract"`
 
 	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L32-L54
 	InstantiateContract *wasmtypes.InstantiateContractProposal `json:"instantiate_contract"`
@@ -257,4 +259,64 @@ type MintTokens struct {
 	Denom         string `json:"denom"`
 	Amount        string `json:"amount"`
 	RecipientAddr string `json:"recipient"`
+}
+
+// ConsensusParamsUpdate subset of tendermint params.
+// See https://github.com/tendermint/tendermint/blob/v0.34.8/proto/tendermint/abci/types.proto#L282-L289
+type ConsensusParamsUpdate struct {
+	Block    *BlockParams    `json:"block,omitempty"`
+	Evidence *EvidenceParams `json:"evidence,omitempty"`
+}
+
+// ValidateBasic check basics
+func (c ConsensusParamsUpdate) ValidateBasic() error {
+	if c.Block == nil && c.Evidence == nil {
+		return types.ErrEmpty
+	}
+	if err := c.Block.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "block")
+	}
+	if err := c.Evidence.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "evidence")
+	}
+	return nil
+}
+
+type BlockParams struct {
+	// MaxBytes Maximum number of bytes (over all tx) to be included in a block
+	MaxBytes *int64 `json:"max_bytes,omitempty"`
+	// MaxGas Maximum gas (over all tx) to be executed in one block.
+	MaxGas *int64 `json:"max_gas,omitempty"`
+}
+
+// ValidateBasic check basics
+func (p *BlockParams) ValidateBasic() error {
+	if p == nil {
+		return nil
+	}
+	if p.MaxBytes == nil && p.MaxGas == nil {
+		return types.ErrEmpty
+	}
+	return nil
+}
+
+type EvidenceParams struct {
+	// MaxAgeNumBlocks Max age of evidence, in blocks.
+	MaxAgeNumBlocks *int64 `json:"max_age_num_blocks,omitempty"`
+	// MaxAgeDuration Max age of evidence, in seconds.
+	// It should correspond with an app's "unbonding period"
+	MaxAgeDuration *int64 `json:"max_age_duration,omitempty"`
+	// MaxBytes Maximum number of bytes of evidence to be included in a block
+	MaxBytes *int64 `json:"max_bytes,omitempty"`
+}
+
+// ValidateBasic check basics
+func (p *EvidenceParams) ValidateBasic() error {
+	if p == nil {
+		return nil
+	}
+	if p.MaxAgeNumBlocks == nil && p.MaxAgeDuration == nil && p.MaxBytes == nil {
+		return types.ErrEmpty
+	}
+	return nil
 }

@@ -279,7 +279,7 @@ func NewTgradeApp(logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest
 	// if we want to allow any custom callbacks
 	supportedFeatures := "staking,stargate,iterator,tgrade"
 
-	wasmOpts = append(SetupWasmHandlers(appCodec, app.bankKeeper, govRouter, &app.twasmKeeper, &app.poeKeeper), wasmOpts...)
+	wasmOpts = append(SetupWasmHandlers(appCodec, app.bankKeeper, govRouter, &app.twasmKeeper, &app.poeKeeper, app), wasmOpts...)
 
 	stakingAdapter := stakingKeeper
 	app.twasmKeeper = twasmkeeper.NewKeeper(

@@ -82,6 +82,7 @@ func TestPrivilegedCallbackTypeSingletons(t *testing.T) {
 		PrivilegeTypeValidatorSetUpdate:  true,
 		PrivilegeTypeGovProposalExecutor: false,
 		PrivilegeTypeTokenMinter:         false,
+		PrivilegeConsensusParamChanger:   false,
 	}
 	for c, exp := range specs {
 		t.Run(c.String(), func(t *testing.T) {

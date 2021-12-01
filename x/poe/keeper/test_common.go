@@ -219,7 +219,7 @@ func createTestInput(
 			}),
 			nested,
 			// append our custom message handler
-			twasmkeeper.NewTgradeHandler(appCodec, &twasmKeeper, bankKeeper, nil),
+			twasmkeeper.NewTgradeHandler(appCodec, &twasmKeeper, bankKeeper, nil, nil),
 		)
 	})
 
