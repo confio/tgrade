@@ -13,8 +13,7 @@ import (
 )
 
 func TestGlobalFee(t *testing.T) {
-	sut.ResetChain(t)
-	sut.ModifyGenesisJson(t, SetGlobalMinFee(t,
+	sut.ModifyGenesisJSON(t, SetGlobalMinFee(t,
 		sdk.NewDecCoinFromDec("utgd", sdk.NewDecWithPrec(1, 3)),
 		sdk.NewDecCoinFromDec("node0token", sdk.NewDecWithPrec(1, 4))),
 	)
@@ -43,8 +42,7 @@ func TestFeeDistribution(t *testing.T) {
 	// scenario:
 	// when a transaction with high fees is submitted
 	// then the fees are distributed to the validators
-	sut.ResetChain(t)
-	sut.ModifyGenesisJson(t, SetAllEngagementPoints(t, 1))
+	sut.ModifyGenesisJSON(t, SetAllEngagementPoints(t, 1))
 	sut.StartChain(t)
 
 	cli := NewTgradeCli(t, sut, verbose)

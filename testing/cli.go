@@ -1,8 +1,10 @@
 package testing
 
 import (
+	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -19,12 +21,13 @@ import (
 
 // TgradeCli wraps the command line interface
 type TgradeCli struct {
-	t           *testing.T
-	nodeAddress string
-	chainID     string
-	homeDir     string
-	Debug       bool
-	amino       *codec.LegacyAmino
+	t             *testing.T
+	nodeAddress   string
+	chainID       string
+	homeDir       string
+	Debug         bool
+	amino         *codec.LegacyAmino
+	assertErrorFn func(t require.TestingT, err error, msgAndArgs ...interface{})
 }
 
 func NewTgradeCli(t *testing.T, sut *SystemUnderTest, verbose bool) *TgradeCli {
@@ -32,7 +35,42 @@ func NewTgradeCli(t *testing.T, sut *SystemUnderTest, verbose bool) *TgradeCli {
 }
 
 func NewTgradeCliX(t *testing.T, nodeAddress string, chainID string, homeDir string, debug bool) *TgradeCli {
-	return &TgradeCli{t: t, nodeAddress: nodeAddress, chainID: chainID, homeDir: homeDir, Debug: debug, amino: app.MakeEncodingConfig().Amino}
+	return &TgradeCli{
+		t:             t,
+		nodeAddress:   nodeAddress,
+		chainID:       chainID,
+		homeDir:       homeDir,
+		Debug:         debug,
+		amino:         app.MakeEncodingConfig().Amino,
+		assertErrorFn: require.NoError,
+	}
+}
+
+// RunErrorAssert is custom type that is satisfies by testify matchers as well
+type RunErrorAssert func(t require.TestingT, err error, msgAndArgs ...interface{})
+
+// WithRunErrorMatcher assert function to ensure run command error value
+func (c TgradeCli) WithRunErrorMatcher(f RunErrorAssert) TgradeCli {
+	return TgradeCli{
+		t:             c.t,
+		nodeAddress:   c.nodeAddress,
+		chainID:       c.chainID,
+		homeDir:       c.homeDir,
+		Debug:         c.Debug,
+		amino:         c.amino,
+		assertErrorFn: f,
+	}
+}
+func (c TgradeCli) WithNodeAddress(addr string) TgradeCli {
+	return TgradeCli{
+		t:             c.t,
+		nodeAddress:   addr,
+		chainID:       c.chainID,
+		homeDir:       c.homeDir,
+		Debug:         c.Debug,
+		amino:         c.amino,
+		assertErrorFn: c.assertErrorFn,
+	}
 }
 
 func (c TgradeCli) CustomCommand(args ...string) string {
@@ -54,11 +92,18 @@ func (c TgradeCli) run(args []string) string {
 	if c.Debug {
 		c.t.Logf("+++ running `tgrade %s`", strings.Join(args, " "))
 	}
-	cmd := exec.Command(locateExecutable("tgrade"), args...)
-	cmd.Dir = workDir
-	out, err := cmd.CombinedOutput()
-	require.NoError(c.t, err, string(out))
-	return string(out)
+	gotOut, gotErr := func() (out []byte, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("recovered from panc: %w", r)
+			}
+		}()
+		cmd := exec.Command(locateExecutable("tgrade"), args...) //nolint:gosec
+		cmd.Dir = workDir
+		return cmd.CombinedOutput()
+	}()
+	c.assertErrorFn(c.t, gotErr, string(gotOut))
+	return string(gotOut)
 }
 
 func (c TgradeCli) withQueryFlags(args ...string) []string {
@@ -90,12 +135,9 @@ func (c TgradeCli) withChainFlags(args ...string) []string {
 }
 
 // Execute send MsgExecute to a contract
-func (c TgradeCli) Execute(contractAddr, msg, from string, amount ...sdk.Coin) string {
+func (c TgradeCli) Execute(contractAddr, msg, from string, args ...string) string {
 	cmd := []string{"tx", "wasm", "execute", contractAddr, msg, "--from", from}
-	if len(amount) != 0 {
-		cmd = append(cmd, "--amount", sdk.NewCoins(amount...).String())
-	}
-	return c.run(c.withTXFlags(cmd...))
+	return c.run(c.withTXFlags(append(cmd, args...)...))
 }
 
 // AddKey add key to default keyring. Returns address
@@ -126,6 +168,37 @@ func (c TgradeCli) FundAddress(destAddr, amount string) string {
 	rsp := c.run(c.withTXFlags(cmd...))
 	RequireTxSuccess(c.t, rsp)
 	return rsp
+}
+
+// StoreWasm uploads a wasm contract to the chain. Returns code id
+func (c TgradeCli) StoreWasm(file string, args ...string) int {
+	if len(args) == 0 {
+		args = []string{"--from=node0", "--gas=2500000"}
+	}
+	rsp := c.run(c.withTXFlags(append([]string{"tx", "wasm", "store", file}, args...)...))
+	RequireTxSuccess(c.t, rsp)
+	codeID := gjson.Get(rsp, "logs.#.events.#.attributes.#(key=code_id).value").Array()[0].Array()[0].Int()
+	require.NotEmpty(c.t, codeID)
+	return int(codeID)
+}
+
+// InstantiateWasm create a new contract instance. returns contract address
+func (c TgradeCli) InstantiateWasm(codeID int, initMsg string, args ...string) string {
+	if len(args) == 0 {
+		args = []string{"--label=testing", "--from=node0"}
+	}
+	rsp := c.run(c.withTXFlags(append([]string{"tx", "wasm", "instantiate", strconv.Itoa(codeID), initMsg}, args...)...))
+	RequireTxSuccess(c.t, rsp)
+	addr := gjson.Get(rsp, "logs.#.events.#.attributes.#(key=_contract_address).value").Array()[0].Array()[0].String()
+	require.NotEmpty(c.t, addr)
+	return addr
+}
+
+// QuerySmart run smart contract query
+func (c TgradeCli) QuerySmart(contractAddr, msg string, args ...string) string {
+	cmd := append([]string{"q", "wasm", "contract-state", "smart", contractAddr, msg}, args...)
+	args = c.withQueryFlags(cmd...)
+	return c.run(args)
 }
 
 // QueryBalances queries all balances for an account. Returns json response
@@ -205,7 +278,7 @@ func RequireTxSuccess(t *testing.T, got string) {
 	if len(details) == 0 {
 		details = got
 	}
-	require.Equal(t, int64(0), code.Int(), details)
+	require.Equal(t, int64(0), code.Int(), "non success tx code : %s", details)
 }
 
 // RequireTxFailure require the received response to contain any failure code and the passed msgsgs
@@ -217,4 +290,34 @@ func RequireTxFailure(t *testing.T, got string, containsMsgs ...string) {
 	for _, msg := range containsMsgs {
 		require.Contains(t, rawLog, msg)
 	}
+}
+
+var (
+	// ErrOutOfGasMatcher requires error with out of gas message
+	ErrOutOfGasMatcher RunErrorAssert = func(t require.TestingT, err error, args ...interface{}) {
+		const oogMsg = "out of gas"
+		expErrWithMsg(t, err, args, oogMsg)
+	}
+	// ErrTimeoutMatcher requires time out message
+	ErrTimeoutMatcher RunErrorAssert = func(t require.TestingT, err error, args ...interface{}) {
+		const expMsg = "timed out waiting for tx to be included in a block"
+		expErrWithMsg(t, err, args, expMsg)
+	}
+	// ErrPostFailedMatcher requires post failed
+	ErrPostFailedMatcher RunErrorAssert = func(t require.TestingT, err error, args ...interface{}) {
+		const expMsg = "post failed"
+		expErrWithMsg(t, err, args, expMsg)
+	}
+)
+
+func expErrWithMsg(t require.TestingT, err error, args []interface{}, expMsg string) {
+	require.Error(t, err, args)
+	var found bool
+	for _, v := range args {
+		if strings.Contains(fmt.Sprintf("%s", v), expMsg) {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected %q but got: %s", expMsg, args)
 }

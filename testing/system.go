@@ -17,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tidwall/sjson"
+
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/sync"
@@ -46,6 +48,7 @@ type SystemUnderTest struct {
 	out               io.Writer
 	verbose           bool
 	ChainStarted      bool
+	dirty             bool // requires full reset when marked dirty
 }
 
 func NewSystemUnderTest(verbose bool, nodesCount int, blockTime time.Duration) *SystemUnderTest {
@@ -67,6 +70,7 @@ func (s *SystemUnderTest) SetupChain() {
 	if err := os.RemoveAll(filepath.Join(workDir, s.outputDir)); err != nil {
 		panic(err.Error())
 	}
+
 	args := []string{
 		"testnet",
 		"--chain-id=" + s.chainID,
@@ -88,9 +92,29 @@ func (s *SystemUnderTest) SetupChain() {
 		panic(fmt.Sprintf("unexpected error :%#+v, output: %s", err, string(out)))
 	}
 	s.Log(string(out))
+	s.nodesCount = s.initialNodesCount
+
+	// modify genesis with system test defaults
+	src := filepath.Join(workDir, s.nodePath(0), "config", "genesis.json")
+	genesisBz, err := ioutil.ReadFile(src)
+	if err != nil {
+		panic(fmt.Sprintf("failed to load genesis: %s", err))
+	}
+	genesisBz, err = sjson.SetRawBytes(genesisBz, "app_state.poe.valset_contract_config.epoch_length", []byte(fmt.Sprintf(`%q`, sutEpochDuration.String())))
+	if err != nil {
+		panic(fmt.Sprintf("failed set epoche length: %s", err))
+	}
+	genesisBz, err = sjson.SetRawBytes(genesisBz, "consensus_params.block.max_gas", []byte(fmt.Sprintf(`"%d"`, 10_000_000)))
+	if err != nil {
+		panic(fmt.Sprintf("failed set block max gas: %s", err))
+	}
+	s.withEachNodeHome(func(i int, home string) {
+		if err := saveGenesis(home, genesisBz); err != nil {
+			panic(err)
+		}
+	})
 
 	// backup genesis
-	src := filepath.Join(workDir, s.nodePath(0), "config", "genesis.json")
 	dest := filepath.Join(workDir, s.nodePath(0), "config", "genesis.json.orig")
 	if _, err := copyFile(src, dest); err != nil {
 		panic(fmt.Sprintf("copy failed :%#+v", err))
@@ -122,6 +146,16 @@ func (s *SystemUnderTest) StartChain(t *testing.T, xargs ...string) {
 		}),
 	)
 	s.AwaitNextBlock(t)
+}
+
+// MarkDirty whole chain will be reset when marked dirty
+func (s *SystemUnderTest) MarkDirty() {
+	s.dirty = true
+}
+
+// IsDirty true when non default genesis or other state modification were applied that might create incompatibility for tests
+func (s SystemUnderTest) IsDirty() bool {
+	return s.dirty
 }
 
 // watchLogs stores stdout/stderr in a file and in a ring buffer to output the last n lines on test error
@@ -287,10 +321,17 @@ func (s *SystemUnderTest) AwaitNextBlock(t *testing.T, timeout ...time.Duration)
 	}
 }
 
+// ResetDirtyChain reset chain when non default setup or state (dirty)
+func (s *SystemUnderTest) ResetDirtyChain(t *testing.T) {
+	if s.IsDirty() {
+		s.ResetChain(t)
+	}
+}
+
 // ResetChain stops and clears all nodes state via 'unsafe-reset-all'
 func (s *SystemUnderTest) ResetChain(t *testing.T) {
 	t.Helper()
-	t.Log("ResetChain chain")
+	t.Log("Reset chain")
 	s.StopChain()
 	restoreOriginalGenesis(t, *s)
 	restoreOriginalKeyring(t, *s)
@@ -304,17 +345,19 @@ func (s *SystemUnderTest) ResetChain(t *testing.T) {
 
 	// reset all validataor nodes
 	s.ForEachNodeExecAndWait(t, []string{"unsafe-reset-all"})
-	s.ModifyGenesisJson(t, SetEpochLength(t, sutEpochDuration))
+	s.currentHeight = 0
+	s.dirty = false
 }
 
 // ModifyGenesisCLI executes the CLI commands to modify the genesis
 func (s *SystemUnderTest) ModifyGenesisCLI(t *testing.T, cmds ...[]string) {
 	s.ForEachNodeExecAndWait(t, cmds...)
+	s.MarkDirty()
 }
 
 type GenesisMutator func([]byte) []byte
 
-// ModifyGenesisJson executes the callbacks to update the json representation
+// ModifyGenesisJSON resets the chain and executes the callbacks to update the json representation
 // The mutator callbacks after each other receive the genesis as raw bytes and return the updated genesis for the next.
 // example:
 // 	return func(genesis []byte) []byte {
@@ -322,7 +365,14 @@ type GenesisMutator func([]byte) []byte
 //		state, _ := sjson.SetRawBytes(genesis, "app_state.globalfee.params.minimum_gas_prices", val)
 //		return state
 //	}
-func (s *SystemUnderTest) ModifyGenesisJson(t *testing.T, mutators ...GenesisMutator) {
+func (s *SystemUnderTest) ModifyGenesisJSON(t *testing.T, mutators ...GenesisMutator) {
+	s.ResetChain(t)
+	s.modifyGenesisJSON(t, mutators...)
+}
+
+// modify json without enforcing a reset
+func (s *SystemUnderTest) modifyGenesisJSON(t *testing.T, mutators ...GenesisMutator) {
+	require.Empty(t, s.currentHeight, "forced chain reset required")
 	current, err := ioutil.ReadFile(filepath.Join(workDir, s.nodePath(0), "config", "genesis.json"))
 	require.NoError(t, err)
 	for _, m := range mutators {
@@ -330,18 +380,20 @@ func (s *SystemUnderTest) ModifyGenesisJson(t *testing.T, mutators ...GenesisMut
 	}
 	out := storeTempFile(t, current)
 	defer os.Remove(out.Name())
-	s.SetGenesis(t, out.Name())
+	s.setGenesis(t, out.Name())
+	s.MarkDirty()
 }
 
-// ReadGenesisJson returns current genesis.json content as raw string
-func (s *SystemUnderTest) ReadGenesisJson(t *testing.T) string {
+// ReadGenesisJSON returns current genesis.json content as raw string
+func (s *SystemUnderTest) ReadGenesisJSON(t *testing.T) string {
 	content, err := ioutil.ReadFile(filepath.Join(workDir, s.nodePath(0), "config", "genesis.json"))
 	require.NoError(t, err)
 	return string(content)
 }
 
-// SetGenesis copy genesis file to all nodes
-func (s *SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
+// setGenesis copy genesis file to all nodes
+func (s *SystemUnderTest) setGenesis(t *testing.T, srcPath string) {
+
 	in, err := os.Open(srcPath)
 	require.NoError(t, err)
 	defer in.Close()
@@ -351,18 +403,25 @@ func (s *SystemUnderTest) SetGenesis(t *testing.T, srcPath string) {
 	require.NoError(t, err)
 
 	s.withEachNodeHome(func(i int, home string) {
-		saveGenesis(t, home, buf.Bytes())
+		require.NoError(t, saveGenesis(home, buf.Bytes()))
 	})
 }
 
-func saveGenesis(t *testing.T, home string, content []byte) {
+func saveGenesis(home string, content []byte) error {
 	out, err := os.Create(filepath.Join(workDir, home, "config", "genesis.json"))
-	require.NoError(t, err)
+	if err != nil {
+		return fmt.Errorf("out file: %w", err)
+	}
 	defer out.Close()
 
-	_, err = io.Copy(out, bytes.NewReader(content))
-	require.NoError(t, err)
-	require.NoError(t, out.Close())
+	if _, err = io.Copy(out, bytes.NewReader(content)); err != nil {
+		return fmt.Errorf("write out file: %w", err)
+	}
+
+	if err = out.Close(); err != nil {
+		return fmt.Errorf("close out file: %w", err)
+	}
+	return nil
 }
 
 // ForEachNodeExecAndWait runs the given tgrade commands for all cluster nodes synchronously
@@ -449,7 +508,7 @@ func (s SystemUnderTest) AllNodes(t *testing.T) []Node {
 		result[i] = Node{
 			ID:      strings.TrimSpace(out[0]),
 			IP:      ip,
-			RPCPort: 25567 + i, // as defined in testnet command
+			RPCPort: 26657 + i, // as defined in testnet command
 			P2PPort: 16656 + i, // as defined in testnet command
 		}
 	}
@@ -463,6 +522,7 @@ func (s *SystemUnderTest) resetBuffers() {
 
 // AddFullnode starts a new fullnode that connects to the existing chain but is not a validator.
 func (s *SystemUnderTest) AddFullnode(t *testing.T) Node {
+	s.MarkDirty()
 	s.nodesCount++
 	nodeNumber := s.nodesCount - 1
 	nodePath := s.nodePath(nodeNumber)
@@ -479,7 +539,7 @@ func (s *SystemUnderTest) AddFullnode(t *testing.T) Node {
 	cmd.Dir = workDir
 	s.watchLogs(nodeNumber, cmd)
 	require.NoError(t, cmd.Run(), "failed to start node with id %d", nodeNumber)
-	saveGenesis(t, nodePath, []byte(s.ReadGenesisJson(t)))
+	require.NoError(t, saveGenesis(nodePath, []byte(s.ReadGenesisJSON(t))))
 
 	// quick hack: copy config and overwrite by start params
 	configFile := filepath.Join(workDir, nodePath, "config", "config.toml")
@@ -529,6 +589,9 @@ type Node struct {
 
 func (n Node) PeerAddr() string {
 	return fmt.Sprintf("%s@%s:%d", n.ID, n.IP, n.P2PPort)
+}
+func (n Node) RPCAddr() string {
+	return fmt.Sprintf("tcp://%s:%d", n.IP, n.RPCPort)
 }
 
 // locateExecutable looks up the binary on the OS path.
@@ -674,7 +737,7 @@ func CaptureAllEventsConsumer(t *testing.T, optMaxWaitTime ...time.Duration) (c 
 // restoreOriginalGenesis replace nodes genesis by the one created on setup
 func restoreOriginalGenesis(t *testing.T, s SystemUnderTest) {
 	src := filepath.Join(workDir, s.nodePath(0), "config", "genesis.json.orig")
-	s.SetGenesis(t, src)
+	s.setGenesis(t, src)
 }
 
 // restoreOriginalKeyring replaces test keyring with original
