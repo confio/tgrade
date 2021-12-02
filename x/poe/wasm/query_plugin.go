@@ -35,24 +35,25 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 		if request.AllValidators != nil {
 			var wasmVals []wasmvmtypes.Validator
 			pagination := query.PageRequest{}
-		start:
-			validatorsBatch, err := poeKeeper.ValsetContract(ctx).ListValidators(ctx, &pagination)
-			if err != nil {
-				return nil, err
-			}
-			for _, v := range validatorsBatch {
-				wasmVals = append(wasmVals, wasmvmtypes.Validator{
-					Address:       v.OperatorAddress,
-					Commission:    zero,
-					MaxCommission: zero,
-					MaxChangeRate: zero,
-				},
-				)
-			}
-			if len(validatorsBatch) > 0 {
+			for {
+				validatorsBatch, err := poeKeeper.ValsetContract(ctx).ListValidators(ctx, &pagination)
+				if err != nil {
+					return nil, err
+				}
+				for _, v := range validatorsBatch {
+					wasmVals = append(wasmVals, wasmvmtypes.Validator{
+						Address:       v.OperatorAddress,
+						Commission:    zero,
+						MaxCommission: zero,
+						MaxChangeRate: zero,
+					},
+					)
+				}
+				if len(validatorsBatch) == 0 {
+					break
+				}
 				last := validatorsBatch[len(validatorsBatch)-1]
 				pagination.Key = []byte(last.OperatorAddress)
-				goto start
 			}
 			res := wasmvmtypes.AllValidatorsResponse{
 				Validators: wasmVals,
