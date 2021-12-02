@@ -11,8 +11,7 @@ import (
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
-	"github.com/confio/tgrade/x/poe/types"
-	twasmtypes "github.com/confio/tgrade/x/twasm/types"
+	"github.com/confio/tgrade/x/twasm/types"
 )
 
 // TgradeMsg messages coming from a contract
@@ -37,8 +36,8 @@ func (p *TgradeMsg) UnmarshalWithAny(bz []byte, unpacker codectypes.AnyUnpacker)
 }
 
 type PrivilegeMsg struct {
-	Request twasmtypes.PrivilegeType `json:"request,omitempty"`
-	Release twasmtypes.PrivilegeType `json:"release,omitempty"`
+	Request types.PrivilegeType `json:"request,omitempty"`
+	Release types.PrivilegeType `json:"release,omitempty"`
 }
 
 // ExecuteGovProposal will execute an approved proposal in the Cosmos SDK "Gov Router".
@@ -229,10 +228,10 @@ type proposalContent struct {
 	IBCClientUpdate *ibcclienttypes.ClientUpdateProposal `json:"ibc_client_update"`
 
 	// See https://github.com/confio/tgrade/blob/privileged_contracts_5/proto/confio/twasm/v1beta1/proposal.proto
-	PromoteToPrivilegedContract *twasmtypes.PromoteToPrivilegedContractProposal `json:"promote_to_privileged_contract"`
+	PromoteToPrivilegedContract *types.PromoteToPrivilegedContractProposal `json:"promote_to_privileged_contract"`
 
 	// See https://github.com/confio/tgrade/blob/privileged_contracts_5/proto/confio/twasm/v1beta1/proposal.proto
-	DemotePrivilegedContract *twasmtypes.DemotePrivilegedContractProposal `json:"demote_privileged_contract"`
+	DemotePrivilegedContract *types.DemotePrivilegedContractProposal `json:"demote_privileged_contract"`
 
 	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L32-L54
 	InstantiateContract *wasmtypes.InstantiateContractProposal `json:"instantiate_contract"`
@@ -271,7 +270,7 @@ type ConsensusParamsUpdate struct {
 // ValidateBasic check basics
 func (c ConsensusParamsUpdate) ValidateBasic() error {
 	if c.Block == nil && c.Evidence == nil {
-		return types.ErrEmpty
+		return wasmtypes.ErrEmpty
 	}
 	if err := c.Block.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "block")
@@ -295,7 +294,7 @@ func (p *BlockParams) ValidateBasic() error {
 		return nil
 	}
 	if p.MaxBytes == nil && p.MaxGas == nil {
-		return types.ErrEmpty
+		return wasmtypes.ErrEmpty
 	}
 	return nil
 }
@@ -316,7 +315,7 @@ func (p *EvidenceParams) ValidateBasic() error {
 		return nil
 	}
 	if p.MaxAgeNumBlocks == nil && p.MaxAgeDuration == nil && p.MaxBytes == nil {
-		return types.ErrEmpty
+		return wasmtypes.ErrEmpty
 	}
 	return nil
 }

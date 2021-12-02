@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -354,18 +356,25 @@ func TestHandleGovProposalExecution(t *testing.T) {
 		expCapturedGovContent []govtypes.Content
 	}{
 		"all good": {
-			src: contract.ExecuteGovProposalFixture(),
-			setup: func(m *handlerTgradeKeeperMock) {
-				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
-					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
-						info.SetExtension(&types.TgradeContractDetails{
-							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
-						})
-					})
-					return &c
-				}
-			},
+			src:                   contract.ExecuteGovProposalFixture(),
+			setup:                 withPrivilegeRegistered(types.PrivilegeTypeGovProposalExecutor),
 			expCapturedGovContent: []govtypes.Content{&govtypes.TextProposal{Title: "foo", Description: "bar"}},
+		},
+		"non consensus params accepted": {
+			src: contract.ExecuteGovProposalFixture(func(p *contract.ExecuteGovProposal) {
+				p.Proposal = contract.GovProposalFixture(func(x *contract.GovProposal) {
+					x.ChangeParams = &[]proposaltypes.ParamChange{
+						{Subspace: "foo", Key: "bar", Value: `{"example": "value"}`},
+					}
+				})
+			}),
+			setup: withPrivilegeRegistered(types.PrivilegeTypeGovProposalExecutor),
+			expCapturedGovContent: []govtypes.Content{&proposaltypes.ParameterChangeProposal{
+				Title:       "foo",
+				Description: "bar",
+				Changes: []proposaltypes.ParamChange{
+					{Subspace: "foo", Key: "bar", Value: `{"example": "value"}`}},
+			}},
 		},
 		"unauthorized contract": {
 			src: contract.ExecuteGovProposalFixture(),
@@ -383,30 +392,12 @@ func TestHandleGovProposalExecution(t *testing.T) {
 					x.RegisterUpgrade = &upgradetypes.Plan{}
 				})
 			}),
-			setup: func(m *handlerTgradeKeeperMock) {
-				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
-					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
-						info.SetExtension(&types.TgradeContractDetails{
-							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
-						})
-					})
-					return &c
-				}
-			},
+			setup:  withPrivilegeRegistered(types.PrivilegeTypeGovProposalExecutor),
 			expErr: sdkerrors.ErrInvalidRequest,
 		},
 		"no content": {
-			src: contract.ExecuteGovProposal{Title: "foo", Description: "bar"},
-			setup: func(m *handlerTgradeKeeperMock) {
-				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
-					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
-						info.SetExtension(&types.TgradeContractDetails{
-							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "gov_proposal_executor"}},
-						})
-					})
-					return &c
-				}
-			},
+			src:    contract.ExecuteGovProposal{Title: "foo", Description: "bar"},
+			setup:  withPrivilegeRegistered(types.PrivilegeTypeGovProposalExecutor),
 			expErr: wasmtypes.ErrUnknownMsg,
 		},
 		"unknown origin contract": {
@@ -417,6 +408,21 @@ func TestHandleGovProposalExecution(t *testing.T) {
 				}
 			},
 			expErr: wasmtypes.ErrNotFound,
+		},
+		"consensus params rejected": {
+			src: contract.ExecuteGovProposalFixture(func(p *contract.ExecuteGovProposal) {
+				p.Proposal = contract.GovProposalFixture(func(x *contract.GovProposal) {
+					x.ChangeParams = &[]proposaltypes.ParamChange{
+						{
+							Subspace: "baseapp",
+							Key:      "BlockParams",
+							Value:    `{"max_bytes": "1"}`,
+						},
+					}
+				})
+			}),
+			setup:  withPrivilegeRegistered(types.PrivilegeTypeGovProposalExecutor),
+			expErr: sdkerrors.ErrUnauthorized,
 		},
 	}
 	for name, spec := range specs {
@@ -451,16 +457,7 @@ func TestHandleMintToken(t *testing.T) {
 				Amount:        "123",
 				RecipientAddr: myRecipientAddr.String(),
 			},
-			setup: func(k *handlerTgradeKeeperMock) {
-				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
-					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
-						info.SetExtension(&types.TgradeContractDetails{
-							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "token_minter"}},
-						})
-					})
-					return &c
-				}
-			},
+			setup:          withPrivilegeRegistered(types.PrivilegeTypeTokenMinter),
 			expMintedCoins: sdk.NewCoins(sdk.NewCoin("foo", sdk.NewInt(123))),
 			expRecipient:   myRecipientAddr,
 		},
@@ -488,16 +485,7 @@ func TestHandleMintToken(t *testing.T) {
 				Amount:        "123",
 				RecipientAddr: myRecipientAddr.String(),
 			},
-			setup: func(k *handlerTgradeKeeperMock) {
-				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
-					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
-						info.SetExtension(&types.TgradeContractDetails{
-							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "token_minter"}},
-						})
-					})
-					return &c
-				}
-			},
+			setup:  withPrivilegeRegistered(types.PrivilegeTypeTokenMinter),
 			expErr: sdkerrors.ErrInvalidCoins,
 		},
 		"invalid amount": {
@@ -506,16 +494,7 @@ func TestHandleMintToken(t *testing.T) {
 				Amount:        "not-a-number",
 				RecipientAddr: myRecipientAddr.String(),
 			},
-			setup: func(k *handlerTgradeKeeperMock) {
-				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
-					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
-						info.SetExtension(&types.TgradeContractDetails{
-							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "token_minter"}},
-						})
-					})
-					return &c
-				}
-			},
+			setup:  withPrivilegeRegistered(types.PrivilegeTypeTokenMinter),
 			expErr: sdkerrors.ErrInvalidCoins,
 		},
 		"invalid recipient": {
@@ -615,11 +594,25 @@ func TestHandleConsensusParamsUpdate(t *testing.T) {
 				c.Evidence.MaxBytes = 5
 			}),
 		},
-		// unauthorized
-		// empty msg
-		// empty block
-		// empty evidence
-
+		"unauthorized": {
+			src: contract.ConsensusParamsUpdate{
+				Evidence: &contract.EvidenceParams{
+					MaxAgeNumBlocks: &one,
+				},
+			},
+			setup: func(k *handlerTgradeKeeperMock) {
+				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture()
+					return &c
+				}
+			},
+			expErr: sdkerrors.ErrUnauthorized,
+		},
+		"invalid msg": {
+			src:    contract.ConsensusParamsUpdate{},
+			setup:  withPrivilegeRegistered(types.PrivilegeConsensusParamChanger),
+			expErr: wasmtypes.ErrEmpty,
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
