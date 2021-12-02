@@ -68,59 +68,62 @@ func TestQueryValidator(t *testing.T) {
 }
 
 func TestListValidators(t *testing.T) {
-	// setup contracts and seed some data
-	ctx, example, expValidators := setupPoEContracts(t)
-	expValidators = clearTokenAmount(expValidators)
-
-	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
-	require.NoError(t, err)
-
-	// when
-	gotValidators, err := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx, nil)
-
-	// then
-	require.NoError(t, err)
-	sort.Slice(expValidators, func(i, j int) bool {
-		return expValidators[i].OperatorAddress < expValidators[j].OperatorAddress
-	})
-	assert.Equal(t, expValidators, gotValidators)
-}
-
-func TestListValidatorsPagination(t *testing.T) {
 	// Setup contracts and seed some data. Creates three random validators
 	ctx, example, expValidators := setupPoEContracts(t)
 	expValidators = clearTokenAmount(expValidators)
-	var limit uint64 = 2
-	pagination := query.PageRequest{Limit: limit}
+	sort.Slice(expValidators, func(i, j int) bool {
+		return expValidators[i].OperatorAddress < expValidators[j].OperatorAddress
+	})
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	require.NoError(t, err)
 
-	// when
-	gotValidators, err := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx, &pagination)
+	specs := map[string]struct {
+		pagination *query.PageRequest
+		expVal     []stakingtypes.Validator
+		expEmpty   bool
+		expError   bool
+	}{
+		"query no pagination": {
+			pagination: nil,
+			expVal:     expValidators,
+		},
+		"query offset 0, limit 2": {
+			pagination: &query.PageRequest{Limit: 2},
+			expVal:     expValidators[:2],
+		},
+		"query offset 2, limit 2": {
+			pagination: &query.PageRequest{Key: []byte(expValidators[1].OperatorAddress), Limit: 2},
+			expVal:     expValidators[2:],
+		},
+		"query offset 3, limit 2": {
+			pagination: &query.PageRequest{Key: []byte(expValidators[2].OperatorAddress), Limit: 2},
+			expEmpty:   true,
+		},
+		"query offset invalid addr, limit 2": {
+			pagination: &query.PageRequest{Key: []byte("invalid"), Limit: 2},
+			expError:   true,
+		},
+		// TODO: query offset (valid) unknown addr
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			// when
+			gotValidators, err := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx, spec.pagination)
 
-	// then
-	require.NoError(t, err)
-	sort.Slice(expValidators, func(i, j int) bool {
-		return expValidators[i].OperatorAddress < expValidators[j].OperatorAddress
-	})
-	assert.Equal(t, expValidators[:limit], gotValidators)
-
-	// and when
-	pagination.Key = []byte(gotValidators[len(gotValidators)-1].OperatorAddress)
-	gotValidators, err = contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx, &pagination)
-
-	// then
-	require.NoError(t, err)
-	assert.Equal(t, expValidators[limit:], gotValidators)
-
-	// and when
-	pagination.Key = []byte(gotValidators[len(gotValidators)-1].OperatorAddress)
-	gotValidators, err = contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx, &pagination)
-
-	// then
-	require.NoError(t, err)
-	assert.Equal(t, 0, len(gotValidators))
+			// then
+			if spec.expError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				if spec.expEmpty {
+					assert.Equal(t, 0, len(gotValidators))
+				} else {
+					assert.Equal(t, spec.expVal, gotValidators)
+				}
+			}
+		})
+	}
 }
 
 func TestQueryValsetConfig(t *testing.T) {
