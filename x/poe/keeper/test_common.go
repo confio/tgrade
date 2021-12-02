@@ -4,6 +4,9 @@ import (
 	"testing"
 	"time"
 
+	ibcclient "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client"
+	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -197,6 +200,12 @@ func createTestInput(
 		appCodec, keyIBC, ibcSubsp, stakingKeeper, scopedIBCKeeper,
 	)
 
+	govRouter := govtypes.NewRouter()
+	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
+		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(paramsKeeper)).
+		//AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(upgradeKeeper)).
+		AddRoute(ibchost.RouterKey, ibcclient.NewClientUpdateProposalHandler(ibcKeeper.ClientKeeper))
+
 	router := baseapp.NewRouter()
 	bh := bank.NewHandler(bankKeeper)
 	router.AddRoute(sdk.NewRoute(banktypes.RouterKey, bh))
@@ -219,7 +228,7 @@ func createTestInput(
 			}),
 			nested,
 			// append our custom message handler
-			twasmkeeper.NewTgradeHandler(appCodec, &twasmKeeper, bankKeeper, nil, nil),
+			twasmkeeper.NewTgradeHandler(appCodec, &twasmKeeper, bankKeeper, nil, govRouter),
 		)
 	})
 
@@ -239,7 +248,7 @@ func createTestInput(
 		wasmtesting.MockIBCTransferKeeper{},
 		router,
 		querier,
-		nil,
+		govRouter,
 		tempDir,
 		wasmConfig,
 		supportedFeatures,
@@ -251,6 +260,7 @@ func createTestInput(
 	poeSubsp, _ := paramsKeeper.GetSubspace(types.ModuleName)
 	poeKeeper := NewKeeper(appCodec, keyPoE, poeSubsp, twasmKeeper)
 	router.AddRoute(sdk.NewRoute(twasmtypes.RouterKey, wasm.NewHandler(twasmKeeper.GetContractKeeper())))
+	govRouter.AddRoute(twasm.RouterKey, twasmkeeper.NewProposalHandler(twasmKeeper))
 
 	keepers := TestKeepers{
 		AccountKeeper:  authKeeper,

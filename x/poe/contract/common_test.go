@@ -2,6 +2,7 @@ package contract_test
 
 import (
 	"encoding/json"
+	"sort"
 	"testing"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -16,6 +17,10 @@ import (
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 )
+
+type ExampleValidator struct {
+	stakingtypes.Validator
+}
 
 func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator) {
 	t.Helper()
@@ -90,6 +95,9 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 				sdk.NewCoin(types.DefaultBondDenom, stakedAmount),
 			))
 		}
+		sort.Slice(collectValidators, func(i, j int) bool {
+			return collectValidators[i].Tokens.LT(collectValidators[j].Tokens)
+		})
 	}, collectValidators
 }
 
