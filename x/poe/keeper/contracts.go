@@ -3,6 +3,8 @@ package keeper
 import (
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -21,7 +23,7 @@ func (k Keeper) DistributionContract(ctx sdk.Context) DistributionContract {
 }
 
 type ValsetContract interface {
-	ListValidators(ctx sdk.Context) ([]stakingtypes.Validator, error)
+	ListValidators(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error)
 	QueryValidator(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error)
 	ListValidatorSlashing(ctx sdk.Context, opAddr sdk.AccAddress) ([]contract.ValidatorSlashing, error)
 	QueryConfig(ctx sdk.Context) (*contract.ValsetConfigResponse, error)

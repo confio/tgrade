@@ -3,6 +3,8 @@ package wasm
 import (
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -37,11 +39,15 @@ func TestStakingQuerier(t *testing.T) {
 			src: wasmvmtypes.StakingQuery{AllValidators: &wasmvmtypes.AllValidatorsQuery{}},
 			mock: ViewKeeperMock{ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
 				return poetesting.ValsetContractMock{
-					ListValidatorsFn: func(ctx sdk.Context) ([]stakingtypes.Validator, error) {
-						resp := []stakingtypes.Validator{
-							poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
-								m.OperatorAddress = "myOperatorAddress"
-							}),
+					ListValidatorsFn: func(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
+						var resp []stakingtypes.Validator
+						lastOperator := "myOperatorAddress"
+						if pagination == nil || string(pagination.Key) != lastOperator {
+							resp = []stakingtypes.Validator{
+								poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
+									m.OperatorAddress = lastOperator
+								}),
+							}
 						}
 						return resp, nil
 					},
@@ -53,14 +59,18 @@ func TestStakingQuerier(t *testing.T) {
 			src: wasmvmtypes.StakingQuery{AllValidators: &wasmvmtypes.AllValidatorsQuery{}},
 			mock: ViewKeeperMock{ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
 				return poetesting.ValsetContractMock{
-					ListValidatorsFn: func(ctx sdk.Context) ([]stakingtypes.Validator, error) {
-						resp := []stakingtypes.Validator{
-							poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
-								m.OperatorAddress = "myOperatorAddress"
-							}),
-							poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
-								m.OperatorAddress = "myOtherOperatorAddress"
-							}),
+					ListValidatorsFn: func(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
+						lastOperator := "myOtherOperatorAddress"
+						var resp []stakingtypes.Validator
+						if pagination == nil || string(pagination.Key) != lastOperator {
+							resp = []stakingtypes.Validator{
+								poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
+									m.OperatorAddress = "myOperatorAddress"
+								}),
+								poetypes.ValidatorFixture(func(m *stakingtypes.Validator) {
+									m.OperatorAddress = lastOperator
+								}),
+							}
 						}
 						return resp, nil
 					},
