@@ -187,8 +187,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			wasmFile:     "tgrade_validator_voting.wasm",
 			contractAddr: valVotingContractAddr,
 			codeID:       8,
-			pinned:       true,
-			//privileged:   true, // TODO: enable
+			privileged:   true,
 		},
 	}
 	expContractSetup := make([]contractSetup, 0, len(allContracts))
