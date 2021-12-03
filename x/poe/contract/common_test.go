@@ -64,11 +64,11 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 		m.Engagement = make([]types.TG4Member, numValidators)
 		for i := 0; i < numValidators; i++ {
 			var ( // power * engagement must be less than 10^18 (constraint is in the contract)
-				engagement uint16
-				desc       stakingtypes.Description
+				desc stakingtypes.Description
 			)
-			power := i*75 + 100 // with 3 nodes : 525 total power: > 350 consensus
-			f.NilChance(0).Fuzz(&engagement)
+			power := i*75 + 100 // with 3 nodes : 525 total power: 1+2 power < 350 consensus
+			engagement := i*100 + 1000
+
 			for len(desc.Moniker) < 3 { // ensure min length is met
 				f.Fuzz(&desc)
 			}

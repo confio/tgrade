@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ibctmtypes "github.com/cosmos/cosmos-sdk/x/ibc/light-clients/07-tendermint/types"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -17,67 +20,114 @@ import (
 var randomContract []byte
 
 func TestValidatorsGovProposal(t *testing.T) {
-	anyAddress := types.RandomAccAddress()
 	// setup contracts and seed some data
 	ctx, example, vals := setupPoEContracts(t)
 	require.Len(t, vals, 3)
+
+	op1Addr, _ := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
+	anyAddress := types.RandomAccAddress()
+
 	contractKeeper := example.TWasmKeeper.GetContractKeeper()
-	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
 
 	valVotingAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValidatorVoting)
 	require.NoError(t, err)
-
+	distrAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
+	require.NoError(t, err)
+	// ensure members set
+	members, err := contract.QueryTG4Members(ctx, example.TWasmKeeper, distrAddr)
+	require.NoError(t, err)
+	require.Len(t, members, 3)
+	for _, m := range members {
+		t.Logf("%s : %d\n", m.Addr, m.Weight)
+	}
 	// upload any contract that is not pinned
 	codeID, err := contractKeeper.Create(ctx, anyAddress, randomContract, nil)
 	require.NoError(t, err)
 	require.False(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "pinned")
-
-	// when submit proposal to pin
-	proposalMsg := contract.ValidatorVotingExecuteMsg{
-		Propose: &contract.ValidatorVotingPropose{
-			Title:       "My proposal",
-			Description: "My description",
-			Proposal: contract.ValidatorProposal{
+	any, err := codectypes.NewAnyWithValue(&ibctmtypes.ClientState{})
+	require.NoError(t, err)
+	specs := map[string]struct {
+		src       contract.ValidatorProposal
+		assertExp func(t *testing.T, ctx sdk.Context)
+	}{
+		"pin code": {
+			src: contract.ValidatorProposal{
 				PinCodes: &contract.CodeIDsWrapper{
 					CodeIDs: []uint64{codeID},
 				},
 			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				assert.True(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "pinned")
+			},
+		},
+		"chain upgrade": {
+			src: contract.ValidatorProposal{
+				RegisterUpgrade: &contract.ChainUpgrade{
+					Name:     "v2",
+					Info:     "v2-info",
+					Height:   7654321,
+					DeleteMe: []byte(`{"type_url": "/ibc.lightclients.tendermint.v1.ClientState", "value": "EgAaACIAKgAyADoA"}`),
+				},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				gotPlan, exists := example.UpgradeKeeper.GetUpgradePlan(ctx)
+				assert.True(t, exists, "exists")
+				exp := upgradetypes.Plan{
+					Name:                "v2",
+					Info:                "v2-info",
+					Height:              7654321,
+					UpgradedClientState: any,
+				}
+				assert.Equal(t, exp, gotPlan)
+			},
 		},
 	}
-	op1Addr, _ := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
-	msgBz, err := json.Marshal(proposalMsg)
-	require.NoError(t, err)
-	_, err = contractKeeper.Execute(ctx, valVotingAddr, op1Addr, msgBz, nil)
-	require.NoError(t, err)
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
+			// when submit proposal
+			proposalMsg := contract.ValidatorVotingExecuteMsg{
+				Propose: &contract.ValidatorVotingPropose{
+					Title:       "My proposal",
+					Description: "My description",
+					Proposal:    spec.src,
+				},
+			}
+			msgBz, err := json.Marshal(proposalMsg)
+			require.NoError(t, err)
+			_, err = contractKeeper.Execute(ctx, valVotingAddr, op1Addr, msgBz, nil)
+			require.NoError(t, err, "exec: %s", string(msgBz))
 
-	// then is persisted
-	adapter := contract.NewVotingContractAdapter(valVotingAddr, example.TWasmKeeper, nil)
-	rsp, err := adapter.LatestProposal(ctx)
-	require.NoError(t, err)
-	require.Equal(t, contract.ProposalStatusOpen, rsp.Status)
-	myProposalID := rsp.ID
+			// then it is persisted
+			adapter := contract.NewVotingContractAdapter(valVotingAddr, example.TWasmKeeper, nil)
+			rsp, err := adapter.LatestProposal(ctx)
+			require.NoError(t, err)
+			require.Equal(t, contract.ProposalStatusOpen, rsp.Status)
+			myProposalID := rsp.ID
+			t.Logf("%d %s- voting power: %s\n", 0, op1Addr.String(), vals[0].Tokens)
 
-	// and when all validators vote
-	// first val has auto YES due to submission, let another one vote
-	for _, val := range vals[1:] {
-		opAddr, _ := sdk.AccAddressFromBech32(val.OperatorAddress)
-		_ = adapter.VoteProposal(ctx, myProposalID, contract.YES_VOTE, opAddr) // todo: fix power  so that consensus is not reached randomly
-		//require.NoError(t, voteErr, "voter: %d", i)
-		rsp, err = adapter.LatestProposal(ctx)
-		require.NoError(t, err)
-		t.Logf("proposal status: %s\n", rsp.Status)
+			// and when all validators vote
+			// first val has auto YES due to submission, let another one vote
+			for i, val := range vals[1:] {
+				t.Logf("%d %s - voting power: %s\n", i+1, val.OperatorAddress, val.Tokens)
+				opAddr, _ := sdk.AccAddressFromBech32(val.OperatorAddress)
+				require.NoError(t, adapter.VoteProposal(ctx, myProposalID, contract.YES_VOTE, opAddr), "voter: %d", i)
+			}
+			// then
+			rsp, err = adapter.LatestProposal(ctx)
+			require.NoError(t, err)
+			require.Equal(t, contract.ProposalStatusPassed, rsp.Status)
+
+			// and when execute proposal
+			require.NoError(t, adapter.ExecuteProposal(ctx, myProposalID, op1Addr))
+
+			// then
+			rsp, err = adapter.LatestProposal(ctx)
+			require.NoError(t, err)
+			require.Equal(t, contract.ProposalStatusExecuted, rsp.Status)
+			// and verify action state
+			spec.assertExp(t, ctx)
+		})
 	}
-	// then
-	rsp, err = adapter.LatestProposal(ctx)
-	require.NoError(t, err)
-	require.Equal(t, contract.ProposalStatusPassed, rsp.Status)
 
-	// and when execute proposal
-	require.NoError(t, adapter.ExecuteProposal(ctx, myProposalID, op1Addr))
-
-	// then
-	assert.True(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "pinned")
-	rsp, err = adapter.LatestProposal(ctx)
-	require.NoError(t, err)
-	require.Equal(t, contract.ProposalStatusExecuted, rsp.Status)
 }
