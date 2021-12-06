@@ -46,9 +46,10 @@ func TestGovProposal(t *testing.T) {
 	sut.ModifyGenesisCLI(t, commands...)
 	sut.StartChain(t)
 
+	const PoEProposalExecutorCount = 1 // valset voting contract
 	qResult := cli.CustomQuery("q", "wasm", "list-privileged-by-type", "gov_proposal_executor")
 	contracts := gjson.Get(qResult, "contracts").Array()
-	require.Len(t, contracts, 1, qResult)
+	require.Len(t, contracts, PoEProposalExecutorCount+1, qResult)
 	require.Equal(t, myContractAddr, contracts[0].String())
 	t.Log("got query result", qResult)
 
@@ -61,5 +62,5 @@ func TestGovProposal(t *testing.T) {
 	// then should not be privileged anymore
 	qResult = cli.CustomQuery("q", "wasm", "list-privileged-by-type", "gov_proposal_executor")
 	contracts = gjson.Get(qResult, "contracts").Array()
-	require.Len(t, contracts, 0, qResult)
+	require.Len(t, contracts, PoEProposalExecutorCount, qResult)
 }

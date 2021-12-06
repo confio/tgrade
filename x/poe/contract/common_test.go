@@ -2,6 +2,7 @@ package contract_test
 
 import (
 	"encoding/json"
+	"sort"
 	"testing"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -16,6 +17,10 @@ import (
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 )
+
+type ExampleValidator struct {
+	stakingtypes.Validator
+}
 
 func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator) {
 	t.Helper()
@@ -59,12 +64,11 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 		m.Engagement = make([]types.TG4Member, numValidators)
 		for i := 0; i < numValidators; i++ {
 			var ( // power * engagement must be less than 10^18 (constraint is in the contract)
-				power      uint16
-				engagement uint16
-				desc       stakingtypes.Description
+				desc stakingtypes.Description
 			)
-			f.NilChance(0).Fuzz(&power) // must be > 0 so that staked amount is > 0
-			f.NilChance(0).Fuzz(&engagement)
+			power := i*75 + 100 // with 3 nodes : 525 total power: 1+2 power < 350 consensus
+			engagement := i*100 + 1000
+
 			for len(desc.Moniker) < 3 { // ensure min length is met
 				f.Fuzz(&desc)
 			}
@@ -90,6 +94,9 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 				sdk.NewCoin(types.DefaultBondDenom, stakedAmount),
 			))
 		}
+		sort.Slice(collectValidators, func(i, j int) bool {
+			return collectValidators[i].Tokens.LT(collectValidators[j].Tokens) // sort ASC
+		})
 	}, collectValidators
 }
 

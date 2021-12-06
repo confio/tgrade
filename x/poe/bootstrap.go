@@ -234,14 +234,9 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeValidatorVoting, validatorVotingContractAddr)
 
-	// todo: contract requires GovProposalExecutor ConsensusParamChanger permissions which are not implemented
-	// if err := tk.SetPrivileged(ctx, validatorVotingContractAddr); err != nil {
-	//	return sdkerrors.Wrap(err, "grant privileges to validator voting contract")
-	// }
-	if err := k.PinCode(ctx, validatorVotingCodeID); err != nil {
-		return sdkerrors.Wrap(err, "pin validator voting contract")
+	if err := tk.SetPrivileged(ctx, validatorVotingContractAddr); err != nil {
+		return sdkerrors.Wrap(err, "grant privileges to validator voting contract")
 	}
-
 	logger.Info("validator voting contract", "address", validatorVotingContractAddr, "code_id", validatorVotingCodeID)
 
 	if err := setAllPoEContractsInstanceMigrators(ctx, k, poeKeeper, systemAdminAddr, validatorVotingContractAddr); err != nil {

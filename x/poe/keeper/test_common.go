@@ -4,6 +4,12 @@ import (
 	"testing"
 	"time"
 
+	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+
+	ibcclient "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client"
+	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -89,6 +95,7 @@ type TestKeepers struct {
 	Router         *baseapp.Router
 	PoEKeeper      Keeper
 	EncodingConfig params2.EncodingConfig
+	UpgradeKeeper  upgradekeeper.Keeper
 }
 
 // CreateDefaultTestInput common settings for CreateTestInput
@@ -123,6 +130,7 @@ func createTestInput(
 	keyIBC := sdk.NewKVStoreKey(ibchost.StoreKey)
 	keyCapability := sdk.NewKVStoreKey(capabilitytypes.StoreKey)
 	keyCapabilityTransient := storetypes.NewMemoryStoreKey(capabilitytypes.MemStoreKey)
+	keyUpgrade := sdk.NewKVStoreKey(upgradetypes.StoreKey)
 
 	ms := store.NewCommitMultiStore(db)
 	ms.MountStoreWithDB(keyPoE, sdk.StoreTypeIAVL, db)
@@ -135,6 +143,7 @@ func createTestInput(
 	ms.MountStoreWithDB(keyIBC, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyCapability, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyCapabilityTransient, sdk.StoreTypeMemory, db)
+	ms.MountStoreWithDB(keyUpgrade, sdk.StoreTypeIAVL, db)
 	require.NoError(t, ms.LoadLatestVersion())
 
 	ctx := sdk.NewContext(ms, tmproto.Header{
@@ -196,6 +205,12 @@ func createTestInput(
 	ibcKeeper := ibckeeper.NewKeeper(
 		appCodec, keyIBC, ibcSubsp, stakingKeeper, scopedIBCKeeper,
 	)
+	upgradeKeeper := upgradekeeper.NewKeeper(map[int64]bool{}, keyUpgrade, appCodec, tempDir)
+	govRouter := govtypes.NewRouter()
+	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
+		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(paramsKeeper)).
+		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(upgradeKeeper)).
+		AddRoute(ibchost.RouterKey, ibcclient.NewClientUpdateProposalHandler(ibcKeeper.ClientKeeper))
 
 	router := baseapp.NewRouter()
 	bh := bank.NewHandler(bankKeeper)
@@ -219,7 +234,7 @@ func createTestInput(
 			}),
 			nested,
 			// append our custom message handler
-			twasmkeeper.NewTgradeHandler(appCodec, &twasmKeeper, bankKeeper, nil, nil),
+			twasmkeeper.NewTgradeHandler(appCodec, &twasmKeeper, bankKeeper, nil, govRouter),
 		)
 	})
 
@@ -239,7 +254,7 @@ func createTestInput(
 		wasmtesting.MockIBCTransferKeeper{},
 		router,
 		querier,
-		nil,
+		govRouter,
 		tempDir,
 		wasmConfig,
 		supportedFeatures,
@@ -251,6 +266,7 @@ func createTestInput(
 	poeSubsp, _ := paramsKeeper.GetSubspace(types.ModuleName)
 	poeKeeper := NewKeeper(appCodec, keyPoE, poeSubsp, twasmKeeper)
 	router.AddRoute(sdk.NewRoute(twasmtypes.RouterKey, wasm.NewHandler(twasmKeeper.GetContractKeeper())))
+	govRouter.AddRoute(twasm.RouterKey, twasmkeeper.NewProposalHandler(twasmKeeper))
 
 	keepers := TestKeepers{
 		AccountKeeper:  authKeeper,
@@ -259,6 +275,7 @@ func createTestInput(
 		IBCKeeper:      ibcKeeper,
 		Router:         router,
 		PoEKeeper:      poeKeeper,
+		UpgradeKeeper:  upgradeKeeper,
 		EncodingConfig: encodingConfig,
 	}
 	return ctx, keepers
