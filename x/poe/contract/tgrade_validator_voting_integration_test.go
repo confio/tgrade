@@ -114,7 +114,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 				require.NoError(t, adapter.VoteProposal(ctx, myProposalID, contract.YES_VOTE, opAddr), "voter: %d", i)
 			}
 			// then
-			rsp, err = adapter.LatestProposal(ctx)
+			rsp, err = adapter.QueryProposal(ctx, myProposalID)
 			require.NoError(t, err)
 			require.Equal(t, contract.ProposalStatusPassed, rsp.Status)
 
@@ -122,7 +122,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 			require.NoError(t, adapter.ExecuteProposal(ctx, myProposalID, op1Addr))
 
 			// then
-			rsp, err = adapter.LatestProposal(ctx)
+			rsp, err = adapter.QueryProposal(ctx, myProposalID)
 			require.NoError(t, err)
 			require.Equal(t, contract.ProposalStatusExecuted, rsp.Status)
 			// and verify action state

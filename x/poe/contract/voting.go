@@ -17,7 +17,7 @@ type VotingRules struct {
 	VotingPeriod uint32 `json:"voting_period"`
 	// Quorum voting quorum (0.0-1.0)
 	Quorum sdk.Dec `json:"quorum"`
-	// Threshold voting threshold (0.0-1.0)
+	// Threshold voting threshold (0.5-1.0)
 	Threshold sdk.Dec `json:"threshold"`
 	// AllowEndEarly If true, and absolute threshold and quorum are met, we can end before voting period finished.
 	// (Recommended value: true, unless you have special needs)
@@ -152,6 +152,17 @@ func (v VotingContractAdapter) LatestProposal(ctx sdk.Context) (*OCProposalRespo
 		return nil, nil
 	}
 	return &rsp.Proposals[0], nil
+}
+
+// QueryProposal query a proposal by id
+func (v VotingContractAdapter) QueryProposal(ctx sdk.Context, id uint64) (*OCProposalResponse, error) {
+	query := ProposalsQuery{Proposal: &ProposalID{ProposalID: id}}
+	var rsp OCProposalResponse
+	err := v.doQuery(ctx, query, &rsp)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "contract query")
+	}
+	return &rsp, nil
 }
 
 // VoteProposal votes on a proposal
