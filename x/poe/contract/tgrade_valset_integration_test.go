@@ -6,8 +6,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 
-	"github.com/confio/tgrade/x/twasm"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"

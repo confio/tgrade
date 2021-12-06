@@ -1,9 +1,6 @@
 package contract
 
 import (
-	"encoding/json"
-	"testing"
-
 	"github.com/cosmos/cosmos-sdk/types/query"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
