@@ -31,6 +31,9 @@ var (
 
 	// PrivilegeTypeTokenMinter is a permission to mint native tokens on the chain.
 	PrivilegeTypeTokenMinter = registerCallbackType(0x5, "token_minter", false)
+
+	// PrivilegeConsensusParamChanger is a permission to modify the consensus parameters
+	PrivilegeConsensusParamChanger = registerCallbackType(0x6, "consensus_param_changer", false)
 )
 
 var (

@@ -15,11 +15,13 @@ import (
 	twasmtypes "github.com/confio/tgrade/x/twasm/types"
 )
 
-func SetupWasmHandlers(cdc codec.Marshaler,
+func SetupWasmHandlers(
+	cdc codec.Marshaler,
 	bankKeeper twasmtypes.BankKeeper,
 	govRouter govtypes.Router,
-	result twasmkeeper.TgradeWasmHandlerKeeper,
+	twasmKeeper twasmkeeper.TgradeWasmHandlerKeeper,
 	poeKeeper poewasm.ViewKeeper,
+	consensusParamsUpdater twasmkeeper.ConsensusParamsUpdater,
 ) []wasmkeeper.Option {
 	queryPluginOpt := wasmkeeper.WithQueryPlugins(&wasmkeeper.QueryPlugins{
 		Staking: poewasm.StakingQuerier(poeKeeper),
@@ -37,7 +39,7 @@ func SetupWasmHandlers(cdc codec.Marshaler,
 			}),
 			nested,
 			// append our custom message handler
-			twasmkeeper.NewTgradeHandler(cdc, result, bankKeeper, govRouter),
+			twasmkeeper.NewTgradeHandler(cdc, twasmKeeper, bankKeeper, consensusParamsUpdater, govRouter),
 		)
 	})
 	return []wasm.Option{

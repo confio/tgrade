@@ -7,6 +7,7 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	clienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
 	ibcclienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
@@ -251,4 +252,87 @@ func TestGetProposalContent(t *testing.T) {
 
 		})
 	}
+}
+
+func TestConsensusParamsUpdateValidation(t *testing.T) {
+	// some integers
+	var one, two, three, four, five int64 = 1, 2, 3, 4, 5
+	specs := map[string]struct {
+		src    ConsensusParamsUpdate
+		expErr *sdkerrors.Error
+	}{
+		"all good": {
+			src: ConsensusParamsUpdate{
+				Block: &BlockParams{
+					MaxBytes: &one,
+					MaxGas:   &two,
+				},
+				Evidence: &EvidenceParams{
+					MaxAgeNumBlocks: &three,
+					MaxAgeDuration:  &four,
+					MaxBytes:        &five,
+				},
+			},
+		},
+		"empty msg": {
+			src:    ConsensusParamsUpdate{},
+			expErr: wasmtypes.ErrEmpty,
+		},
+		"block - empty": {
+			src: ConsensusParamsUpdate{
+				Block: &BlockParams{},
+				Evidence: &EvidenceParams{
+					MaxAgeNumBlocks: &three,
+				},
+			},
+			expErr: wasmtypes.ErrEmpty,
+		},
+		"block - MaxBytes set": {
+			src: ConsensusParamsUpdate{
+				Block: &BlockParams{MaxBytes: &one},
+			},
+		},
+		"block - MaxGas set": {
+			src: ConsensusParamsUpdate{
+				Block: &BlockParams{MaxGas: &one},
+			},
+		},
+		"evidence - empty": {
+			src: ConsensusParamsUpdate{
+				Block: &BlockParams{
+					MaxGas: &two,
+				},
+				Evidence: &EvidenceParams{},
+			},
+			expErr: wasmtypes.ErrEmpty,
+		},
+		"evidence - MaxAgeNumBlocks set": {
+			src: ConsensusParamsUpdate{
+				Evidence: &EvidenceParams{
+					MaxAgeNumBlocks: &one,
+				},
+			},
+		},
+		"evidence - MaxAgeDuration set": {
+			src: ConsensusParamsUpdate{
+				Evidence: &EvidenceParams{
+					MaxAgeDuration: &one,
+				},
+			},
+		},
+		"evidence - MaxBytes set": {
+			src: ConsensusParamsUpdate{
+				Evidence: &EvidenceParams{
+					MaxBytes: &one,
+				},
+			},
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			gotErr := spec.src.ValidateBasic()
+			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
+		})
+	}
+
 }

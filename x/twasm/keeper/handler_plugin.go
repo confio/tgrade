@@ -1,6 +1,11 @@
 package keeper
 
 import (
+	"time"
+
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
@@ -8,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/confio/tgrade/x/twasm/types"
@@ -28,19 +34,38 @@ type minter interface {
 	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
 }
 
+// ConsensusParamsUpdater is a subset of baseapp to store the consensus params
+type ConsensusParamsUpdater interface {
+	GetConsensusParams(ctx sdk.Context) *abci.ConsensusParams
+	StoreConsensusParams(ctx sdk.Context, cp *abci.ConsensusParams)
+}
+
 var _ wasmkeeper.Messenger = TgradeHandler{}
 
 // TgradeHandler is a custom message handler plugin for wasmd.
 type TgradeHandler struct {
-	keeper    TgradeWasmHandlerKeeper
-	minter    minter
-	govRouter govtypes.Router
-	cdc       codec.Marshaler
+	cdc                    codec.Marshaler
+	keeper                 TgradeWasmHandlerKeeper
+	minter                 minter
+	govRouter              govtypes.Router
+	consensusParamsUpdater ConsensusParamsUpdater
 }
 
 // NewTgradeHandler constructor
-func NewTgradeHandler(cdc codec.Marshaler, keeper TgradeWasmHandlerKeeper, bankKeeper minter, govRouter govtypes.Router) *TgradeHandler {
-	return &TgradeHandler{cdc: cdc, keeper: keeper, govRouter: govRouter, minter: bankKeeper}
+func NewTgradeHandler(
+	cdc codec.Marshaler,
+	keeper TgradeWasmHandlerKeeper,
+	bankKeeper minter,
+	consensusParamsUpdater ConsensusParamsUpdater,
+	govRouter govtypes.Router,
+) *TgradeHandler {
+	return &TgradeHandler{
+		cdc:                    cdc,
+		keeper:                 keeper,
+		govRouter:              restrictParamsDecorator(govRouter),
+		minter:                 bankKeeper,
+		consensusParamsUpdater: consensusParamsUpdater,
+	}
 }
 
 // DispatchMsg handles wasmVM message for privileged contracts
@@ -57,6 +82,7 @@ func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress,
 	if err := tMsg.UnmarshalWithAny(msg.Custom, h.cdc); err != nil {
 		return nil, nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
+	// main message dispatcher
 	switch {
 	case tMsg.Privilege != nil:
 		err := h.handlePrivilege(ctx, contractAddr, tMsg.Privilege)
@@ -67,10 +93,12 @@ func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress,
 	case tMsg.MintTokens != nil:
 		evts, err := h.handleMintToken(ctx, contractAddr, tMsg.MintTokens)
 		return append(evts, em.Events()...), nil, err
+	case tMsg.ConsensusParams != nil:
+		evts, err := h.handleConsensusParamsUpdate(ctx, contractAddr, tMsg.ConsensusParams)
+		return append(evts, em.Events()...), nil, err
 	}
 
-	ModuleLogger(ctx).Info("unhandled message", "msg", msg)
-	return nil, nil, wasmtypes.ErrUnknownMsg
+	return nil, nil, sdkerrors.Wrapf(wasmtypes.ErrUnknownMsg, "unknown type: %T", msg)
 }
 
 // handle register/ unregister privilege messages
@@ -173,6 +201,42 @@ func (h TgradeHandler) handleMintToken(ctx sdk.Context, contractAddr sdk.AccAddr
 	)}, nil
 }
 
+// handle the consensus parameters update message
+func (h TgradeHandler) handleConsensusParamsUpdate(ctx sdk.Context, contractAddr sdk.AccAddress, pUpdate *contract.ConsensusParamsUpdate) ([]sdk.Event, error) {
+	if err := h.assertHasPrivilege(ctx, contractAddr, types.PrivilegeConsensusParamChanger); err != nil {
+		return nil, err
+	}
+	if err := pUpdate.ValidateBasic(); err != nil {
+		return nil, err
+	}
+	params := h.consensusParamsUpdater.GetConsensusParams(ctx)
+	h.consensusParamsUpdater.StoreConsensusParams(ctx, mergeConsensusParamsUpdate(params, pUpdate))
+	return nil, nil
+}
+
+func mergeConsensusParamsUpdate(src *abci.ConsensusParams, delta *contract.ConsensusParamsUpdate) *abci.ConsensusParams {
+	if delta.Block != nil {
+		if delta.Block.MaxBytes != nil {
+			src.Block.MaxBytes = *delta.Block.MaxBytes
+		}
+		if delta.Block.MaxGas != nil {
+			src.Block.MaxGas = *delta.Block.MaxGas
+		}
+	}
+	if delta.Evidence != nil {
+		if delta.Evidence.MaxAgeNumBlocks != nil {
+			src.Evidence.MaxAgeNumBlocks = *delta.Evidence.MaxAgeNumBlocks
+		}
+		if delta.Evidence.MaxAgeDuration != nil {
+			src.Evidence.MaxAgeDuration = time.Duration(*delta.Evidence.MaxAgeDuration) * time.Second
+		}
+		if delta.Evidence.MaxBytes != nil {
+			src.Evidence.MaxBytes = *delta.Evidence.MaxBytes
+		}
+	}
+	return src
+}
+
 // assertHasPrivilege helper to assert that the contract has the required privilege
 func (h TgradeHandler) assertHasPrivilege(ctx sdk.Context, contractAddr sdk.AccAddress, requiredPrivilege types.PrivilegeType) error {
 	contractInfo := h.keeper.GetContractInfo(ctx, contractAddr)
@@ -188,4 +252,46 @@ func (h TgradeHandler) assertHasPrivilege(ctx sdk.Context, contractAddr sdk.AccA
 		return sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "requires: %s", requiredPrivilege.String())
 	}
 	return nil
+}
+
+var _ govtypes.Router = restrictedParamsRouter{}
+
+// decorator that prevents updates in baseapp subspace
+type restrictedParamsRouter struct {
+	nested govtypes.Router
+}
+
+// decorate router to prevent consensus updates via param proposal
+func restrictParamsDecorator(router govtypes.Router) restrictedParamsRouter {
+	return restrictedParamsRouter{nested: router}
+}
+
+func (d restrictedParamsRouter) HasRoute(r string) bool {
+	return d.nested.HasRoute(r)
+}
+
+func (d restrictedParamsRouter) GetRoute(path string) (h govtypes.Handler) {
+	r := d.nested.GetRoute(path)
+	if path == paramproposal.RouterKey {
+		return func(ctx sdk.Context, content govtypes.Content) error {
+			if p, ok := content.(*paramproposal.ParameterChangeProposal); ok {
+				// prevent updates in baseapp subspace
+				for _, c := range p.Changes {
+					if c.Subspace == baseapp.Paramspace {
+						return sdkerrors.Wrap(sdkerrors.ErrUnauthorized, "base params can not be modified via params proposal")
+					}
+				}
+			}
+			return r(ctx, content)
+		}
+	}
+	return r
+}
+
+func (d restrictedParamsRouter) AddRoute(r string, h govtypes.Handler) (rtr govtypes.Router) {
+	panic("not supported")
+}
+
+func (d restrictedParamsRouter) Seal() {
+	panic("not supported")
 }
