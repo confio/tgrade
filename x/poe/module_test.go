@@ -85,6 +85,17 @@ func TestInitGenesis(t *testing.T) {
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)
 
+	// and all poe contract addresses unique
+	allAddr := make([]sdk.Address, 0, len(types.PoEContractType_name))
+	for k := range types.PoEContractType_name {
+		if types.PoEContractType(k) == types.PoEContractTypeUndefined {
+			continue
+		}
+		addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractType(k))
+		require.NoError(t, err)
+		require.NotContains(t, allAddr, addr)
+		allAddr = append(allAddr, addr)
+	}
 }
 
 type validators []validator

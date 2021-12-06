@@ -135,9 +135,11 @@ func TestQueryValsetConfig(t *testing.T) {
 	require.NoError(t, err)
 	engagementAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
 	require.NoError(t, err)
+	communityPoolAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeCommunityPool)
+	require.NoError(t, err)
 	distributionAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
 	require.NoError(t, err)
-	assert.Equal(t, twasm.ContractAddress(1, 6), distributionAddr) // ensure as it is persisted from query
+
 	// when
 	adapter := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil)
 	res, gotErr := adapter.QueryConfig(ctx)
@@ -146,16 +148,18 @@ func TestQueryValsetConfig(t *testing.T) {
 	require.NoError(t, gotErr)
 
 	expConfig := &contract.ValsetConfigResponse{
-		Membership:            mixerContractAddr.String(),
-		MinWeight:             1,
-		MaxValidators:         100,
-		Scaling:               1,
-		EpochReward:           sdk.NewInt64Coin("utgd", 100000),
-		FeePercentage:         sdk.MustNewDecFromStr("0.50"),
-		ValidatorsRewardRatio: sdk.MustNewDecFromStr("0.50"),
-		DistributionContract:  engagementAddr.String(),
-		RewardsContract:       distributionAddr.String(),
-		AutoUnjail:            false,
+		Membership:      mixerContractAddr.String(),
+		MinWeight:       1,
+		MaxValidators:   100,
+		Scaling:         1,
+		EpochReward:     sdk.NewInt64Coin("utgd", 100000),
+		FeePercentage:   sdk.MustNewDecFromStr("0.50"),
+		RewardsContract: distributionAddr.String(),
+		AutoUnjail:      false,
+		DistributionContracts: []contract.DistributionContract{
+			{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+			{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
+		},
 	}
 	assert.Equal(t, expConfig, res)
 }

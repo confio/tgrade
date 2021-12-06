@@ -64,6 +64,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 
 	// setup engagement contract
+	//
 	tg4EngagementInitMsg := newEngagementInitMsg(gs, systemAdminAddr)
 	engagementCodeID, err := k.Create(ctx, systemAdminAddr, tg4Engagement, &wasmtypes.AllowEverybody)
 	if err != nil {
@@ -81,6 +82,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	logger.Info("engagement group contract", "address", engagementContractAddr, "code_id", engagementCodeID)
 
 	// setup trusted circle for oversight community
+	//
 	ocCodeID, err := k.Create(ctx, systemAdminAddr, tgTrustedCircles, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg trusted circle contract")
@@ -98,6 +100,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	logger.Info("oversight community contract", "address", ocContractAddr, "code_id", ocCodeID)
 
 	// setup stake contract
+	//
 	stakeCodeID, err := k.Create(ctx, systemAdminAddr, tg4Stake, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 stake contract")
@@ -114,6 +117,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	logger.Info("stake contract", "address", stakeContractAddr, "code_id", stakeCodeID)
 
 	// setup mixer contract
+	//
 	tg4MixerInitMsg := contract.TG4MixerInitMsg{
 		LeftGroup:        engagementContractAddr.String(),
 		RightGroup:       stakeContractAddr.String(),
@@ -176,6 +180,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeValset, valsetContractAddr)
 
 	// setup distribution contract address
+	//
 	valsetCfg, err := poeKeeper.ValsetContract(ctx).QueryConfig(ctx)
 	if err != nil {
 		return sdkerrors.Wrap(err, "query valset config")
@@ -193,6 +198,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	logger.Info("valset contract", "address", valsetContractAddr, "code_id", valSetCodeID)
 
 	// setup oversight community gov proposals contract
+	//
 	ocGovCodeID, err := k.Create(ctx, systemAdminAddr, tgOCGovProposalsCircles, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg oc gov proposals contract: ")
