@@ -16,7 +16,6 @@ import (
 )
 
 func TestQueryWithdrawableFunds(t *testing.T) {
-	t.Skip("critical issue: https://github.com/confio/tgrade-contracts/issues/385")
 	// setup contracts and seed some data
 	ctx, example, vals := setupPoEContracts(t)
 
