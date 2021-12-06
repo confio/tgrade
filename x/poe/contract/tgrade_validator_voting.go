@@ -6,7 +6,6 @@ import "encoding/json"
 type ValidatorVotingInitMsg struct {
 	VotingRules  VotingRules `json:"rules"`
 	GroupAddress string      `json:"group_addr"`
-	DELME        string      `json:"engagement_addr"` // remove when https://github.com/confio/tgrade-contracts/issues/348 is done
 }
 
 // ValidatorVotingExecuteMsg executable contract message

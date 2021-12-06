@@ -152,7 +152,6 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	communityPoolInitMsg := contract.CommunityPoolInitMsg{
 		VotingRules:  toContractVotingRules(gs.CommunityPoolContractConfig.VotingRules),
 		GroupAddress: engagementContractAddr.String(),
-		DELME:        "to-be-removed",
 	}
 	communityPoolContractAddr, _, err := k.Instantiate(ctx, communityPoolCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(communityPoolInitMsg), "stakers", nil)
 	if err != nil {
@@ -233,7 +232,6 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	validatorVotingInitMsg := contract.ValidatorVotingInitMsg{
 		VotingRules:  toContractVotingRules(gs.ValidatorVotingContractConfig.VotingRules),
 		GroupAddress: distrAddr.String(),
-		DELME:        "to-be-removed",
 	}
 	validatorVotingContractAddr, _, err := k.Instantiate(ctx, validatorVotingCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(validatorVotingInitMsg), "stakers", nil)
 	if err != nil {
