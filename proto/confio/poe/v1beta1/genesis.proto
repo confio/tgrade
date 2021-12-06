@@ -88,8 +88,8 @@ message ValsetContractConfig {
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
   ];
-  // Community Pool reward ration in percentage
-  string communitypool_reward_ratio = 7 [
+  // CommunityPoolRewardRation in percentage
+  string community_pool_reward_ratio = 7 [
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
   ];

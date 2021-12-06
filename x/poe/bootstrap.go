@@ -350,7 +350,7 @@ func newValsetInitMsg(
 		AutoUnjail:    config.AutoUnjail,
 		DistributionContracts: []contract.DistributionContract{
 			{Address: engagementAddr.String(), Ratio: *contract.DecimalFromPercentage(config.EngagementRewardRatio)},
-			{Address: communityPoolAddr.String(), Ratio: *contract.DecimalFromPercentage(config.CommunitypoolRewardRatio)},
+			{Address: communityPoolAddr.String(), Ratio: *contract.DecimalFromPercentage(config.CommunityPoolRewardRatio)},
 		},
 		RewardsCodeID: engagementCodeID,
 	}

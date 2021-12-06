@@ -393,7 +393,7 @@ ValsetContractConfig initial setup config
 | `epoch_reward` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
 | `scaling` | [uint32](#uint32) |  | Scaling is the factor to multiply cw4-group weights to produce the Tendermint validator power |
 | `fee_percentage` | [string](#string) |  | FeePercentage is the percentage of total accumulated fees that is subtracted from tokens minted as rewards. 50% by default. To disable this feature just set it to 0 (which effectively means that fees don't affect the per-epoch reward). |
-| `communitypool_reward_ratio` | [string](#string) |  | Community Pool reward ration in percentage |
+| `community_pool_reward_ratio` | [string](#string) |  | CommunityPoolRewardRation in percentage |
 | `engagement_reward_ratio` | [string](#string) |  | EngagementRewardRatio reward ration in percentage for all |
 | `validator_reward_ratio` | [string](#string) |  | ValidatorRewardRation in percentage for all |
 | `auto_unjail` | [bool](#bool) |  | AutoUnjail if set to true, we will auto-unjail any validator after their jailtime is over. |

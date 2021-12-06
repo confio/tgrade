@@ -34,7 +34,7 @@ func DefaultGenesisState() GenesisState {
 			DoubleSignSlashRatio:     sdk.NewDec(50),
 			ValidatorRewardRatio:     sdk.MustNewDecFromStr("47.5"),
 			EngagementRewardRatio:    sdk.MustNewDecFromStr("47.5"),
-			CommunitypoolRewardRatio: sdk.MustNewDecFromStr("5"),
+			CommunityPoolRewardRatio: sdk.MustNewDecFromStr("5"),
 		},
 		EngagmentContractConfig: &EngagementContractConfig{
 			Halflife: 180 * 24 * time.Hour,
@@ -210,7 +210,7 @@ func (c ValsetContractConfig) ValidateBasic() error {
 		return sdkerrors.Wrap(ErrEmpty, "scaling")
 	}
 	hundred := sdk.NewDec(100)
-	if c.CommunitypoolRewardRatio.GT(hundred) {
+	if c.CommunityPoolRewardRatio.GT(hundred) {
 		return sdkerrors.Wrap(ErrInvalid, "community pool reward ratio must not be greater 100")
 	}
 	if c.EngagementRewardRatio.GT(hundred) {
@@ -221,7 +221,7 @@ func (c ValsetContractConfig) ValidateBasic() error {
 	}
 
 	// ensure we sum up all ratios to 100%
-	totalRatio := c.EngagementRewardRatio.Add(c.CommunitypoolRewardRatio).Add(c.ValidatorRewardRatio)
+	totalRatio := c.EngagementRewardRatio.Add(c.CommunityPoolRewardRatio).Add(c.ValidatorRewardRatio)
 	if !totalRatio.Equal(hundred) {
 		return sdkerrors.Wrapf(ErrInvalid, "total reward ratio must be 100 but was %s", totalRatio)
 	}
