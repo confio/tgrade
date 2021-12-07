@@ -74,7 +74,7 @@ func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.
 		if pagination.Key != nil {
 			err := json.Unmarshal(pagination.Key, startAfter)
 			if err = json.Unmarshal(pagination.Key, startAfter); err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to unmarshal pagination query")
+				return nil, sdkerrors.Wrap(err, "failed to unmarshal pagination key")
 			}
 		}
 		limit = int(pagination.Limit)
@@ -85,8 +85,14 @@ func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.
 	return response.Members, err
 }
 
-func QueryTG4Members(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress) ([]TG4Member, error) {
-	query := TG4Query{ListMembers: &ListMembersQuery{Limit: 30}}
+func QueryTG4Members(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *query.PageRequest) ([]TG4Member, error) {
+	var startAfter string
+	var limit int
+	if pagination != nil {
+		startAfter = string(pagination.Key)
+		limit = int(pagination.Limit)
+	}
+	query := TG4Query{ListMembers: &ListMembersQuery{StartAfter: startAfter, Limit: limit}}
 	var response TG4MemberListResponse
 	err := doQuery(ctx, k, tg4Addr, query, &response)
 	return response.Members, err

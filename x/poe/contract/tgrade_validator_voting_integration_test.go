@@ -34,7 +34,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 	distrAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
 	require.NoError(t, err)
 	// ensure members set
-	members, err := contract.QueryTG4Members(ctx, example.TWasmKeeper, distrAddr)
+	members, err := contract.QueryTG4Members(ctx, example.TWasmKeeper, distrAddr, nil)
 	require.NoError(t, err)
 	require.Len(t, members, 3)
 	for _, m := range members {
