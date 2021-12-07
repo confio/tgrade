@@ -5,8 +5,6 @@ import (
 	"math"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/types/query"
-
 	"github.com/confio/tgrade/x/twasm"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -188,7 +186,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 }
 
 func queryAllMembers(t *testing.T, ctx sdk.Context, k *twasmkeeper.Keeper, addr sdk.AccAddress) []contract.TG4Member {
-	pagination := query.PageRequest{
+	pagination := types.Paginator{
 		Limit: 30,
 	}
 	members, err := contract.QueryTG4MembersByWeight(ctx, k, addr, &pagination)

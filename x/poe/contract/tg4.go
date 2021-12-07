@@ -6,8 +6,6 @@ import (
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	"github.com/cosmos/cosmos-sdk/types/query"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/confio/tgrade/x/poe/types"
@@ -67,14 +65,13 @@ type TG4TotalWeightResponse struct {
 	Weight int `json:"weight"`
 }
 
-func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *query.PageRequest) ([]TG4Member, error) {
+func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *types.Paginator) ([]TG4Member, error) {
 	var startAfter *TG4Member
 	var limit int
 	if pagination != nil {
-		if pagination.Key != nil {
-			err := json.Unmarshal(pagination.Key, startAfter)
-			if err = json.Unmarshal(pagination.Key, startAfter); err != nil {
-				return nil, sdkerrors.Wrap(err, "failed to unmarshal pagination key")
+		if pagination.StartAfter != nil {
+			if err := json.Unmarshal(pagination.StartAfter, startAfter); err != nil {
+				return nil, sdkerrors.Wrap(err, "failed to unmarshal pagination start after")
 			}
 		}
 		limit = int(pagination.Limit)
@@ -85,11 +82,11 @@ func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.
 	return response.Members, err
 }
 
-func QueryTG4Members(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *query.PageRequest) ([]TG4Member, error) {
+func QueryTG4Members(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *types.Paginator) ([]TG4Member, error) {
 	var startAfter string
 	var limit int
 	if pagination != nil {
-		startAfter = string(pagination.Key)
+		startAfter = string(pagination.StartAfter)
 		limit = int(pagination.Limit)
 	}
 	query := TG4Query{ListMembers: &ListMembersQuery{StartAfter: startAfter, Limit: limit}}
