@@ -21,3 +21,9 @@ func PoEContractTypeFrom(s string) PoEContractType {
 	}
 	return PoEContractType(v)
 }
+
+type Paginator struct {
+	// Any raw entry from the returned list. Must be deserialized to the correct type depending on paginated query
+	StartAfter []byte `json:"start_after,omitempty"`
+	Limit      uint64 `json:"limit,omitempty"`
+}

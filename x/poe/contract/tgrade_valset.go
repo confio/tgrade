@@ -1,8 +1,6 @@
 package contract
 
 import (
-	"github.com/cosmos/cosmos-sdk/types/query"
-
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptosecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -294,11 +292,11 @@ func (v ValsetContractAdapter) QueryValidator(ctx sdk.Context, opAddr sdk.AccAdd
 }
 
 // ListValidators query all validators
-func (v ValsetContractAdapter) ListValidators(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
+func (v ValsetContractAdapter) ListValidators(ctx sdk.Context, pagination *types.Paginator) ([]stakingtypes.Validator, error) {
 	var startAfter string
 	var limit int
 	if pagination != nil {
-		startAfter = string(pagination.Key)
+		startAfter = string(pagination.StartAfter)
 		limit = int(pagination.Limit)
 	}
 	query := ValsetQuery{ListValidators: &ListValidatorsQuery{StartAfter: startAfter, Limit: limit}}

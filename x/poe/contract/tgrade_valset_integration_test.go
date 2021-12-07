@@ -4,8 +4,6 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/types/query"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
@@ -77,7 +75,7 @@ func TestListValidators(t *testing.T) {
 	require.NoError(t, err)
 
 	specs := map[string]struct {
-		pagination *query.PageRequest
+		pagination *types.Paginator
 		expVal     []stakingtypes.Validator
 		expEmpty   bool
 		expError   bool
@@ -87,19 +85,19 @@ func TestListValidators(t *testing.T) {
 			expVal:     expValidators,
 		},
 		"query offset 0, limit 2": {
-			pagination: &query.PageRequest{Limit: 2},
+			pagination: &types.Paginator{Limit: 2},
 			expVal:     expValidators[:2],
 		},
 		"query offset 2, limit 2": {
-			pagination: &query.PageRequest{Key: []byte(expValidators[1].OperatorAddress), Limit: 2},
+			pagination: &types.Paginator{StartAfter: []byte(expValidators[1].OperatorAddress), Limit: 2},
 			expVal:     expValidators[2:],
 		},
 		"query offset 3, limit 2": {
-			pagination: &query.PageRequest{Key: []byte(expValidators[2].OperatorAddress), Limit: 2},
+			pagination: &types.Paginator{StartAfter: []byte(expValidators[2].OperatorAddress), Limit: 2},
 			expEmpty:   true,
 		},
 		"query offset invalid addr, limit 2": {
-			pagination: &query.PageRequest{Key: []byte("invalid"), Limit: 2},
+			pagination: &types.Paginator{StartAfter: []byte("invalid"), Limit: 2},
 			expError:   true,
 		},
 		// TODO: query offset (valid) unknown addr
