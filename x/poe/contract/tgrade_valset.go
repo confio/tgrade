@@ -130,7 +130,7 @@ func (m ValidatorMetadata) ToDescription() stakingtypes.Description {
 // ValsetQuery will create many queries for the valset contract
 // See https://github.com/confio/tgrade-contracts/tree/v0.5.0-alpha/contracts/tgrade-valset/src/msg.rs
 type ValsetQuery struct {
-	Config                   *struct{}            `json:"config,omitempty"`
+	Config                   *struct{}            `json:"configuration,omitempty"`
 	Epoch                    *struct{}            `json:"epoch,omitempty"`
 	Validator                *ValidatorQuery      `json:"validator,omitempty"`
 	ListValidators           *ListValidatorsQuery `json:"list_validators,omitempty"`
