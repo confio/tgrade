@@ -1,7 +1,10 @@
 package contract
 
 import (
+	"encoding/json"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -17,11 +20,8 @@ type TG4EngagementInitMsg struct {
 	PreAuthsSlashing uint64      `json:"preauths_slashing,omitempty"`
 	// Halflife is measured in seconds
 	Halflife uint64 `json:"halflife,omitempty"`
-	Token    string `json:"token"`
-}
-
-func (m TG4EngagementInitMsg) Json(t *testing.T) string {
-	return asJson(t, m)
+	// Denom of tokens which may be distributed by this contract.
+	Denom string `json:"denom"`
 }
 
 // TG4EngagementSudoMsg TG4 group sudo message
@@ -45,6 +45,7 @@ type UpdateMembersMsg struct {
 }
 
 func (m *UpdateMembersMsg) Json(t *testing.T) string {
+	t.Helper()
 	switch {
 	case m.Add == nil:
 		m.Add = make([]TG4Member, 0)
@@ -54,7 +55,9 @@ func (m *UpdateMembersMsg) Json(t *testing.T) string {
 	msg := TG4EngagementExecute{
 		UpdateMembers: m,
 	}
-	return asJson(t, msg)
+	r, err := json.Marshal(msg)
+	require.NoError(t, err)
+	return string(r)
 }
 
 type EngagementContractAdapter struct {

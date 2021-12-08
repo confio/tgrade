@@ -32,10 +32,10 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		ocContractAddr            = wasmkeeper.BuildContractAddress(2, 2)
 		stakingContractAdddr      = wasmkeeper.BuildContractAddress(3, 3)
 		mixerContractAddr         = wasmkeeper.BuildContractAddress(4, 4)
-		valsetContractAddr        = wasmkeeper.BuildContractAddress(5, 5)
+		communityPoolContractAddr = wasmkeeper.BuildContractAddress(5, 5)
+		valsetContractAddr        = wasmkeeper.BuildContractAddress(6, 6)
 		distributionContractAddr  = wasmkeeper.BuildContractAddress(1, 6) // created by a contract so not really persisted
-		ocGovProposalContractAddr = wasmkeeper.BuildContractAddress(6, 6) // instanceID = 7
-		communityPoolContractAddr = wasmkeeper.BuildContractAddress(7, 7)
+		ocGovProposalContractAddr = wasmkeeper.BuildContractAddress(7, 7) // instanceID = 7
 		valVotingContractAddr     = wasmkeeper.BuildContractAddress(8, 8)
 	)
 	var (
@@ -61,7 +61,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				PreAuthsHooks:    1,
 				PreAuthsSlashing: 1,
 				Members:          []contract.TG4Member{{Addr: myUser, Weight: 10}, {Addr: myOtherUser, Weight: 11}},
-				Token:            "utgd",
+				Denom:            "utgd",
 				Halflife:         15552000,
 			},
 			wasmFile:     "tg4_engagement.wasm",
@@ -118,22 +118,23 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		},
 		types.PoEContractTypeValset: {
 			expInitMsg: contract.ValsetInitMsg{
-				Admin:                 mySystemAdmin,
-				Membership:            mixerContractAddr.String(),
-				MinWeight:             1,
-				MaxValidators:         100,
-				EpochLength:           60,
-				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:               1,
-				FeePercentage:         expFeePercentage,
-				InitialKeys:           []contract.Validator{},
-				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
-				RewardsCodeID:         1,
-				DistributionContract:  engagementContractAddr.String(),
-			},
+				Admin:         mySystemAdmin,
+				Membership:    mixerContractAddr.String(),
+				MinWeight:     1,
+				MaxValidators: 100,
+				EpochLength:   60,
+				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:       1,
+				FeePercentage: expFeePercentage,
+				InitialKeys:   []contract.Validator{},
+				RewardsCodeID: 1,
+				DistributionContracts: []contract.DistributionContract{
+					{Address: engagementContractAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+					{Address: communityPoolContractAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
+				}},
 			wasmFile:     "tgrade_valset.wasm",
 			contractAddr: valsetContractAddr,
-			codeID:       5,
+			codeID:       6,
 			privileged:   true,
 		},
 		types.PoEContractTypeDistribution: {
@@ -154,7 +155,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			},
 			wasmFile:     "tgrade_oc_proposals.wasm",
 			contractAddr: ocGovProposalContractAddr,
-			codeID:       6,
+			codeID:       7,
 			pinned:       true,
 		},
 		types.PoEContractTypeCommunityPool: {
@@ -166,11 +167,10 @@ func TestBootstrapPoEContracts(t *testing.T) {
 					AllowEndEarly: true,
 				},
 				GroupAddress: engagementContractAddr.String(),
-				DELME:        "to-be-removed",
 			},
 			wasmFile:     "tgrade_community_pool.wasm",
 			contractAddr: communityPoolContractAddr,
-			codeID:       7,
+			codeID:       5,
 			pinned:       true,
 		},
 		types.PoEContractTypeValidatorVoting: {
@@ -182,7 +182,6 @@ func TestBootstrapPoEContracts(t *testing.T) {
 					AllowEndEarly: true,
 				},
 				GroupAddress: distributionContractAddr.String(),
-				DELME:        "to-be-removed",
 			},
 			wasmFile:     "tgrade_validator_voting.wasm",
 			contractAddr: valVotingContractAddr,
@@ -196,10 +195,10 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		types.PoEContractTypeOversightCommunity,
 		types.PoEContractTypeStaking,
 		types.PoEContractTypeMixer,
+		types.PoEContractTypeCommunityPool,
 		types.PoEContractTypeValset,
 		types.PoEContractTypeDistribution,
 		types.PoEContractTypeOversightCommunityGovProposals,
-		types.PoEContractTypeCommunityPool,
 		types.PoEContractTypeValidatorVoting,
 	}
 	for _, v := range bootstrapOrder {
@@ -278,7 +277,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		// and code cache set
 		switch {
 		case e.pinned:
-			require.Equal(t, e.codeID, (*capPin)[pos])
+			require.Equal(t, e.codeID, (*capPin)[pos], "pinned")
 			pos++
 		case e.privileged:
 			require.Equal(t, e.contractAddr, (*capPriv)[pos2])
@@ -293,8 +292,6 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		require.Equal(t, v, (*capSetAddr)[i].Ctype)
 		require.Equal(t, allContracts[v].contractAddr, (*capSetAddr)[i].ContractAddr)
 	}
-	// todo: enable distribution type when https://github.com/confio/tgrade-contracts/issues/353
-	delete(allContracts, types.PoEContractTypeDistribution)
 	assert.Len(t, *capWasmAdminUpdates, len(allContracts))
 	gotUpdates := make(map[string]sdk.AccAddress, len(allContracts))
 	for _, v := range *capWasmAdminUpdates {
@@ -321,6 +318,7 @@ func captureWasmAdminUpdates() (func(ctx sdk.Context, contractAddress sdk.AccAdd
 
 func TestCreateValsetInitMsg(t *testing.T) {
 	mixerContractAddr := types.RandomAccAddress()
+	communityPoolAddr := types.RandomAccAddress()
 	minDecimal := sdk.NewDec(1).QuoInt64(1_000_000_000_000_000_000)
 	engagementID := uint64(7)
 	engagementAddr := types.RandomAccAddress()
@@ -333,18 +331,20 @@ func TestCreateValsetInitMsg(t *testing.T) {
 		"default": {
 			genesis: types.DefaultGenesisState(),
 			exp: contract.ValsetInitMsg{
-				Admin:                 systemAdmin.String(),
-				Membership:            mixerContractAddr.String(),
-				MinWeight:             1,
-				MaxValidators:         100,
-				EpochLength:           60,
-				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:               1,
-				FeePercentage:         contract.DecimalFromProMille(500),
-				InitialKeys:           []contract.Validator{},
-				RewardsCodeID:         engagementID,
-				DistributionContract:  engagementAddr.String(),
-				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
+				Admin:         systemAdmin.String(),
+				Membership:    mixerContractAddr.String(),
+				MinWeight:     1,
+				MaxValidators: 100,
+				EpochLength:   60,
+				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:       1,
+				FeePercentage: contract.DecimalFromProMille(500),
+				InitialKeys:   []contract.Validator{},
+				RewardsCodeID: engagementID,
+				DistributionContracts: []contract.DistributionContract{
+					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+					{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
+				},
 			},
 		},
 		"fee percentage with comma value": {
@@ -354,18 +354,20 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Admin:                 systemAdmin.String(),
-				Membership:            mixerContractAddr.String(),
-				MinWeight:             1,
-				MaxValidators:         100,
-				EpochLength:           60,
-				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:               1,
-				FeePercentage:         contract.DecimalFromProMille(501),
-				InitialKeys:           []contract.Validator{},
-				RewardsCodeID:         engagementID,
-				DistributionContract:  engagementAddr.String(),
-				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
+				Admin:         systemAdmin.String(),
+				Membership:    mixerContractAddr.String(),
+				MinWeight:     1,
+				MaxValidators: 100,
+				EpochLength:   60,
+				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:       1,
+				FeePercentage: contract.DecimalFromProMille(501),
+				InitialKeys:   []contract.Validator{},
+				RewardsCodeID: engagementID,
+				DistributionContracts: []contract.DistributionContract{
+					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+					{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
+				},
 			},
 		},
 		"fee percentage with after comma value": {
@@ -375,18 +377,20 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Admin:                 systemAdmin.String(),
-				Membership:            mixerContractAddr.String(),
-				MinWeight:             1,
-				MaxValidators:         100,
-				EpochLength:           60,
-				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:               1,
-				FeePercentage:         contract.DecimalFromProMille(1),
-				InitialKeys:           []contract.Validator{},
-				RewardsCodeID:         engagementID,
-				DistributionContract:  engagementAddr.String(),
-				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
+				Admin:         systemAdmin.String(),
+				Membership:    mixerContractAddr.String(),
+				MinWeight:     1,
+				MaxValidators: 100,
+				EpochLength:   60,
+				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:       1,
+				FeePercentage: contract.DecimalFromProMille(1),
+				InitialKeys:   []contract.Validator{},
+				RewardsCodeID: engagementID,
+				DistributionContracts: []contract.DistributionContract{
+					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+					{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
+				},
 			},
 		},
 		"fee percentage with min comma value": {
@@ -396,24 +400,26 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Admin:                 systemAdmin.String(),
-				Membership:            mixerContractAddr.String(),
-				MinWeight:             1,
-				MaxValidators:         100,
-				EpochLength:           60,
-				EpochReward:           sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:               1,
-				FeePercentage:         &minDecimal,
-				InitialKeys:           []contract.Validator{},
-				RewardsCodeID:         engagementID,
-				DistributionContract:  engagementAddr.String(),
-				ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(50)),
+				Admin:         systemAdmin.String(),
+				Membership:    mixerContractAddr.String(),
+				MinWeight:     1,
+				MaxValidators: 100,
+				EpochLength:   60,
+				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:       1,
+				FeePercentage: &minDecimal,
+				InitialKeys:   []contract.Validator{},
+				RewardsCodeID: engagementID,
+				DistributionContracts: []contract.DistributionContract{
+					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+					{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
+				},
 			},
 		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			got := newValsetInitMsg(spec.genesis, systemAdmin, mixerContractAddr, engagementAddr, engagementID)
+			got := newValsetInitMsg(spec.genesis, systemAdmin, mixerContractAddr, engagementAddr, communityPoolAddr, engagementID)
 			assert.Equal(t, spec.exp, got)
 		})
 	}

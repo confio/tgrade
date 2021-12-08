@@ -24,15 +24,17 @@ func DefaultGenesisState() GenesisState {
 			ClaimAutoreturnLimit: 20,
 		},
 		ValsetContractConfig: &ValsetContractConfig{
-			MinWeight:             1,
-			MaxValidators:         100,
-			EpochLength:           60 * time.Second,
-			EpochReward:           sdk.NewCoin(DefaultBondDenom, sdk.NewInt(100_000)),
-			Scaling:               1,
-			FeePercentage:         sdk.NewDec(50),
-			AutoUnjail:            false,
-			ValidatorsRewardRatio: 50,
-			DoubleSignSlashRatio:  sdk.NewDec(50),
+			MinWeight:                1,
+			MaxValidators:            100,
+			EpochLength:              60 * time.Second,
+			EpochReward:              sdk.NewCoin(DefaultBondDenom, sdk.NewInt(100_000)),
+			Scaling:                  1,
+			FeePercentage:            sdk.NewDec(50),
+			AutoUnjail:               false,
+			DoubleSignSlashRatio:     sdk.NewDec(50),
+			ValidatorRewardRatio:     sdk.MustNewDecFromStr("47.5"),
+			EngagementRewardRatio:    sdk.MustNewDecFromStr("47.5"),
+			CommunityPoolRewardRatio: sdk.MustNewDecFromStr("5"),
 		},
 		EngagmentContractConfig: &EngagementContractConfig{
 			Halflife: 180 * 24 * time.Hour,
@@ -207,8 +209,21 @@ func (c ValsetContractConfig) ValidateBasic() error {
 	if c.Scaling == 0 {
 		return sdkerrors.Wrap(ErrEmpty, "scaling")
 	}
-	if c.ValidatorsRewardRatio > 100 {
+	hundred := sdk.NewDec(100)
+	if c.CommunityPoolRewardRatio.GT(hundred) {
+		return sdkerrors.Wrap(ErrInvalid, "community pool reward ratio must not be greater 100")
+	}
+	if c.EngagementRewardRatio.GT(hundred) {
+		return sdkerrors.Wrap(ErrInvalid, "engagement reward ratio must not be greater 100")
+	}
+	if c.ValidatorRewardRatio.GT(hundred) {
 		return sdkerrors.Wrap(ErrInvalid, "validator reward ratio must not be greater 100")
+	}
+
+	// ensure we sum up all ratios to 100%
+	totalRatio := c.EngagementRewardRatio.Add(c.CommunityPoolRewardRatio).Add(c.ValidatorRewardRatio)
+	if !totalRatio.Equal(hundred) {
+		return sdkerrors.Wrapf(ErrInvalid, "total reward ratio must be 100 but was %s", totalRatio)
 	}
 
 	minFeePercentage := sdk.NewDecFromIntWithPrec(sdk.OneInt(), 16)

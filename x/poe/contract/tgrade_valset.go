@@ -1,9 +1,6 @@
 package contract
 
 import (
-	"encoding/json"
-	"testing"
-
 	"github.com/cosmos/cosmos-sdk/types/query"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -13,7 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/stretchr/testify/require"
 
 	"github.com/confio/tgrade/x/poe/types"
 )
@@ -46,29 +42,23 @@ type ValsetInitMsg struct {
 	FeePercentage *sdk.Dec `json:"fee_percentage,omitempty"`
 	// If set to true, we will auto-unjail any validator after their jailtime is over.
 	AutoUnjail bool `json:"auto_unjail"`
-	// What percentage of the rewards (fees + inflation) go to validators. The rest go to distribution contract (below)
-	ValidatorsRewardRatio *sdk.Dec `json:"validators_reward_ratio,omitempty"`
 	// This contract receives the rewards that don't go to the validator (set ot tg4-engagement)
-	DistributionContract string `json:"distribution_contract,omitempty"`
+	DistributionContracts []DistributionContract `json:"distribution_contracts,omitempty"`
 	// This is the code-id of the cw2222-compliant contract used to handle rewards for the validators
 	// Generally should the the tg4-engagement code id
 	RewardsCodeID uint64 `json:"rewards_code_id"`
 }
 
-func (m ValsetInitMsg) Json(t *testing.T) string {
-	return asJson(t, m)
+type DistributionContract struct {
+	Address string `json:"contract"`
+	// Ratio of total reward tokens for an epoch to be sent to that contract for further distribution.
+	// Range 0 - 1
+	Ratio sdk.Dec `json:"ratio"`
 }
 
 type Validator struct {
 	Operator        string          `json:"operator"`
 	ValidatorPubkey ValidatorPubkey `json:"validator_pubkey"`
-}
-
-func asJson(t *testing.T, m interface{}) string {
-	t.Helper()
-	r, err := json.Marshal(&m)
-	require.NoError(t, err)
-	return string(r)
 }
 
 // TG4ValsetExecute Valset contract validator key registration
@@ -166,11 +156,10 @@ type ValsetConfigResponse struct {
 	Scaling       uint32   `json:"scaling,omitempty"`
 	EpochReward   sdk.Coin `json:"epoch_reward"`
 	// Percentage of total accumulated fees which is subtracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
-	FeePercentage         sdk.Dec `json:"fee_percentage"`
-	ValidatorsRewardRatio sdk.Dec `json:"validators_reward_ratio"`
-	DistributionContract  string  `json:"distribution_contract,omitempty"`
-	RewardsContract       string  `json:"rewards_contract"`
-	AutoUnjail            bool    `json:"auto_unjail"`
+	FeePercentage         sdk.Dec                `json:"fee_percentage"`
+	DistributionContracts []DistributionContract `json:"distribution_contracts,omitempty"`
+	RewardsContract       string                 `json:"rewards_contract"`
+	AutoUnjail            bool                   `json:"auto_unjail"`
 }
 
 // ValsetEpochQueryResponse Response to `config` query

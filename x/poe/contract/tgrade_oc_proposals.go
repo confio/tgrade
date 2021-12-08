@@ -82,7 +82,7 @@ type ProposalMsg struct {
 
 type OversightProposal struct {
 	GrantEngagement *GrantEngagementProposal `json:"grant_engagement,omitempty"`
-	Slash           *SlashProposal           `json:"slash,omitempty"`
+	Slash           *SlashProposal           `json:"punish,omitempty"`
 }
 
 type GrantEngagementProposal struct {

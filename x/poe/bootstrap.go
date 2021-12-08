@@ -64,6 +64,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 
 	// setup engagement contract
+	//
 	tg4EngagementInitMsg := newEngagementInitMsg(gs, systemAdminAddr)
 	engagementCodeID, err := k.Create(ctx, systemAdminAddr, tg4Engagement, &wasmtypes.AllowEverybody)
 	if err != nil {
@@ -81,6 +82,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	logger.Info("engagement group contract", "address", engagementContractAddr, "code_id", engagementCodeID)
 
 	// setup trusted circle for oversight community
+	//
 	ocCodeID, err := k.Create(ctx, systemAdminAddr, tgTrustedCircles, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg trusted circle contract")
@@ -98,6 +100,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	logger.Info("oversight community contract", "address", ocContractAddr, "code_id", ocCodeID)
 
 	// setup stake contract
+	//
 	stakeCodeID, err := k.Create(ctx, systemAdminAddr, tg4Stake, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 stake contract")
@@ -114,6 +117,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	logger.Info("stake contract", "address", stakeContractAddr, "code_id", stakeCodeID)
 
 	// setup mixer contract
+	//
 	tg4MixerInitMsg := contract.TG4MixerInitMsg{
 		LeftGroup:        engagementContractAddr.String(),
 		RightGroup:       stakeContractAddr.String(),
@@ -139,21 +143,43 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 	logger.Info("mixer contract", "address", mixerContractAddr, "code_id", mixerCodeID)
 
+	// setup community pool
+	//
+	communityPoolCodeID, err := k.Create(ctx, systemAdminAddr, tgCommunityPool, &wasmtypes.AllowEverybody)
+	if err != nil {
+		return sdkerrors.Wrap(err, "store community pool contract")
+	}
+	communityPoolInitMsg := contract.CommunityPoolInitMsg{
+		VotingRules:  toContractVotingRules(gs.CommunityPoolContractConfig.VotingRules),
+		GroupAddress: engagementContractAddr.String(),
+	}
+	communityPoolContractAddr, _, err := k.Instantiate(ctx, communityPoolCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(communityPoolInitMsg), "stakers", nil)
+	if err != nil {
+		return sdkerrors.Wrap(err, "instantiate community pool")
+	}
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeCommunityPool, communityPoolContractAddr)
+	if err := k.PinCode(ctx, communityPoolCodeID); err != nil {
+		return sdkerrors.Wrap(err, "pin community pool contract")
+	}
+	logger.Info("community pool contract", "address", communityPoolContractAddr, "code_id", communityPoolCodeID)
+
 	// setup valset contract
+	//
 	valSetCodeID, err := k.Create(ctx, systemAdminAddr, tgValset, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store valset contract")
 	}
 
-	valsetInitMsg := newValsetInitMsg(gs, systemAdminAddr, mixerContractAddr, engagementContractAddr, engagementCodeID)
+	valsetInitMsg := newValsetInitMsg(gs, systemAdminAddr, mixerContractAddr, engagementContractAddr, communityPoolContractAddr, engagementCodeID)
 	valsetJSON := mustMarshalJson(valsetInitMsg)
 	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, systemAdminAddr, systemAdminAddr, valsetJSON, "valset", nil)
 	if err != nil {
-		return sdkerrors.Wrap(err, "instantiate valset")
+		return sdkerrors.Wrapf(err, "instantiate valset with: %s", string(valsetJSON))
 	}
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeValset, valsetContractAddr)
 
 	// setup distribution contract address
+	//
 	valsetCfg, err := poeKeeper.ValsetContract(ctx).QueryConfig(ctx)
 	if err != nil {
 		return sdkerrors.Wrap(err, "query valset config")
@@ -171,6 +197,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	logger.Info("valset contract", "address", valsetContractAddr, "code_id", valSetCodeID)
 
 	// setup oversight community gov proposals contract
+	//
 	ocGovCodeID, err := k.Create(ctx, systemAdminAddr, tgOCGovProposalsCircles, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg oc gov proposals contract: ")
@@ -196,27 +223,6 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "set new valset contract admin")
 	}
 
-	// setup community pool
-	//
-	communityPoolCodeID, err := k.Create(ctx, systemAdminAddr, tgCommunityPool, &wasmtypes.AllowEverybody)
-	if err != nil {
-		return sdkerrors.Wrap(err, "store community pool contract")
-	}
-	communityPoolInitMsg := contract.CommunityPoolInitMsg{
-		VotingRules:  toContractVotingRules(gs.CommunityPoolContractConfig.VotingRules),
-		GroupAddress: engagementContractAddr.String(),
-		DELME:        "to-be-removed",
-	}
-	communityPoolContractAddr, _, err := k.Instantiate(ctx, communityPoolCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(communityPoolInitMsg), "stakers", nil)
-	if err != nil {
-		return sdkerrors.Wrap(err, "instantiate community pool")
-	}
-	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeCommunityPool, communityPoolContractAddr)
-	if err := k.PinCode(ctx, communityPoolCodeID); err != nil {
-		return sdkerrors.Wrap(err, "pin community pool contract")
-	}
-	logger.Info("community pool contract", "address", communityPoolContractAddr, "code_id", communityPoolCodeID)
-
 	// setup validator voting contract
 	//
 	validatorVotingCodeID, err := k.Create(ctx, systemAdminAddr, tgValidatorVoting, &wasmtypes.AllowEverybody)
@@ -226,7 +232,6 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	validatorVotingInitMsg := contract.ValidatorVotingInitMsg{
 		VotingRules:  toContractVotingRules(gs.ValidatorVotingContractConfig.VotingRules),
 		GroupAddress: distrAddr.String(),
-		DELME:        "to-be-removed",
 	}
 	validatorVotingContractAddr, _, err := k.Instantiate(ctx, validatorVotingCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(validatorVotingInitMsg), "stakers", nil)
 	if err != nil {
@@ -252,9 +257,6 @@ func setAllPoEContractsInstanceMigrators(ctx sdk.Context, k wasmtypes.ContractOp
 		contractType := types.PoEContractType(v)
 		if contractType == types.PoEContractTypeUndefined {
 			continue
-		}
-		if contractType == types.PoEContractTypeDistribution {
-			continue // disabled due to https://github.com/confio/tgrade-contracts/issues/353
 		}
 		addr, err := poeKeeper.GetPoEContractAddress(ctx, contractType)
 		if err != nil {
@@ -300,7 +302,7 @@ func newEngagementInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contr
 		Members:          make([]contract.TG4Member, len(gs.Engagement)),
 		PreAuthsHooks:    1,
 		PreAuthsSlashing: 1,
-		Token:            gs.BondDenom,
+		Denom:            gs.BondDenom,
 		Halflife:         uint64(gs.EngagmentContractConfig.Halflife.Seconds()),
 	}
 	for i, v := range gs.Engagement {
@@ -331,23 +333,26 @@ func newValsetInitMsg(
 	admin sdk.AccAddress,
 	mixerContractAddr sdk.AccAddress,
 	engagementAddr sdk.AccAddress,
+	communityPoolAddr sdk.AccAddress,
 	engagementCodeID uint64,
 ) contract.ValsetInitMsg {
 	config := gs.ValsetContractConfig
 	return contract.ValsetInitMsg{
-		Admin:                 admin.String(),
-		Membership:            mixerContractAddr.String(),
-		MinWeight:             config.MinWeight,
-		MaxValidators:         config.MaxValidators,
-		EpochLength:           uint64(config.EpochLength.Seconds()),
-		EpochReward:           config.EpochReward,
-		InitialKeys:           []contract.Validator{},
-		Scaling:               config.Scaling,
-		FeePercentage:         contract.DecimalFromPercentage(config.FeePercentage),
-		AutoUnjail:            config.AutoUnjail,
-		ValidatorsRewardRatio: contract.DecimalFromPercentage(sdk.NewDec(int64(config.ValidatorsRewardRatio))),
-		DistributionContract:  engagementAddr.String(),
-		RewardsCodeID:         engagementCodeID,
+		Admin:         admin.String(),
+		Membership:    mixerContractAddr.String(),
+		MinWeight:     config.MinWeight,
+		MaxValidators: config.MaxValidators,
+		EpochLength:   uint64(config.EpochLength.Seconds()),
+		EpochReward:   config.EpochReward,
+		InitialKeys:   []contract.Validator{},
+		Scaling:       config.Scaling,
+		FeePercentage: contract.DecimalFromPercentage(config.FeePercentage),
+		AutoUnjail:    config.AutoUnjail,
+		DistributionContracts: []contract.DistributionContract{
+			{Address: engagementAddr.String(), Ratio: *contract.DecimalFromPercentage(config.EngagementRewardRatio)},
+			{Address: communityPoolAddr.String(), Ratio: *contract.DecimalFromPercentage(config.CommunityPoolRewardRatio)},
+		},
+		RewardsCodeID: engagementCodeID,
 	}
 }
 

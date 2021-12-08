@@ -392,9 +392,11 @@ ValsetContractConfig initial setup config
 | `epoch_length` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
 | `epoch_reward` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
 | `scaling` | [uint32](#uint32) |  | Scaling is the factor to multiply cw4-group weights to produce the Tendermint validator power |
-| `fee_percentage` | [string](#string) |  | Feepercentage is the percentage of total accumulated fees that is subtracted from tokens minted as rewards. 50% by default. To disable this feature just set it to 0 (which effectively means that fees don't affect the per-epoch reward). |
-| `ValidatorsRewardRatio` | [uint32](#uint32) |  | ValidatorsRewardRatio in percentage |
-| `AutoUnjail` | [bool](#bool) |  | AutoUnjail if set to true, we will auto-unjail any validator after their jailtime is over. |
+| `fee_percentage` | [string](#string) |  | FeePercentage is the percentage of total accumulated fees that is subtracted from tokens minted as rewards. 50% by default. To disable this feature just set it to 0 (which effectively means that fees don't affect the per-epoch reward). |
+| `community_pool_reward_ratio` | [string](#string) |  | CommunityPoolRewardRation in percentage |
+| `engagement_reward_ratio` | [string](#string) |  | EngagementRewardRatio reward ration in percentage for all |
+| `validator_reward_ratio` | [string](#string) |  | ValidatorRewardRation in percentage for all |
+| `auto_unjail` | [bool](#bool) |  | AutoUnjail if set to true, we will auto-unjail any validator after their jailtime is over. |
 | `double_sign_slash_ratio` | [string](#string) |  | DoubleSignSlashRatio Validators who are caught double signing are jailed forever and their bonded tokens are slashed based on this value. |
 
 
@@ -411,8 +413,8 @@ VotingRules contains configuration for the tally.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `voting_period` | [uint32](#uint32) |  | VotingPeriod Voting period in days |
-| `quorum` | [string](#string) |  | Quorum voting quorum percentage (0-100) |
-| `threshold` | [string](#string) |  | Threshold voting threshold percentage (0-100) |
+| `quorum` | [string](#string) |  | Quorum voting quorum percentage (1-100) |
+| `threshold` | [string](#string) |  | Threshold voting threshold percentage (50-100) |
 | `allow_end_early` | [bool](#bool) |  | AllowEndEarly If true, and absolute threshold and quorum are met, we can end before voting period finished. (Recommended value: true, unless you have special needs) |
 
 

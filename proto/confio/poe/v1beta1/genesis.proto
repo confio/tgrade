@@ -80,7 +80,7 @@ message ValsetContractConfig {
   // Scaling is the factor to multiply cw4-group weights to produce the
   // Tendermint validator power
   uint32 scaling = 5;
-  // Feepercentage is the percentage of total accumulated fees that is
+  // FeePercentage is the percentage of total accumulated fees that is
   // subtracted from tokens minted as rewards. 50% by default. To disable this
   // feature just set it to 0 (which effectively means that fees don't affect
   // the per-epoch reward).
@@ -88,15 +88,28 @@ message ValsetContractConfig {
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
   ];
-  // ValidatorsRewardRatio in percentage
-  uint32 ValidatorsRewardRatio = 7;
+  // CommunityPoolRewardRation in percentage
+  string community_pool_reward_ratio = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
+  ];
+  // EngagementRewardRatio reward ration in percentage for all
+  string engagement_reward_ratio = 8 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
+  ];
+  // ValidatorRewardRation in percentage for all
+  string validator_reward_ratio = 9 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
+  ];
   // AutoUnjail if set to true, we will auto-unjail any validator after their
   // jailtime is over.
-  bool AutoUnjail = 8;
+  bool auto_unjail = 10;
 
   // DoubleSignSlashRatio Validators who are caught double signing are jailed
   // forever and their bonded tokens are slashed based on this value.
-  string double_sign_slash_ratio = 9 [
+  string double_sign_slash_ratio = 11 [
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
   ];

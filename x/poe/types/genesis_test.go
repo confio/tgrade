@@ -289,24 +289,69 @@ func TestValidateValsetContractConfig(t *testing.T) {
 			).ValsetContractConfig,
 			expErr: true,
 		},
-		"rewards ratio zero": {
+		"validator rewards ratio zero": {
 			src: *GenesisStateFixture(
 				func(m *GenesisState) {
-					m.ValsetContractConfig.ValidatorsRewardRatio = 0
+					m.ValsetContractConfig.ValidatorRewardRatio = sdk.ZeroDec()
+					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.MustNewDecFromStr("52.5")
 				},
 			).ValsetContractConfig,
 		},
-		"rewards ratio 100": {
+		"validator rewards ratio 100": {
 			src: *GenesisStateFixture(
 				func(m *GenesisState) {
-					m.ValsetContractConfig.ValidatorsRewardRatio = 100
+					m.ValsetContractConfig.ValidatorRewardRatio = sdk.NewDec(100)
+					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.ZeroDec()
+					m.ValsetContractConfig.EngagementRewardRatio = sdk.ZeroDec()
 				},
 			).ValsetContractConfig,
 		},
-		"rewards ratio > 100": {
+		"validator rewards ratio > 100": {
 			src: *GenesisStateFixture(
 				func(m *GenesisState) {
-					m.ValsetContractConfig.ValidatorsRewardRatio = 101
+					m.ValsetContractConfig.ValidatorRewardRatio = sdk.NewDec(101)
+					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.ZeroDec()
+					m.ValsetContractConfig.EngagementRewardRatio = sdk.ZeroDec()
+				},
+			).ValsetContractConfig,
+			expErr: true,
+		},
+		"engagement rewards ratio > 100": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) {
+					m.ValsetContractConfig.EngagementRewardRatio = sdk.NewDec(101)
+					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.ZeroDec()
+					m.ValsetContractConfig.ValidatorRewardRatio = sdk.ZeroDec()
+				},
+			).ValsetContractConfig,
+			expErr: true,
+		},
+		"community pool rewards ratio > 100": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) {
+					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.NewDec(101)
+					m.ValsetContractConfig.EngagementRewardRatio = sdk.ZeroDec()
+					m.ValsetContractConfig.ValidatorRewardRatio = sdk.ZeroDec()
+				},
+			).ValsetContractConfig,
+			expErr: true,
+		},
+		"total rewards ratio > 100": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) {
+					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.MustNewDecFromStr("49")
+					m.ValsetContractConfig.EngagementRewardRatio = sdk.MustNewDecFromStr("49")
+					m.ValsetContractConfig.ValidatorRewardRatio = sdk.MustNewDecFromStr("3")
+				},
+			).ValsetContractConfig,
+			expErr: true,
+		},
+		"total rewards ratio < 100": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) {
+					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.MustNewDecFromStr("10")
+					m.ValsetContractConfig.EngagementRewardRatio = sdk.MustNewDecFromStr("10")
+					m.ValsetContractConfig.ValidatorRewardRatio = sdk.MustNewDecFromStr("10")
 				},
 			).ValsetContractConfig,
 			expErr: true,

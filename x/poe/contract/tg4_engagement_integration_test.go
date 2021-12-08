@@ -35,7 +35,7 @@ func TestEngagementUpdateAdmin(t *testing.T) {
 		}},
 		PreAuthsHooks:    1,
 		PreAuthsSlashing: 1,
-		Token:            "alx",
+		Denom:            "alx",
 		Halflife:         1,
 	}
 	initMsgBz, err := json.Marshal(&tg4EngagementInitMsg)

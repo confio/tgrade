@@ -1,8 +1,6 @@
 package contract
 
 import (
-	"testing"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -39,8 +37,4 @@ type AlgebraicSigmoid struct {
 	A          sdk.Dec `json:"a"`
 	P          sdk.Dec `json:"p"`
 	S          sdk.Dec `json:"s"`
-}
-
-func (m TG4MixerInitMsg) Json(t *testing.T) string {
-	return asJson(t, m)
 }

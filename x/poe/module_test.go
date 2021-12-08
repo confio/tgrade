@@ -67,20 +67,35 @@ func TestInitGenesis(t *testing.T) {
 	mixerAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
 	require.NoError(t, err)
 
+	communityPoolAddr := twasm.ContractAddress(5, 5)
+	engagementAddr := twasm.ContractAddress(1, 1)
 	expConfig := &contract.ValsetConfigResponse{
-		Membership:            mixerAddr.String(),
-		MinWeight:             1,
-		MaxValidators:         100,
-		Scaling:               1,
-		FeePercentage:         sdk.MustNewDecFromStr("0.50"),
-		ValidatorsRewardRatio: sdk.MustNewDecFromStr("0.50"),
-		EpochReward:           sdk.NewInt64Coin("utgd", 100000),
-		DistributionContract:  twasm.ContractAddress(1, 1).String(),
-		RewardsContract:       twasm.ContractAddress(1, 6).String(),
-		AutoUnjail:            false,
+		Membership:    mixerAddr.String(),
+		MinWeight:     1,
+		MaxValidators: 100,
+		Scaling:       1,
+		FeePercentage: sdk.MustNewDecFromStr("0.50"),
+		DistributionContracts: []contract.DistributionContract{
+			{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+			{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
+		},
+		EpochReward:     sdk.NewInt64Coin("utgd", 100000),
+		RewardsContract: twasm.ContractAddress(1, 7).String(),
+		AutoUnjail:      false,
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)
 
+	// and all poe contract addresses unique
+	allAddr := make([]sdk.Address, 0, len(types.PoEContractType_name))
+	for k := range types.PoEContractType_name {
+		if types.PoEContractType(k) == types.PoEContractTypeUndefined {
+			continue
+		}
+		addr, err = example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractType(k))
+		require.NoError(t, err)
+		require.NotContains(t, allAddr, addr)
+		allAddr = append(allAddr, addr)
+	}
 }
 
 type validators []validator
