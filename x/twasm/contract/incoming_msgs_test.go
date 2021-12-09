@@ -27,8 +27,6 @@ func TestGetProposalContent(t *testing.T) {
 
 	ib, err := ibcclienttypes.PackHeader(&ibctmtypes.Header{})
 	require.NoError(t, err)
-	cs, err := clienttypes.PackClientState(&ibctmtypes.ClientState{})
-	require.NoError(t, err)
 
 	specs := map[string]struct {
 		src            string
@@ -47,17 +45,13 @@ func TestGetProposalContent(t *testing.T) {
       "register_upgrade": {
 		"name": "myUpgradeName",
         "height": 1,
-        "info": "any information",
-        "upgraded_client_state": {
-          "type_url": "/ibc.lightclients.tendermint.v1.ClientState", "value": "EgAaACIAKgAyADoA"
-        }
+        "info": "any information"
       }}}}`,
 			expGovProposal: &upgradetypes.SoftwareUpgradeProposal{Title: "myTitle", Description: "myDescription", Plan: upgradetypes.Plan{
-				Name:                "myUpgradeName",
-				Time:                time.Time{},
-				Height:              1,
-				Info:                "any information",
-				UpgradedClientState: cs,
+				Name:   "myUpgradeName",
+				Time:   time.Time{},
+				Height: 1,
+				Info:   "any information",
 			}},
 		},
 		"cancel upgrade": {

@@ -171,19 +171,17 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 		},
 		"register_upgrade": func(b []byte) error {
 			var proxy = struct {
-				Name                string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-				Height              int64    `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
-				Info                string   `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
-				UpgradedClientState ProtoAny `protobuf:"bytes,5,opt,name=upgraded_client_state,json=upgradedClientState,proto3" json:"upgraded_client_state,omitempty" yaml:"upgraded_client_state"`
+				Name   string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+				Height int64  `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
+				Info   string `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
 			}{}
 			if err := json.Unmarshal(b, &proxy); err != nil {
 				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 			}
 			result.RegisterUpgrade = &upgradetypes.Plan{
-				Name:                proxy.Name,
-				Height:              proxy.Height,
-				Info:                proxy.Info,
-				UpgradedClientState: proxy.UpgradedClientState.Encode(),
+				Name:   proxy.Name,
+				Height: proxy.Height,
+				Info:   proxy.Info,
 			}
 			return nil
 		},

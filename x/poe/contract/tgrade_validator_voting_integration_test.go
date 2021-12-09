@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibctmtypes "github.com/cosmos/cosmos-sdk/x/ibc/light-clients/07-tendermint/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,17 +42,13 @@ func TestValidatorsGovProposal(t *testing.T) {
 	codeID, err := contractKeeper.Create(ctx, anyAddress, randomContract, nil)
 	require.NoError(t, err)
 	require.False(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "pinned")
-	any, err := codectypes.NewAnyWithValue(&ibctmtypes.ClientState{})
-	require.NoError(t, err)
 	specs := map[string]struct {
 		src       contract.ValidatorProposal
 		assertExp func(t *testing.T, ctx sdk.Context)
 	}{
 		"pin code": {
 			src: contract.ValidatorProposal{
-				PinCodes: &contract.CodeIDsWrapper{
-					CodeIDs: []uint64{codeID},
-				},
+				PinCodes: []uint64{codeID},
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				assert.True(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "pinned")
@@ -63,20 +57,18 @@ func TestValidatorsGovProposal(t *testing.T) {
 		"chain upgrade": {
 			src: contract.ValidatorProposal{
 				RegisterUpgrade: &contract.ChainUpgrade{
-					Name:     "v2",
-					Info:     "v2-info",
-					Height:   7654321,
-					DeleteMe: []byte(`{"type_url": "/ibc.lightclients.tendermint.v1.ClientState", "value": "EgAaACIAKgAyADoA"}`),
+					Name:   "v2",
+					Info:   "v2-info",
+					Height: 7654321,
 				},
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				gotPlan, exists := example.UpgradeKeeper.GetUpgradePlan(ctx)
 				assert.True(t, exists, "exists")
 				exp := upgradetypes.Plan{
-					Name:                "v2",
-					Info:                "v2-info",
-					Height:              7654321,
-					UpgradedClientState: any,
+					Name:   "v2",
+					Info:   "v2-info",
+					Height: 7654321,
 				}
 				assert.Equal(t, exp, gotPlan)
 			},
