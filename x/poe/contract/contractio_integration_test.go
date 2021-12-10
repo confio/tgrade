@@ -14,7 +14,7 @@ import (
 
 func TestSetEngagementPoints(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, _ := setupPoEContracts(t)
+	ctx, example, _, _ := setupPoEContracts(t)
 
 	myOperatorAddr := rand.Bytes(sdk.AddrLen)
 	engContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
@@ -33,7 +33,7 @@ func TestSetEngagementPoints(t *testing.T) {
 
 func TestBondDelegation(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, vals := setupPoEContracts(t)
+	ctx, example, vals, _ := setupPoEContracts(t)
 
 	myOperatorAddr, _ := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
 	// fund account
@@ -55,7 +55,7 @@ func TestBondDelegation(t *testing.T) {
 
 func TestUnbondDelegation(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, vals := setupPoEContracts(t)
+	ctx, example, vals, _ := setupPoEContracts(t)
 
 	myOperatorAddr, _ := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
 	stakingContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)

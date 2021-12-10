@@ -22,7 +22,7 @@ var randomContract []byte
 
 func TestValidatorsGovProposal(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, vals := setupPoEContracts(t)
+	ctx, example, vals, _ := setupPoEContracts(t)
 	require.Len(t, vals, 3)
 
 	op1Addr, _ := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
@@ -134,16 +134,23 @@ func TestValidatorsGovProposal(t *testing.T) {
 
 func TestQueryTG4Members(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, vals := setupPoEContracts(t)
+	ctx, example, vals, members := setupPoEContracts(t)
 	require.Len(t, vals, 3)
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
 	require.NoError(t, err)
-	// ensure members set
-	// FIXME: Get members from test setup
-	expMembers, err := contract.QueryTG4Members(ctx, example.TWasmKeeper, contractAddr, nil)
-	require.NoError(t, err)
-	require.Len(t, expMembers, 3)
+
+	expMembers := make([]contract.TG4Member, len(members))
+	for i, m := range members {
+		expMembers[i] = contract.TG4Member{
+			Addr:   m.Address,
+			Weight: 0,
+		}
+	}
+
+	sort.Slice(expMembers, func(i, j int) bool {
+		return expMembers[i].Addr < expMembers[j].Addr
+	})
 
 	specs := map[string]struct {
 		pagination *types.Paginator
@@ -176,6 +183,7 @@ func TestQueryTG4Members(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// when
 			gotMembers, err := contract.QueryTG4Members(ctx, example.TWasmKeeper, contractAddr, spec.pagination)
+			gotMembers = clearWeight(gotMembers)
 
 			// then
 			if spec.expError {
@@ -200,13 +208,12 @@ func buildStartAfter(t *testing.T, m *contract.TG4Member) []byte {
 
 func TestQueryTG4MembersByWeight(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, vals := setupPoEContracts(t)
+	ctx, example, vals, _ := setupPoEContracts(t)
 	require.Len(t, vals, 3)
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
 	require.NoError(t, err)
-	// ensure members set
-	// FIXME: Get members from test setup
+	// get members using tested function
 	expMembers, err := contract.QueryTG4Members(ctx, example.TWasmKeeper, contractAddr, nil)
 	require.NoError(t, err)
 	require.Len(t, expMembers, 3)

@@ -18,7 +18,7 @@ var tgTrustedCircles []byte
 func TestInitTrustedCircle(t *testing.T) {
 	// setup contracts and seed some data
 	var creator sdk.AccAddress = rand.Bytes(sdk.AddrLen)
-	ctx, example, _ := setupPoEContracts(t)
+	ctx, example, _, _ := setupPoEContracts(t)
 	contractKeeper := example.TWasmKeeper.GetContractKeeper()
 
 	depositAmount := sdk.NewCoin("utgd", sdk.NewInt(10_000_000))

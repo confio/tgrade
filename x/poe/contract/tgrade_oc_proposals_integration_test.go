@@ -16,7 +16,7 @@ import (
 func TestSlashValidator(t *testing.T) {
 	var systemAdmin sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 	// setup contracts and seed some data
-	ctx, example, vals := setupPoEContracts(t, setSystemAdminMutator(systemAdmin))
+	ctx, example, vals, _ := setupPoEContracts(t, setSystemAdminMutator(systemAdmin))
 
 	ocProposeAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunityGovProposals)
 	require.NoError(t, err)

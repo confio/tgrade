@@ -17,7 +17,7 @@ import (
 
 func TestQueryUnbondingPeriod(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, _ := setupPoEContracts(t)
+	ctx, example, _, _ := setupPoEContracts(t)
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	require.NoError(t, err)
@@ -35,7 +35,7 @@ func TestQueryUnbondingPeriod(t *testing.T) {
 
 func TestQueryStakedAmount(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, _ := setupPoEContracts(t)
+	ctx, example, _, _ := setupPoEContracts(t)
 	contractKeeper := example.TWasmKeeper.GetContractKeeper()
 	stakingContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	require.NoError(t, err)
@@ -95,7 +95,7 @@ func TestQueryStakedAmount(t *testing.T) {
 
 func TestQueryValidatorUnboding(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, vals := setupPoEContracts(t)
+	ctx, example, vals, _ := setupPoEContracts(t)
 
 	op1Addr, err := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
 	require.NoError(t, err)

@@ -16,7 +16,7 @@ import (
 
 func TestQueryValidator(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, vals := setupPoEContracts(t)
+	ctx, example, vals, _ := setupPoEContracts(t)
 	vals = clearTokenAmount(vals)
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
@@ -65,7 +65,7 @@ func TestQueryValidator(t *testing.T) {
 
 func TestListValidators(t *testing.T) {
 	// Setup contracts and seed some data. Creates three random validators
-	ctx, example, expValidators := setupPoEContracts(t)
+	ctx, example, expValidators, _ := setupPoEContracts(t)
 	expValidators = clearTokenAmount(expValidators)
 	sort.Slice(expValidators, func(i, j int) bool {
 		return expValidators[i].OperatorAddress < expValidators[j].OperatorAddress
@@ -124,7 +124,7 @@ func TestListValidators(t *testing.T) {
 
 func TestQueryValsetConfig(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, _ := setupPoEContracts(t)
+	ctx, example, _, _ := setupPoEContracts(t)
 	mixerContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
 	require.NoError(t, err)
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
