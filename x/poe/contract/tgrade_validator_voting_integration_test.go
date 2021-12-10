@@ -3,6 +3,7 @@ package contract_test
 import (
 	_ "embed"
 	"encoding/json"
+	"sort"
 	"testing"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -129,5 +130,134 @@ func TestValidatorsGovProposal(t *testing.T) {
 			spec.assertExp(t, ctx)
 		})
 	}
+}
 
+func TestQueryTG4Members(t *testing.T) {
+	// setup contracts and seed some data
+	ctx, example, vals := setupPoEContracts(t)
+	require.Len(t, vals, 3)
+
+	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
+	require.NoError(t, err)
+	// ensure members set
+	// FIXME: Get members from test setup
+	expMembers, err := contract.QueryTG4Members(ctx, example.TWasmKeeper, contractAddr, nil)
+	require.NoError(t, err)
+	require.Len(t, expMembers, 3)
+
+	specs := map[string]struct {
+		pagination *types.Paginator
+		expVal     []contract.TG4Member
+		expEmpty   bool
+		expError   bool
+	}{
+		"query no pagination": {
+			pagination: nil,
+			expVal:     expMembers,
+		},
+		"query offset 0, limit 2": {
+			pagination: &types.Paginator{Limit: 2},
+			expVal:     expMembers[:2],
+		},
+		"query offset 2, limit 2": {
+			pagination: &types.Paginator{StartAfter: []byte(expMembers[1].Addr), Limit: 2},
+			expVal:     expMembers[2:],
+		},
+		"query offset 3, limit 2": {
+			pagination: &types.Paginator{StartAfter: []byte(expMembers[2].Addr), Limit: 2},
+			expEmpty:   true,
+		},
+		"query offset invalid addr, limit 2": {
+			pagination: &types.Paginator{StartAfter: []byte("invalid"), Limit: 2},
+			expError:   true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			// when
+			gotMembers, err := contract.QueryTG4Members(ctx, example.TWasmKeeper, contractAddr, spec.pagination)
+
+			// then
+			if spec.expError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				if spec.expEmpty {
+					assert.Equal(t, 0, len(gotMembers))
+				} else {
+					assert.Equal(t, spec.expVal, gotMembers)
+				}
+			}
+		})
+	}
+}
+
+func buildStartAfter(t *testing.T, m *contract.TG4Member) []byte {
+	startAfter, err := json.Marshal(m)
+	require.NoError(t, err)
+	return startAfter
+}
+
+func TestQueryTG4MembersByWeight(t *testing.T) {
+	// setup contracts and seed some data
+	ctx, example, vals := setupPoEContracts(t)
+	require.Len(t, vals, 3)
+
+	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
+	require.NoError(t, err)
+	// ensure members set
+	// FIXME: Get members from test setup
+	expMembers, err := contract.QueryTG4Members(ctx, example.TWasmKeeper, contractAddr, nil)
+	require.NoError(t, err)
+	require.Len(t, expMembers, 3)
+
+	sort.Slice(expMembers, func(i, j int) bool {
+		return expMembers[i].Weight > expMembers[j].Weight
+	})
+
+	specs := map[string]struct {
+		pagination *types.Paginator
+		expVal     []contract.TG4Member
+		expEmpty   bool
+		expError   bool
+	}{
+		"query no pagination": {
+			pagination: nil,
+			expVal:     expMembers,
+		},
+		"query offset 0, limit 2": {
+			pagination: &types.Paginator{Limit: 2},
+			expVal:     expMembers[:2],
+		},
+		"query offset 2, limit 2": {
+			pagination: &types.Paginator{StartAfter: buildStartAfter(t, &expMembers[1]), Limit: 2},
+			expVal:     expMembers[2:],
+		},
+		"query offset 3, limit 2": {
+			pagination: &types.Paginator{StartAfter: buildStartAfter(t, &expMembers[2]), Limit: 2},
+			expEmpty:   true,
+		},
+		"query offset invalid addr, limit 2": {
+			pagination: &types.Paginator{StartAfter: []byte("invalid"), Limit: 2},
+			expError:   true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			// when
+			gotMembers, err := contract.QueryTG4MembersByWeight(ctx, example.TWasmKeeper, contractAddr, spec.pagination)
+
+			// then
+			if spec.expError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				if spec.expEmpty {
+					assert.Equal(t, 0, len(gotMembers))
+				} else {
+					assert.Equal(t, spec.expVal, gotMembers)
+				}
+			}
+		})
+	}
 }

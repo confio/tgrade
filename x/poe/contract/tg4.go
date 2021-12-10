@@ -1,7 +1,10 @@
 package contract
 
 import (
+	"encoding/json"
 	"sort"
+
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -35,8 +38,8 @@ type ListMembersQuery struct {
 }
 
 type ListMembersByWeightQuery struct {
-	StartAfter []byte `json:"start_after,omitempty"`
-	Limit      int    `json:"limit,omitempty"`
+	StartAfter *TG4Member `json:"start_after,omitempty"`
+	Limit      int        `json:"limit,omitempty"`
 }
 
 type MemberQuery struct {
@@ -63,10 +66,16 @@ type TG4TotalWeightResponse struct {
 }
 
 func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *types.Paginator) ([]TG4Member, error) {
-	var startAfter []byte
+	var sa TG4Member
+	var startAfter *TG4Member
 	var limit int
 	if pagination != nil {
-		startAfter = pagination.StartAfter
+		if pagination.StartAfter != nil {
+			if err := json.Unmarshal(pagination.StartAfter, &sa); err != nil {
+				return nil, sdkerrors.Wrap(err, "query tg4 members by weight")
+			}
+			startAfter = &sa
+		}
 		limit = int(pagination.Limit)
 	}
 	query := TG4Query{ListMembersByWeight: &ListMembersByWeightQuery{StartAfter: startAfter, Limit: limit}}
