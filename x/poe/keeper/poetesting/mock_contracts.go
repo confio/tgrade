@@ -3,7 +3,7 @@ package poetesting
 import (
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/types/query"
+	"github.com/confio/tgrade/x/poe/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -28,7 +28,7 @@ func (m DistributionContractMock) ValidatorOutstandingReward(ctx sdk.Context, ad
 
 type ValsetContractMock struct {
 	QueryValidatorFn        func(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error)
-	ListValidatorsFn        func(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error)
+	ListValidatorsFn        func(ctx sdk.Context, pagination *types.Paginator) ([]stakingtypes.Validator, error)
 	QueryConfigFn           func(ctx sdk.Context) (*contract.ValsetConfigResponse, error)
 	ListValidatorSlashingFn func(ctx sdk.Context, opAddr sdk.AccAddress) ([]contract.ValidatorSlashing, error)
 	UpdateAdminFn           func(ctx sdk.Context, new sdk.AccAddress, sender sdk.AccAddress) error
@@ -48,7 +48,7 @@ func (m ValsetContractMock) QueryValidator(ctx sdk.Context, opAddr sdk.AccAddres
 	return m.QueryValidatorFn(ctx, opAddr)
 }
 
-func (m ValsetContractMock) ListValidators(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
+func (m ValsetContractMock) ListValidators(ctx sdk.Context, pagination *types.Paginator) ([]stakingtypes.Validator, error) {
 	if m.ListValidatorsFn == nil {
 		panic("not expected to be called")
 	}

@@ -17,7 +17,7 @@ import (
 
 func TestQueryWithdrawableFunds(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, vals := setupPoEContracts(t)
+	ctx, example, vals, _ := setupPoEContracts(t)
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
 	require.NoError(t, err)

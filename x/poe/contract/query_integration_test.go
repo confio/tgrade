@@ -14,7 +14,7 @@ import (
 
 func TestQueryValidatorSelfDelegation(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, vals := setupPoEContracts(t)
+	ctx, example, vals, _ := setupPoEContracts(t)
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	require.NoError(t, err)

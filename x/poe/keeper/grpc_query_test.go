@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/types/query"
-
 	"github.com/confio/tgrade/x/poe/keeper/poetesting"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -91,7 +89,7 @@ func TestQueryValidators(t *testing.T) {
 		"all good": {
 			src: &stakingtypes.QueryValidatorsRequest{},
 			mock: poetesting.ValsetContractMock{
-				ListValidatorsFn: func(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
+				ListValidatorsFn: func(ctx sdk.Context, pagination *types.Paginator) ([]stakingtypes.Validator, error) {
 					return []stakingtypes.Validator{expValidator}, nil
 				},
 			},
@@ -106,7 +104,7 @@ func TestQueryValidators(t *testing.T) {
 		"empty result": {
 			src: &stakingtypes.QueryValidatorsRequest{},
 			mock: poetesting.ValsetContractMock{
-				ListValidatorsFn: func(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
+				ListValidatorsFn: func(ctx sdk.Context, pagination *types.Paginator) ([]stakingtypes.Validator, error) {
 					return []stakingtypes.Validator{}, nil
 				},
 			},
@@ -117,7 +115,7 @@ func TestQueryValidators(t *testing.T) {
 		"contract returns error": {
 			src: &stakingtypes.QueryValidatorsRequest{},
 			mock: poetesting.ValsetContractMock{
-				ListValidatorsFn: func(ctx sdk.Context, pagination *query.PageRequest) ([]stakingtypes.Validator, error) {
+				ListValidatorsFn: func(ctx sdk.Context, pagination *types.Paginator) ([]stakingtypes.Validator, error) {
 					return nil, errors.New("testing")
 				},
 			},

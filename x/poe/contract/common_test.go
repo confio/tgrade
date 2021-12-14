@@ -5,6 +5,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/confio/tgrade/x/poe/contract"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -22,7 +24,7 @@ type ExampleValidator struct {
 	stakingtypes.Validator
 }
 
-func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator) {
+func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator, []types.TG4Member) {
 	t.Helper()
 	ctx, example := keeper.CreateDefaultTestInput(t)
 	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
@@ -35,7 +37,7 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-	return ctx, example, expValidators
+	return ctx, example, expValidators, gs.Engagement
 }
 
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
@@ -106,4 +108,12 @@ func clearTokenAmount(validators []stakingtypes.Validator) []stakingtypes.Valida
 		validators[i] = v
 	}
 	return validators
+}
+
+func clearWeight(members []contract.TG4Member) []contract.TG4Member {
+	for i, m := range members {
+		m.Weight = 0
+		members[i] = m
+	}
+	return members
 }

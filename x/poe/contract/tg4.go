@@ -1,7 +1,10 @@
 package contract
 
 import (
+	"encoding/json"
 	"sort"
+
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -62,15 +65,33 @@ type TG4TotalWeightResponse struct {
 	Weight int `json:"weight"`
 }
 
-func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress) ([]TG4Member, error) {
-	query := TG4Query{ListMembersByWeight: &ListMembersByWeightQuery{Limit: 30}}
+func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *types.Paginator) ([]TG4Member, error) {
+	var sa TG4Member
+	var startAfter *TG4Member
+	var limit int
+	if pagination != nil {
+		if pagination.StartAfter != nil {
+			if err := json.Unmarshal(pagination.StartAfter, &sa); err != nil {
+				return nil, sdkerrors.Wrap(err, "query tg4 members by weight")
+			}
+			startAfter = &sa
+		}
+		limit = int(pagination.Limit)
+	}
+	query := TG4Query{ListMembersByWeight: &ListMembersByWeightQuery{StartAfter: startAfter, Limit: limit}}
 	var response TG4MemberListResponse
 	err := doQuery(ctx, k, tg4Addr, query, &response)
 	return response.Members, err
 }
 
-func QueryTG4Members(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress) ([]TG4Member, error) {
-	query := TG4Query{ListMembers: &ListMembersQuery{Limit: 30}}
+func QueryTG4Members(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *types.Paginator) ([]TG4Member, error) {
+	var startAfter string
+	var limit int
+	if pagination != nil {
+		startAfter = string(pagination.StartAfter)
+		limit = int(pagination.Limit)
+	}
+	query := TG4Query{ListMembers: &ListMembersQuery{StartAfter: startAfter, Limit: limit}}
 	var response TG4MemberListResponse
 	err := doQuery(ctx, k, tg4Addr, query, &response)
 	return response.Members, err
