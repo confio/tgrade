@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -21,6 +22,8 @@ import (
 )
 
 func TestGetProposalContent(t *testing.T) {
+	mySenderContractAddr := types.RandomAddress(t)
+
 	ir := codectypes.NewInterfaceRegistry()
 	clienttypes.RegisterInterfaces(ir)
 	ibctmtypes.RegisterInterfaces(ir)
@@ -29,9 +32,10 @@ func TestGetProposalContent(t *testing.T) {
 	require.NoError(t, err)
 
 	specs := map[string]struct {
-		src            string
-		expGovProposal govtypes.Content
-		expNotGovType  bool
+		src               string
+		expGovProposal    govtypes.Content
+		expNotGovType     bool
+		skipValidateBasic bool
 	}{
 		"text": {
 			src:            `{"execute_gov_proposal":{"title":"foo", "description":"bar", "proposal":{"text":{}}}}`,
@@ -88,21 +92,22 @@ func TestGetProposalContent(t *testing.T) {
 				ClientId:    "myClientID",
 				Header:      ib,
 			},
+			skipValidateBasic: true,
 		},
 		"promote to privileged contract": {
-			src: `{"execute_gov_proposal":{"title":"foo", "description":"bar", "proposal":{"promote_to_privileged_contract":{"contract":"myContractAddress"}}}}`,
+			src: `{"execute_gov_proposal":{"title":"foo", "description":"bar", "proposal":{"promote_to_privileged_contract":{"contract":"cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09"}}}}`,
 			expGovProposal: &types.PromoteToPrivilegedContractProposal{
 				Title:       "foo",
 				Description: "bar",
-				Contract:    "myContractAddress",
+				Contract:    "cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09",
 			},
 		},
 		"demote privileged contract": {
-			src: `{"execute_gov_proposal":{"title":"foo", "description":"bar", "proposal":{"demote_privileged_contract":{"contract":"myContractAddress"}}}}`,
+			src: `{"execute_gov_proposal":{"title":"foo", "description":"bar", "proposal":{"demote_privileged_contract":{"contract":"cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09"}}}}`,
 			expGovProposal: &types.DemotePrivilegedContractProposal{
 				Title:       "foo",
 				Description: "bar",
-				Contract:    "myContractAddress",
+				Contract:    "cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09",
 			},
 		},
 		"instantiate contract": {
@@ -111,22 +116,38 @@ func TestGetProposalContent(t *testing.T) {
     "title": "foo", "description": "bar",
     "proposal": {
       "instantiate_contract": {
-        "admin": "myAdminAddress",
+        "admin": "cosmos1g6chpwdke3kz69x67jkak5y7gynneqm3nulfrd",
         "code_id": 1,
         "funds": [{"denom": "ALX", "amount": "2"},{"denom": "BLX","amount": "3"}],
         "msg": {},
-        "label": "testing",
-        "run_as": "myRunAsAddress"
+        "label": "testing"
       }}}}`,
 			expGovProposal: &wasmtypes.InstantiateContractProposal{
 				Title:       "foo",
 				Description: "bar",
-				RunAs:       "myRunAsAddress",
-				Admin:       "myAdminAddress",
+				RunAs:       mySenderContractAddr.String(),
+				Admin:       "cosmos1g6chpwdke3kz69x67jkak5y7gynneqm3nulfrd",
 				CodeID:      1,
 				Label:       "testing",
 				Msg:         []byte("{}"),
 				Funds:       sdk.NewCoins(sdk.NewCoin("ALX", sdk.NewInt(2)), sdk.NewCoin("BLX", sdk.NewInt(3))),
+			},
+		},
+		"store contract": {
+			src: `{
+  "execute_gov_proposal": {
+    "title": "foo", "description": "bar",
+    "proposal": {
+      "store_code": {
+        "wasm_byte_code": [0,0,0,0],
+		"instantiate_permission": {"permission": "Everybody"}
+      }}}}`,
+			expGovProposal: &wasmtypes.StoreCodeProposal{
+				Title:                 "foo",
+				Description:           "bar",
+				RunAs:                 mySenderContractAddr.String(),
+				InstantiatePermission: &wasmtypes.AllowEverybody,
+				WASMByteCode:          []byte{0, 0, 0, 0},
 			},
 		},
 		"migrate contract": {
@@ -136,15 +157,14 @@ func TestGetProposalContent(t *testing.T) {
     "proposal": {
       "migrate_contract": {
         "code_id": 1,
-		"contract": "myContractAddr",
-        "msg": {},
-        "run_as": "myRunAsAddress"
+		"contract": "cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09",
+        "msg": {}
       }}}}`,
 			expGovProposal: &wasmtypes.MigrateContractProposal{
 				Title:       "foo",
 				Description: "bar",
-				RunAs:       "myRunAsAddress",
-				Contract:    "myContractAddr",
+				RunAs:       mySenderContractAddr.String(),
+				Contract:    "cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09",
 				CodeID:      1,
 				Msg:         []byte("{}"),
 			},
@@ -155,14 +175,14 @@ func TestGetProposalContent(t *testing.T) {
     "title": "foo", "description": "bar",
     "proposal": {
       "set_contract_admin": {
-		"contract": "myContractAddr",
-        "new_admin": "myNewAdminAddress"
+		"contract": "cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09",
+        "new_admin": "cosmos1g6chpwdke3kz69x67jkak5y7gynneqm3nulfrd"
       }}}}`,
 			expGovProposal: &wasmtypes.UpdateAdminProposal{
 				Title:       "foo",
 				Description: "bar",
-				NewAdmin:    "myNewAdminAddress",
-				Contract:    "myContractAddr",
+				NewAdmin:    "cosmos1g6chpwdke3kz69x67jkak5y7gynneqm3nulfrd",
+				Contract:    "cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09",
 			},
 		},
 		"clear contract admin": {
@@ -171,12 +191,12 @@ func TestGetProposalContent(t *testing.T) {
     "title": "foo", "description": "bar",
     "proposal": {
       "clear_contract_admin": {
-		"contract": "myContractAddr"
+		"contract": "cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09"
       }}}}`,
 			expGovProposal: &wasmtypes.ClearAdminProposal{
 				Title:       "foo",
 				Description: "bar",
-				Contract:    "myContractAddr",
+				Contract:    "cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09",
 			},
 		},
 		"pin codes": {
@@ -242,8 +262,13 @@ func TestGetProposalContent(t *testing.T) {
 				return
 			}
 			require.NotNil(t, gov)
-			assert.Equal(t, spec.expGovProposal, gov.GetProposalContent())
+			gotcontent := gov.GetProposalContent(mySenderContractAddr)
+			exp, _ := json.Marshal(spec.expGovProposal)
+			assert.Equal(t, spec.expGovProposal, gotcontent, string(exp))
 
+			if spec.expGovProposal != nil && !spec.skipValidateBasic {
+				assert.NoError(t, gotcontent.ValidateBasic())
+			}
 		})
 	}
 }
