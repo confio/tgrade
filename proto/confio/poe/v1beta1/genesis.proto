@@ -159,7 +159,7 @@ message PoEContract {
 // TG4Member member of the Engagement group.
 message TG4Member {
   // Address is the bech32 address string
-  string address = 1 [ (gogoproto.jsontag) = "json" ];
+  string address = 1 [ (gogoproto.jsontag) = "address" ];
   uint64 weight = 2 [ (gogoproto.jsontag) = "weight" ];
 }
 
