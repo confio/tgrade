@@ -154,7 +154,7 @@ func (h TgradeHandler) handleGovProposalExecution(ctx sdk.Context, contractAddr 
 		return err
 	}
 
-	content := exec.GetProposalContent()
+	content := exec.GetProposalContent(contractAddr)
 	if content == nil {
 		return sdkerrors.Wrap(wasmtypes.ErrUnknownMsg, "unsupported content type")
 	}

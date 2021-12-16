@@ -3,6 +3,8 @@ package contract
 import (
 	"encoding/json"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -51,7 +53,7 @@ type ExecuteGovProposal struct {
 
 // GetProposalContent converts message payload to gov content type. returns `nil` when unknown.
 // The response is not guaranteed to be valid content.
-func (p ExecuteGovProposal) GetProposalContent() govtypes.Content {
+func (p ExecuteGovProposal) GetProposalContent(sender sdk.AccAddress) govtypes.Content {
 	switch {
 	case p.Proposal.Text != nil:
 		p.Proposal.Text.Title = p.Title
@@ -88,10 +90,17 @@ func (p ExecuteGovProposal) GetProposalContent() govtypes.Content {
 	case p.Proposal.InstantiateContract != nil:
 		p.Proposal.InstantiateContract.Title = p.Title
 		p.Proposal.InstantiateContract.Description = p.Description
+		p.Proposal.InstantiateContract.RunAs = sender.String()
 		return p.Proposal.InstantiateContract
+	case p.Proposal.StoreCode != nil:
+		p.Proposal.StoreCode.Title = p.Title
+		p.Proposal.StoreCode.Description = p.Description
+		p.Proposal.StoreCode.RunAs = sender.String()
+		return p.Proposal.StoreCode
 	case p.Proposal.MigrateContract != nil:
 		p.Proposal.MigrateContract.Title = p.Title
 		p.Proposal.MigrateContract.Description = p.Description
+		p.Proposal.MigrateContract.RunAs = sender.String()
 		return p.Proposal.MigrateContract
 	case p.Proposal.SetContractAdmin != nil:
 		p.Proposal.SetContractAdmin.Title = p.Title
@@ -231,22 +240,25 @@ type proposalContent struct {
 	// See https://github.com/confio/tgrade/blob/privileged_contracts_5/proto/confio/twasm/v1beta1/proposal.proto
 	DemotePrivilegedContract *types.DemotePrivilegedContractProposal `json:"demote_privileged_contract"`
 
-	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L32-L54
+	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1/proposal.proto#L32-L54
 	InstantiateContract *wasmtypes.InstantiateContractProposal `json:"instantiate_contract"`
 
-	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L56-L70
+	// see https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1/proposal.proto#L14-L27
+	StoreCode *wasmtypes.StoreCodeProposal `json:"store_code"`
+
+	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1/proposal.proto#L56-L70
 	MigrateContract *wasmtypes.MigrateContractProposal `json:"migrate_contract"`
 
-	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L72-L82
+	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1/proposal.proto#L72-L82
 	SetContractAdmin *wasmtypes.UpdateAdminProposal `json:"set_contract_admin"`
 
-	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L84-L93
+	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1/proposal.proto#L84-L93
 	ClearContractAdmin *wasmtypes.ClearAdminProposal `json:"clear_contract_admin"`
 
-	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L95-L107
+	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1/proposal.proto#L95-L107
 	PinCodes *wasmtypes.PinCodesProposal `json:"pin_codes"`
 
-	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1beta1/proposal.proto#L109-L121
+	// See https://github.com/CosmWasm/wasmd/blob/master/proto/cosmwasm/wasm/v1/proposal.proto#L109-L121
 	UnpinCodes *wasmtypes.UnpinCodesProposal `json:"unpin_codes"`
 }
 
