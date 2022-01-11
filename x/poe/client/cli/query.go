@@ -389,6 +389,6 @@ $ %s query poe validator-reward %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 // AddPaginationFlagsToCmd adds common pagination flags to cmd
 func AddPaginationFlagsToCmd(cmd *cobra.Command, query string) {
 	// we support only a subset in the contracts yet
-	cmd.Flags().Uint64(flags.FlagOffset, 0, fmt.Sprintf("pagination offset of %s to query for", query))
+	cmd.Flags().String(flags.FlagPageKey, "", fmt.Sprintf("pagination page-key of %s to query for", query))
 	cmd.Flags().Uint64(flags.FlagLimit, 100, fmt.Sprintf("pagination limit of %s to query for", query))
 }
