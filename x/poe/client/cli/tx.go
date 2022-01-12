@@ -1,23 +1,26 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/cosmos/cosmos-sdk/version"
-	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
-	"github.com/spf13/cobra"
-	flag "github.com/spf13/pflag"
-
-	"github.com/confio/tgrade/x/poe/types"
-
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/version"
+	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	flag "github.com/spf13/pflag"
+
+	poecontracts "github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 // default values
@@ -41,6 +44,7 @@ func NewTxCmd() *cobra.Command {
 		NewEditValidatorCmd(),
 		NewDelegateCmd(),
 		NewUnbondCmd(),
+		NewUnjailTxCmd(),
 	)
 
 	return poeTxCmd
@@ -394,6 +398,49 @@ $ %s tx poe unbond 100stake --from mykey
 	}
 
 	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
 
+func NewUnjailTxCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "unjail",
+		Args:  cobra.NoArgs,
+		Short: "unjail validator previously jailed for downtime",
+		Long: fmt.Sprintf(`unjail a jailed validator:
+
+$ %s tx poe unjail --from mykey
+`, version.AppName),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.ContractAddress(cmd.Context(), &types.QueryContractAddressRequest{ContractType: types.PoEContractTypeValset})
+			if err != nil {
+				return errors.Wrap(err, "query valset contract address")
+			}
+			nodeOperator := clientCtx.GetFromAddress()
+			unjailMsg := &poecontracts.TG4ValsetExecute{
+				Unjail: &poecontracts.UnjailMsg{},
+			}
+			unjailBz, err := json.Marshal(unjailMsg)
+			if err != nil {
+				return errors.Wrap(err, "encode msg payload")
+			}
+
+			msg := &wasmtypes.MsgExecuteContract{
+				Sender:   nodeOperator.String(),
+				Contract: res.Address,
+				Msg:      unjailBz,
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
 	return cmd
 }
