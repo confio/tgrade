@@ -124,10 +124,9 @@ $ %s query poe validators
 			if err != nil {
 				return err
 			}
-			_ = pageReq // todo (Alex): support pagination
 			result, err := queryClient.Validators(cmd.Context(), &stakingtypes.QueryValidatorsRequest{
 				// Leaving status empty on purpose to query all validators.
-				//Pagination: pageReq,
+				Pagination: pageReq,
 			})
 			if err != nil {
 				return err
@@ -138,7 +137,7 @@ $ %s query poe validators
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
-	// flags.AddPaginationFlagsToCmd(cmd, "validators")
+	AddPaginationFlagsToCmd(cmd, "validators")
 	return cmd
 }
 
@@ -335,7 +334,7 @@ $ %s query poe unbonding-delegations %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
-	flags.AddPaginationFlagsToCmd(cmd, "unbonding delegations")
+	AddPaginationFlagsToCmd(cmd, "unbonding delegations")
 
 	return cmd
 }
@@ -385,4 +384,11 @@ $ %s query poe validator-reward %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 
 	flags.AddQueryFlagsToCmd(cmd)
 	return cmd
+}
+
+// AddPaginationFlagsToCmd adds common pagination flags to cmd
+func AddPaginationFlagsToCmd(cmd *cobra.Command, query string) {
+	// we support only a subset in the contracts yet
+	cmd.Flags().String(flags.FlagPageKey, "", fmt.Sprintf("pagination page-key of %s to query for", query))
+	cmd.Flags().Uint64(flags.FlagLimit, 100, fmt.Sprintf("pagination limit of %s to query for", query))
 }

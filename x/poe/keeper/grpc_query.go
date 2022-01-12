@@ -71,7 +71,7 @@ func (q grpcQuerier) Validators(c context.Context, req *stakingtypes.QueryValida
 		if req.Pagination.CountTotal {
 			return nil, status.Error(codes.InvalidArgument, "pagination count total not supported")
 		}
-		*pagination = types.Paginator{
+		pagination = &types.Paginator{
 			StartAfter: req.Pagination.Key,
 			Limit:      req.Pagination.Limit,
 		}

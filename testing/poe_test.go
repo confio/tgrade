@@ -339,6 +339,14 @@ func TestPoEQueries(t *testing.T) {
 				assert.NotEmpty(t, gjson.Get(gotValidators[0].String(), "description.moniker"), "moniker")
 			},
 		},
+		"validators limited": {
+			query: []string{"q", "poe", "validators", "--limit=100"},
+			assert: func(t *testing.T, qResult string) {
+				gotValidators := gjson.Get(qResult, "validators").Array()
+				assert.Greater(t, len(gotValidators), 0, gotValidators)
+				assert.NotEmpty(t, gjson.Get(gotValidators[0].String(), "description.moniker"), "moniker")
+			},
+		},
 		"validator": {
 			query: []string{"q", "poe", "validator", cli.GetKeyAddr("node0")},
 			assert: func(t *testing.T, qResult string) {
