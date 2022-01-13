@@ -3,6 +3,7 @@ package contract_test
 import (
 	"sort"
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -158,4 +159,68 @@ func TestQueryValsetConfig(t *testing.T) {
 		},
 	}
 	assert.Equal(t, expConfig, res)
+}
+
+func TestJailUnjail(t *testing.T) {
+	// setup contracts and seed some data
+	ctx, example, vals, _ := setupPoEContracts(t)
+	require.Len(t, vals, 3)
+
+	ocProposeAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunityGovProposals)
+	require.NoError(t, err)
+
+	op1Addr, _ := sdk.AccAddressFromBech32(vals[1].OperatorAddress)
+	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	require.NoError(t, err)
+
+	ctx, _ = ctx.CacheContext()
+	nextBlockDuration := 1 * time.Second
+	specs := map[string]struct {
+		jailDuration     time.Duration
+		jailForever      bool
+		actor            sdk.AccAddress
+		expErrUnjail     bool
+		expJailingPeriod contract.JailingPeriod
+	}{
+		"jail lock expired": {
+			jailDuration:     nextBlockDuration,
+			actor:            op1Addr,
+			expJailingPeriod: contract.JailingPeriod{Until: ctx.BlockTime().Add(nextBlockDuration).UTC()},
+			expErrUnjail:     true,
+		},
+		"forever": {
+			jailForever:      true,
+			actor:            op1Addr,
+			expJailingPeriod: contract.JailingPeriod{Forever: true},
+			expErrUnjail:     false,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			// when
+			adapter := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil)
+			err = adapter.JailValidator(ctx, op1Addr, spec.jailDuration, spec.jailForever, ocProposeAddr)
+			require.NoError(t, err)
+
+			// then
+			res, err := adapter.QueryRawValidator(ctx, op1Addr)
+			require.NoError(t, err)
+			require.Equal(t, &spec.expJailingPeriod, res.Validator.JailedUntil)
+
+			// and when
+			ctx = ctx.WithBlockTime(ctx.BlockTime().Add(nextBlockDuration).UTC())
+			gotErr := adapter.UnjailValidator(ctx, spec.actor)
+			if !spec.expErrUnjail {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+
+			// then
+			res, err = adapter.QueryRawValidator(ctx, op1Addr)
+			require.NoError(t, err)
+			assert.Empty(t, res.Validator.JailedUntil)
+		})
+	}
+
 }

@@ -1,6 +1,11 @@
 package contract
 
 import (
+	"encoding/json"
+	"errors"
+	"strconv"
+	"time"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptosecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -76,8 +81,21 @@ type TG4ValsetExecute struct {
 type JailMsg struct {
 	Operator string `json:"operator"`
 	// Duration for how long validator is jailed (in seconds)
-	// 0 means jailing forever
+	Duration JailingDuration `json:"duration"`
+}
+
+type JailingDuration struct {
 	Duration uint64 `json:"duration,omitempty"`
+	Forever  bool   `json:"forever,omitempty"`
+}
+
+func (j JailingDuration) MarshalJSON() ([]byte, error) {
+	if j.Forever {
+		return json.Marshal("forever")
+	}
+	return json.Marshal(struct {
+		Duration uint64 `json:"duration,omitempty"`
+	}{Duration: j.Duration})
 }
 
 type UnjailMsg struct {
@@ -176,11 +194,39 @@ type ValsetEpochResponse struct {
 }
 
 type OperatorResponse struct {
-	Operator string            `json:"operator"`
-	Pubkey   ValidatorPubkey   `json:"pubkey"`
-	Metadata ValidatorMetadata `json:"metadata"`
+	Operator    string            `json:"operator"`
+	Pubkey      ValidatorPubkey   `json:"pubkey"`
+	Metadata    ValidatorMetadata `json:"metadata"`
+	JailedUntil *JailingPeriod    `json:"jailed_until,omitempty"`
 }
 
+type JailingPeriod struct {
+	Forever bool      `json:"forever,omitempty"`
+	Until   time.Time `json:"until,omitempty"`
+}
+
+func (j *JailingPeriod) UnmarshalJSON(data []byte) error {
+	var r struct {
+		Until   string    `json:"until,omitempty"`
+		Forever *struct{} `json:"Forever,omitempty"` // todo (Alex): https://github.com/confio/tgrade-contracts/issues/438
+	}
+	if err := json.Unmarshal(data, &r); err != nil {
+		return err
+	}
+	switch {
+	case r.Forever != nil:
+		j.Forever = true
+	case r.Until != "":
+		until, err := strconv.ParseInt(r.Until, 10, 64)
+		if err != nil {
+			return err
+		}
+		j.Until = time.Unix(0, until).UTC()
+	default:
+		return errors.New("unknown json data: ")
+	}
+	return nil
+}
 func (v OperatorResponse) ToValidator() (stakingtypes.Validator, error) {
 	pubKey, err := toCosmosPubKey(v.Pubkey)
 	if err != nil {
@@ -197,6 +243,7 @@ func (v OperatorResponse) ToValidator() (stakingtypes.Validator, error) {
 		Description:     v.Metadata.ToDescription(),
 		DelegatorShares: sdk.OneDec(),
 		Status:          stakingtypes.Bonded,
+		Jailed:          v.JailedUntil != nil,
 	}, nil
 }
 
@@ -276,7 +323,7 @@ func NewValsetContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWa
 		)}
 }
 
-// QueryValidator query a single validator. returns nil when not found
+// QueryValidator query a single validator and map to the sdk type. returns nil when not found
 func (v ValsetContractAdapter) QueryValidator(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error) {
 	query := ValsetQuery{Validator: &ValidatorQuery{Operator: opAddr.String()}}
 	var rsp ValidatorResponse
@@ -289,6 +336,14 @@ func (v ValsetContractAdapter) QueryValidator(ctx sdk.Context, opAddr sdk.AccAdd
 	}
 	val, err := rsp.Validator.ToValidator()
 	return &val, err
+}
+
+// QueryRawValidator query a single validator as the contract returns it. returns nil when not found
+func (v ValsetContractAdapter) QueryRawValidator(ctx sdk.Context, opAddr sdk.AccAddress) (ValidatorResponse, error) {
+	query := ValsetQuery{Validator: &ValidatorQuery{Operator: opAddr.String()}}
+	var rsp ValidatorResponse
+	err := v.doQuery(ctx, query, &rsp)
+	return rsp, sdkerrors.Wrap(err, "contract query")
 }
 
 // ListValidators query all validators
@@ -345,6 +400,38 @@ func (v ValsetContractAdapter) UpdateAdmin(ctx sdk.Context, newAdmin sdk.AccAddr
 	bech32AdminAddr := newAdmin.String()
 	msg := TG4ValsetExecute{
 		UpdateAdmin: &TG4UpdateAdminMsg{NewAdmin: &bech32AdminAddr},
+	}
+	return v.doExecute(ctx, msg, sender)
+}
+
+// JailValidator is for testing propose only. On a chain the OC does this
+func (v ValsetContractAdapter) JailValidator(ctx sdk.Context, nodeOperator sdk.AccAddress, duration time.Duration, forever bool, sender sdk.AccAddress) error {
+	if time.Duration(int64(duration.Seconds()))*time.Second != duration {
+		return sdkerrors.Wrap(types.ErrInvalid, "must fit into seconds")
+	}
+	var jailDuration JailingDuration
+	switch {
+	case forever && duration > time.Nanosecond:
+		return sdkerrors.Wrap(types.ErrInvalid, "either duration or forever")
+	case forever:
+		jailDuration = JailingDuration{Forever: true}
+	case duration > time.Nanosecond:
+		jailDuration = JailingDuration{Duration: uint64(duration.Seconds())}
+	default:
+		return types.ErrEmpty
+	}
+	msg := TG4ValsetExecute{
+		Jail: &JailMsg{
+			Operator: nodeOperator.String(),
+			Duration: jailDuration,
+		},
+	}
+	return v.doExecute(ctx, msg, sender)
+}
+
+func (v ValsetContractAdapter) UnjailValidator(ctx sdk.Context, sender sdk.AccAddress) error {
+	msg := TG4ValsetExecute{
+		Unjail: &UnjailMsg{},
 	}
 	return v.doExecute(ctx, msg, sender)
 }
