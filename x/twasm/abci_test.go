@@ -75,7 +75,7 @@ func TestBeginBlock(t *testing.T) {
 			},
 			expSudoCalls: []tuple{{
 				addr: myAddr,
-				msg:  []byte(fmt.Sprintf(`{"begin_block":{"evidence":[{"evidence_type":"LightClientAttack","validator":{"address": %q, "power": 1}, "height": 1, "time": 1000000000, "total_voting_power": 1}]}}`, myOtherAddrBase64)),
+				msg:  []byte(fmt.Sprintf(`{"begin_block":{"evidence":[{"evidence_type":"light_client_attack","validator":{"address": %q, "power": 1}, "height": 1, "time": 1000000000, "total_voting_power": 1}]}}`, myOtherAddrBase64)),
 			}},
 			expCommitted: []bool{true},
 		},
@@ -96,7 +96,7 @@ func TestBeginBlock(t *testing.T) {
 			},
 			expSudoCalls: []tuple{{
 				addr: myAddr,
-				msg:  []byte(fmt.Sprintf(`{"begin_block":{"evidence":[{"evidence_type":"DuplicateVote","validator":{"address": %q, "power": 1}, "height": 1, "time": 1000000000, "total_voting_power": 1}]}}`, myOtherAddrBase64)),
+				msg:  []byte(fmt.Sprintf(`{"begin_block":{"evidence":[{"evidence_type":"duplicate_vote","validator":{"address": %q, "power": 1}, "height": 1, "time": 1000000000, "total_voting_power": 1}]}}`, myOtherAddrBase64)),
 			}},
 			expCommitted: []bool{true},
 		},

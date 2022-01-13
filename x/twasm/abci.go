@@ -47,6 +47,10 @@ func BeginBlocker(parentCtx sdk.Context, k abciKeeper, b abci.RequestBeginBlock)
 			TotalVotingPower: convUint64(e.TotalVotingPower),
 		}
 	}
+	if len(evidence) != 0 {
+		logger := keeper.ModuleLogger(parentCtx)
+		logger.Error("Byzantine validator", "evidence", evidence)
+	}
 	msg := contract.TgradeSudoMsg{BeginBlock: &contract.BeginBlock{
 		Evidence: evidence,
 	}}

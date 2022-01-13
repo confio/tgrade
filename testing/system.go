@@ -521,7 +521,7 @@ func (s *SystemUnderTest) resetBuffers() {
 }
 
 // AddFullnode starts a new fullnode that connects to the existing chain but is not a validator.
-func (s *SystemUnderTest) AddFullnode(t *testing.T) Node {
+func (s *SystemUnderTest) AddFullnode(t *testing.T, beforeStart ...func(nodeNumber int, nodePath string)) Node {
 	s.MarkDirty()
 	s.nodesCount++
 	nodeNumber := s.nodesCount - 1
@@ -553,6 +553,9 @@ func (s *SystemUnderTest) AddFullnode(t *testing.T) Node {
 	var peers []string
 	for _, n := range allNodes[0 : len(allNodes)-1] {
 		peers = append(peers, n.PeerAddr())
+	}
+	for _, c := range beforeStart {
+		c(nodeNumber, nodePath)
 	}
 	args = []string{
 		"start",
