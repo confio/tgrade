@@ -81,7 +81,6 @@ type TG4ValsetExecute struct {
 type JailMsg struct {
 	Operator string `json:"operator"`
 	// Duration for how long validator is jailed (in seconds)
-	// 0 means jailing forever
 	Duration JailingDuration `json:"duration"`
 }
 
