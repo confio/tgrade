@@ -65,7 +65,7 @@ type TG4TotalWeightResponse struct {
 	Weight int `json:"weight"`
 }
 
-func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *types.Paginator) ([]TG4Member, error) {
+func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *Paginator) ([]TG4Member, error) {
 	var sa TG4Member
 	var startAfter *TG4Member
 	var limit int
@@ -84,7 +84,7 @@ func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.
 	return response.Members, err
 }
 
-func QueryTG4Members(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *types.Paginator) ([]TG4Member, error) {
+func QueryTG4Members(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *Paginator) ([]TG4Member, error) {
 	var startAfter string
 	var limit int
 	if pagination != nil {

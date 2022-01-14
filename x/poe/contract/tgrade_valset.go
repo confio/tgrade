@@ -272,6 +272,13 @@ type ListValidatorsResponse struct {
 	Validators []OperatorResponse `json:"validators"`
 }
 
+func (l ListValidatorsResponse) PaginationCursor() PaginationCursor {
+	if len(l.Validators) == 0 {
+		return nil
+	}
+	return PaginationCursor(l.Validators[len(l.Validators)-1].Operator)
+}
+
 type ListActiveValidatorsResponse struct {
 	Validators []ValidatorInfo `json:"validators"`
 }
@@ -347,7 +354,7 @@ func (v ValsetContractAdapter) QueryRawValidator(ctx sdk.Context, opAddr sdk.Acc
 }
 
 // ListValidators query all validators
-func (v ValsetContractAdapter) ListValidators(ctx sdk.Context, pagination *types.Paginator) ([]stakingtypes.Validator, error) {
+func (v ValsetContractAdapter) ListValidators(ctx sdk.Context, pagination *Paginator) ([]stakingtypes.Validator, PaginationCursor, error) {
 	var startAfter string
 	var limit int
 	if pagination != nil {
@@ -356,19 +363,21 @@ func (v ValsetContractAdapter) ListValidators(ctx sdk.Context, pagination *types
 	}
 	query := ValsetQuery{ListValidators: &ListValidatorsQuery{StartAfter: startAfter, Limit: limit}}
 	var rsp ListValidatorsResponse
-	err := v.doQuery(ctx, query, &rsp)
+	cursor, err := v.doPageableQuery(ctx, query, &rsp)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "contract query")
+		return nil, nil, sdkerrors.Wrap(err, "contract query")
 	}
-
 	vals := make([]stakingtypes.Validator, len(rsp.Validators))
 	for i, v := range rsp.Validators {
 		vals[i], err = v.ToValidator()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
-	return vals, nil
+	// always return the cursor and let the client figure out if they want to do another call
+	// a simple len(res.validators) < limit check to clear the cursor would not work because
+	// the contract also has a max limit that may be < our limit
+	return vals, cursor, nil
 }
 
 func (v ValsetContractAdapter) ListValidatorSlashing(ctx sdk.Context, opAddr sdk.AccAddress) ([]ValidatorSlashing, error) {
