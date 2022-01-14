@@ -77,8 +77,8 @@ func TestValidatorDoubleSign(t *testing.T) {
 	//   when: a second instance with the same val key signs a block
 	//   then: the validator is removed from the active set and jailed forever
 	cli := NewTgradeCli(t, sut, verbose)
+	sut.ResetDirtyChain(t)
 	sut.StartChain(t)
-
 	byzantineOperatorAddr := cli.GetKeyAddr("node0")
 	var validatorPubKey cryptotypes.PubKey
 
@@ -91,17 +91,18 @@ func TestValidatorDoubleSign(t *testing.T) {
 	})
 	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
 
+	valsetContractAddr := cli.GetPoEContractAddress("VALSET")
 	// let's wait some blocks to have evidence and update persisted
 	var validatorGotBytzantine bool
 	for i := 0; i < 10 && !validatorGotBytzantine; i++ {
 		sut.AwaitNextBlock(t)
-		rsp := cli.QuerySmart(cli.GetPoEContractAddress("VALSET"), `{"list_active_validators":{}}`)
+		rsp := cli.QuerySmart(valsetContractAddr, `{"list_active_validators":{}}`)
 		validatorGotBytzantine = !strings.Contains(rsp, byzantineOperatorAddr)
 	}
 	sut.AwaitNextBlock(t)
 
 	require.True(t, validatorGotBytzantine)
-	rsp := cli.QuerySmart(cli.GetPoEContractAddress("VALSET"), fmt.Sprintf(`{"validator":{"operator": %q}}`, byzantineOperatorAddr))
+	rsp := cli.QuerySmart(valsetContractAddr, fmt.Sprintf(`{"validator":{"operator": %q}}`, byzantineOperatorAddr))
 	assert.Equal(t, `{"Forever":{}}`, gjson.Get(rsp, "data.validator.jailed_until").String())
 	// and not in tendermint
 	valResult, found := cli.IsInTendermintValset(validatorPubKey)

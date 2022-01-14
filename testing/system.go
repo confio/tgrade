@@ -243,7 +243,7 @@ func (s *SystemUnderTest) StopChain() {
 		c()
 	}
 	s.cleanupFn = nil
-	//send SIGTERM
+	// send SIGTERM
 	cmd := exec.Command(locateExecutable("pkill"), "-15", "tgrade")
 	cmd.Dir = workDir
 	if _, err := cmd.CombinedOutput(); err != nil {
@@ -251,9 +251,10 @@ func (s *SystemUnderTest) StopChain() {
 	}
 
 	var shutdown bool
-	for timeout := time.NewTimer(200 * time.Millisecond).C; !shutdown; {
+	for timeout := time.NewTimer(500 * time.Millisecond).C; !shutdown; {
 		select {
 		case <-timeout:
+			s.Log("killing nodes now")
 			cmd = exec.Command(locateExecutable("pkill"), "-9", "tgrade")
 			cmd.Dir = workDir
 			if _, err := cmd.CombinedOutput(); err != nil {
@@ -339,7 +340,8 @@ func (s *SystemUnderTest) ResetChain(t *testing.T) {
 
 	// remove all additional nodes
 	for i := s.initialNodesCount; i < s.nodesCount; i++ {
-		os.Remove(s.nodePath(i))
+		os.RemoveAll(filepath.Join(workDir, s.nodePath(i)))
+		os.Remove(filepath.Join(workDir, s.outputDir, fmt.Sprintf("node%d.out", i)))
 	}
 	s.nodesCount = s.initialNodesCount
 
