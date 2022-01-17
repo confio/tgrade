@@ -186,7 +186,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 }
 
 func queryAllMembers(t *testing.T, ctx sdk.Context, k *twasmkeeper.Keeper, addr sdk.AccAddress) []contract.TG4Member {
-	pagination := types.Paginator{
+	pagination := contract.Paginator{
 		Limit: 30,
 	}
 	members, err := contract.QueryTG4MembersByWeight(ctx, k, addr, &pagination)

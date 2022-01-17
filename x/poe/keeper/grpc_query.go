@@ -3,6 +3,10 @@ package keeper
 import (
 	"context"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
+
+	"github.com/confio/tgrade/x/poe/contract"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -63,27 +67,24 @@ func (q grpcQuerier) Validators(c context.Context, req *stakingtypes.QueryValida
 		return nil, status.Error(codes.Unimplemented, "status not supported, yet")
 	}
 
-	var pagination *types.Paginator
-	if req.Pagination != nil {
-		if req.Pagination.Offset != 0 {
-			return nil, status.Error(codes.InvalidArgument, "pagination offset not supported")
-		}
-		if req.Pagination.CountTotal {
-			return nil, status.Error(codes.InvalidArgument, "pagination count total not supported")
-		}
-		pagination = &types.Paginator{
-			StartAfter: req.Pagination.Key,
-			Limit:      req.Pagination.Limit,
-		}
+	pagination, err := contract.NewPaginator(req.Pagination)
+	if err != nil {
+		return nil, err
 	}
-
 	ctx := sdk.UnwrapSDKContext(c)
-	vals, err := q.keeper.ValsetContract(ctx).ListValidators(ctx, pagination)
+	vals, cursor, err := q.keeper.ValsetContract(ctx).ListValidators(ctx, pagination)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+	var pageResp *query.PageResponse
+	if len(cursor) != 0 {
+		pageResp = &query.PageResponse{
+			NextKey: cursor,
+		}
+	}
 	return &stakingtypes.QueryValidatorsResponse{
 		Validators: vals,
+		Pagination: pageResp,
 	}, nil
 }
 

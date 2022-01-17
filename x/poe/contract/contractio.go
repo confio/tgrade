@@ -3,6 +3,10 @@ package contract
 import (
 	"encoding/json"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -176,6 +180,39 @@ func (a ContractAdapter) doExecute(ctx sdk.Context, msg interface{}, sender sdk.
 	return sdkerrors.Wrap(err, "execute")
 }
 
+// PageableResult is a query response where the cursor is a subset of the raw last element.
+type PageableResult interface {
+	PaginationCursor() PaginationCursor
+}
+
+// execute a smart query with the contract that returns multiple elements
+// returns a cursor whenever the result set has more than 1 element
+func (a ContractAdapter) doPageableQuery(ctx sdk.Context, query interface{}, result interface{}) (PaginationCursor, error) {
+	if err := a.addressLookupErr; err != nil {
+		return nil, err
+	}
+	bz, err := json.Marshal(query)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "marshal query")
+	}
+	res, err := a.twasmKeeper.QuerySmart(ctx, a.contractAddr, bz)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(res, result); err != nil {
+		return nil, sdkerrors.Wrap(err, "unmarshal result")
+	}
+
+	var cursor PaginationCursor
+	switch p := result.(type) {
+	case PageableResult:
+		cursor = p.PaginationCursor()
+	}
+	return cursor, nil
+}
+
+// execute a smart query with the contract
 func (a ContractAdapter) doQuery(ctx sdk.Context, query interface{}, result interface{}) error {
 	if err := a.addressLookupErr; err != nil {
 		return err
@@ -189,4 +226,29 @@ func (a ContractAdapter) doQuery(ctx sdk.Context, query interface{}, result inte
 		return err
 	}
 	return json.Unmarshal(res, result)
+}
+
+// PaginationCursor is the contracts "last element" as raw data that can be used to navigate through the result set.
+type PaginationCursor []byte
+
+type Paginator struct {
+	StartAfter PaginationCursor `json:"start_after,omitempty"`
+	Limit      uint64           `json:"limit,omitempty"`
+}
+
+// NewPaginator constructor
+func NewPaginator(pag *query.PageRequest) (*Paginator, error) {
+	if pag == nil {
+		return nil, nil
+	}
+	if pag.Offset != 0 {
+		return nil, status.Error(codes.InvalidArgument, "pagination offset not supported")
+	}
+	if pag.CountTotal {
+		return nil, status.Error(codes.InvalidArgument, "pagination count total not supported")
+	}
+	return &Paginator{
+		StartAfter: pag.Key,
+		Limit:      pag.Limit,
+	}, nil
 }

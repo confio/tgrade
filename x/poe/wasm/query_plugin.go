@@ -3,6 +3,8 @@ package wasm
 import (
 	"encoding/json"
 
+	"github.com/confio/tgrade/x/poe/contract"
+
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -32,9 +34,9 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 		zero := sdk.ZeroDec().String()
 		if request.AllValidators != nil {
 			var wasmVals []wasmvmtypes.Validator
-			pagination := types.Paginator{}
+			pagination := contract.Paginator{}
 			for {
-				validatorsBatch, err := poeKeeper.ValsetContract(ctx).ListValidators(ctx, &pagination)
+				validatorsBatch, cursor, err := poeKeeper.ValsetContract(ctx).ListValidators(ctx, &pagination)
 				if err != nil {
 					return nil, err
 				}
@@ -47,11 +49,10 @@ func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmt
 					},
 					)
 				}
-				if len(validatorsBatch) == 0 {
+				if len(cursor) == 0 {
 					break
 				}
-				last := validatorsBatch[len(validatorsBatch)-1]
-				pagination.StartAfter = []byte(last.OperatorAddress)
+				pagination.StartAfter = cursor
 			}
 			res := wasmvmtypes.AllValidatorsResponse{
 				Validators: wasmVals,

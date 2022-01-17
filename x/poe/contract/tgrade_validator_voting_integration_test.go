@@ -145,7 +145,7 @@ func TestQueryTG4Members(t *testing.T) {
 	})
 
 	specs := map[string]struct {
-		pagination *types.Paginator
+		pagination *contract.Paginator
 		expVal     []contract.TG4Member
 		expEmpty   bool
 		expError   bool
@@ -155,19 +155,19 @@ func TestQueryTG4Members(t *testing.T) {
 			expVal:     expMembers,
 		},
 		"query offset 0, limit 2": {
-			pagination: &types.Paginator{Limit: 2},
+			pagination: &contract.Paginator{Limit: 2},
 			expVal:     expMembers[:2],
 		},
 		"query offset 2, limit 2": {
-			pagination: &types.Paginator{StartAfter: []byte(expMembers[1].Addr), Limit: 2},
+			pagination: &contract.Paginator{StartAfter: []byte(expMembers[1].Addr), Limit: 2},
 			expVal:     expMembers[2:],
 		},
 		"query offset 3, limit 2": {
-			pagination: &types.Paginator{StartAfter: []byte(expMembers[2].Addr), Limit: 2},
+			pagination: &contract.Paginator{StartAfter: []byte(expMembers[2].Addr), Limit: 2},
 			expEmpty:   true,
 		},
 		"query offset invalid addr, limit 2": {
-			pagination: &types.Paginator{StartAfter: []byte("invalid"), Limit: 2},
+			pagination: &contract.Paginator{StartAfter: []byte("invalid"), Limit: 2},
 			expError:   true,
 		},
 	}
@@ -215,7 +215,7 @@ func TestQueryTG4MembersByWeight(t *testing.T) {
 	})
 
 	specs := map[string]struct {
-		pagination *types.Paginator
+		pagination *contract.Paginator
 		expVal     []contract.TG4Member
 		expEmpty   bool
 		expError   bool
@@ -225,19 +225,19 @@ func TestQueryTG4MembersByWeight(t *testing.T) {
 			expVal:     expMembers,
 		},
 		"query offset 0, limit 2": {
-			pagination: &types.Paginator{Limit: 2},
+			pagination: &contract.Paginator{Limit: 2},
 			expVal:     expMembers[:2],
 		},
 		"query offset 2, limit 2": {
-			pagination: &types.Paginator{StartAfter: buildStartAfter(t, &expMembers[1]), Limit: 2},
+			pagination: &contract.Paginator{StartAfter: buildStartAfter(t, &expMembers[1]), Limit: 2},
 			expVal:     expMembers[2:],
 		},
 		"query offset 3, limit 2": {
-			pagination: &types.Paginator{StartAfter: buildStartAfter(t, &expMembers[2]), Limit: 2},
+			pagination: &contract.Paginator{StartAfter: buildStartAfter(t, &expMembers[2]), Limit: 2},
 			expEmpty:   true,
 		},
 		"query offset invalid addr, limit 2": {
-			pagination: &types.Paginator{StartAfter: []byte("invalid"), Limit: 2},
+			pagination: &contract.Paginator{StartAfter: []byte("invalid"), Limit: 2},
 			expError:   true,
 		},
 	}

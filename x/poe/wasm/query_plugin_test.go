@@ -1,19 +1,18 @@
 package wasm
 
 import (
+	"encoding/json"
 	"testing"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	"encoding/json"
-
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/keeper/poetesting"
 	poetypes "github.com/confio/tgrade/x/poe/types"
@@ -37,7 +36,7 @@ func TestStakingQuerier(t *testing.T) {
 			src: wasmvmtypes.StakingQuery{AllValidators: &wasmvmtypes.AllValidatorsQuery{}},
 			mock: ViewKeeperMock{ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
 				return poetesting.ValsetContractMock{
-					ListValidatorsFn: func(ctx sdk.Context, pagination *poetypes.Paginator) ([]stakingtypes.Validator, error) {
+					ListValidatorsFn: func(ctx sdk.Context, pagination *contract.Paginator) ([]stakingtypes.Validator, contract.PaginationCursor, error) {
 						var resp []stakingtypes.Validator
 						lastOperator := "myOperatorAddress"
 						if pagination == nil || string(pagination.StartAfter) != lastOperator {
@@ -47,7 +46,7 @@ func TestStakingQuerier(t *testing.T) {
 								}),
 							}
 						}
-						return resp, nil
+						return resp, nil, nil
 					},
 				}
 			}},
@@ -57,7 +56,7 @@ func TestStakingQuerier(t *testing.T) {
 			src: wasmvmtypes.StakingQuery{AllValidators: &wasmvmtypes.AllValidatorsQuery{}},
 			mock: ViewKeeperMock{ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
 				return poetesting.ValsetContractMock{
-					ListValidatorsFn: func(ctx sdk.Context, pagination *poetypes.Paginator) ([]stakingtypes.Validator, error) {
+					ListValidatorsFn: func(ctx sdk.Context, pagination *contract.Paginator) ([]stakingtypes.Validator, contract.PaginationCursor, error) {
 						lastOperator := "myOtherOperatorAddress"
 						var resp []stakingtypes.Validator
 						if pagination == nil || string(pagination.StartAfter) != lastOperator {
@@ -70,7 +69,7 @@ func TestStakingQuerier(t *testing.T) {
 								}),
 							}
 						}
-						return resp, nil
+						return resp, nil, nil
 					},
 				}
 			}},

@@ -76,49 +76,101 @@ func TestListValidators(t *testing.T) {
 	require.NoError(t, err)
 
 	specs := map[string]struct {
-		pagination *types.Paginator
+		pagination *contract.Paginator
 		expVal     []stakingtypes.Validator
-		expEmpty   bool
+		expCursor  bool
 		expError   bool
 	}{
-		"query no pagination": {
+		"query no pagination passed": {
 			pagination: nil,
 			expVal:     expValidators,
+			expCursor:  true,
 		},
 		"query offset 0, limit 2": {
-			pagination: &types.Paginator{Limit: 2},
+			pagination: &contract.Paginator{Limit: 2},
 			expVal:     expValidators[:2],
+			expCursor:  true,
 		},
 		"query offset 2, limit 2": {
-			pagination: &types.Paginator{StartAfter: []byte(expValidators[1].OperatorAddress), Limit: 2},
+			pagination: &contract.Paginator{StartAfter: []byte(expValidators[1].OperatorAddress), Limit: 2},
 			expVal:     expValidators[2:],
+			expCursor:  true,
 		},
 		"query offset 3, limit 2": {
-			pagination: &types.Paginator{StartAfter: []byte(expValidators[2].OperatorAddress), Limit: 2},
-			expEmpty:   true,
+			pagination: &contract.Paginator{StartAfter: []byte(expValidators[2].OperatorAddress), Limit: 2},
+			expVal:     []stakingtypes.Validator{},
 		},
 		"query offset invalid addr, limit 2": {
-			pagination: &types.Paginator{StartAfter: []byte("invalid"), Limit: 2},
+			pagination: &contract.Paginator{StartAfter: []byte("invalid"), Limit: 2},
 			expError:   true,
 		},
-		// TODO: query offset (valid) unknown addr
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 			// when
-			gotValidators, err := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx, spec.pagination)
+			gotValidators, gotCursor, err := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil).ListValidators(ctx, spec.pagination)
 
 			// then
 			if spec.expError {
 				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				if spec.expEmpty {
-					assert.Equal(t, 0, len(gotValidators))
-				} else {
-					assert.Equal(t, spec.expVal, gotValidators)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, spec.expVal, gotValidators)
+			assert.Equal(t, spec.expCursor, len(gotCursor) > 0)
+		})
+	}
+}
+
+func TestListAllValidatorsViaCursor(t *testing.T) {
+	// Setup contracts and seed some data. Creates three random validators
+	ctx, example, expValidators, _ := setupPoEContracts(t)
+	require.Len(t, expValidators, 3)
+
+	expValidators = clearTokenAmount(expValidators)
+	sort.Slice(expValidators, func(i, j int) bool {
+		return expValidators[i].OperatorAddress < expValidators[j].OperatorAddress
+	})
+
+	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	require.NoError(t, err)
+	adapter := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil)
+	specs := map[string]struct {
+		limit uint64
+	}{
+		"limit 0": {
+			limit: 0,
+		},
+		"limit 1": {
+			limit: 1,
+		},
+		"limit 2": {
+			limit: 2,
+		},
+		"limit 3": {
+			limit: 3,
+		},
+		"limit 4": {
+			limit: 4,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			fetchAll := func(limit uint64) (r []stakingtypes.Validator) {
+				var cursor contract.PaginationCursor
+				for {
+					var gotValidatorChunk []stakingtypes.Validator
+					gotValidatorChunk, cursor, err = adapter.ListValidators(ctx, &contract.Paginator{StartAfter: cursor, Limit: limit})
+					require.NoError(t, err)
+					r = append(r, gotValidatorChunk...)
+					if len(cursor) == 0 {
+						return
+					}
 				}
 			}
+			gotValidators := fetchAll(spec.limit)
+			require.Equal(t, len(expValidators), len(gotValidators))
+			assert.Equal(t, expValidators, gotValidators)
 		})
 	}
 }

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"sort"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/spf13/cobra"
+	flag "github.com/spf13/pflag"
 
 	"github.com/confio/tgrade/x/poe/types"
 )
@@ -120,7 +122,7 @@ $ %s query poe validators
 				return err
 			}
 			queryClient := types.NewQueryClient(clientCtx)
-			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			pageReq, err := client.ReadPageRequest(withPageKeyDecoded(cmd.Flags()))
 			if err != nil {
 				return err
 			}
@@ -314,7 +316,7 @@ $ %s query poe unbonding-delegations %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 				return err
 			}
 
-			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			pageReq, err := client.ReadPageRequest(withPageKeyDecoded(cmd.Flags()))
 			if err != nil {
 				return err
 			}
@@ -391,4 +393,21 @@ func AddPaginationFlagsToCmd(cmd *cobra.Command, query string) {
 	// we support only a subset in the contracts yet
 	cmd.Flags().String(flags.FlagPageKey, "", fmt.Sprintf("pagination page-key of %s to query for", query))
 	cmd.Flags().Uint64(flags.FlagLimit, 100, fmt.Sprintf("pagination limit of %s to query for", query))
+}
+
+// sdk ReadPageRequest expects binary but we encoded to base64 in our marshaller
+func withPageKeyDecoded(flagSet *flag.FlagSet) *flag.FlagSet {
+	encoded, err := flagSet.GetString(flags.FlagPageKey)
+	if err != nil {
+		panic(err.Error())
+	}
+	raw, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		panic(err.Error())
+	}
+	err = flagSet.Set(flags.FlagPageKey, string(raw))
+	if err != nil {
+		panic(err.Error())
+	}
+	return flagSet
 }

@@ -21,7 +21,7 @@ func (k Keeper) DistributionContract(ctx sdk.Context) DistributionContract {
 }
 
 type ValsetContract interface {
-	ListValidators(ctx sdk.Context, pagination *types.Paginator) ([]stakingtypes.Validator, error)
+	ListValidators(ctx sdk.Context, pagination *contract.Paginator) ([]stakingtypes.Validator, contract.PaginationCursor, error)
 	QueryValidator(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error)
 	ListValidatorSlashing(ctx sdk.Context, opAddr sdk.AccAddress) ([]contract.ValidatorSlashing, error)
 	QueryConfig(ctx sdk.Context) (*contract.ValsetConfigResponse, error)
