@@ -180,12 +180,6 @@ func (a ContractAdapter) doExecute(ctx sdk.Context, msg interface{}, sender sdk.
 	return sdkerrors.Wrap(err, "execute")
 }
 
-// RawPageableResult is a query response type were the pagination key is the raw last element.
-type RawPageableResult interface {
-	// JSOMFieldName returns the raw json field name that contains the pageable elements
-	JSOMFieldName() string
-}
-
 // PageableResult is a query response where the cursor is a subset of the raw last element.
 type PageableResult interface {
 	PaginationCursor() PaginationCursor
@@ -214,16 +208,6 @@ func (a ContractAdapter) doPageableQuery(ctx sdk.Context, query interface{}, res
 	switch p := result.(type) {
 	case PageableResult:
 		cursor = p.PaginationCursor()
-	case RawPageableResult:
-		// find last element in the list
-		var rawRes map[string][]json.RawMessage
-		if err := json.Unmarshal(res, &rawRes); err != nil {
-			return nil, sdkerrors.Wrapf(err, "unmarshal raw elements: %s", string(res))
-		}
-		elements, ok := rawRes[p.JSOMFieldName()]
-		if ok && len(elements) != 0 {
-			cursor = PaginationCursor(elements[len(elements)-1])
-		}
 	}
 	return cursor, nil
 }
