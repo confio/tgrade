@@ -243,7 +243,7 @@ func (s *SystemUnderTest) StopChain() {
 		c()
 	}
 	s.cleanupFn = nil
-	//send SIGTERM
+	// send SIGTERM
 	cmd := exec.Command(locateExecutable("pkill"), "-15", "tgrade")
 	cmd.Dir = workDir
 	if _, err := cmd.CombinedOutput(); err != nil {
@@ -251,9 +251,10 @@ func (s *SystemUnderTest) StopChain() {
 	}
 
 	var shutdown bool
-	for timeout := time.NewTimer(200 * time.Millisecond).C; !shutdown; {
+	for timeout := time.NewTimer(500 * time.Millisecond).C; !shutdown; {
 		select {
 		case <-timeout:
+			s.Log("killing nodes now")
 			cmd = exec.Command(locateExecutable("pkill"), "-9", "tgrade")
 			cmd.Dir = workDir
 			if _, err := cmd.CombinedOutput(); err != nil {
@@ -339,7 +340,8 @@ func (s *SystemUnderTest) ResetChain(t *testing.T) {
 
 	// remove all additional nodes
 	for i := s.initialNodesCount; i < s.nodesCount; i++ {
-		os.Remove(s.nodePath(i))
+		os.RemoveAll(filepath.Join(workDir, s.nodePath(i)))
+		os.Remove(filepath.Join(workDir, s.outputDir, fmt.Sprintf("node%d.out", i)))
 	}
 	s.nodesCount = s.initialNodesCount
 
@@ -521,7 +523,7 @@ func (s *SystemUnderTest) resetBuffers() {
 }
 
 // AddFullnode starts a new fullnode that connects to the existing chain but is not a validator.
-func (s *SystemUnderTest) AddFullnode(t *testing.T) Node {
+func (s *SystemUnderTest) AddFullnode(t *testing.T, beforeStart ...func(nodeNumber int, nodePath string)) Node {
 	s.MarkDirty()
 	s.nodesCount++
 	nodeNumber := s.nodesCount - 1
@@ -553,6 +555,9 @@ func (s *SystemUnderTest) AddFullnode(t *testing.T) Node {
 	var peers []string
 	for _, n := range allNodes[0 : len(allNodes)-1] {
 		peers = append(peers, n.PeerAddr())
+	}
+	for _, c := range beforeStart {
+		c(nodeNumber, nodePath)
 	}
 	args = []string{
 		"start",

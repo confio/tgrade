@@ -31,8 +31,10 @@ type BeginBlock struct {
 
 type EvidenceType string
 
-const EvidenceDuplicateVote EvidenceType = "DuplicateVote"
-const EvidenceLightClientAttack EvidenceType = "LightClientAttack"
+const (
+	EvidenceDuplicateVote     EvidenceType = "duplicate_vote"
+	EvidenceLightClientAttack EvidenceType = "light_client_attack"
+)
 
 // Evidence See https://github.com/tendermint/tendermint/blob/v0.34.8/proto/tendermint/abci/types.proto#L354-L375
 type Evidence struct {
