@@ -2,6 +2,7 @@ package contract
 
 import (
 	"encoding/json"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -130,4 +131,14 @@ type WithdrawAdjustmentResponse struct {
 	// WithdrawnFunds is uint128 encoded as a string (use sdk.Int?)
 	WithdrawnFunds string `json:"withdrawn_funds"`
 	Delegated      string `json:"delegated"`
+}
+
+func (a EngagementContractAdapter) QueryDelegated(ctx sdk.Context, ownerAddr sdk.AccAddress) (*DelegatedResponse, error) {
+	query := EngagementQuery{Delegated: &DelegatedQuery{Owner: ownerAddr.String()}}
+	var rsp DelegatedResponse
+	err := a.doQuery(ctx, query, &rsp)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "contract query")
+	}
+	return &rsp, err
 }
