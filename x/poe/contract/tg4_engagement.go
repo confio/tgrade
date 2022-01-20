@@ -2,8 +2,9 @@ package contract
 
 import (
 	"encoding/json"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"testing"
+
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/stretchr/testify/require"
 

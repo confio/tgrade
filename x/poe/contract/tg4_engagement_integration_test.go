@@ -3,9 +3,11 @@ package contract_test
 import (
 	_ "embed"
 	"encoding/json"
-	"github.com/confio/tgrade/x/poe/types"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/confio/tgrade/x/poe/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
