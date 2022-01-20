@@ -3,6 +3,8 @@ package contract_test
 import (
 	_ "embed"
 	"encoding/json"
+	"github.com/confio/tgrade/x/poe/types"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -48,4 +50,49 @@ func TestEngagementUpdateAdmin(t *testing.T) {
 	// when
 	gotErr := engagementContract.UpdateAdmin(ctx, newAddress, systemAdminAddr)
 	require.NoError(t, gotErr)
+}
+
+func TestQueryDelegated(t *testing.T) {
+	// setup contracts and seed some data
+	ctx, example, vals, _ := setupPoEContracts(t)
+	vals = clearTokenAmount(vals)
+
+	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
+	require.NoError(t, err)
+
+	specs := map[string]struct {
+		ownerAddr string
+		expVal    contract.DelegatedResponse
+		expError  bool
+	}{
+		"query one validator": {
+			ownerAddr: vals[0].OperatorAddress,
+			expVal:    contract.DelegatedResponse{Delegated: vals[0].OperatorAddress},
+		},
+		"query other validator": {
+			ownerAddr: vals[1].OperatorAddress,
+			expVal:    contract.DelegatedResponse{Delegated: vals[1].OperatorAddress},
+		},
+		"query with invalid address": {
+			ownerAddr: "not an address",
+			expError:  true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			ownerAddr, _ := sdk.AccAddressFromBech32(spec.ownerAddr)
+
+			// when
+			adaptor := contract.NewEngagementContractAdapter(contractAddr, example.TWasmKeeper, nil)
+			gotVal, err := adaptor.QueryDelegated(ctx, ownerAddr)
+
+			// then
+			if spec.expError {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, spec.expVal, *gotVal)
+		})
+	}
 }
