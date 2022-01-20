@@ -82,3 +82,52 @@ func (a EngagementContractAdapter) UpdateAdmin(ctx sdk.Context, newAdmin, sender
 	}
 	return a.doExecute(ctx, msg, sender)
 }
+
+// EngagementQuery will create many queries for the engagement contract
+// See https://github.com/confio/poe-contracts/blob/v0.5.3-2/contracts/tg4-engagement/src/msg.rs#L77-L123
+type EngagementQuery struct {
+	Admin                  *struct{}                    `json:"admin,omitempty"`
+	TotalWeight            *struct{}                    `json:"total_weight,omitempty"`
+	ListMembers            *ListMembersQuery            `json:"list_members,omitempty"`
+	ListMembersByWeight    *ListMembersByWeightQuery    `json:"list_members_by_weight,omitempty"`
+	Member                 *MemberQuery                 `json:"member,omitempty"`
+	Hooks                  *struct{}                    `json:"hooks,omitempty"`
+	Preauths               *struct{}                    `json:"preauths,omitempty"`
+	WithdrawableFunds      *WithdrawableFundsQuery      `json:"withdrawable_funds,omitempty"`
+	DistributedFunds       *struct{}                    `json:"distributed_funds,omitempty"`
+	UndistributedFunds     *struct{}                    `json:"undistributed_funds,omitempty"`
+	Delegated              *DelegatedQuery              `json:"delegated,omitempty"`
+	Halflife               *struct{}                    `json:"halflife,omitempty"`
+	IsSlasher              *IsSlasher                   `json:"is_slasher,omitempty"`
+	ListSlashers           *struct{}                    `json:"list_slashers,omitempty"`
+	DistributionData       *struct{}                    `json:"distribution_data,omitempty"`
+	WithdrawAdjustmentData *WithdrawAdjustmentDataQuery `json:"withdraw_adjustment_data,omitempty"`
+}
+
+type DelegatedQuery struct {
+	Owner string `json:"owner"`
+}
+
+type IsSlasher struct {
+	Addr string `json:"addr"`
+}
+
+type WithdrawAdjustmentDataQuery struct {
+	Addr string `json:"addr"`
+}
+
+type DelegatedResponse struct {
+	Delegated string `json:"delegated"`
+}
+
+type SlasherResponse struct {
+	IsSlasher bool `json:"is_slasher"`
+}
+
+type WithdrawAdjustmentResponse struct {
+	// PointsCorrection is int128 encoded as a string (use sdk.Int?)
+	PointsCorrection string `json:"points_correction"`
+	// WithdrawnFunds is uint128 encoded as a string (use sdk.Int?)
+	WithdrawnFunds string `json:"withdrawn_funds"`
+	Delegated      string `json:"delegated"`
+}
