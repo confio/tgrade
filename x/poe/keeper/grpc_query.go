@@ -30,6 +30,7 @@ type ViewKeeper interface {
 	DistributionContract(ctx sdk.Context) DistributionContract
 	ValsetContract(ctx sdk.Context) ValsetContract
 	StakeContract(ctx sdk.Context) StakeContract
+	EngagementContract(ctx sdk.Context) EngagementContract
 }
 
 type grpcQuerier struct {

@@ -48,6 +48,7 @@ func (k Keeper) StakeContract(ctx sdk.Context) StakeContract {
 
 type EngagementContract interface {
 	UpdateAdmin(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error
+	QueryDelegated(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error)
 }
 
 func (k Keeper) EngagementContract(ctx sdk.Context) EngagementContract {

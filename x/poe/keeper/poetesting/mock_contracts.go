@@ -98,7 +98,8 @@ func (m StakeContractMock) QueryStakingUnbonding(ctx sdk.Context, opAddr sdk.Acc
 // var _ keeper.EngagementContract = EngagementContractMock{}
 
 type EngagementContractMock struct {
-	UpdateAdminFn func(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error
+	UpdateAdminFn    func(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error
+	QueryDelegatedFn func(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error)
 }
 
 func (m EngagementContractMock) UpdateAdmin(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
@@ -106,4 +107,11 @@ func (m EngagementContractMock) UpdateAdmin(ctx sdk.Context, newAdmin, sender sd
 		panic("not expected to be called")
 	}
 	return m.UpdateAdminFn(ctx, newAdmin, sender)
+}
+
+func (m EngagementContractMock) QueryDelegated(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error) {
+	if m.QueryDelegatedFn == nil {
+		panic("not expected to be called")
+	}
+	return m.QueryDelegatedFn(ctx, ownerAddr)
 }
