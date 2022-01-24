@@ -55,6 +55,14 @@ func TestValidatorsGovProposal(t *testing.T) {
 				assert.True(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "pinned")
 			},
 		},
+		"unpin code": {
+			src: contract.ValidatorProposal{
+				UnpinCodes: []uint64{codeID},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				assert.False(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "unpinned")
+			},
+		},
 		"chain upgrade": {
 			src: contract.ValidatorProposal{
 				RegisterUpgrade: &contract.ChainUpgrade{
@@ -72,6 +80,15 @@ func TestValidatorsGovProposal(t *testing.T) {
 					Height: 7654321,
 				}
 				assert.Equal(t, exp, gotPlan)
+			},
+		},
+		"cancel upgrade": {
+			src: contract.ValidatorProposal{
+				CancelUpgrade: &struct{}{},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				_, exists := example.UpgradeKeeper.GetUpgradePlan(ctx)
+				assert.False(t, exists, "does not exist")
 			},
 		},
 	}
