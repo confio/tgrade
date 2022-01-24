@@ -15,7 +15,7 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-//go:embed tg4_stake.wasm
+//go:embed tgrade_validator_voting.wasm
 var randomContract []byte
 
 func TestValidatorsGovProposal(t *testing.T) {
@@ -89,6 +89,19 @@ func TestValidatorsGovProposal(t *testing.T) {
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				_, exists := example.UpgradeKeeper.GetUpgradePlan(ctx)
 				assert.False(t, exists, "does not exist")
+			},
+		},
+		"migrate": {
+			src: contract.ValidatorProposal{
+				MigrateContract: &contract.Migration{
+					Contract:   valVotingAddr.String(),
+					CodeId:     codeID,
+					MigrateMsg: []byte("{}"),
+				},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				gotContractInfo := example.TWasmKeeper.GetContractInfo(ctx, valVotingAddr)
+				assert.Equal(t, codeID, gotContractInfo.CodeID)
 			},
 		},
 	}
