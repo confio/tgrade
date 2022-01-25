@@ -6,8 +6,9 @@ import (
 	"sort"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -89,6 +90,29 @@ func TestValidatorsGovProposal(t *testing.T) {
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				_, exists := example.UpgradeKeeper.GetUpgradePlan(ctx)
 				assert.False(t, exists, "does not exist")
+			},
+		},
+		"update block params": {
+			src: contract.ValidatorProposal{
+				UpdateConsensusBlockParams: &contract.ConsensusBlockParamsUpdate{
+					MaxBytes: 10000000,
+					MaxGas:   20000000,
+				},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				assert.True(t, true, "update block params")
+			},
+		},
+		"update evidence params": {
+			src: contract.ValidatorProposal{
+				UpdateConsensusEvidenceParams: &contract.ConsensusEvidenceParamsUpdate{
+					MaxAgeNumBlocks: 1000000,
+					MaxAgeDuration:  2000000,
+					MaxBytes:        3000000,
+				},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				assert.True(t, true, "update evidence params")
 			},
 		},
 		"migrate": {
