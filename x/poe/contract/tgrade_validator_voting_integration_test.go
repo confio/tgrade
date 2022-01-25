@@ -5,13 +5,16 @@ import (
 	"encoding/json"
 	"sort"
 	"testing"
-
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
+	"github.com/confio/tgrade/app"
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
 )
@@ -100,7 +103,13 @@ func TestValidatorsGovProposal(t *testing.T) {
 				},
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
-				assert.True(t, true, "update block params")
+				consensusParams := example.BaseApp.GetConsensusParams(ctx)
+				var expConsensusParams = app.DefaultConsensusParams
+				expConsensusParams.Block = &abci.BlockParams{
+					MaxBytes: 10000000,
+					MaxGas:   20000000,
+				}
+				assert.Equal(t, expConsensusParams, consensusParams)
 			},
 		},
 		"update evidence params": {
@@ -112,7 +121,14 @@ func TestValidatorsGovProposal(t *testing.T) {
 				},
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
-				assert.True(t, true, "update evidence params")
+				consensusParams := example.BaseApp.GetConsensusParams(ctx)
+				var expConsensusParams = app.DefaultConsensusParams
+				expConsensusParams.Evidence = &tmproto.EvidenceParams{
+					MaxAgeNumBlocks: 1000000,
+					MaxAgeDuration:  2000000 * time.Second,
+					MaxBytes:        3000000,
+				}
+				assert.Equal(t, expConsensusParams, consensusParams)
 			},
 		},
 		"migrate": {
