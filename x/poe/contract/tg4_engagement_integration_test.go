@@ -59,6 +59,8 @@ func TestQueryDelegated(t *testing.T) {
 	ctx, example, vals, _ := setupPoEContracts(t)
 	vals = clearTokenAmount(vals)
 
+	var myUnknownAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
 	require.NoError(t, err)
 
@@ -78,6 +80,10 @@ func TestQueryDelegated(t *testing.T) {
 		"query with invalid address": {
 			ownerAddr: "not an address",
 			expError:  true,
+		},
+		"query with unknown address": {
+			ownerAddr: myUnknownAddr.String(),
+			expVal:    contract.DelegatedResponse{Delegated: myUnknownAddr.String()},
 		},
 	}
 	for name, spec := range specs {

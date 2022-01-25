@@ -70,7 +70,11 @@ func TestDelegatorValidators(t *testing.T) {
 }
 
 func TestDelegatorWithdrawAddress(t *testing.T) {
-	var myOwnerAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	// myDelegatedAddr has myWithdrawAddr as withdraw address
+	var myDelegatedAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myWithdrawAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	// myUndelegatedAddr has no withdrawn address
+	var myUndelegatedAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
 
 	specs := map[string]struct {
 		src    *distributiontypes.QueryDelegatorWithdrawAddressRequest
@@ -78,12 +82,19 @@ func TestDelegatorWithdrawAddress(t *testing.T) {
 		exp    *distributiontypes.QueryDelegatorWithdrawAddressResponse
 		expErr bool
 	}{
-		"withdraw_address": {
-			src: &distributiontypes.QueryDelegatorWithdrawAddressRequest{DelegatorAddress: myOwnerAddr.String()},
+		"with withdraw address": {
+			src: &distributiontypes.QueryDelegatorWithdrawAddressRequest{DelegatorAddress: myDelegatedAddr.String()},
+			mock: poetesting.EngagementContractMock{QueryDelegatedFn: func(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error) {
+				return &contract.DelegatedResponse{Delegated: myWithdrawAddr.String()}, nil
+			}},
+			exp: &distributiontypes.QueryDelegatorWithdrawAddressResponse{WithdrawAddress: myWithdrawAddr.String()},
+		},
+		"without withdraw address": {
+			src: &distributiontypes.QueryDelegatorWithdrawAddressRequest{DelegatorAddress: myUndelegatedAddr.String()},
 			mock: poetesting.EngagementContractMock{QueryDelegatedFn: func(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error) {
 				return &contract.DelegatedResponse{Delegated: ownerAddr.String()}, nil
 			}},
-			exp: &distributiontypes.QueryDelegatorWithdrawAddressResponse{WithdrawAddress: myOwnerAddr.String()},
+			exp: &distributiontypes.QueryDelegatorWithdrawAddressResponse{WithdrawAddress: myUndelegatedAddr.String()},
 		},
 		"error": {
 			src: &distributiontypes.QueryDelegatorWithdrawAddressRequest{DelegatorAddress: "invalid address"},
