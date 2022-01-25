@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/confio/tgrade/x/poe/contract"
+
 	"github.com/confio/tgrade/x/poe/keeper/poetesting"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -55,6 +57,61 @@ func TestDelegatorValidators(t *testing.T) {
 			// when
 			q := NewLegacyDistributionGRPCQuerier(poeKeeper)
 			gotRes, gotErr := q.DelegatorValidators(ctx, spec.src)
+
+			// then
+			if spec.expErr {
+				assert.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+			assert.Equal(t, spec.exp, gotRes)
+		})
+	}
+}
+
+func TestDelegatorWithdrawAddress(t *testing.T) {
+	// myDelegatedAddr has myWithdrawAddr as withdraw address
+	var myDelegatedAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myWithdrawAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	// myUndelegatedAddr has no withdrawn address
+	var myUndelegatedAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+
+	specs := map[string]struct {
+		src    *distributiontypes.QueryDelegatorWithdrawAddressRequest
+		mock   poetesting.EngagementContractMock
+		exp    *distributiontypes.QueryDelegatorWithdrawAddressResponse
+		expErr bool
+	}{
+		"with withdraw address": {
+			src: &distributiontypes.QueryDelegatorWithdrawAddressRequest{DelegatorAddress: myDelegatedAddr.String()},
+			mock: poetesting.EngagementContractMock{QueryDelegatedFn: func(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error) {
+				return &contract.DelegatedResponse{Delegated: myWithdrawAddr.String()}, nil
+			}},
+			exp: &distributiontypes.QueryDelegatorWithdrawAddressResponse{WithdrawAddress: myWithdrawAddr.String()},
+		},
+		"without withdraw address": {
+			src: &distributiontypes.QueryDelegatorWithdrawAddressRequest{DelegatorAddress: myUndelegatedAddr.String()},
+			mock: poetesting.EngagementContractMock{QueryDelegatedFn: func(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error) {
+				return &contract.DelegatedResponse{Delegated: ownerAddr.String()}, nil
+			}},
+			exp: &distributiontypes.QueryDelegatorWithdrawAddressResponse{WithdrawAddress: myUndelegatedAddr.String()},
+		},
+		"error": {
+			src: &distributiontypes.QueryDelegatorWithdrawAddressRequest{DelegatorAddress: "invalid address"},
+			mock: poetesting.EngagementContractMock{QueryDelegatedFn: func(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error) {
+				return nil, errors.New("testing")
+			}},
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			ctx := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()))
+			poeKeeper := PoEKeeperMock{EngagementContractFn: func(ctx sdk.Context) EngagementContract { return spec.mock }}
+
+			// when
+			q := NewLegacyDistributionGRPCQuerier(poeKeeper)
+			gotRes, gotErr := q.DelegatorWithdrawAddress(ctx, spec.src)
 
 			// then
 			if spec.expErr {

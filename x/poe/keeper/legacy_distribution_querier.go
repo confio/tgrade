@@ -141,13 +141,20 @@ func (q legacyDistributionGRPCQuerier) DelegatorWithdrawAddress(c context.Contex
 	if req.DelegatorAddress == "" {
 		return nil, status.Error(codes.InvalidArgument, "delegator address cannot be empty")
 	}
-	add, err := sdk.AccAddressFromBech32(req.DelegatorAddress)
+	ownerAddr, err := sdk.AccAddressFromBech32(req.DelegatorAddress)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "delegator address invalid")
-
 	}
+
+	// Query the `tg4-engagement` contract for the delegated withdraw address
+	ctx := sdk.UnwrapSDKContext(c)
+	gotVal, err := q.keeper.EngagementContract(ctx).QueryDelegated(ctx, ownerAddr)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	return &distributiontypes.QueryDelegatorWithdrawAddressResponse{
-		WithdrawAddress: add.String(),
+		WithdrawAddress: gotVal.Delegated,
 	}, nil
 }
 
