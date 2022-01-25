@@ -4,8 +4,7 @@ import (
 	"testing"
 	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmtypes "github.com/tendermint/tendermint/types"
+	"github.com/CosmWasm/wasmd/app"
 
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
@@ -230,24 +229,7 @@ func createTestInput(
 	// set the BaseApp's parameter store
 	consensusParamsUpdater.SetParamStore(paramsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()))
 
-	consensusParams := &abci.ConsensusParams{
-		Block: &abci.BlockParams{
-			MaxBytes: 200000,
-			MaxGas:   2000000,
-		},
-		Evidence: &tmproto.EvidenceParams{
-			MaxAgeNumBlocks: 302400,
-			MaxAgeDuration:  504 * time.Hour, // 3 weeks is the max duration
-			MaxBytes:        10000,
-		},
-		Validator: &tmproto.ValidatorParams{
-			PubKeyTypes: []string{
-				tmtypes.ABCIPubKeyTypeEd25519,
-			},
-		},
-	}
-
-	consensusParamsUpdater.StoreConsensusParams(ctx, consensusParams)
+	consensusParamsUpdater.StoreConsensusParams(ctx, app.DefaultConsensusParams)
 
 	var twasmKeeper twasmkeeper.Keeper
 	handler := wasmkeeper.WithMessageHandlerDecorator(func(nested wasmkeeper.Messenger) wasmkeeper.Messenger {
