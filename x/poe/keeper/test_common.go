@@ -99,6 +99,7 @@ type TestKeepers struct {
 	PoEKeeper      Keeper
 	EncodingConfig params2.EncodingConfig
 	UpgradeKeeper  upgradekeeper.Keeper
+	BaseApp        *baseapp.BaseApp
 }
 
 // CreateDefaultTestInput common settings for CreateTestInput
@@ -303,6 +304,7 @@ func createTestInput(
 		PoEKeeper:      poeKeeper,
 		UpgradeKeeper:  upgradeKeeper,
 		EncodingConfig: encodingConfig,
+		BaseApp:        consensusParamsUpdater,
 	}
 	return ctx, keepers
 }
