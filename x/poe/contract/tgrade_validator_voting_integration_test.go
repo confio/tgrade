@@ -97,6 +97,24 @@ func TestValidatorsGovProposal(t *testing.T) {
 				assert.False(t, exists, "does not exist")
 			},
 		},
+		"update one block param": {
+			src: contract.ValidatorProposal{
+				UpdateConsensusBlockParams: &contract.ConsensusBlockParamsUpdate{
+					MaxBytes: 30000000,
+				},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				// Get baseline values
+				var expConsensusParams = wasmapp.DefaultConsensusParams
+				// Define modifications
+				expConsensusParams.Block.MaxBytes = 30000000
+
+				// Get updated values
+				consensusParams := example.BaseApp.GetConsensusParams(ctx)
+
+				assert.Equal(t, expConsensusParams, consensusParams)
+			},
+		},
 		"update block params": {
 			src: contract.ValidatorProposal{
 				UpdateConsensusBlockParams: &contract.ConsensusBlockParamsUpdate{
@@ -112,6 +130,24 @@ func TestValidatorsGovProposal(t *testing.T) {
 					MaxBytes: 10000000,
 					MaxGas:   20000000,
 				}
+
+				// Get updated values
+				consensusParams := example.BaseApp.GetConsensusParams(ctx)
+
+				assert.Equal(t, expConsensusParams, consensusParams)
+			},
+		},
+		"update one evidence param": {
+			src: contract.ValidatorProposal{
+				UpdateConsensusEvidenceParams: &contract.ConsensusEvidenceParamsUpdate{
+					MaxAgeNumBlocks: 4000000,
+				},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				// Get baseline values
+				var expConsensusParams = wasmapp.DefaultConsensusParams
+				// Define modifications
+				expConsensusParams.Evidence.MaxAgeNumBlocks = 4000000
 
 				// Get updated values
 				consensusParams := example.BaseApp.GetConsensusParams(ctx)
