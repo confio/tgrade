@@ -20,7 +20,7 @@ import (
 )
 
 //go:embed tgrade_validator_voting.wasm
-var randomContract []byte
+var validatorVotingContract []byte
 
 func TestValidatorsGovProposal(t *testing.T) {
 	// setup contracts and seed some data
@@ -44,7 +44,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 		t.Logf("%s : %d\n", m.Addr, m.Weight)
 	}
 	// upload any contract that is not pinned
-	codeID, err := contractKeeper.Create(ctx, anyAddress, randomContract, nil)
+	codeID, err := contractKeeper.Create(ctx, anyAddress, validatorVotingContract, nil)
 	require.NoError(t, err)
 	require.False(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "pinned")
 	specs := map[string]struct {
