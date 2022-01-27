@@ -5,18 +5,24 @@ import (
 	"encoding/json"
 	"sort"
 	"testing"
+	"time"
+
+	wasmapp "github.com/CosmWasm/wasmd/app"
+
+	"github.com/confio/tgrade/x/poe/contract"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-//go:embed tg4_stake.wasm
-var randomContract []byte
+//go:embed tgrade_validator_voting.wasm
+var validatorVotingContract []byte
 
 func TestValidatorsGovProposal(t *testing.T) {
 	// setup contracts and seed some data
@@ -39,8 +45,15 @@ func TestValidatorsGovProposal(t *testing.T) {
 	for _, m := range members {
 		t.Logf("%s : %d\n", m.Addr, m.Weight)
 	}
+
+	// Consensus variables for referencing
+	var maxBytes int64 = 30000000
+	var maxGas int64 = 40000000
+	var maxAge int64 = 5000000
+	var maxDuration int64 = 6000000
+
 	// upload any contract that is not pinned
-	codeID, err := contractKeeper.Create(ctx, anyAddress, randomContract, nil)
+	codeID, err := contractKeeper.Create(ctx, anyAddress, validatorVotingContract, nil)
 	require.NoError(t, err)
 	require.False(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "pinned")
 	specs := map[string]struct {
@@ -53,6 +66,14 @@ func TestValidatorsGovProposal(t *testing.T) {
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				assert.True(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "pinned")
+			},
+		},
+		"unpin code": {
+			src: contract.ValidatorProposal{
+				UnpinCodes: []uint64{codeID},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				assert.False(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "unpinned")
 			},
 		},
 		"chain upgrade": {
@@ -72,6 +93,110 @@ func TestValidatorsGovProposal(t *testing.T) {
 					Height: 7654321,
 				}
 				assert.Equal(t, exp, gotPlan)
+			},
+		},
+		"cancel upgrade": {
+			src: contract.ValidatorProposal{
+				CancelUpgrade: &struct{}{},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				_, exists := example.UpgradeKeeper.GetUpgradePlan(ctx)
+				assert.False(t, exists, "does not exist")
+			},
+		},
+		"update one block param": {
+			src: contract.ValidatorProposal{
+				UpdateConsensusBlockParams: &contract.ConsensusBlockParamsUpdate{
+					MaxBytes: &maxBytes,
+				},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				// Get baseline values
+				var expConsensusParams = wasmapp.DefaultConsensusParams
+				// Define modifications
+				expConsensusParams.Block.MaxBytes = maxBytes
+
+				// Get updated values
+				consensusParams := example.BaseApp.GetConsensusParams(ctx)
+
+				assert.Equal(t, expConsensusParams, consensusParams)
+			},
+		},
+		"update block params": {
+			src: contract.ValidatorProposal{
+				UpdateConsensusBlockParams: &contract.ConsensusBlockParamsUpdate{
+					MaxBytes: &maxBytes,
+					MaxGas:   &maxGas,
+				},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				// Get baseline values
+				var expConsensusParams = wasmapp.DefaultConsensusParams
+				// Define modifications
+				expConsensusParams.Block = &abci.BlockParams{
+					MaxBytes: maxBytes,
+					MaxGas:   maxGas,
+				}
+
+				// Get updated values
+				consensusParams := example.BaseApp.GetConsensusParams(ctx)
+
+				assert.Equal(t, expConsensusParams, consensusParams)
+			},
+		},
+		"update one evidence param": {
+			src: contract.ValidatorProposal{
+				UpdateConsensusEvidenceParams: &contract.ConsensusEvidenceParamsUpdate{
+					MaxAgeNumBlocks: &maxAge,
+				},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				// Get baseline values
+				var expConsensusParams = wasmapp.DefaultConsensusParams
+				// Define modifications
+				expConsensusParams.Evidence.MaxAgeNumBlocks = maxAge
+
+				// Get updated values
+				consensusParams := example.BaseApp.GetConsensusParams(ctx)
+
+				assert.Equal(t, expConsensusParams, consensusParams)
+			},
+		},
+		"update evidence params": {
+			src: contract.ValidatorProposal{
+				UpdateConsensusEvidenceParams: &contract.ConsensusEvidenceParamsUpdate{
+					MaxAgeNumBlocks: &maxAge,
+					MaxAgeDuration:  &maxDuration,
+					MaxBytes:        &maxBytes,
+				},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				// Get baseline values
+				var expConsensusParams = wasmapp.DefaultConsensusParams
+				// Define modifications
+				expConsensusParams.Evidence = &tmproto.EvidenceParams{
+					MaxAgeNumBlocks: maxAge,
+					MaxAgeDuration:  time.Duration(maxDuration * int64(time.Second)),
+					MaxBytes:        maxBytes,
+				}
+
+				// Get updated values
+				consensusParams := example.BaseApp.GetConsensusParams(ctx)
+
+				assert.Equal(t, expConsensusParams, consensusParams)
+			},
+		},
+		"migrate": {
+			src: contract.ValidatorProposal{
+				MigrateContract: &contract.Migration{
+					Contract:   valVotingAddr.String(),
+					CodeId:     codeID,
+					MigrateMsg: []byte("{}"),
+				},
+			},
+			assertExp: func(t *testing.T, ctx sdk.Context) {
+				gotContractInfo := example.TWasmKeeper.GetContractInfo(ctx, valVotingAddr)
+				assert.Equal(t, codeID, gotContractInfo.CodeID)
 			},
 		},
 	}

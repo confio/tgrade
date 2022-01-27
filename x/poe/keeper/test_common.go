@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	wasmapp "github.com/CosmWasm/wasmd/app"
+
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 
@@ -96,6 +98,7 @@ type TestKeepers struct {
 	PoEKeeper      Keeper
 	EncodingConfig params2.EncodingConfig
 	UpgradeKeeper  upgradekeeper.Keeper
+	BaseApp        *baseapp.BaseApp
 }
 
 // CreateDefaultTestInput common settings for CreateTestInput
@@ -222,6 +225,12 @@ func createTestInput(
 	stakingAdapter := stakingadapter.NewStakingAdapter(nil, nil)
 	twasmSubspace := paramsKeeper.Subspace(twasmtypes.DefaultParamspace)
 
+	consensusParamsUpdater := baseapp.NewBaseApp("testApp", log.NewNopLogger(), db, nil)
+	// set the BaseApp's parameter store
+	consensusParamsUpdater.SetParamStore(paramsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()))
+
+	consensusParamsUpdater.StoreConsensusParams(ctx, wasmapp.DefaultConsensusParams)
+
 	var twasmKeeper twasmkeeper.Keeper
 	handler := wasmkeeper.WithMessageHandlerDecorator(func(nested wasmkeeper.Messenger) wasmkeeper.Messenger {
 		return wasmkeeper.NewMessageHandlerChain(
@@ -234,7 +243,7 @@ func createTestInput(
 			}),
 			nested,
 			// append our custom message handler
-			twasmkeeper.NewTgradeHandler(appCodec, &twasmKeeper, bankKeeper, nil, govRouter),
+			twasmkeeper.NewTgradeHandler(appCodec, &twasmKeeper, bankKeeper, consensusParamsUpdater, govRouter),
 		)
 	})
 
@@ -277,6 +286,7 @@ func createTestInput(
 		PoEKeeper:      poeKeeper,
 		UpgradeKeeper:  upgradeKeeper,
 		EncodingConfig: encodingConfig,
+		BaseApp:        consensusParamsUpdater,
 	}
 	return ctx, keepers
 }

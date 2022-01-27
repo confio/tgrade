@@ -1,5 +1,7 @@
 package contract
 
+import "github.com/confio/tgrade/x/twasm/contract"
+
 // ValidatorVotingInitMsg setup contract on instantiation
 type ValidatorVotingInitMsg struct {
 	VotingRules  VotingRules `json:"rules"`
@@ -22,16 +24,33 @@ type ValidatorVotingPropose struct {
 }
 
 // ValidatorProposal proposal options.
-// Incomplete list as this is used for testing only within tgrade. Clients may use all options defined in the contract.
 type ValidatorProposal struct {
-	// PinCodes that should be pinned in cache for high performance
-	PinCodes        []uint64      `json:"pin_codes,omitempty"`
 	RegisterUpgrade *ChainUpgrade `json:"register_upgrade,omitempty"`
+	CancelUpgrade   *struct{}     `json:"cancel_upgrade,omitempty"`
+	// PinCodes that should be pinned in cache for high performance
+	PinCodes []uint64 `json:"pin_codes,omitempty"`
+	/// UnpinCodes that should be removed from cache to free space
+	UnpinCodes                    []uint64                       `json:"unpin_codes,omitempty"`
+	UpdateConsensusBlockParams    *ConsensusBlockParamsUpdate    `json:"update_consensus_block_params,omitempty"`
+	UpdateConsensusEvidenceParams *ConsensusEvidenceParamsUpdate `json:"update_consensus_evidence_params,omitempty"`
+	MigrateContract               *Migration                     `json:"migrate_contract,omitempty"`
 }
 
-// ChainUpgrade defines a subset of attributes for testing only
 type ChainUpgrade struct {
 	Name   string `json:"name"`
 	Height uint64 `json:"height"`
 	Info   string `json:"info"`
+}
+
+type ConsensusBlockParamsUpdate = contract.BlockParams
+
+type ConsensusEvidenceParamsUpdate = contract.EvidenceParams
+
+type Migration struct {
+	/// the contract address to be migrated
+	Contract string `json:"contract"`
+	/// a reference to the new WASM code that it should be migrated to
+	CodeId uint64 `json:"code_id"`
+	/// encoded message to be passed to perform the migration
+	MigrateMsg []byte `json:"migrate_msg"`
 }
