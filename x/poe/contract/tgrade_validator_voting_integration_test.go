@@ -103,12 +103,17 @@ func TestValidatorsGovProposal(t *testing.T) {
 				},
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
-				consensusParams := example.BaseApp.GetConsensusParams(ctx)
+				// Get baseline values
 				var expConsensusParams = app.DefaultConsensusParams
+				// Define modifications
 				expConsensusParams.Block = &abci.BlockParams{
 					MaxBytes: 10000000,
 					MaxGas:   20000000,
 				}
+
+				// Get updated values
+				consensusParams := example.BaseApp.GetConsensusParams(ctx)
+
 				assert.Equal(t, expConsensusParams, consensusParams)
 			},
 		},
@@ -121,13 +126,18 @@ func TestValidatorsGovProposal(t *testing.T) {
 				},
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
-				consensusParams := example.BaseApp.GetConsensusParams(ctx)
+				// Get baseline values
 				var expConsensusParams = app.DefaultConsensusParams
+				// Define modifications
 				expConsensusParams.Evidence = &tmproto.EvidenceParams{
 					MaxAgeNumBlocks: 1000000,
 					MaxAgeDuration:  2000000 * time.Second,
 					MaxBytes:        3000000,
 				}
+
+				// Get updated values
+				consensusParams := example.BaseApp.GetConsensusParams(ctx)
+
 				assert.Equal(t, expConsensusParams, consensusParams)
 			},
 		},
