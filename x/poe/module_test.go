@@ -38,7 +38,7 @@ func TestInitGenesis(t *testing.T) {
 	mutator, myValidators := withRandomValidators(t, ctx, example, numValidators)
 	gs := types.GenesisStateFixture(mutator)
 	adminAddr, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
-	example.BankKeeper.SetBalance(ctx, adminAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
+	example.Faucet.Fund(ctx, adminAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
 
 	// when
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
@@ -168,7 +168,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			f.Fuzz(&engagement)
 
 			genTx, opAddr, pubKey := types.RandomGenTX(t, uint32(power))
-			stakedAmount := sdk.TokensFromConsensusPower(int64(power)).Uint64()
+			stakedAmount := sdk.TokensFromConsensusPower(int64(power), sdk.DefaultPowerReduction).Uint64()
 			collectValidators[i] = validator{
 				operatorAddr: opAddr,
 				pubKey:       pubKey,
@@ -178,9 +178,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			m.GenTxs[i] = genTx
 			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Weight: uint64(engagement)}
 			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
-			example.BankKeeper.SetBalances(ctx, opAddr, sdk.NewCoins(
-				sdk.NewCoin(types.DefaultBondDenom, sdk.NewIntFromUint64(stakedAmount)),
-			))
+			example.Faucet.Fund(ctx, opAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewIntFromUint64(stakedAmount)))
 		}
 	}, collectValidators
 }

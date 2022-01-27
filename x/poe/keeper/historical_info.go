@@ -4,8 +4,8 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ibccoretypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ibccoretypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
 
 	"github.com/confio/tgrade/x/poe/types"
 )
@@ -22,14 +22,14 @@ func (k Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.H
 		return stakingtypes.HistoricalInfo{}, false
 	}
 
-	return stakingtypes.MustUnmarshalHistoricalInfo(k.marshaler, value), true
+	return stakingtypes.MustUnmarshalHistoricalInfo(k.codec, value), true
 }
 
 // SetHistoricalInfo sets the historical info at a given height
 func (k Keeper) SetHistoricalInfo(ctx sdk.Context, height int64, hi *stakingtypes.HistoricalInfo) {
 	store := ctx.KVStore(k.storeKey)
 	key := getHistoricalInfoKey(height)
-	value := k.marshaler.MustMarshalBinaryBare(hi)
+	value := k.codec.MustMarshal(hi)
 	store.Set(key, value)
 }
 
@@ -51,7 +51,7 @@ func (k Keeper) iterateHistoricalInfo(ctx sdk.Context, cb func(stakingtypes.Hist
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		histInfo := stakingtypes.MustUnmarshalHistoricalInfo(k.marshaler, iterator.Value())
+		histInfo := stakingtypes.MustUnmarshalHistoricalInfo(k.codec, iterator.Value())
 		if cb(histInfo) {
 			break
 		}
@@ -98,7 +98,7 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 
 	// Create HistoricalInfo struct
 	var valSet stakingtypes.Validators // not used by IBC so we keep it empty
-	historicalEntry := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), valSet)
+	historicalEntry := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), valSet, sdk.DefaultPowerReduction)
 
 	// Set latest HistoricalInfo at current height
 	k.SetHistoricalInfo(ctx, ctx.BlockHeight(), &historicalEntry)

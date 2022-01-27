@@ -53,7 +53,7 @@ var DefaultConsensusParams = &abci.ConsensusParams{
 
 func setup(withGenesis bool, invCheckPeriod uint, opts ...wasm.Option) (*TgradeApp, GenesisState) {
 	db := dbm.NewMemDB()
-	app := NewTgradeApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, DefaultNodeHome, invCheckPeriod, EmptyBaseAppOptions{}, opts)
+	app := NewTgradeApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, DefaultNodeHome, invCheckPeriod, MakeEncodingConfig(), EmptyBaseAppOptions{}, opts)
 	if withGenesis {
 		return app, NewDefaultGenesisState()
 	}
@@ -272,16 +272,6 @@ func createIncrementalAccounts(accNum int) []sdk.AccAddress {
 //
 //	return testAddrs
 //}
-
-// saveAccount saves the provided account into the TgradeApp with balance based on initCoins.
-func saveAccount(app *TgradeApp, ctx sdk.Context, addr sdk.AccAddress, initCoins sdk.Coins) {
-	acc := app.accountKeeper.NewAccountWithAddress(ctx, addr)
-	app.accountKeeper.SetAccount(ctx, acc)
-	err := app.bankKeeper.AddCoins(ctx, addr, initCoins)
-	if err != nil {
-		panic(err)
-	}
-}
 
 // ConvertAddrsToValAddrs converts the provided addresses to ValAddress.
 func ConvertAddrsToValAddrs(addrs []sdk.AccAddress) []sdk.ValAddress {

@@ -5,17 +5,15 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/confio/tgrade/x/poe/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
 
-	"github.com/confio/tgrade/x/poe/keeper"
-
 	"github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/keeper"
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 //go:embed tg4_engagement.wasm
@@ -23,13 +21,13 @@ var tg4Engagement []byte
 
 func TestEngagementUpdateAdmin(t *testing.T) {
 	ctx, example := keeper.CreateDefaultTestInput(t)
-	var systemAdminAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var systemAdminAddr sdk.AccAddress = rand.Bytes(address.Len)
 
 	k := example.TWasmKeeper.GetContractKeeper()
 	codeID, err := k.Create(ctx, systemAdminAddr, tg4Engagement, nil)
 	require.NoError(t, err)
 
-	var newAddress sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var newAddress sdk.AccAddress = rand.Bytes(address.Len)
 
 	tg4EngagementInitMsg := contract.TG4EngagementInitMsg{
 		Admin: systemAdminAddr.String(),
@@ -59,7 +57,7 @@ func TestQueryDelegated(t *testing.T) {
 	ctx, example, vals, _ := setupPoEContracts(t)
 	vals = clearTokenAmount(vals)
 
-	var myUnknownAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myUnknownAddr sdk.AccAddress = rand.Bytes(address.Len)
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
 	require.NoError(t, err)

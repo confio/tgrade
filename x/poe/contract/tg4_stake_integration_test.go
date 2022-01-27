@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/address"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -42,8 +44,8 @@ func TestQueryStakedAmount(t *testing.T) {
 	contractAdapter := contract.NewStakeContractAdapter(stakingContractAddr, example.TWasmKeeper, nil)
 
 	// fund account
-	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
-	example.BankKeeper.SetBalances(ctx, myOperatorAddr, sdk.NewCoins(sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100))))
+	var myOperatorAddr sdk.AccAddress = rand.Bytes(address.Len)
+	example.Faucet.Fund(ctx, myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100)))
 
 	var oneInt = sdk.OneInt()
 	specs := map[string]struct {
@@ -71,7 +73,7 @@ func TestQueryStakedAmount(t *testing.T) {
 			expAmount: nil,
 		},
 		"unknown address": {
-			addr:      rand.Bytes(sdk.AddrLen),
+			addr:      rand.Bytes(address.Len),
 			setup:     func(ctx sdk.Context) {},
 			expAmount: nil,
 		},
@@ -134,7 +136,7 @@ func TestQueryValidatorUnboding(t *testing.T) {
 			expResult: []stakingtypes.UnbondingDelegationEntry{},
 		},
 		"unknown operator": {
-			srcOpAddr: rand.Bytes(sdk.AddrLen),
+			srcOpAddr: rand.Bytes(address.Len),
 			expResult: []stakingtypes.UnbondingDelegationEntry{},
 		},
 	}

@@ -4,15 +4,14 @@ import (
 	"testing"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/confio/tgrade/x/poe/types"
-
 	"github.com/stretchr/testify/require"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 func TestGetSetHistoricalInfo(t *testing.T) {
@@ -23,7 +22,7 @@ func TestGetSetHistoricalInfo(t *testing.T) {
 	f.Fuzz(&header)
 
 	ctx = ctx.WithBlockHeight(1).WithBlockHeader(header)
-	exp := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), nil)
+	exp := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), nil, sdk.DefaultPowerReduction)
 	keeper.SetHistoricalInfo(ctx, 1, &exp)
 
 	// when
@@ -49,7 +48,7 @@ func TestTrackHistoricalInfo(t *testing.T) {
 		header.Height = int64(1 + i)
 		header.Time = time.Now().UTC()
 		keeper.TrackHistoricalInfo(ctx.WithBlockHeader(header))
-		expEntries = append(expEntries, stakingtypes.NewHistoricalInfo(header, nil))
+		expEntries = append(expEntries, stakingtypes.NewHistoricalInfo(header, nil, sdk.DefaultPowerReduction))
 	}
 
 	// when new element added
@@ -63,6 +62,6 @@ func TestTrackHistoricalInfo(t *testing.T) {
 	// then only last max entries stored
 	_, exists := keeper.GetHistoricalInfo(ctx, 1)
 	require.False(t, exists)
-	expEntries = append(expEntries, stakingtypes.NewHistoricalInfo(header, nil))
+	expEntries = append(expEntries, stakingtypes.NewHistoricalInfo(header, nil, sdk.DefaultPowerReduction))
 	assert.Equal(t, expEntries[1:], keeper.getAllHistoricalInfo(ctx))
 }

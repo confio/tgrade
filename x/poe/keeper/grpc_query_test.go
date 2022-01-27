@@ -10,6 +10,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ import (
 )
 
 func TestQueryContractAddress(t *testing.T) {
-	var myContractAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myContractAddr sdk.AccAddress = rand.Bytes(address.Len)
 	specs := map[string]struct {
 		srcMsg     types.QueryContractAddressRequest
 		mockFn     func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error)
@@ -72,7 +73,7 @@ func TestQueryContractAddress(t *testing.T) {
 }
 
 func TestQueryValidators(t *testing.T) {
-	var myValsetContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myValsetContract sdk.AccAddress = rand.Bytes(address.Len)
 	poeKeeper := newContractSourceMock(t, myValsetContract, nil)
 
 	pubKey := ed25519.GenPrivKey().PubKey()
@@ -157,7 +158,7 @@ func TestQueryValidators(t *testing.T) {
 }
 
 func TestQueryValidator(t *testing.T) {
-	var myOperator sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myOperator sdk.AccAddress = rand.Bytes(address.Len)
 
 	pubKey := ed25519.GenPrivKey().PubKey()
 	expValidator := types.ValidatorFixture(func(m *stakingtypes.Validator) {
@@ -274,7 +275,7 @@ func TestQueryUnbondingPeriod(t *testing.T) {
 }
 
 func TestValidatorDelegation(t *testing.T) {
-	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myOperatorAddr sdk.AccAddress = rand.Bytes(address.Len)
 
 	poeKeeper := PoEKeeperMock{
 		GetBondDenomFn: func(ctx sdk.Context) string { return "utgd" },
@@ -335,7 +336,7 @@ func TestValidatorDelegation(t *testing.T) {
 
 func TestValidatorUnbondingDelegations(t *testing.T) {
 	var (
-		myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+		myOperatorAddr sdk.AccAddress = rand.Bytes(address.Len)
 		myTime                        = time.Now().UTC()
 		myHeight       int64          = 123
 	)
@@ -413,7 +414,7 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 }
 
 func TestValidatorOutstandingReward(t *testing.T) {
-	var anyAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var anyAddr sdk.AccAddress = rand.Bytes(address.Len)
 
 	specs := map[string]struct {
 		src    *types.QueryValidatorOutstandingRewardRequest

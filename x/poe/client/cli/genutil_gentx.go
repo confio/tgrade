@@ -10,27 +10,25 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	bankexported "github.com/cosmos/cosmos-sdk/x/bank/exported"
-
-	"github.com/confio/tgrade/x/poe/types"
-
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmtypes "github.com/tendermint/tendermint/types"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
+	bankexported "github.com/cosmos/cosmos-sdk/x/bank/exported"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	tmos "github.com/tendermint/tendermint/libs/os"
+	tmtypes "github.com/tendermint/tendermint/types"
+
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 type GenesisBalancesIterator = genutiltypes.GenesisBalancesIterator
@@ -64,7 +62,7 @@ $ %s gentx my-key-name 1000000utgd --home=/path/to/home/dir --keyring-backend=os
 			if err != nil {
 				return err
 			}
-			cdc := clientCtx.JSONMarshaler
+			cdc := clientCtx.Codec
 
 			config := serverCtx.Config
 			config.SetRoot(clientCtx.HomeDir)
@@ -80,10 +78,9 @@ $ %s gentx my-key-name 1000000utgd --home=/path/to/home/dir --keyring-backend=os
 			}
 
 			// read --pubkey, if empty take it from priv_validator.json
-			if valPubKeyString, _ := cmd.Flags().GetString(FlagPubKey); valPubKeyString != "" {
-				valPubKey, err = sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeConsPub, valPubKeyString)
-				if err != nil {
-					return errors.Wrap(err, "failed to get consensus node public key")
+			if pkStr, _ := cmd.Flags().GetString(FlagPubKey); pkStr != "" {
+				if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(pkStr), &valPubKey); err != nil {
+					return errors.Wrap(err, "failed to unmarshal validator public key")
 				}
 			}
 
@@ -237,12 +234,11 @@ func readUnsignedGenTxFile(clientCtx client.Context, r io.Reader) (sdk.Tx, error
 }
 
 func writeSignedGenTx(clientCtx client.Context, outputDocument string, tx sdk.Tx) error {
-	// #nosec G304 G302 file inclusion, file permission
 	outputFile, err := os.OpenFile(outputDocument, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = outputFile.Close() }()
+	defer outputFile.Close()
 
 	json, err := clientCtx.TxConfig.TxJSONEncoder()(tx)
 	if err != nil {
@@ -258,7 +254,7 @@ func writeSignedGenTx(clientCtx client.Context, outputDocument string, tx sdk.Tx
 // balance in the set of genesis accounts.
 func ValidateAccountInGenesis(
 	appGenesisState map[string]json.RawMessage, genBalIterator GenesisBalancesIterator,
-	addr sdk.Address, coins sdk.Coins, cdc codec.JSONMarshaler,
+	addr sdk.Address, coins sdk.Coins, cdc codec.JSONCodec,
 ) error {
 	gs := types.GetGenesisStateFromAppState(cdc, appGenesisState)
 	bondDenom := gs.BondDenom

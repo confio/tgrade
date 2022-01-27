@@ -8,7 +8,7 @@ import (
 )
 
 // GetGenesisStateFromAppState gets the genesis state from the expected app state
-func GetGenesisStateFromAppState(cdc codec.JSONMarshaler, appState map[string]json.RawMessage) *GenesisState {
+func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage) *GenesisState {
 	var genesisState GenesisState
 	if appState[ModuleName] != nil {
 		cdc.MustUnmarshalJSON(appState[ModuleName], &genesisState)
@@ -18,7 +18,7 @@ func GetGenesisStateFromAppState(cdc codec.JSONMarshaler, appState map[string]js
 
 // SetGenTxsInAppGenesisState - sets the genesis transactions in the app genesis state
 func SetGenTxsInAppGenesisState(
-	cdc codec.JSONMarshaler, txJSONEncoder sdk.TxEncoder, appGenesisState map[string]json.RawMessage, genTxs []sdk.Tx,
+	cdc codec.JSONCodec, txJSONEncoder sdk.TxEncoder, appGenesisState map[string]json.RawMessage, genTxs []sdk.Tx,
 ) (map[string]json.RawMessage, error) {
 
 	genesisState := GetGenesisStateFromAppState(cdc, appGenesisState)
@@ -39,7 +39,7 @@ func SetGenTxsInAppGenesisState(
 
 // SetGenesisStateInAppState sets the genesis state within the expected app state
 func SetGenesisStateInAppState(
-	cdc codec.JSONMarshaler, appState map[string]json.RawMessage, genesisState *GenesisState,
+	cdc codec.JSONCodec, appState map[string]json.RawMessage, genesisState *GenesisState,
 ) map[string]json.RawMessage {
 
 	genesisStateBz := cdc.MustMarshalJSON(genesisState)

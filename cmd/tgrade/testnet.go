@@ -149,9 +149,10 @@ func InitTestnet(
 		genFiles    []string
 	)
 	const (
-		rpcPort  = 26657
-		apiPort  = 1317
-		grpcPort = 9090
+		rpcPort     = 26657
+		apiPort     = 1317
+		grpcPort    = 9090
+		grpcWebPort = 8090
 	)
 	p2pPortStart := 26656
 
@@ -175,6 +176,7 @@ func InitTestnet(
 		nodeConfig.SetRoot(nodeDir)
 		appConfig.API.Address = fmt.Sprintf("tcp://0.0.0.0:%d", apiPort+portOffset)
 		appConfig.GRPC.Address = fmt.Sprintf("0.0.0.0:%d", grpcPort+portOffset)
+		appConfig.GRPCWeb.Address = fmt.Sprintf("0.0.0.0:%d", grpcWebPort+portOffset)
 
 		if err := os.MkdirAll(filepath.Join(nodeDir, "config"), nodeDirPerm); err != nil {
 			_ = os.RemoveAll(outputDir)
@@ -237,8 +239,8 @@ func InitTestnet(
 			return err
 		}
 
-		accTokens := sdk.TokensFromConsensusPower(1000)
-		accStakingTokens := sdk.TokensFromConsensusPower(500)
+		accTokens := sdk.TokensFromConsensusPower(1000, sdk.DefaultPowerReduction)
+		accStakingTokens := sdk.TokensFromConsensusPower(500, sdk.DefaultPowerReduction)
 		coins := sdk.Coins{
 			sdk.NewCoin(fmt.Sprintf("%stoken", nodeDirName), accTokens),
 			sdk.NewCoin(stakingToken, accStakingTokens),
@@ -247,7 +249,7 @@ func InitTestnet(
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: coins.Sort()})
 		genAccounts = append(genAccounts, authtypes.NewBaseAccount(addr, nil, 0, 0))
 
-		valTokens := sdk.TokensFromConsensusPower(100)
+		valTokens := sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction)
 		moniker := fmt.Sprintf("moniker-%d", i)
 		createValMsg, err := poetypes.NewMsgCreateValidator(
 			addr,
@@ -316,11 +318,11 @@ func initGenFiles(
 	numValidators int,
 	admin sdk.AccAddress,
 ) error {
-	appGenState := mbm.DefaultGenesis(clientCtx.JSONMarshaler)
+	appGenState := mbm.DefaultGenesis(clientCtx.Codec)
 
 	// set the accounts in the genesis state
 	var authGenState authtypes.GenesisState
-	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[authtypes.ModuleName], &authGenState)
+	clientCtx.Codec.MustUnmarshalJSON(appGenState[authtypes.ModuleName], &authGenState)
 
 	accounts, err := authtypes.PackAccounts(genAccounts)
 	if err != nil {
@@ -328,15 +330,15 @@ func initGenFiles(
 	}
 
 	authGenState.Accounts = accounts
-	appGenState[authtypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&authGenState)
+	appGenState[authtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&authGenState)
 
 	// set the balances in the genesis state
 	var bankGenState banktypes.GenesisState
-	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[banktypes.ModuleName], &bankGenState)
+	clientCtx.Codec.MustUnmarshalJSON(appGenState[banktypes.ModuleName], &bankGenState)
 
 	bankGenState.Balances = genBalances
-	appGenState[banktypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&bankGenState)
-	poeGenesisState := poetypes.GetGenesisStateFromAppState(clientCtx.JSONMarshaler, appGenState)
+	appGenState[banktypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&bankGenState)
+	poeGenesisState := poetypes.GetGenesisStateFromAppState(clientCtx.Codec, appGenState)
 	for i, addr := range genAccounts {
 		poeGenesisState.Engagement = append(poeGenesisState.Engagement, poetypes.TG4Member{
 			Address: addr.GetAddress().String(),
@@ -344,7 +346,7 @@ func initGenFiles(
 		})
 	}
 	poeGenesisState.SystemAdminAddress = admin.String()
-	poetypes.SetGenesisStateInAppState(clientCtx.JSONMarshaler, appGenState, poeGenesisState)
+	poetypes.SetGenesisStateInAppState(clientCtx.Codec, appGenState, poeGenesisState)
 
 	appGenStateJSON, err := json.MarshalIndent(appGenState, "", "  ")
 	if err != nil {
@@ -405,7 +407,7 @@ func collectGenFiles(
 			return err
 		}
 
-		nodeAppState, err := poeclient.AddGenTxsToGenesisFile(clientCtx.JSONMarshaler, clientCtx.TxConfig, nodeConfig, initCfg, *genDoc, genBalIterator)
+		nodeAppState, err := poeclient.AddGenTxsToGenesisFile(clientCtx.Codec, clientCtx.TxConfig, nodeConfig, initCfg, *genDoc, genBalIterator)
 		if err != nil {
 			return err
 		}

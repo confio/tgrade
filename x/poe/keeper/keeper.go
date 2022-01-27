@@ -16,20 +16,20 @@ import (
 )
 
 type Keeper struct {
-	marshaler   codec.Marshaler
+	codec       codec.Codec
 	storeKey    sdk.StoreKey
 	paramStore  paramtypes.Subspace
 	twasmKeeper types.TWasmKeeper
 }
 
 // NewKeeper constructor
-func NewKeeper(marshaler codec.Marshaler, key sdk.StoreKey, paramSpace paramtypes.Subspace, twasmK types.TWasmKeeper) Keeper {
+func NewKeeper(marshaler codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace, twasmK types.TWasmKeeper) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
 	return Keeper{
-		marshaler:   marshaler,
+		codec:       marshaler,
 		storeKey:    key,
 		paramStore:  paramSpace,
 		twasmKeeper: twasmK,

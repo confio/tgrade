@@ -56,7 +56,7 @@ func (x GenesisIO) AlterTWasmModuleState(cmd *cobra.Command, callback func(state
 	}
 	clientCtx := client.GetClientContextFromCmd(cmd)
 
-	twasmGenStateBz, err := clientCtx.JSONMarshaler.MarshalJSON(&g.twasmModuleState)
+	twasmGenStateBz, err := clientCtx.Codec.MarshalJSON(&g.twasmModuleState)
 	if err != nil {
 		return sdkerrors.Wrap(err, "marshal twasm genesis state")
 	}
@@ -96,7 +96,7 @@ func (d GenesisReader) ReadTWasmGenesis(cmd *cobra.Command) (*TWasmGenesisData, 
 	var twasmGenesisState types.GenesisState
 	if appState[types.ModuleName] != nil {
 		clientCtx := client.GetClientContextFromCmd(cmd)
-		clientCtx.JSONMarshaler.MustUnmarshalJSON(appState[types.ModuleName], &twasmGenesisState)
+		clientCtx.Codec.MustUnmarshalJSON(appState[types.ModuleName], &twasmGenesisState)
 	}
 	return &TWasmGenesisData{
 		GenesisData: wasmcli.NewGenesisData(

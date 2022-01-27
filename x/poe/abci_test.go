@@ -6,6 +6,7 @@ import (
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -20,7 +21,7 @@ import (
 func TestEndBlock(t *testing.T) {
 	var (
 		capturedSudoCalls []tuple
-		myAddr            sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+		myAddr            sdk.AccAddress = rand.Bytes(address.Len)
 	)
 
 	specs := map[string]struct {

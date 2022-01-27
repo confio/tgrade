@@ -114,6 +114,7 @@ func (c TgradeCli) withQueryFlags(args ...string) []string {
 func (c TgradeCli) withTXFlags(args ...string) []string {
 	args = append(args,
 		"--broadcast-mode", "block",
+		"--output", "json",
 		"--yes",
 	)
 	args = c.withKeyringFlags(args...)
@@ -121,10 +122,16 @@ func (c TgradeCli) withTXFlags(args ...string) []string {
 }
 
 func (c TgradeCli) withKeyringFlags(args ...string) []string {
-	return append(args,
+	r := append(args,
 		"--home", c.homeDir,
 		"--keyring-backend", "test",
 	)
+	for _, v := range args {
+		if v == "-a" || v == "--address" { // show address only
+			return r
+		}
+	}
+	return append(r, "--output", "json")
 }
 
 func (c TgradeCli) withChainFlags(args ...string) []string {
@@ -142,7 +149,7 @@ func (c TgradeCli) Execute(contractAddr, msg, from string, args ...string) strin
 
 // AddKey add key to default keyring. Returns address
 func (c TgradeCli) AddKey(name string) string {
-	cmd := c.withKeyringFlags("keys", "add", name, "--no-backup", "--output", "json")
+	cmd := c.withKeyringFlags("keys", "add", name, "--no-backup")
 	out := c.run(cmd)
 	addr := gjson.Get(out, "address").String()
 	require.NotEmpty(c.t, addr, "got %q", out)
@@ -164,7 +171,7 @@ const defaultSrcAddr = "node0"
 func (c TgradeCli) FundAddress(destAddr, amount string) string {
 	require.NotEmpty(c.t, destAddr)
 	require.NotEmpty(c.t, amount)
-	cmd := []string{"tx", "send", defaultSrcAddr, destAddr, amount}
+	cmd := []string{"tx", "bank", "send", defaultSrcAddr, destAddr, amount}
 	rsp := c.run(c.withTXFlags(cmd...))
 	RequireTxSuccess(c.t, rsp)
 	return rsp
@@ -173,7 +180,7 @@ func (c TgradeCli) FundAddress(destAddr, amount string) string {
 // StoreWasm uploads a wasm contract to the chain. Returns code id
 func (c TgradeCli) StoreWasm(file string, args ...string) int {
 	if len(args) == 0 {
-		args = []string{"--from=node0", "--gas=2500000"}
+		args = []string{"--from=" + defaultSrcAddr, "--gas=2500000"}
 	}
 	rsp := c.run(c.withTXFlags(append([]string{"tx", "wasm", "store", file}, args...)...))
 	RequireTxSuccess(c.t, rsp)
@@ -185,7 +192,7 @@ func (c TgradeCli) StoreWasm(file string, args ...string) int {
 // InstantiateWasm create a new contract instance. returns contract address
 func (c TgradeCli) InstantiateWasm(codeID int, initMsg string, args ...string) string {
 	if len(args) == 0 {
-		args = []string{"--label=testing", "--from=node0"}
+		args = []string{"--label=testing", "--from=" + defaultSrcAddr, "--no-admin"}
 	}
 	rsp := c.run(c.withTXFlags(append([]string{"tx", "wasm", "instantiate", strconv.Itoa(codeID), initMsg}, args...)...))
 	RequireTxSuccess(c.t, rsp)
@@ -242,7 +249,7 @@ func (c TgradeCli) QueryValidatorRewards(addr string) sdk.DecCoin {
 
 func (c TgradeCli) GetTendermintValidatorSet() rpc.ResultValidatorsOutput {
 	args := []string{"q", "tendermint-validator-set"}
-	got := c.run(c.withChainFlags(args...))
+	got := c.run(c.withQueryFlags(args...))
 
 	var res rpc.ResultValidatorsOutput
 	require.NoError(c.t, c.amino.UnmarshalJSON([]byte(got), &res), got)

@@ -81,7 +81,7 @@ func (msg MsgCreateValidator) ValidateBasic() error {
 	}
 
 	if !msg.Value.IsValid() || !msg.Value.Amount.IsPositive() {
-		return stakingtypes.ErrBadDelegationAmount
+		return sdkerrors.ErrInvalidRequest.Wrap("delegation amount")
 	}
 
 	if msg.Description == (stakingtypes.Description{}) {

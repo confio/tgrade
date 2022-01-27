@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/address"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +39,7 @@ func TestQueryValidator(t *testing.T) {
 			expVal:       vals[1],
 		},
 		"query with unknown address": {
-			operatorAddr: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),
+			operatorAddr: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 			expEmpty:     true,
 		},
 		"query with invalid address": {

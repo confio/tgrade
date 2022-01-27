@@ -18,7 +18,7 @@ import (
 
 type Keeper struct {
 	wasmkeeper.Keeper
-	cdc            codec.Marshaler
+	cdc            codec.Codec
 	storeKey       sdk.StoreKey
 	contractKeeper wasmtypes.ContractOpsKeeper
 	paramSpace     paramtypes.Subspace
@@ -26,7 +26,7 @@ type Keeper struct {
 }
 
 func NewKeeper(
-	cdc codec.Marshaler,
+	cdc codec.Codec,
 	storeKey sdk.StoreKey,
 	paramSpace paramtypes.Subspace,
 	accountKeeper authkeeper.AccountKeeper,
@@ -37,7 +37,7 @@ func NewKeeper(
 	portKeeper wasmtypes.PortKeeper,
 	capabilityKeeper wasmtypes.CapabilityKeeper,
 	portSource wasmtypes.ICS20TransferPortSource,
-	router sdk.Router,
+	router wasmkeeper.MessageRouter,
 	queryRouter wasmkeeper.GRPCQueryRouter,
 	govRouter govtypes.Router,
 	homeDir string,

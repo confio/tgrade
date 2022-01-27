@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/types/address"
+
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -199,9 +201,9 @@ func TestIteratePrivileged(t *testing.T) {
 	k := keepers.TWasmKeeper
 
 	var (
-		addr1 = sdk.AccAddress(bytes.Repeat([]byte{1}, sdk.AddrLen))
-		addr2 = sdk.AccAddress(bytes.Repeat([]byte{2}, sdk.AddrLen))
-		addr3 = sdk.AccAddress(bytes.Repeat([]byte{3}, sdk.AddrLen))
+		addr1 = sdk.AccAddress(bytes.Repeat([]byte{1}, address.Len))
+		addr2 = sdk.AccAddress(bytes.Repeat([]byte{2}, address.Len))
+		addr3 = sdk.AccAddress(bytes.Repeat([]byte{3}, address.Len))
 	)
 	for _, a := range []sdk.AccAddress{addr2, addr1, addr3} {
 		k.setPrivilegedFlag(ctx, a)
@@ -240,9 +242,9 @@ func TestIteratePrivileged(t *testing.T) {
 }
 func TestAppendToPrivilegedContracts(t *testing.T) {
 	var (
-		addr1 = sdk.AccAddress(bytes.Repeat([]byte{1}, sdk.AddrLen))
-		addr2 = sdk.AccAddress(bytes.Repeat([]byte{2}, sdk.AddrLen))
-		addr3 = sdk.AccAddress(bytes.Repeat([]byte{3}, sdk.AddrLen))
+		addr1 = sdk.AccAddress(bytes.Repeat([]byte{1}, address.Len))
+		addr2 = sdk.AccAddress(bytes.Repeat([]byte{2}, address.Len))
+		addr3 = sdk.AccAddress(bytes.Repeat([]byte{3}, address.Len))
 	)
 
 	type tuple struct {
@@ -319,9 +321,9 @@ func TestAppendToPrivilegedContracts(t *testing.T) {
 
 func TestRemovePrivilegedContractRegistration(t *testing.T) {
 	var (
-		myAddr      = sdk.AccAddress(bytes.Repeat([]byte{1}, sdk.AddrLen))
-		otherAddr   = sdk.AccAddress(bytes.Repeat([]byte{2}, sdk.AddrLen))
-		anotheraddr = sdk.AccAddress(bytes.Repeat([]byte{3}, sdk.AddrLen))
+		myAddr      = sdk.AccAddress(bytes.Repeat([]byte{1}, address.Len))
+		otherAddr   = sdk.AccAddress(bytes.Repeat([]byte{2}, address.Len))
+		anotheraddr = sdk.AccAddress(bytes.Repeat([]byte{3}, address.Len))
 	)
 
 	type tuple struct {
@@ -398,7 +400,7 @@ func TestRemovePrivilegedContractRegistration(t *testing.T) {
 
 func seedTestContract(t *testing.T, ctx sdk.Context, k *Keeper) (uint64, sdk.AccAddress) {
 	t.Helper()
-	creatorAddr := rand.Bytes(sdk.AddrLen)
+	creatorAddr := rand.Bytes(address.Len)
 	codeID, err := k.contractKeeper.Create(ctx, creatorAddr, []byte{}, nil)
 	require.NoError(t, err)
 	contractAddr, _, err := k.contractKeeper.Instantiate(ctx, codeID, creatorAddr, creatorAddr, nil, "", nil)
