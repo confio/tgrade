@@ -45,6 +45,13 @@ func TestValidatorsGovProposal(t *testing.T) {
 	for _, m := range members {
 		t.Logf("%s : %d\n", m.Addr, m.Weight)
 	}
+
+	// Consensus variables for referencing
+	var maxBytes int64 = 30000000
+	var maxGas int64 = 40000000
+	var maxAge int64 = 5000000
+	var maxDuration int64 = 6000000
+
 	// upload any contract that is not pinned
 	codeID, err := contractKeeper.Create(ctx, anyAddress, validatorVotingContract, nil)
 	require.NoError(t, err)
@@ -100,14 +107,14 @@ func TestValidatorsGovProposal(t *testing.T) {
 		"update one block param": {
 			src: contract.ValidatorProposal{
 				UpdateConsensusBlockParams: &contract.ConsensusBlockParamsUpdate{
-					MaxBytes: 30000000,
+					MaxBytes: &maxBytes,
 				},
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				// Get baseline values
 				var expConsensusParams = wasmapp.DefaultConsensusParams
 				// Define modifications
-				expConsensusParams.Block.MaxBytes = 30000000
+				expConsensusParams.Block.MaxBytes = maxBytes
 
 				// Get updated values
 				consensusParams := example.BaseApp.GetConsensusParams(ctx)
@@ -118,8 +125,8 @@ func TestValidatorsGovProposal(t *testing.T) {
 		"update block params": {
 			src: contract.ValidatorProposal{
 				UpdateConsensusBlockParams: &contract.ConsensusBlockParamsUpdate{
-					MaxBytes: 10000000,
-					MaxGas:   20000000,
+					MaxBytes: &maxBytes,
+					MaxGas:   &maxGas,
 				},
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
@@ -127,8 +134,8 @@ func TestValidatorsGovProposal(t *testing.T) {
 				var expConsensusParams = wasmapp.DefaultConsensusParams
 				// Define modifications
 				expConsensusParams.Block = &abci.BlockParams{
-					MaxBytes: 10000000,
-					MaxGas:   20000000,
+					MaxBytes: maxBytes,
+					MaxGas:   maxGas,
 				}
 
 				// Get updated values
@@ -140,14 +147,14 @@ func TestValidatorsGovProposal(t *testing.T) {
 		"update one evidence param": {
 			src: contract.ValidatorProposal{
 				UpdateConsensusEvidenceParams: &contract.ConsensusEvidenceParamsUpdate{
-					MaxAgeNumBlocks: 4000000,
+					MaxAgeNumBlocks: &maxAge,
 				},
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				// Get baseline values
 				var expConsensusParams = wasmapp.DefaultConsensusParams
 				// Define modifications
-				expConsensusParams.Evidence.MaxAgeNumBlocks = 4000000
+				expConsensusParams.Evidence.MaxAgeNumBlocks = maxAge
 
 				// Get updated values
 				consensusParams := example.BaseApp.GetConsensusParams(ctx)
@@ -158,9 +165,9 @@ func TestValidatorsGovProposal(t *testing.T) {
 		"update evidence params": {
 			src: contract.ValidatorProposal{
 				UpdateConsensusEvidenceParams: &contract.ConsensusEvidenceParamsUpdate{
-					MaxAgeNumBlocks: 1000000,
-					MaxAgeDuration:  2000000,
-					MaxBytes:        3000000,
+					MaxAgeNumBlocks: &maxAge,
+					MaxAgeDuration:  &maxDuration,
+					MaxBytes:        &maxBytes,
 				},
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
@@ -168,9 +175,9 @@ func TestValidatorsGovProposal(t *testing.T) {
 				var expConsensusParams = wasmapp.DefaultConsensusParams
 				// Define modifications
 				expConsensusParams.Evidence = &tmproto.EvidenceParams{
-					MaxAgeNumBlocks: 1000000,
-					MaxAgeDuration:  2000000 * time.Second,
-					MaxBytes:        3000000,
+					MaxAgeNumBlocks: maxAge,
+					MaxAgeDuration:  time.Duration(maxDuration * int64(time.Second)),
+					MaxBytes:        maxBytes,
 				}
 
 				// Get updated values

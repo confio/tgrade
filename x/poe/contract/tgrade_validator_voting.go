@@ -1,5 +1,7 @@
 package contract
 
+import "github.com/confio/tgrade/x/twasm/contract"
+
 // ValidatorVotingInitMsg setup contract on instantiation
 type ValidatorVotingInitMsg struct {
 	VotingRules  VotingRules `json:"rules"`
@@ -40,24 +42,9 @@ type ChainUpgrade struct {
 	Info   string `json:"info"`
 }
 
-type ConsensusBlockParamsUpdate struct {
-	/// Maximum number of bytes (over all tx) to be included in a block
-	MaxBytes int64 `json:"max_bytes,omit_empty"`
-	/// Maximum gas (over all tx) to be executed in one block.
-	/// If set, more txs may be included in a block, but when executing, all tx after this is limit
-	/// are consumed will immediately error
-	MaxGas int64 `json:"max_gas,omitempty"`
-}
+type ConsensusBlockParamsUpdate = contract.BlockParams
 
-type ConsensusEvidenceParamsUpdate struct {
-	/// Max age of evidence, in blocks.
-	MaxAgeNumBlocks int64 `json:"max_age_num_blocks,omitempty"`
-	/// Max age of evidence, in seconds.
-	/// It should correspond with an app's "unbonding period"
-	MaxAgeDuration int64 `json:"max_age_duration,omitempty"`
-	/// Maximum number of bytes of evidence to be included in a block
-	MaxBytes int64 `json:"max_bytes,omitempty"`
-}
+type ConsensusEvidenceParamsUpdate = contract.EvidenceParams
 
 type Migration struct {
 	/// the contract address to be migrated
