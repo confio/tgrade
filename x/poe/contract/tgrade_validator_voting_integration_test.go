@@ -7,6 +7,10 @@ import (
 	"testing"
 	"time"
 
+	wasmapp "github.com/CosmWasm/wasmd/app"
+
+	"github.com/confio/tgrade/x/poe/contract"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/stretchr/testify/assert"
@@ -14,8 +18,6 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/confio/tgrade/app"
-	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/types"
 )
 
@@ -104,7 +106,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				// Get baseline values
-				var expConsensusParams = app.DefaultConsensusParams
+				var expConsensusParams = wasmapp.DefaultConsensusParams
 				// Define modifications
 				expConsensusParams.Block = &abci.BlockParams{
 					MaxBytes: 10000000,
@@ -127,7 +129,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				// Get baseline values
-				var expConsensusParams = app.DefaultConsensusParams
+				var expConsensusParams = wasmapp.DefaultConsensusParams
 				// Define modifications
 				expConsensusParams.Evidence = &tmproto.EvidenceParams{
 					MaxAgeNumBlocks: 1000000,
