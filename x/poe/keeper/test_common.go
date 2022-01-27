@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/CosmWasm/wasmd/app"
+	wasmapp "github.com/CosmWasm/wasmd/app"
 
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
@@ -229,7 +229,7 @@ func createTestInput(
 	// set the BaseApp's parameter store
 	consensusParamsUpdater.SetParamStore(paramsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()))
 
-	consensusParamsUpdater.StoreConsensusParams(ctx, app.DefaultConsensusParams)
+	consensusParamsUpdater.StoreConsensusParams(ctx, wasmapp.DefaultConsensusParams)
 
 	var twasmKeeper twasmkeeper.Keeper
 	handler := wasmkeeper.WithMessageHandlerDecorator(func(nested wasmkeeper.Messenger) wasmkeeper.Messenger {
