@@ -6,6 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/address"
+	"github.com/tendermint/tendermint/libs/rand"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -60,11 +63,13 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	// - membership in engagement group
 	marshaler := MakeEncodingConfig().Codec
 
+	systemAdminAddr := sdk.AccAddress(rand.Bytes(address.Len))
 	myGenTx, myAddr, _ := poetypes.RandomGenTX(t, 100)
-
 	var authGenState authtypes.GenesisState
 	marshaler.MustUnmarshalJSON(genesisState[authtypes.ModuleName], &authGenState)
-	genAccounts := []authtypes.GenesisAccount{authtypes.NewBaseAccount(myAddr, nil, 0, 0)}
+	genAccounts := []authtypes.GenesisAccount{
+		authtypes.NewBaseAccount(myAddr, nil, 0, 0),
+		authtypes.NewBaseAccount(systemAdminAddr, nil, 0, 0)}
 	accounts, err := authtypes.PackAccounts(genAccounts)
 	require.NoError(t, err)
 	authGenState.Accounts = accounts
@@ -75,6 +80,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 
 	coins := sdk.Coins{sdk.NewCoin(poetypes.DefaultBondDenom, sdk.NewInt(1000000000))}
 	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: myAddr.String(), Coins: coins.Sort()})
+	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: systemAdminAddr.String(), Coins: coins.Sort()})
 	genesisState[banktypes.ModuleName] = marshaler.MustMarshalJSON(&bankGenState)
 
 	// add system admin to not fail poe on validation
@@ -82,6 +88,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	poeGS.BondDenom = poetypes.DefaultBondDenom
 	poeGS.GenTxs = []json.RawMessage{myGenTx}
 	poeGS.Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Weight: 10}}
+	poeGS.SystemAdminAddress = systemAdminAddr.String()
 	genesisState = poetypes.SetGenesisStateInAppState(marshaler, genesisState, poeGS)
 }
 
@@ -124,11 +131,9 @@ func setGenesis(gapp *TgradeApp) error {
 }
 
 func TestIBCKeeperLazyInitialization(t *testing.T) {
-	t.Skip("Alex, fails with insufficient funds of OC member")
 	db := db.NewMemDB()
 	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)
 	genesisState := NewDefaultGenesisState()
-
 	setupWithSingleValidatorGenTX(t, genesisState)
 
 	stateBytes, err := json.MarshalIndent(genesisState, "", "  ")

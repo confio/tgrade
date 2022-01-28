@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
 	"github.com/cosmos/cosmos-sdk/types/address"
@@ -18,10 +20,10 @@ import (
 )
 
 func TestDeductFeeDecorator(t *testing.T) {
-	t.Skip("TODO: Use mocks and test fee grant")
 	var (
-		myContractAddr sdk.AccAddress = rand.Bytes(address.Len)
-		mySenderAddr   sdk.AccAddress = rand.Bytes(address.Len)
+		myContractAddr   sdk.AccAddress = rand.Bytes(address.Len)
+		mySenderAddr     sdk.AccAddress = rand.Bytes(address.Len)
+		myFeeGranterAddr sdk.AccAddress = rand.Bytes(address.Len)
 	)
 
 	cs := keeper.PoEKeeperMock{GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
@@ -29,14 +31,27 @@ func TestDeductFeeDecorator(t *testing.T) {
 		return myContractAddr, nil
 	}}
 
+	accountsMock := func(expAddr sdk.AccAddress) accountKeeper {
+		return accountKeeperMock{func(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
+			require.Equal(t, expAddr, addr)
+			return authtypes.NewBaseAccount(expAddr, nil, 1, 1)
+		}}
+	}
+
+	capturingGrantKeeper, capturedGrantedFees := captureUseGrantedFees()
 	specs := map[string]struct {
-		feeAmount sdk.Coins
-		bankMock  bankKeeper
-		expErr    bool
+		feeAmount      sdk.Coins
+		granter        sdk.AccAddress
+		bank           bankKeeper
+		grants         ante.FeegrantKeeper
+		accounts       accountKeeper
+		expErr         bool
+		expFeesGranted []capturedGrantedFee
 	}{
 		"with fee": {
 			feeAmount: sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt())},
-			bankMock: bankKeeperMock{func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+			accounts:  accountsMock(mySenderAddr),
+			bank: bankKeeperMock{func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
 				assert.Equal(t, mySenderAddr, fromAddr)
 				assert.Equal(t, myContractAddr, toAddr)
 				assert.Equal(t, sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt())}, amt)
@@ -45,16 +60,19 @@ func TestDeductFeeDecorator(t *testing.T) {
 		},
 		"zero fee": {
 			feeAmount: sdk.Coins{sdk.NewCoin("ALX", sdk.ZeroInt())},
-			bankMock:  bankKeeperMock{},
+			accounts:  accountsMock(mySenderAddr),
+			bank:      bankKeeperMock{},
 		},
 		"invalid denom fee": {
 			feeAmount: sdk.Coins{sdk.Coin{Denom: "ALX$%^&", Amount: sdk.OneInt()}},
-			bankMock:  bankKeeperMock{},
+			accounts:  accountsMock(mySenderAddr),
+			bank:      bankKeeperMock{},
 			expErr:    true,
 		},
 		"with multiple fees": {
 			feeAmount: sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt()), sdk.NewCoin("BLX", sdk.NewInt(2))},
-			bankMock: bankKeeperMock{func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+			accounts:  accountsMock(mySenderAddr),
+			bank: bankKeeperMock{func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
 				assert.Equal(t, mySenderAddr, fromAddr)
 				assert.Equal(t, myContractAddr, toAddr)
 				assert.Equal(t, sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt()), sdk.NewCoin("BLX", sdk.NewInt(2))}, amt)
@@ -63,36 +81,90 @@ func TestDeductFeeDecorator(t *testing.T) {
 		},
 		"with multiple fees one amount is zero": {
 			feeAmount: sdk.Coins{sdk.NewCoin("ALX", sdk.ZeroInt()), sdk.NewCoin("BLX", sdk.NewInt(2))},
-			bankMock:  bankKeeperMock{},
+			accounts:  accountsMock(mySenderAddr),
+			bank:      bankKeeperMock{},
 			expErr:    true,
 		},
 		"with multiple fees one denom is invalid": {
 			feeAmount: sdk.Coins{sdk.Coin{Denom: "ALX$%^&", Amount: sdk.OneInt()}, sdk.NewCoin("BLX", sdk.NewInt(2))},
-			bankMock:  bankKeeperMock{},
+			accounts:  accountsMock(mySenderAddr),
+			bank:      bankKeeperMock{},
 			expErr:    true,
+		},
+		"with feegranter": {
+			feeAmount: sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt())},
+			granter:   myFeeGranterAddr,
+			accounts:  accountsMock(myFeeGranterAddr),
+			grants:    capturingGrantKeeper,
+			bank: bankKeeperMock{func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+				assert.Equal(t, myFeeGranterAddr, fromAddr)
+				assert.Equal(t, myContractAddr, toAddr)
+				assert.Equal(t, sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt())}, amt)
+				return nil
+			}},
+			expFeesGranted: []capturedGrantedFee{
+				{feeGranter: myFeeGranterAddr, feePayer: mySenderAddr, fee: sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt())}},
+			},
+		},
+		"with feegranter rejected": {
+			feeAmount: sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt())},
+			granter:   myFeeGranterAddr,
+			accounts:  accountsMock(myFeeGranterAddr),
+			grants: feegrantMock{func(ctx sdk.Context, granter, grantee sdk.AccAddress, fee sdk.Coins, msgs []sdk.Msg) error {
+				return errors.New("testing")
+			}},
+			expErr: true,
 		},
 		"bank send fails": {
 			feeAmount: sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt()), sdk.NewCoin("BLX", sdk.NewInt(2))},
-			bankMock: bankKeeperMock{func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+			accounts:  accountsMock(mySenderAddr),
+			bank: bankKeeperMock{func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
 				return errors.New("testing")
+			}},
+			expErr: true,
+		},
+		"unknown account": {
+			feeAmount: sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt()), sdk.NewCoin("BLX", sdk.NewInt(2))},
+			accounts: accountKeeperMock{func(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
+				return nil
 			}},
 			expErr: true,
 		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
+			*capturedGrantedFees = nil
 			nextAnte, gotCalled := captureNextHandlerCall()
-			ctx := sdk.Context{}
-			decorator := NewDeductFeeDecorator(accountKeeperMock{}, spec.bankMock, feegrantMock{}, cs)
-			_, gotErr := decorator.AnteHandle(ctx, newFeeTXMock(spec.feeAmount, mySenderAddr), false, nextAnte)
+			em := sdk.NewEventManager()
+			ctx := sdk.Context{}.WithEventManager(em)
+			decorator := NewDeductFeeDecorator(spec.accounts, spec.bank, spec.grants, cs)
+			_, gotErr := decorator.AnteHandle(ctx, newFeeTXMock(spec.feeAmount, mySenderAddr).WithGranter(spec.granter), false, nextAnte)
 			if spec.expErr {
 				require.Error(t, gotErr)
 				return
 			}
 			require.NoError(t, gotErr)
 			assert.True(t, *gotCalled, "next ante handler called")
+			// and an event emitted
+			require.Len(t, em.Events(), 1)
+			require.Len(t, em.Events()[0].Attributes, 1)
+			require.Equal(t, []byte(sdk.AttributeKeyFee), em.Events()[0].Attributes[0].Key)
+			assert.Equal(t, spec.expFeesGranted, *capturedGrantedFees)
 		})
 	}
+}
+
+type capturedGrantedFee struct {
+	feeGranter, feePayer sdk.AccAddress
+	fee                  sdk.Coins
+}
+
+func captureUseGrantedFees() (feegrantMock, *[]capturedGrantedFee) {
+	var result []capturedGrantedFee
+	return feegrantMock{func(ctx sdk.Context, granter, grantee sdk.AccAddress, fee sdk.Coins, msgs []sdk.Msg) error {
+		result = append(result, capturedGrantedFee{granter, grantee, fee})
+		return nil
+	}}, &result
 }
 
 type bankKeeperMock struct {
@@ -114,10 +186,13 @@ func captureNextHandlerCall() (sdk.AnteHandler, *bool) {
 	}, &called
 }
 
+var _ sdk.FeeTx = feeTXMock{}
+
 type feeTXMock struct {
-	sdk.FeeTx
-	fee   sdk.Coins
-	payer sdk.AccAddress
+	fee     sdk.Coins
+	payer   sdk.AccAddress
+	granter sdk.AccAddress
+	msgs    []sdk.Msg
 }
 
 func newFeeTXMock(fee sdk.Coins, payer sdk.AccAddress) *feeTXMock {
@@ -130,6 +205,27 @@ func (f feeTXMock) GetFee() sdk.Coins {
 
 func (f feeTXMock) FeePayer() sdk.AccAddress {
 	return f.payer
+}
+
+func (f feeTXMock) FeeGranter() sdk.AccAddress {
+	return f.granter
+}
+
+func (f feeTXMock) GetMsgs() []sdk.Msg {
+	return f.msgs
+}
+
+func (f feeTXMock) ValidateBasic() error {
+	panic("not expected to be called")
+}
+
+func (f feeTXMock) GetGas() uint64 {
+	panic("not expected to be called")
+}
+
+func (f *feeTXMock) WithGranter(granter sdk.AccAddress) feeTXMock {
+	f.granter = granter
+	return *f
 }
 
 type feegrantMock struct {

@@ -176,8 +176,8 @@ type TgradeApp struct {
 	ibcKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	evidenceKeeper   evidencekeeper.Keeper
 	transferKeeper   ibctransferkeeper.Keeper
-	FeeGrantKeeper   feegrantkeeper.Keeper // todo (Alex): make private
-	AuthzKeeper      authzkeeper.Keeper    // todo (Alex): make private
+	feeGrantKeeper   feegrantkeeper.Keeper
+	authzKeeper      authzkeeper.Keeper
 	twasmKeeper      twasmkeeper.Keeper
 	poeKeeper        poekeeper.Keeper
 
@@ -204,7 +204,7 @@ func NewTgradeApp(
 	skipUpgradeHeights map[int64]bool,
 	homePath string,
 	invCheckPeriod uint,
-	encodingConfig appparams.EncodingConfig, // todo (Alex): use correct tgrade import path
+	encodingConfig appparams.EncodingConfig,
 	appOpts servertypes.AppOptions,
 	wasmOpts []wasm.Option,
 	baseAppOptions ...func(*baseapp.BaseApp),
@@ -276,12 +276,12 @@ func NewTgradeApp(
 		app.getSubspace(banktypes.ModuleName),
 		app.ModuleAccountAddrs(),
 	)
-	app.AuthzKeeper = authzkeeper.NewKeeper(
+	app.authzKeeper = authzkeeper.NewKeeper(
 		keys[authzkeeper.StoreKey],
 		appCodec,
 		app.BaseApp.MsgServiceRouter(),
 	)
-	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(
+	app.feeGrantKeeper = feegrantkeeper.NewKeeper(
 		appCodec,
 		keys[feegrant.StoreKey],
 		app.accountKeeper,
@@ -412,8 +412,8 @@ func NewTgradeApp(
 		upgrade.NewAppModule(app.upgradeKeeper),
 		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper),
 		evidence.NewAppModule(app.evidenceKeeper),
-		feegrantmodule.NewAppModule(appCodec, app.accountKeeper, app.bankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.accountKeeper, app.bankKeeper, app.interfaceRegistry),
+		feegrantmodule.NewAppModule(appCodec, app.accountKeeper, app.bankKeeper, app.feeGrantKeeper, app.interfaceRegistry),
+		authzmodule.NewAppModule(appCodec, app.authzKeeper, app.accountKeeper, app.bankKeeper, app.interfaceRegistry),
 		ibc.NewAppModule(app.ibcKeeper),
 		params.NewAppModule(app.paramsKeeper),
 		transferModule,
@@ -439,12 +439,12 @@ func NewTgradeApp(
 		// additional non simd modules
 		ibchost.ModuleName,
 		ibctransfertypes.ModuleName,
-		poe.ModuleName, // todo (Alex): check position. before authz?
+		poe.ModuleName,
 		twasm.ModuleName,
 		globalfee.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
-		crisistypes.ModuleName,
+		crisistypes.ModuleName, // should be first
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -457,9 +457,9 @@ func NewTgradeApp(
 		// additional non simd modules
 		ibchost.ModuleName,
 		ibctransfertypes.ModuleName,
-		poe.ModuleName, // todo (Alex): check position. before authz?
-		twasm.ModuleName,
 		globalfee.ModuleName,
+		twasm.ModuleName,
+		poe.ModuleName, // poe after twasm to have valset update at the end
 	)
 
 	// NOTE: The poe module must occur after staking so that pools are
@@ -507,8 +507,8 @@ func NewTgradeApp(
 		auth.NewAppModule(appCodec, app.accountKeeper, authsims.RandomGenesisAccounts),
 		bank.NewAppModule(appCodec, app.bankKeeper, app.accountKeeper),
 		capability.NewAppModule(appCodec, *app.capabilityKeeper),
-		feegrantmodule.NewAppModule(appCodec, app.accountKeeper, app.bankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.accountKeeper, app.bankKeeper, app.interfaceRegistry),
+		feegrantmodule.NewAppModule(appCodec, app.accountKeeper, app.bankKeeper, app.feeGrantKeeper, app.interfaceRegistry),
+		authzmodule.NewAppModule(appCodec, app.authzKeeper, app.accountKeeper, app.bankKeeper, app.interfaceRegistry),
 		params.NewAppModule(app.paramsKeeper),
 		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper),
 		evidence.NewAppModule(app.evidenceKeeper),
@@ -527,7 +527,7 @@ func NewTgradeApp(
 		HandlerOptions{
 			AccountKeeper:     app.accountKeeper,
 			BankKeeper:        app.bankKeeper,
-			FeegrantKeeper:    app.FeeGrantKeeper,
+			FeegrantKeeper:    app.feeGrantKeeper,
 			SignModeHandler:   encodingConfig.TxConfig.SignModeHandler(),
 			SigGasConsumer:    ante.DefaultSigVerificationGasConsumer,
 			IBCChannelkeeper:  app.ibcKeeper.ChannelKeeper,

@@ -250,7 +250,9 @@ func TestJailUnjail(t *testing.T) {
 		},
 	}
 	for name, spec := range specs {
+		ctx, _ = ctx.CacheContext()
 		t.Run(name, func(t *testing.T) {
+			t.Logf("block time: %s", ctx.BlockTime())
 			// when
 			adapter := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil)
 			err = adapter.JailValidator(ctx, op1Addr, spec.jailDuration, spec.jailForever, ocProposeAddr)
@@ -262,8 +264,8 @@ func TestJailUnjail(t *testing.T) {
 			require.Equal(t, &spec.expJailingPeriod, res.Validator.JailedUntil)
 
 			// and when
-			ctx = ctx.WithBlockTime(ctx.BlockTime().Add(nextBlockDuration).UTC())
-			gotErr := adapter.UnjailValidator(ctx, spec.actor)
+			qCtx := ctx.WithBlockTime(ctx.BlockTime().Add(nextBlockDuration).UTC())
+			gotErr := adapter.UnjailValidator(qCtx, spec.actor)
 			if !spec.expErrUnjail {
 				require.Error(t, gotErr)
 				return
@@ -271,7 +273,7 @@ func TestJailUnjail(t *testing.T) {
 			require.NoError(t, gotErr)
 
 			// then
-			res, err = adapter.QueryRawValidator(ctx, op1Addr)
+			res, err = adapter.QueryRawValidator(qCtx, op1Addr)
 			require.NoError(t, err)
 			assert.Empty(t, res.Validator.JailedUntil)
 		})
