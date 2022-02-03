@@ -80,6 +80,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				DenyList:                  "",
 				EditTrustedCircleDisabled: true,
 				InitialMembers:            []string{},
+				RewardDenom:               "utgd",
 			},
 			wasmFile:     "tgrade_trusted_circle.wasm",
 			contractAddr: ocContractAddr,
