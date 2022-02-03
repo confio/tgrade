@@ -75,7 +75,13 @@ type TG4ValsetExecute struct {
 	// only if the jail period passed.
 	Unjail *UnjailMsg `json:"unjail,omitempty"`
 	// UpdateAdmin set a new admin address
-	UpdateAdmin *TG4UpdateAdminMsg `json:"update_admin,omitempty"`
+	UpdateAdmin  *TG4UpdateAdminMsg `json:"update_admin,omitempty"`
+	UpdateConfig *UpdateConfigMsg   `json:"update_config,omitempty"`
+}
+
+type UpdateConfigMsg struct {
+	MinWeight     uint64 `json:"min_weight,omitempty"`
+	MaxValidators uint32 `json:"max_validators,omitempty"`
 }
 
 type JailMsg struct {
@@ -85,17 +91,8 @@ type JailMsg struct {
 }
 
 type JailingDuration struct {
-	Duration uint64 `json:"duration,omitempty"`
-	Forever  bool   `json:"forever,omitempty"`
-}
-
-func (j JailingDuration) MarshalJSON() ([]byte, error) {
-	if j.Forever {
-		return json.Marshal("forever")
-	}
-	return json.Marshal(struct {
-		Duration uint64 `json:"duration,omitempty"`
-	}{Duration: j.Duration})
+	Duration uint64    `json:"duration,omitempty"`
+	Forever  *struct{} `json:"forever,omitempty"`
 }
 
 type UnjailMsg struct {
@@ -150,7 +147,7 @@ type ValsetQuery struct {
 	Epoch                    *struct{}            `json:"epoch,omitempty"`
 	Validator                *ValidatorQuery      `json:"validator,omitempty"`
 	ListValidators           *ListValidatorsQuery `json:"list_validators,omitempty"`
-	ListActiveValidators     *struct{}            `json:"list_active_validators,omitempty"`
+	ListActiveValidators     *ListValidatorsQuery `json:"list_active_validators,omitempty"`
 	SimulateActiveValidators *struct{}            `json:"simulate_active_validators,omitempty"`
 	ListValidatorSlashing    *ValidatorQuery      `json:"list_validator_slashing,omitempty"`
 }
@@ -194,10 +191,11 @@ type ValsetEpochResponse struct {
 }
 
 type OperatorResponse struct {
-	Operator    string            `json:"operator"`
-	Pubkey      ValidatorPubkey   `json:"pubkey"`
-	Metadata    ValidatorMetadata `json:"metadata"`
-	JailedUntil *JailingPeriod    `json:"jailed_until,omitempty"`
+	Operator        string            `json:"operator"`
+	Pubkey          ValidatorPubkey   `json:"pubkey"`
+	Metadata        ValidatorMetadata `json:"metadata"`
+	JailedUntil     *JailingPeriod    `json:"jailed_until,omitempty"`
+	ActiveValidator bool              `json:"active_validator"`
 }
 
 type JailingPeriod struct {
@@ -302,8 +300,10 @@ func QueryValsetEpoch(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddre
 	return &response, err
 }
 
+// TODO: add pagination support
 func ListActiveValidators(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress) ([]ValidatorInfo, error) {
-	query := ValsetQuery{ListActiveValidators: &struct{}{}}
+	// TODO: this is just a placeholder trying to get 100
+	query := ValsetQuery{ListActiveValidators: &ListValidatorsQuery{Limit: 100}}
 	var response ListActiveValidatorsResponse
 	err := doQuery(ctx, k, valset, query, &response)
 	return response.Validators, err
@@ -423,7 +423,7 @@ func (v ValsetContractAdapter) JailValidator(ctx sdk.Context, nodeOperator sdk.A
 	case forever && duration > time.Nanosecond:
 		return sdkerrors.Wrap(types.ErrInvalid, "either duration or forever")
 	case forever:
-		jailDuration = JailingDuration{Forever: true}
+		jailDuration = JailingDuration{Forever: &struct{}{}}
 	case duration > time.Nanosecond:
 		jailDuration = JailingDuration{Duration: uint64(duration.Seconds())}
 	default:

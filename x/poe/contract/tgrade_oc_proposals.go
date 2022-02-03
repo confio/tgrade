@@ -101,6 +101,7 @@ type OCProposalResponse struct {
 	Description string            `json:"description"`
 	Proposal    OversightProposal `json:"proposal"`
 	Status      ProposalStatus    `json:"status"`
+	CreatedBy   string            `json:"created_by"`
 	// TODO: clarify this format
 	// Expires     EXP               `json:"expires"`
 	Rules       VotingRules `json:"rules"`

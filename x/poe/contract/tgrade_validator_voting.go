@@ -34,6 +34,7 @@ type ValidatorProposal struct {
 	UpdateConsensusBlockParams    *ConsensusBlockParamsUpdate    `json:"update_consensus_block_params,omitempty"`
 	UpdateConsensusEvidenceParams *ConsensusEvidenceParamsUpdate `json:"update_consensus_evidence_params,omitempty"`
 	MigrateContract               *Migration                     `json:"migrate_contract,omitempty"`
+	Text                          *struct{}                      `json:"text,omitempty"`
 }
 
 type ChainUpgrade struct {
