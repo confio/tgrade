@@ -206,7 +206,7 @@ type JailingPeriod struct {
 func (j *JailingPeriod) UnmarshalJSON(data []byte) error {
 	var r struct {
 		Until   string    `json:"until,omitempty"`
-		Forever *struct{} `json:"Forever,omitempty"` // todo (Alex): https://github.com/confio/tgrade-contracts/issues/438
+		Forever *struct{} `json:"forever,omitempty"`
 	}
 	if err := json.Unmarshal(data, &r); err != nil {
 		return err
