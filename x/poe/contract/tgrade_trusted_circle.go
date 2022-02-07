@@ -22,4 +22,6 @@ type TrustedCircleInitMsg struct { //nolint:maligned
 	DenyList string `json:"deny_list,omitempty"`
 	// EditTrustedCircleDisabled If true, no further adjustments may happen.
 	EditTrustedCircleDisabled bool `json:"edit_trusted_circle_disabled"`
+	// RewardDenom is the token denom we can distribute to the trusted circle
+	RewardDenom string `json:"reward_denom"`
 }

@@ -34,6 +34,7 @@ func TestInitTrustedCircle(t *testing.T) {
 		InitialMembers:            []string{creator.String()},
 		DenyList:                  "",
 		EditTrustedCircleDisabled: false,
+		RewardDenom:               "utgd",
 	}
 	initBz, err := json.Marshal(init)
 	require.NoError(t, err)

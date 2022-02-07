@@ -282,6 +282,7 @@ func newOCInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
 		InitialMembers:            []string{}, // sender is added to OC by default in the contract
 		DenyList:                  cfg.DenyListContractAddress,
 		EditTrustedCircleDisabled: true, // product requirement for OC
+		RewardDenom:               cfg.EscrowAmount.Denom,
 	}
 }
 
