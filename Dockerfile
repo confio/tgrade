@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine3.12 AS go-builder
+FROM golang:1.17-alpine3.15 AS go-builder
 
 # this comes from standard alpine nightly file
 #  https://github.com/rust-lang/docker-rust-nightly/blob/master/alpine3.12/Dockerfile
@@ -25,7 +25,7 @@ COPY . /code/
 RUN LEDGER_ENABLED=false BUILD_TAGS=muslc make build
 
 # --------------------------------------------------------
-FROM alpine:3.12
+FROM alpine:3.15
 
 COPY --from=go-builder /code/build/tgrade /usr/bin/tgrade
 
