@@ -12,26 +12,18 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-type bankKeeper interface {
-	SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error
-}
-
-type accountKeeper interface {
-	GetAccount(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI
-}
-
 // DeductFeeDecorator deducts fees from the first signer of the tx
 // If the first signer does not have the funds to pay for the fees, return with InsufficientFunds error
 // Call next AnteHandler if fees successfully deducted
 // CONTRACT: Tx must implement FeeTx interface to use DeductFeeDecorator
 type DeductFeeDecorator struct {
-	ak             accountKeeper
-	bankKeeper     bankKeeper
+	ak             types.AccountKeeper
+	bankKeeper     types.BankKeeper
 	feegrantKeeper ante.FeegrantKeeper
 	contractSource keeper.ContractSource
 }
 
-func NewDeductFeeDecorator(ak accountKeeper, bk bankKeeper, fk ante.FeegrantKeeper, cs keeper.ContractSource) DeductFeeDecorator {
+func NewDeductFeeDecorator(ak types.AccountKeeper, bk types.BankKeeper, fk ante.FeegrantKeeper, cs keeper.ContractSource) DeductFeeDecorator {
 	return DeductFeeDecorator{
 		ak:             ak,
 		bankKeeper:     bk,

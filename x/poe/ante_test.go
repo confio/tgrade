@@ -31,7 +31,7 @@ func TestDeductFeeDecorator(t *testing.T) {
 		return myContractAddr, nil
 	}}
 
-	accountsMock := func(expAddr sdk.AccAddress) accountKeeper {
+	accountsMock := func(expAddr sdk.AccAddress) types.AccountKeeper {
 		return accountKeeperMock{func(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
 			require.Equal(t, expAddr, addr)
 			return authtypes.NewBaseAccount(expAddr, nil, 1, 1)
@@ -42,9 +42,9 @@ func TestDeductFeeDecorator(t *testing.T) {
 	specs := map[string]struct {
 		feeAmount      sdk.Coins
 		granter        sdk.AccAddress
-		bank           bankKeeper
+		bank           types.BankKeeper
 		grants         ante.FeegrantKeeper
-		accounts       accountKeeper
+		accounts       types.AccountKeeper
 		expErr         bool
 		expFeesGranted []capturedGrantedFee
 	}{

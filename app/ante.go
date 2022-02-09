@@ -13,21 +13,18 @@ import (
 	channelkeeper "github.com/cosmos/ibc-go/v2/modules/core/04-channel/keeper"
 	ibcante "github.com/cosmos/ibc-go/v2/modules/core/ante"
 
+	poetypes "github.com/confio/tgrade/x/poe/types"
+
 	"github.com/confio/tgrade/x/globalfee"
 	"github.com/confio/tgrade/x/poe"
 	poekeeper "github.com/confio/tgrade/x/poe/keeper"
 )
 
-type bankKeeper interface {
-	SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error
-	authtypes.BankKeeper
-}
-
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
-// channel keeper.
+// channel keeper and additional wasm + tgrade types
 type HandlerOptions struct {
 	AccountKeeper   ante.AccountKeeper
-	BankKeeper      bankKeeper
+	BankKeeper      poetypes.BankKeeper
 	FeegrantKeeper  ante.FeegrantKeeper
 	SignModeHandler authsigning.SignModeHandler
 	SigGasConsumer  func(meter sdk.GasMeter, sig signing.SignatureV2, params authtypes.Params) error
@@ -39,6 +36,7 @@ type HandlerOptions struct {
 	ContractSource    poekeeper.ContractSource
 }
 
+// NewAnteHandler constructor that setup the full ante handler chain for the application
 func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	if options.AccountKeeper == nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "account keeper is required for AnteHandler")
