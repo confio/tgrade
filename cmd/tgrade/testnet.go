@@ -337,6 +337,17 @@ func initGenFiles(
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[banktypes.ModuleName], &bankGenState)
 
 	bankGenState.Balances = genBalances
+	bankGenState.DenomMetadata = []banktypes.Metadata{
+		{
+			Description: "The native staking token of test chain",
+			DenomUnits: []*banktypes.DenomUnit{
+				{Denom: "utgd", Aliases: []string{"microtgd"}},
+				{Denom: "tgd", Exponent: 6},
+			},
+			Base:    "utgd",
+			Display: "tgd",
+		},
+	}
 	appGenState[banktypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&bankGenState)
 	poeGenesisState := poetypes.GetGenesisStateFromAppState(clientCtx.Codec, appGenState)
 	for i, addr := range genAccounts {

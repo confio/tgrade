@@ -4,6 +4,7 @@
 package testing
 
 import (
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -54,4 +55,31 @@ func TestUnsafeResetAll(t *testing.T) {
 			t.Fatal("expected wasm dir to be removed")
 		}
 	})
+}
+
+func TestBankQueries(t *testing.T) {
+	sut.ResetDirtyChain(t)
+	cli := NewTgradeCli(t, sut, verbose)
+	sut.StartChain(t)
+	specs := map[string]struct {
+		query  []string
+		assert func(t *testing.T, qResult string)
+	}{
+		"denom-metadata": {
+			query: []string{"q", "bank", "denom-metadata"},
+			assert: func(t *testing.T, qResult string) {
+				metadatas := gjson.Get(qResult, "metadatas").Array()
+				require.Len(t, metadatas, 1)
+				assert.Equal(t, "The native staking token of test chain", metadatas[0].Get("description").String())
+				assert.Equal(t, "utgd", metadatas[0].Get("base").String())
+			},
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			qResult := cli.CustomQuery(spec.query...)
+			spec.assert(t, qResult)
+			t.Logf(qResult)
+		})
+	}
 }
