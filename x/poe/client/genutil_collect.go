@@ -26,7 +26,7 @@ import (
 
 // AddGenTxsToGenesisFile collects and adds the gentx to the app state
 func AddGenTxsToGenesisFile(
-	cdc codec.JSONMarshaler,
+	cdc codec.JSONCodec,
 	txEncodingConfig client.TxEncodingConfig,
 	config *cfg.Config,
 	initCfg genutiltypes.InitConfig,
@@ -84,7 +84,7 @@ func exportGenesisFile(genDoc *tmtypes.GenesisDoc, genFile string) error {
 
 // collectTxs processes and validates application's genesis Txs and returns
 // the list of appGenTxs, and persistent peers required to generate genesis.json.
-func collectTxs(cdc codec.JSONMarshaler, txJSONDecoder sdk.TxDecoder, moniker, genTxsDir string,
+func collectTxs(cdc codec.JSONCodec, txJSONDecoder sdk.TxDecoder, moniker, genTxsDir string,
 	genDoc tmtypes.GenesisDoc, genBalIterator genutiltypes.GenesisBalancesIterator,
 ) (appGenTxs []sdk.Tx, persistentPeers string, err error) {
 	// prepare a map of all balances in genesis state to then validate

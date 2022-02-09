@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -30,7 +31,7 @@ func TestQueryValidatorSelfDelegation(t *testing.T) {
 			&selfDelegation,
 		},
 		"unknown": {
-			srcOpAddr: rand.Bytes(sdk.AddrLen),
+			srcOpAddr: rand.Bytes(address.Len),
 		},
 	}
 	for name, spec := range specs {

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/address"
+
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +25,7 @@ func TestBeginBlock(t *testing.T) {
 		capturedSudoCalls []tuple
 		myAddr            = keeper.RandomAddress(t)
 		myOtherAddr       = keeper.RandomAddress(t)
-		myOtherAddrBase64 = make([]byte, base64.StdEncoding.EncodedLen(sdk.AddrLen))
+		myOtherAddrBase64 = make([]byte, base64.StdEncoding.EncodedLen(address.Len))
 		myTime            = time.Unix(1000000000, 0)
 	)
 	base64.StdEncoding.Encode(myOtherAddrBase64, myOtherAddr)

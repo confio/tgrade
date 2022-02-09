@@ -101,7 +101,7 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			cdc := MakeEncodingConfig(t).Marshaler
+			cdc := MakeEncodingConfig(t).Codec
 			govRouter := &CapturingGovRouter{}
 			minterMock := NoopMinterMock()
 			mock := handlerTgradeKeeperMock{}
@@ -427,7 +427,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			cdc := MakeEncodingConfig(t).Marshaler
+			cdc := MakeEncodingConfig(t).Codec
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
 			router := &CapturingGovRouter{}
@@ -536,7 +536,7 @@ func TestHandleMintToken(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			cdc := MakeEncodingConfig(t).Marshaler
+			cdc := MakeEncodingConfig(t).Codec
 			mintFn, capturedMintedCoins := CaptureMintedCoinsFn()
 			sendFn, capturedSentCoins := CaptureSendCoinsFn()
 			mock := MinterMock{MintCoinsFn: mintFn, SendCoinsFromModuleToAccountFn: sendFn}
@@ -616,7 +616,7 @@ func TestHandleConsensusParamsUpdate(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			cdc := MakeEncodingConfig(t).Marshaler
+			cdc := MakeEncodingConfig(t).Codec
 			var gotStored *abci.ConsensusParams
 			mock := ConsensusParamsStoreMock{
 				GetConsensusParamsFn:   func(ctx sdk.Context) *abci.ConsensusParams { return types.ConsensusParamsFixture() },

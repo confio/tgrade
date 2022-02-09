@@ -9,9 +9,9 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	ibcclienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
 
 	"github.com/confio/tgrade/x/twasm/types"
 )
@@ -100,7 +100,6 @@ func (p ExecuteGovProposal) GetProposalContent(sender sdk.AccAddress) govtypes.C
 	case p.Proposal.MigrateContract != nil:
 		p.Proposal.MigrateContract.Title = p.Title
 		p.Proposal.MigrateContract.Description = p.Description
-		p.Proposal.MigrateContract.RunAs = sender.String()
 		return p.Proposal.MigrateContract
 	case p.Proposal.SetContractAdmin != nil:
 		p.Proposal.SetContractAdmin.Title = p.Title
@@ -128,9 +127,12 @@ func (p *ExecuteGovProposal) unpackInterfaces(unpacker codectypes.AnyUnpacker) e
 	var err error
 	switch {
 	case p.Proposal.RegisterUpgrade != nil:
-		return p.Proposal.RegisterUpgrade.UnpackInterfaces(unpacker)
-	case p.Proposal.IBCClientUpdate != nil:
-		return p.Proposal.IBCClientUpdate.UnpackInterfaces(unpacker)
+		if p.Proposal.RegisterUpgrade.UpgradedClientState != nil {
+			return sdkerrors.ErrInvalidRequest.Wrap("upgrade logic for IBC has been moved to the IBC module")
+		}
+		// todo (Alex): check how a client update is done now. this also needs to go into the contracts
+		//case p.Proposal.IBCClientUpdate != nil:
+		//	return p.Proposal.IBCClientUpdate.UnpackInterfaces(unpacker)
 	}
 	return err
 }
@@ -173,8 +175,8 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 			}
 			result.IBCClientUpdate = &ibcclienttypes.ClientUpdateProposal{
-				ClientId: proxy.ClientId,
-				Header:   proxy.Header.Encode(),
+				SubjectClientId: proxy.ClientId,
+				// todo (Alex): SubstituteClientId: proxy.ClientId,
 			}
 			return nil
 		},

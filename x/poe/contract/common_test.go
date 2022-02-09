@@ -5,8 +5,6 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/confio/tgrade/x/poe/contract"
-
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -16,6 +14,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/confio/tgrade/x/poe"
+	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 )
@@ -33,7 +32,7 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 	mutator, expValidators := withRandomValidators(t, ctx, example, 3)
 	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
 	adminAddress, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
-	example.BankKeeper.SetBalances(ctx, adminAddress, sdk.NewCoins(sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000))))
+	example.Faucet.Fund(ctx, adminAddress, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
 
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
@@ -80,7 +79,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			})
 			any, err := codectypes.NewAnyWithValue(pubKey)
 			require.NoError(t, err)
-			stakedAmount := sdk.TokensFromConsensusPower(int64(power))
+			stakedAmount := sdk.TokensFromConsensusPower(int64(power), sdk.DefaultPowerReduction)
 			collectValidators[i] = types.ValidatorFixture(func(m *stakingtypes.Validator) {
 				m.OperatorAddress = opAddr.String()
 				m.ConsensusPubkey = any
@@ -92,9 +91,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			m.GenTxs[i] = genTx
 			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Weight: uint64(engagement)}
 			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
-			example.BankKeeper.SetBalances(ctx, opAddr, sdk.NewCoins(
-				sdk.NewCoin(types.DefaultBondDenom, stakedAmount),
-			))
+			example.Faucet.Fund(ctx, opAddr, sdk.NewCoin(types.DefaultBondDenom, stakedAmount))
 		}
 		sort.Slice(collectValidators, func(i, j int) bool {
 			return collectValidators[i].Tokens.LT(collectValidators[j].Tokens) // sort ASC

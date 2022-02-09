@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/address"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +39,7 @@ func TestQueryValidator(t *testing.T) {
 			expVal:       vals[1],
 		},
 		"query with unknown address": {
-			operatorAddr: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),
+			operatorAddr: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 			expEmpty:     true,
 		},
 		"query with invalid address": {
@@ -248,7 +250,9 @@ func TestJailUnjail(t *testing.T) {
 		},
 	}
 	for name, spec := range specs {
+		ctx, _ = ctx.CacheContext()
 		t.Run(name, func(t *testing.T) {
+			t.Logf("block time: %s", ctx.BlockTime())
 			// when
 			adapter := contract.NewValsetContractAdapter(contractAddr, example.TWasmKeeper, nil)
 			err = adapter.JailValidator(ctx, op1Addr, spec.jailDuration, spec.jailForever, ocProposeAddr)
@@ -260,8 +264,8 @@ func TestJailUnjail(t *testing.T) {
 			require.Equal(t, &spec.expJailingPeriod, res.Validator.JailedUntil)
 
 			// and when
-			ctx = ctx.WithBlockTime(ctx.BlockTime().Add(nextBlockDuration).UTC())
-			gotErr := adapter.UnjailValidator(ctx, spec.actor)
+			qCtx := ctx.WithBlockTime(ctx.BlockTime().Add(nextBlockDuration).UTC())
+			gotErr := adapter.UnjailValidator(qCtx, spec.actor)
 			if !spec.expErrUnjail {
 				require.Error(t, gotErr)
 				return
@@ -269,7 +273,7 @@ func TestJailUnjail(t *testing.T) {
 			require.NoError(t, gotErr)
 
 			// then
-			res, err = adapter.QueryRawValidator(ctx, op1Addr)
+			res, err = adapter.QueryRawValidator(qCtx, op1Addr)
 			require.NoError(t, err)
 			assert.Empty(t, res.Validator.JailedUntil)
 		})

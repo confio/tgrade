@@ -44,7 +44,7 @@ var _ wasmkeeper.Messenger = TgradeHandler{}
 
 // TgradeHandler is a custom message handler plugin for wasmd.
 type TgradeHandler struct {
-	cdc                    codec.Marshaler
+	cdc                    codec.Codec
 	keeper                 TgradeWasmHandlerKeeper
 	minter                 minter
 	govRouter              govtypes.Router
@@ -53,7 +53,7 @@ type TgradeHandler struct {
 
 // NewTgradeHandler constructor
 func NewTgradeHandler(
-	cdc codec.Marshaler,
+	cdc codec.Codec,
 	keeper TgradeWasmHandlerKeeper,
 	bankKeeper minter,
 	consensusParamsUpdater ConsensusParamsUpdater,

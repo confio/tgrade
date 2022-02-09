@@ -129,7 +129,7 @@ func TestInitGenesis(t *testing.T) {
 
 			// when
 			msgHandler := wasm.NewHandler(wasmkeeper.NewDefaultPermissionKeeper(k))
-			valset, gotErr := InitGenesis(ctx, k, spec.state, keepers.StakingKeeper, msgHandler)
+			valset, gotErr := InitGenesis(ctx, k, spec.state, msgHandler)
 
 			// then
 			if spec.expErr {
@@ -204,7 +204,7 @@ func TestExportGenesis(t *testing.T) {
 			k := keepers.TWasmKeeper
 
 			msgHandler := wasm.NewHandler(wasmkeeper.NewDefaultPermissionKeeper(k))
-			_, err := InitGenesis(ctx, k, spec.state, keepers.StakingKeeper, msgHandler)
+			_, err := InitGenesis(ctx, k, spec.state, msgHandler)
 			require.NoError(t, err)
 
 			// when & then

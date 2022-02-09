@@ -16,7 +16,7 @@ import (
 )
 
 func SetupWasmHandlers(
-	cdc codec.Marshaler,
+	cdc codec.Codec,
 	bankKeeper twasmtypes.BankKeeper,
 	govRouter govtypes.Router,
 	twasmKeeper twasmkeeper.TgradeWasmHandlerKeeper,

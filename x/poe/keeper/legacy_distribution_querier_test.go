@@ -5,21 +5,20 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/confio/tgrade/x/poe/contract"
-
-	"github.com/confio/tgrade/x/poe/keeper/poetesting"
-
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
+
+	"github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/keeper/poetesting"
 )
 
 func TestDelegatorValidators(t *testing.T) {
-	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myOperatorAddr sdk.AccAddress = rand.Bytes(address.Len)
 
 	specs := map[string]struct {
 		src    *distributiontypes.QueryDelegatorValidatorsRequest
@@ -71,10 +70,10 @@ func TestDelegatorValidators(t *testing.T) {
 
 func TestDelegatorWithdrawAddress(t *testing.T) {
 	// myDelegatedAddr has myWithdrawAddr as withdraw address
-	var myDelegatedAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
-	var myWithdrawAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myDelegatedAddr sdk.AccAddress = rand.Bytes(address.Len)
+	var myWithdrawAddr sdk.AccAddress = rand.Bytes(address.Len)
 	// myUndelegatedAddr has no withdrawn address
-	var myUndelegatedAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myUndelegatedAddr sdk.AccAddress = rand.Bytes(address.Len)
 
 	specs := map[string]struct {
 		src    *distributiontypes.QueryDelegatorWithdrawAddressRequest

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -49,7 +50,7 @@ func TestSetGetPoEContractAddress(t *testing.T) {
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 			ctx, _, k := createMinTestInput(t)
-			var myAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+			var myAddr sdk.AccAddress = rand.Bytes(address.Len)
 			if !spec.skipStore {
 				k.SetPoEContractAddress(ctx, spec.srcType, myAddr)
 			}
@@ -72,7 +73,7 @@ func TestIteratePoEContracts(t *testing.T) {
 		if src == types.PoEContractTypeUndefined {
 			continue
 		}
-		var myAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+		var myAddr sdk.AccAddress = rand.Bytes(address.Len)
 		k.SetPoEContractAddress(ctx, src, myAddr)
 		storedTypes[src] = myAddr
 	}
@@ -87,7 +88,7 @@ func TestIteratePoEContracts(t *testing.T) {
 
 func TestUnbondingTime(t *testing.T) {
 	ctx, _, k := createMinTestInput(t)
-	var myAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myAddr sdk.AccAddress = rand.Bytes(address.Len)
 	k.SetPoEContractAddress(ctx, types.PoEContractTypeStaking, myAddr)
 
 	k.twasmKeeper = TwasmKeeperMock{QuerySmartFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {

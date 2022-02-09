@@ -5,30 +5,22 @@ import (
 	"time"
 
 	wasmapp "github.com/CosmWasm/wasmd/app"
-
-	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-
-	ibcclient "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client"
-	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	params2 "github.com/cosmos/cosmos-sdk/simapp/params"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -39,27 +31,35 @@ import (
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/evidence"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer"
-	ibctransfertypes "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/types"
-	ibc "github.com/cosmos/cosmos-sdk/x/ibc/core"
-	clienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
-	ibchost "github.com/cosmos/cosmos-sdk/x/ibc/core/24-host"
-	ibckeeper "github.com/cosmos/cosmos-sdk/x/ibc/core/keeper"
 	"github.com/cosmos/cosmos-sdk/x/mint"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/x/params"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
+	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	transfer "github.com/cosmos/ibc-go/v2/modules/apps/transfer"
+	ibctransfertypes "github.com/cosmos/ibc-go/v2/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v2/modules/core"
+	ibcclient "github.com/cosmos/ibc-go/v2/modules/core/02-client"
+	ibcclienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
+	ibchost "github.com/cosmos/ibc-go/v2/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v2/modules/core/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/libs/rand"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/confio/tgrade/x/poe/stakingadapter"
+	poestakingadapter "github.com/confio/tgrade/x/poe/stakingadapter"
 	"github.com/confio/tgrade/x/poe/types"
 	"github.com/confio/tgrade/x/twasm"
 	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
@@ -94,10 +94,10 @@ type TestKeepers struct {
 	GovKeeper      govkeeper.Keeper
 	TWasmKeeper    *twasmkeeper.Keeper
 	IBCKeeper      *ibckeeper.Keeper
-	Router         *baseapp.Router
 	PoEKeeper      Keeper
 	EncodingConfig params2.EncodingConfig
 	UpgradeKeeper  upgradekeeper.Keeper
+	Faucet         *wasmkeeper.TestFaucet
 	BaseApp        *baseapp.BaseApp
 }
 
@@ -114,7 +114,7 @@ func CreateTestInput(t *testing.T, isCheckTx bool, supportedFeatures string, opt
 
 // encoders can be nil to accept the defaults, or set it to override some of the message handlers (like default)
 func createTestInput(
-	t *testing.T,
+	t testing.TB,
 	isCheckTx bool,
 	supportedFeatures string,
 	wasmConfig twasmtypes.TWasmConfig,
@@ -123,107 +123,143 @@ func createTestInput(
 ) (sdk.Context, TestKeepers) {
 	tempDir := t.TempDir()
 
-	keyPoE := sdk.NewKVStoreKey(types.StoreKey)
-	keyWasm := sdk.NewKVStoreKey(twasmtypes.StoreKey)
-	keyAcc := sdk.NewKVStoreKey(authtypes.StoreKey)
-	keyBank := sdk.NewKVStoreKey(banktypes.StoreKey)
-	keyParams := sdk.NewKVStoreKey(paramstypes.StoreKey)
-	tkeyParams := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
-	keyGov := sdk.NewKVStoreKey(govtypes.StoreKey)
-	keyIBC := sdk.NewKVStoreKey(ibchost.StoreKey)
-	keyCapability := sdk.NewKVStoreKey(capabilitytypes.StoreKey)
-	keyCapabilityTransient := storetypes.NewMemoryStoreKey(capabilitytypes.MemStoreKey)
-	keyUpgrade := sdk.NewKVStoreKey(upgradetypes.StoreKey)
-
+	keys := sdk.NewKVStoreKeys(
+		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
+		minttypes.StoreKey, distributiontypes.StoreKey, slashingtypes.StoreKey,
+		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
+		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
+		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
+		twasmtypes.StoreKey,
+		types.StoreKey,
+	)
 	ms := store.NewCommitMultiStore(db)
-	ms.MountStoreWithDB(keyPoE, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyWasm, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyAcc, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyBank, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyParams, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(tkeyParams, sdk.StoreTypeTransient, db)
-	ms.MountStoreWithDB(keyGov, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyIBC, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyCapability, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(keyCapabilityTransient, sdk.StoreTypeMemory, db)
-	ms.MountStoreWithDB(keyUpgrade, sdk.StoreTypeIAVL, db)
+	for _, v := range keys {
+		ms.MountStoreWithDB(v, sdk.StoreTypeIAVL, db)
+	}
+	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
+	for _, v := range tkeys {
+		ms.MountStoreWithDB(v, sdk.StoreTypeTransient, db)
+	}
+
+	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
+	for _, v := range memKeys {
+		ms.MountStoreWithDB(v, sdk.StoreTypeMemory, db)
+	}
+
 	require.NoError(t, ms.LoadLatestVersion())
 
 	ctx := sdk.NewContext(ms, tmproto.Header{
 		Height: 1234567,
 		Time:   time.Date(2020, time.April, 22, 12, 0, 0, 0, time.UTC),
 	}, isCheckTx, log.NewNopLogger())
+	ctx = wasmtypes.WithTXCounter(ctx, 0)
+
 	encodingConfig := makeEncodingConfig(t)
 	appCodec, legacyAmino := encodingConfig.Marshaler, encodingConfig.Amino
 
-	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, keyParams, tkeyParams)
-	paramsKeeper.Subspace(authtypes.ModuleName)
-	paramsKeeper.Subspace(banktypes.ModuleName)
-	paramsKeeper.Subspace(minttypes.ModuleName)
-	paramsKeeper.Subspace(distributiontypes.ModuleName)
-	paramsKeeper.Subspace(crisistypes.ModuleName)
-	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
-	paramsKeeper.Subspace(capabilitytypes.ModuleName)
-	paramsKeeper.Subspace(ibchost.ModuleName)
-	paramsKeeper.Subspace(types.ModuleName)
-
+	paramsKeeper := paramskeeper.NewKeeper(
+		appCodec,
+		legacyAmino,
+		keys[paramstypes.StoreKey],
+		tkeys[paramstypes.TStoreKey],
+	)
+	for _, m := range []string{
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		stakingtypes.ModuleName,
+		minttypes.ModuleName,
+		distributiontypes.ModuleName,
+		slashingtypes.ModuleName,
+		crisistypes.ModuleName,
+		ibctransfertypes.ModuleName,
+		capabilitytypes.ModuleName,
+		ibchost.ModuleName,
+		govtypes.ModuleName,
+		twasmtypes.ModuleName,
+		types.ModuleName} {
+		paramsKeeper.Subspace(m)
+	}
+	subspace := func(m string) paramstypes.Subspace {
+		r, ok := paramsKeeper.GetSubspace(m)
+		require.True(t, ok)
+		return r
+	}
 	maccPerms := map[string][]string{ // module account permissions
 		ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
+		minttypes.ModuleName:        {authtypes.Minter, authtypes.Burner}, // for the faucet only
 	}
-	authSubsp, _ := paramsKeeper.GetSubspace(authtypes.ModuleName)
-	authKeeper := authkeeper.NewAccountKeeper(
+	accountKeeper := authkeeper.NewAccountKeeper(
 		appCodec,
-		keyAcc, // target store
-		authSubsp,
+		keys[authtypes.StoreKey], // target store
+		subspace(authtypes.ModuleName),
 		authtypes.ProtoBaseAccount, // prototype
 		maccPerms,
 	)
 	blockedAddrs := make(map[string]bool)
 	for acc := range maccPerms {
-		allowReceivingFunds := acc != distributiontypes.ModuleName
-		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = allowReceivingFunds
+		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = true
 	}
 
-	bankSubsp, _ := paramsKeeper.GetSubspace(banktypes.ModuleName)
 	bankKeeper := bankkeeper.NewBaseKeeper(
 		appCodec,
-		keyBank,
-		authKeeper,
-		bankSubsp,
+		keys[banktypes.StoreKey],
+		accountKeeper,
+		subspace(banktypes.ModuleName),
 		blockedAddrs,
 	)
+	upgradeKeeper := upgradekeeper.NewKeeper(
+		map[int64]bool{},
+		keys[upgradetypes.StoreKey],
+		appCodec,
+		tempDir,
+		nil,
+	)
+	stakingAdapter := poestakingadapter.StakingAdapter{}
+
 	bankParams := banktypes.DefaultParams()
 	bankParams = bankParams.SetSendEnabledParam("utgd", true)
 	bankKeeper.SetParams(ctx, bankParams)
-	bankKeeper.SetSupply(ctx, banktypes.NewSupply(sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(1_000_000_000_000)))))
 
-	capabilityKeeper := capabilitykeeper.NewKeeper(appCodec, keyCapability, keyCapabilityTransient)
+	capabilityKeeper := capabilitykeeper.NewKeeper(
+		appCodec,
+		keys[capabilitytypes.StoreKey],
+		memKeys[capabilitytypes.MemStoreKey],
+	)
 	scopedIBCKeeper := capabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedWasmKeeper := capabilityKeeper.ScopeToModule(twasmtypes.ModuleName)
 
-	ibcSubsp, _ := paramsKeeper.GetSubspace(ibchost.ModuleName)
-
-	var stakingKeeper clienttypes.StakingKeeper
-	ibcKeeper := ibckeeper.NewKeeper(
-		appCodec, keyIBC, ibcSubsp, stakingKeeper, scopedIBCKeeper,
+	var twasmKeeper twasmkeeper.Keeper
+	poeKeeper := NewKeeper(
+		appCodec,
+		keys[types.StoreKey],
+		subspace(types.ModuleName),
+		&twasmKeeper,
 	)
-	upgradeKeeper := upgradekeeper.NewKeeper(map[int64]bool{}, keyUpgrade, appCodec, tempDir)
+
+	ibcKeeper := ibckeeper.NewKeeper(
+		appCodec,
+		keys[ibchost.StoreKey],
+		subspace(ibchost.ModuleName),
+		&poeKeeper,
+		upgradeKeeper,
+		scopedIBCKeeper,
+	)
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(paramsKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(upgradeKeeper)).
-		AddRoute(ibchost.RouterKey, ibcclient.NewClientUpdateProposalHandler(ibcKeeper.ClientKeeper))
-
-	router := baseapp.NewRouter()
-	bh := bank.NewHandler(bankKeeper)
-	router.AddRoute(sdk.NewRoute(banktypes.RouterKey, bh))
+		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(ibcKeeper.ClientKeeper))
 
 	querier := baseapp.NewGRPCQueryRouter()
-	banktypes.RegisterQueryServer(querier, bankKeeper)
+	querier.SetInterfaceRegistry(encodingConfig.InterfaceRegistry)
+	msgRouter := baseapp.NewMsgServiceRouter()
+	msgRouter.SetInterfaceRegistry(encodingConfig.InterfaceRegistry)
+	configurator := module.NewConfigurator(appCodec, msgRouter, querier)
+	bank.NewAppModule(appCodec, bankKeeper, accountKeeper).RegisterServices(configurator)
 
-	stakingAdapter := stakingadapter.NewStakingAdapter(nil, nil)
-	twasmSubspace := paramsKeeper.Subspace(twasmtypes.DefaultParamspace)
+	cfg := sdk.GetConfig()
+	cfg.SetAddressVerifier(wasmtypes.VerifyAddressLen())
 
 	consensusParamsUpdater := baseapp.NewBaseApp("testApp", log.NewNopLogger(), db, nil)
 	// set the BaseApp's parameter store
@@ -231,7 +267,6 @@ func createTestInput(
 
 	consensusParamsUpdater.StoreConsensusParams(ctx, wasmapp.DefaultConsensusParams)
 
-	var twasmKeeper twasmkeeper.Keeper
 	handler := wasmkeeper.WithMessageHandlerDecorator(func(nested wasmkeeper.Messenger) wasmkeeper.Messenger {
 		return wasmkeeper.NewMessageHandlerChain(
 			// disable staking messages
@@ -251,9 +286,9 @@ func createTestInput(
 
 	twasmKeeper = twasmkeeper.NewKeeper(
 		appCodec,
-		keyWasm,
-		twasmSubspace,
-		authKeeper,
+		keys[twasmtypes.StoreKey],
+		subspace(twasmtypes.ModuleName),
+		accountKeeper,
 		bankKeeper,
 		stakingAdapter,
 		nil,
@@ -261,7 +296,7 @@ func createTestInput(
 		&ibcKeeper.PortKeeper,
 		scopedWasmKeeper,
 		wasmtesting.MockIBCTransferKeeper{},
-		router,
+		msgRouter,
 		querier,
 		govRouter,
 		tempDir,
@@ -269,24 +304,23 @@ func createTestInput(
 		supportedFeatures,
 		opts...,
 	)
-	defaultParams := twasmtypes.DefaultParams()
-	twasmSubspace.SetParamSet(ctx, &defaultParams)
+	twasmKeeper.SetParams(ctx, twasmtypes.DefaultParams())
 
-	poeSubsp, _ := paramsKeeper.GetSubspace(types.ModuleName)
-	poeKeeper := NewKeeper(appCodec, keyPoE, poeSubsp, twasmKeeper)
-	router.AddRoute(sdk.NewRoute(twasmtypes.RouterKey, wasm.NewHandler(twasmKeeper.GetContractKeeper())))
+	twasm.NewAppModule(appCodec, &twasmKeeper, poestakingadapter.StakingAdapter{}).RegisterServices(configurator)
 	govRouter.AddRoute(twasm.RouterKey, twasmkeeper.NewProposalHandler(twasmKeeper))
 
+	faucet := wasmkeeper.NewTestFaucet(t, ctx, bankKeeper, sdk.NewCoin("utgd", sdk.NewInt(100_000_000_000)))
+
 	keepers := TestKeepers{
-		AccountKeeper:  authKeeper,
+		AccountKeeper:  accountKeeper,
 		TWasmKeeper:    &twasmKeeper,
 		BankKeeper:     bankKeeper,
 		IBCKeeper:      ibcKeeper,
-		Router:         router,
 		PoEKeeper:      poeKeeper,
 		UpgradeKeeper:  upgradeKeeper,
 		EncodingConfig: encodingConfig,
 		BaseApp:        consensusParamsUpdater,
+		Faucet:         faucet,
 	}
 	return ctx, keepers
 }
@@ -306,7 +340,7 @@ func NewWasmVMMock(mutators ...func(*wasmtesting.MockWasmer)) *wasmtesting.MockW
 }
 
 func RandomAddress(_ *testing.T) sdk.AccAddress {
-	return rand.Bytes(sdk.AddrLen)
+	return rand.Bytes(address.Len)
 }
 
 // createMinTestInput minimum integration test setup for this package

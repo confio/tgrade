@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +16,7 @@ import (
 
 func TestGovHandler(t *testing.T) {
 	var (
-		myAddr                sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+		myAddr                sdk.AccAddress = rand.Bytes(address.Len)
 		capturedContractAddrs []sdk.AccAddress
 	)
 	notHandler := func(ctx sdk.Context, content govtypes.Content) error {

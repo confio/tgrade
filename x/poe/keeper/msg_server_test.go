@@ -6,11 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/confio/tgrade/x/poe/keeper/poetesting"
-
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
@@ -21,15 +20,16 @@ import (
 	types1 "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	"github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/keeper/poetesting"
 	"github.com/confio/tgrade/x/poe/types"
 	wasmtesting "github.com/confio/tgrade/x/twasm/testing"
 )
 
 func TestCreateValidator(t *testing.T) {
 	var (
-		myValsetContract  sdk.AccAddress = rand.Bytes(sdk.AddrLen)
-		myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
-		myOperatorAddr    sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+		myValsetContract  sdk.AccAddress = rand.Bytes(address.Len)
+		myStakingContract sdk.AccAddress = rand.Bytes(address.Len)
+		myOperatorAddr    sdk.AccAddress = rand.Bytes(address.Len)
 	)
 	var capturedOpAddr sdk.AccAddress
 	var capturedSelfDelegation *sdk.Coin
@@ -110,8 +110,8 @@ func TestCreateValidator(t *testing.T) {
 }
 
 func TestUpdateValidator(t *testing.T) {
-	var myValsetContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
-	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myValsetContract sdk.AccAddress = rand.Bytes(address.Len)
+	var myOperatorAddr sdk.AccAddress = rand.Bytes(address.Len)
 
 	poeKeeperMock := PoEKeeperMock{
 		GetPoEContractAddressFn: SwitchPoEContractAddressFn(t, myValsetContract, nil),
@@ -333,8 +333,8 @@ func TestUpdateValidator(t *testing.T) {
 
 func TestDelegate(t *testing.T) {
 	var (
-		myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
-		myOperatorAddr    sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+		myStakingContract sdk.AccAddress = rand.Bytes(address.Len)
+		myOperatorAddr    sdk.AccAddress = rand.Bytes(address.Len)
 	)
 	poeKeeperMock := PoEKeeperMock{
 		GetPoEContractAddressFn: SwitchPoEContractAddressFn(t, nil, myStakingContract),

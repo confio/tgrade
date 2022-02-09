@@ -87,7 +87,7 @@ func TestValidatorDoubleSign(t *testing.T) {
 		_ = os.Remove(valKeyFile)
 		_, err := copyFile(filepath.Join(workDir, sut.nodePath(0), "config", "priv_validator_key.json"), valKeyFile)
 		require.NoError(t, err)
-		validatorPubKey, _ = loadValidatorPubKeyForNode(t, sut, nodeNumber)
+		validatorPubKey = loadValidatorPubKeyForNode(t, sut, nodeNumber)
 	})
 	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
 

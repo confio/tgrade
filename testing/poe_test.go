@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	testingcontract "github.com/confio/tgrade/testing/contract"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 
+	"github.com/confio/tgrade/app"
+	testingcontract "github.com/confio/tgrade/testing/contract"
 	poecontracts "github.com/confio/tgrade/x/poe/contract"
 	poetypes "github.com/confio/tgrade/x/poe/types"
 )
@@ -47,7 +47,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 			Addr:   addr,
 			Weight: uint64(sut.nodesCount - i), // unique weight
 		}
-		initialStakedTokenAmount := sdk.TokensFromConsensusPower(100) //set via testnet command
+		initialStakedTokenAmount := sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction) //set via testnet command
 		stakedAmounts[i] = initialStakedTokenAmount.Uint64()
 	})
 
@@ -126,11 +126,12 @@ func TestPoEAddPostGenesisValidatorWithAutoEngagementPoints(t *testing.T) {
 	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
 	opAddr := cli.AddKey("newOperator")
 	cli.FundAddress(opAddr, "1000utgd")
-	newPubKey, pubKeyAddr := loadValidatorPubKeyForNode(t, sut, sut.nodesCount-1)
-
+	newPubKey := loadValidatorPubKeyForNode(t, sut, sut.nodesCount-1)
+	pubKeyEncoded, err := app.MakeEncodingConfig().Codec.MarshalInterfaceJSON(newPubKey)
+	require.NoError(t, err)
 	// when
 	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd",
-		"--pubkey="+pubKeyAddr, "--from=newOperator")
+		"--pubkey="+string(pubKeyEncoded), "--from=newOperator", "--gas=250000")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
@@ -161,12 +162,14 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
 	opAddr := cli.AddKey("newOperator")
 	cli.FundAddress(opAddr, "1000utgd")
-	newPubKey, pubKeyAddr := loadValidatorPubKeyForNode(t, sut, sut.nodesCount-1)
+	newPubKey := loadValidatorPubKeyForNode(t, sut, sut.nodesCount-1)
 	t.Logf("new operator address %s", opAddr)
+	pubKeyEncoded, err := app.MakeEncodingConfig().Codec.MarshalInterfaceJSON(newPubKey)
+	require.NoError(t, err)
 
 	// when
 	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd",
-		"--pubkey="+pubKeyAddr, "--from=newOperator")
+		"--pubkey="+string(pubKeyEncoded), "--from=newOperator")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t, defaultWaitTime*2)

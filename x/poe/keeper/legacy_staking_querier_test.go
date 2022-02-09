@@ -6,20 +6,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/confio/tgrade/x/poe/keeper/poetesting"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
 
 	"github.com/confio/tgrade/x/poe/contract"
+	"github.com/confio/tgrade/x/poe/keeper/poetesting"
 	"github.com/confio/tgrade/x/poe/types"
 )
 
 func TestStakingValidatorDelegations(t *testing.T) {
-	var myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myOperatorAddr sdk.AccAddress = rand.Bytes(address.Len)
 
 	poeKeeper := PoEKeeperMock{
 		GetBondDenomFn: func(ctx sdk.Context) string { return "utgd" },
@@ -88,7 +88,7 @@ func TestStakingValidatorDelegations(t *testing.T) {
 
 func TestStakingValidatorUnbondingDelegations(t *testing.T) {
 	var (
-		myOperatorAddr sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+		myOperatorAddr sdk.AccAddress = rand.Bytes(address.Len)
 		myTime                        = time.Now().UTC()
 		myHeight       int64          = 123
 	)
@@ -184,7 +184,7 @@ func TestStakingValidatorUnbondingDelegations(t *testing.T) {
 }
 
 func TestStakingParams(t *testing.T) {
-	var myStakingContract sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var myStakingContract sdk.AccAddress = rand.Bytes(address.Len)
 
 	poeKeeper := PoEKeeperMock{
 		GetPoEContractAddressFn: func(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {

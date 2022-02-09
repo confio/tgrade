@@ -3,12 +3,12 @@ package contract_test
 import (
 	"testing"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/tendermint/tendermint/libs/rand"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/libs/rand"
 
 	"github.com/confio/tgrade/x/poe"
 	"github.com/confio/tgrade/x/poe/contract"
@@ -44,7 +44,7 @@ func TestQueryWithdrawableFunds(t *testing.T) {
 			expRewards: true,
 		},
 		"unknown address": {
-			src:        rand.Bytes(sdk.AddrLen),
+			src:        rand.Bytes(address.Len),
 			expRewards: false,
 		},
 	}

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
 
@@ -17,12 +18,12 @@ var tgTrustedCircles []byte
 
 func TestInitTrustedCircle(t *testing.T) {
 	// setup contracts and seed some data
-	var creator sdk.AccAddress = rand.Bytes(sdk.AddrLen)
+	var creator sdk.AccAddress = rand.Bytes(address.Len)
 	ctx, example, _, _ := setupPoEContracts(t)
 	contractKeeper := example.TWasmKeeper.GetContractKeeper()
 
 	depositAmount := sdk.NewCoin("utgd", sdk.NewInt(10_000_000))
-	example.BankKeeper.SetBalances(ctx, creator, sdk.NewCoins(depositAmount))
+	example.Faucet.Fund(ctx, creator, depositAmount)
 
 	init := contract.TrustedCircleInitMsg{
 		Name:                      "foo",

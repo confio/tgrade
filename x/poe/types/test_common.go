@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/types/address"
+
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -41,7 +43,7 @@ func MakeEncodingConfig(_ testing.TB) simappparams.EncodingConfig {
 }
 
 func RandomAccAddress() sdk.AccAddress {
-	return rand.Bytes(sdk.AddrLen)
+	return rand.Bytes(address.Len)
 }
 
 // RandomGenTX returns a signed genesis tx
@@ -63,7 +65,7 @@ func RandomGenTX(t *testing.T, power uint32, mutators ...func(*MsgCreateValidato
 	require.NoError(t, err)
 
 	// prepare genesis tx
-	valTokens := sdk.TokensFromConsensusPower(int64(power))
+	valTokens := sdk.TokensFromConsensusPower(int64(power), sdk.DefaultPowerReduction)
 	createValMsg, err := NewMsgCreateValidator(
 		addr,
 		valPubKey,

@@ -6,21 +6,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/address"
+	"github.com/tendermint/tendermint/libs/rand"
+
+	"github.com/CosmWasm/wasmd/x/wasm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	ibcclienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
 	"github.com/stretchr/testify/assert"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-
-	poetypes "github.com/confio/tgrade/x/poe/types"
-
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	db "github.com/tendermint/tm-db"
 
-	"github.com/CosmWasm/wasmd/x/wasm"
-	abci "github.com/tendermint/tendermint/abci/types"
+	poetypes "github.com/confio/tgrade/x/poe/types"
 )
 
 var emptyWasmOpts []wasm.Option = nil
@@ -29,7 +30,7 @@ func TestTgradeExport(t *testing.T) {
 	t.Skip("Alex, export is not implemented")
 
 	db := db.NewMemDB()
-	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, EmptyBaseAppOptions{}, emptyWasmOpts)
+	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)
 	genesisState := NewDefaultGenesisState()
 
 	setupWithSingleValidatorGenTX(t, genesisState)
@@ -48,7 +49,7 @@ func TestTgradeExport(t *testing.T) {
 	gapp.Commit()
 
 	// Making a new app object with the db, so that initchain hasn't been called
-	newGapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, EmptyBaseAppOptions{}, emptyWasmOpts)
+	newGapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)
 
 	_, err = newGapp.ExportAppStateAndValidators(false, []string{})
 	require.NoError(t, err, "ExportAppStateAndValidators should not have an error")
@@ -60,13 +61,15 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	// - account object
 	// - enough funds on the bank
 	// - membership in engagement group
-	marshaler := MakeEncodingConfig().Marshaler
+	marshaler := MakeEncodingConfig().Codec
 
+	systemAdminAddr := sdk.AccAddress(rand.Bytes(address.Len))
 	myGenTx, myAddr, _ := poetypes.RandomGenTX(t, 100)
-
 	var authGenState authtypes.GenesisState
 	marshaler.MustUnmarshalJSON(genesisState[authtypes.ModuleName], &authGenState)
-	genAccounts := []authtypes.GenesisAccount{authtypes.NewBaseAccount(myAddr, nil, 0, 0)}
+	genAccounts := []authtypes.GenesisAccount{
+		authtypes.NewBaseAccount(myAddr, nil, 0, 0),
+		authtypes.NewBaseAccount(systemAdminAddr, nil, 0, 0)}
 	accounts, err := authtypes.PackAccounts(genAccounts)
 	require.NoError(t, err)
 	authGenState.Accounts = accounts
@@ -77,6 +80,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 
 	coins := sdk.Coins{sdk.NewCoin(poetypes.DefaultBondDenom, sdk.NewInt(1000000000))}
 	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: myAddr.String(), Coins: coins.Sort()})
+	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: systemAdminAddr.String(), Coins: coins.Sort()})
 	genesisState[banktypes.ModuleName] = marshaler.MustMarshalJSON(&bankGenState)
 
 	// add system admin to not fail poe on validation
@@ -84,13 +88,14 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	poeGS.BondDenom = poetypes.DefaultBondDenom
 	poeGS.GenTxs = []json.RawMessage{myGenTx}
 	poeGS.Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Weight: 10}}
+	poeGS.SystemAdminAddress = systemAdminAddr.String()
 	genesisState = poetypes.SetGenesisStateInAppState(marshaler, genesisState, poeGS)
 }
 
 // ensure that blocked addresses are properly set in bank keeper
 func TestBlockedAddrs(t *testing.T) {
 	db := db.NewMemDB()
-	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, EmptyBaseAppOptions{}, emptyWasmOpts)
+	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)
 
 	for acc := range maccPerms {
 		t.Run(acc, func(t *testing.T) {
@@ -126,11 +131,9 @@ func setGenesis(gapp *TgradeApp) error {
 }
 
 func TestIBCKeeperLazyInitialization(t *testing.T) {
-	t.Skip("Alex, fails with insufficient funds of OC member")
 	db := db.NewMemDB()
-	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, EmptyBaseAppOptions{}, emptyWasmOpts)
+	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)
 	genesisState := NewDefaultGenesisState()
-
 	setupWithSingleValidatorGenTX(t, genesisState)
 
 	stateBytes, err := json.MarshalIndent(genesisState, "", "  ")

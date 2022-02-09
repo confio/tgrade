@@ -34,6 +34,7 @@ func TestGovProposal(t *testing.T) {
 			"1",
 			`{}`,
 			"--label=testing",
+			"--no-admin",
 			fmt.Sprintf("--run-as=%s", myKey),
 		},
 		{

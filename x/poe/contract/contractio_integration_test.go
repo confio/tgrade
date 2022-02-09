@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -16,7 +17,7 @@ func TestSetEngagementPoints(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example, _, _ := setupPoEContracts(t)
 
-	myOperatorAddr := rand.Bytes(sdk.AddrLen)
+	myOperatorAddr := rand.Bytes(address.Len)
 	engContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
 	require.NoError(t, err)
 
@@ -37,7 +38,7 @@ func TestBondDelegation(t *testing.T) {
 
 	myOperatorAddr, _ := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
 	// fund account
-	example.BankKeeper.SetBalances(ctx, myOperatorAddr, sdk.NewCoins(sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt())))
+	example.Faucet.Fund(ctx, myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt()))
 	stakingContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	require.NoError(t, err)
 

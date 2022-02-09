@@ -10,11 +10,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	clienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
-	ibcclienttypes "github.com/cosmos/cosmos-sdk/x/ibc/core/02-client/types"
-	ibctmtypes "github.com/cosmos/cosmos-sdk/x/ibc/light-clients/07-tendermint/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	clienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
+	ibctmtypes "github.com/cosmos/ibc-go/v2/modules/light-clients/07-tendermint/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -27,9 +27,6 @@ func TestGetProposalContent(t *testing.T) {
 	ir := codectypes.NewInterfaceRegistry()
 	clienttypes.RegisterInterfaces(ir)
 	ibctmtypes.RegisterInterfaces(ir)
-
-	ib, err := ibcclienttypes.PackHeader(&ibctmtypes.Header{})
-	require.NoError(t, err)
 
 	specs := map[string]struct {
 		src               string
@@ -87,10 +84,10 @@ func TestGetProposalContent(t *testing.T) {
         "header": {"type_url": "/ibc.lightclients.tendermint.v1.Header","value": "GgA="}
       }}}}`,
 			expGovProposal: &ibcclienttypes.ClientUpdateProposal{
-				Title:       "foo",
-				Description: "bar",
-				ClientId:    "myClientID",
-				Header:      ib,
+				Title:           "foo",
+				Description:     "bar",
+				SubjectClientId: "myClientID",
+				// todo (Alex):fix also in contracts!!				SubstituteClientId:      ib,
 			},
 			skipValidateBasic: true,
 		},
@@ -163,7 +160,6 @@ func TestGetProposalContent(t *testing.T) {
 			expGovProposal: &wasmtypes.MigrateContractProposal{
 				Title:       "foo",
 				Description: "bar",
-				RunAs:       mySenderContractAddr.String(),
 				Contract:    "cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09",
 				CodeID:      1,
 				Msg:         []byte("{}"),

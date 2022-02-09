@@ -14,7 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/simapp/params"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -27,6 +26,7 @@ import (
 	cfg "github.com/tendermint/tendermint/config"
 	tmtypes "github.com/tendermint/tendermint/types"
 
+	appparams "github.com/confio/tgrade/app/params"
 	"github.com/confio/tgrade/x/poe"
 	"github.com/confio/tgrade/x/poe/client/cli"
 	"github.com/confio/tgrade/x/poe/types"
@@ -100,7 +100,7 @@ func TestGenTxCmd(t *testing.T) {
 			msgs := tx.GetMsgs()
 			require.Len(t, msgs, 1)
 
-			require.Equal(t, types.TypeMsgCreateValidator, msgs[0].Type())
+			require.IsType(t, &types.MsgCreateValidator{}, msgs[0])
 			require.Equal(t, []sdk.AccAddress{addr}, msgs[0].GetSigners())
 			require.Equal(t, spec.stakingAmount, msgs[0].(*types.MsgCreateValidator).Value)
 			require.NoError(t, tx.ValidateBasic())
@@ -109,7 +109,7 @@ func TestGenTxCmd(t *testing.T) {
 	}
 }
 
-func setupSystem(t *testing.T, workDir string, encodingConfig params.EncodingConfig) (sdk.AccAddress, sdkclient.Context, module.BasicManager) {
+func setupSystem(t *testing.T, workDir string, encodingConfig appparams.EncodingConfig) (sdk.AccAddress, sdkclient.Context, module.BasicManager) {
 	// init config dir
 	nodeConfig := cfg.TestConfig()
 	nodeConfig.RootDir = t.TempDir()
@@ -132,31 +132,31 @@ func setupSystem(t *testing.T, workDir string, encodingConfig params.EncodingCon
 	// create genesis
 	moduleManager := module.NewBasicManager(poe.AppModuleBasic{}, auth.AppModuleBasic{}, bank.AppModuleBasic{})
 	moduleManager.RegisterInterfaces(encodingConfig.InterfaceRegistry)
-	gs := moduleManager.DefaultGenesis(encodingConfig.Marshaler)
+	gs := moduleManager.DefaultGenesis(encodingConfig.Codec)
 	// with PoE setup
-	state := types.GetGenesisStateFromAppState(encodingConfig.Marshaler, gs)
+	state := types.GetGenesisStateFromAppState(encodingConfig.Codec, gs)
 	state.BondDenom = bondDenum
 	state.Engagement = append(state.Engagement, types.TG4Member{
 		Address: addr.String(),
 		Weight:  1,
 	})
-	types.SetGenesisStateInAppState(encodingConfig.Marshaler, gs, state)
+	types.SetGenesisStateInAppState(encodingConfig.Codec, gs, state)
 	// with bank setup
-	bs := banktypes.GetGenesisStateFromAppState(encodingConfig.Marshaler, gs)
+	bs := banktypes.GetGenesisStateFromAppState(encodingConfig.Codec, gs)
 	bs.Balances = append(bs.Balances, banktypes.Balance{
 		Address: addr.String(),
 		Coins:   sdk.NewCoins(sdk.NewCoin(bondDenum, sdk.NewInt(initialBalance))),
 	})
-	genesisStateBz := encodingConfig.Marshaler.MustMarshalJSON(bs)
+	genesisStateBz := encodingConfig.Codec.MustMarshalJSON(bs)
 	gs[banktypes.ModuleName] = genesisStateBz
 	// with account setup
 	var as authtypes.GenesisState
-	encodingConfig.Marshaler.MustUnmarshalJSON(gs[authtypes.ModuleName], &as)
+	encodingConfig.Codec.MustUnmarshalJSON(gs[authtypes.ModuleName], &as)
 	genAccounts := []authtypes.GenesisAccount{authtypes.NewBaseAccount(addr, nil, 0, 0)}
 	accounts, err := authtypes.PackAccounts(genAccounts)
 	require.NoError(t, err)
 	as.Accounts = accounts
-	gs[authtypes.ModuleName] = encodingConfig.Marshaler.MustMarshalJSON(&as)
+	gs[authtypes.ModuleName] = encodingConfig.Codec.MustMarshalJSON(&as)
 
 	appGenStateJSON, err := json.MarshalIndent(gs, "", "  ")
 	require.NoError(t, err)
@@ -173,7 +173,7 @@ func setupSystem(t *testing.T, workDir string, encodingConfig params.EncodingCon
 		WithHomeDir(workDir).
 		WithChainID(myChainID).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
-		WithJSONMarshaler(encodingConfig.Marshaler).
+		WithCodec(encodingConfig.Codec).
 		WithLegacyAmino(encodingConfig.Amino).
 		WithTxConfig(encodingConfig.TxConfig).
 		WithAccountRetriever(authtypes.AccountRetriever{})

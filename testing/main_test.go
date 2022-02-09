@@ -19,6 +19,7 @@ import (
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/tendermint/tendermint/libs/rand"
 
@@ -124,7 +125,7 @@ func printResultFlag(ok bool) {
 }
 
 func randomBech32Addr() string {
-	src := rand.Bytes(sdk.AddrLen)
+	src := rand.Bytes(address.Len)
 	return encodeBech32Addr(src)
 }
 

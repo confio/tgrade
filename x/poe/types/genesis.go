@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/address"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -65,7 +67,7 @@ func DefaultGenesisState() GenesisState {
 				AllowEndEarly: true,
 			},
 		},
-		SystemAdminAddress: sdk.AccAddress(rand.Bytes(sdk.AddrLen)).String(),
+		SystemAdminAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 		Params:             DefaultParams(),
 	}
 }

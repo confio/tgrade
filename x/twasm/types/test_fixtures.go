@@ -5,6 +5,7 @@ import (
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/tendermint/tendermint/libs/rand"
 )
 
@@ -76,7 +77,7 @@ func TgradeContractDetailsFixture(t *testing.T, mutators ...func(d *TgradeContra
 }
 
 func RandomAddress(_ *testing.T) sdk.AccAddress {
-	return rand.Bytes(sdk.AddrLen)
+	return rand.Bytes(address.Len)
 }
 
 func RandomBech32Address(t *testing.T) string {

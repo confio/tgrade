@@ -25,7 +25,7 @@ import (
 
 // default values
 var (
-	DefaultTokens = sdk.TokensFromConsensusPower(100)
+	DefaultTokens = sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction)
 	defaultAmount = DefaultTokens.String() + types.DefaultBondDenom
 )
 
@@ -59,8 +59,9 @@ func NewCreateValidatorCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 
+			txf := tx.NewFactoryCLI(clientCtx, cmd.Flags()).
+				WithTxConfig(clientCtx.TxConfig).WithAccountRetriever(clientCtx.AccountRetriever)
 			txf, msg, err := NewBuildCreateValidatorMsg(clientCtx, txf, cmd.Flags())
 			if err != nil {
 				return err
@@ -110,10 +111,13 @@ func NewBuildCreateValidatorMsg(clientCtx client.Context, txf tx.Factory, fs *fl
 	}
 
 	valAddr := clientCtx.GetFromAddress()
-	pkStr, _ := fs.GetString(FlagPubKey)
-
-	pk, err := sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeConsPub, pkStr)
+	pkStr, err := fs.GetString(FlagPubKey)
 	if err != nil {
+		return txf, nil, err
+	}
+
+	var pk cryptotypes.PubKey
+	if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(pkStr), &pk); err != nil {
 		return txf, nil, err
 	}
 
@@ -215,7 +219,7 @@ type TxCreateValidatorConfig struct {
 
 	Amount string
 
-	PubKey string
+	PubKey cryptotypes.PubKey
 
 	IP              string
 	Website         string
@@ -267,7 +271,7 @@ func PrepareConfigForTxCreateValidator(flagSet *flag.FlagSet, moniker, nodeID, c
 	}
 
 	c.NodeID = nodeID
-	c.PubKey = sdk.MustBech32ifyPubKey(sdk.Bech32PubKeyTypeConsPub, valPubKey)
+	c.PubKey = valPubKey
 	c.Website = website
 	c.SecurityContact = securityContact
 	c.Details = details
@@ -292,13 +296,6 @@ func BuildCreateValidatorMsg(clientCtx client.Context, config TxCreateValidatorC
 	}
 
 	valAddr := clientCtx.GetFromAddress()
-	pkStr := config.PubKey
-
-	pk, err := sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeConsPub, pkStr)
-	if err != nil {
-		return txBldr, nil, err
-	}
-
 	description := stakingtypes.NewDescription(
 		config.Moniker,
 		config.Identity,
@@ -307,7 +304,7 @@ func BuildCreateValidatorMsg(clientCtx client.Context, config TxCreateValidatorC
 		config.Details,
 	)
 
-	msg, err := types.NewMsgCreateValidator(valAddr, pk, amount, description)
+	msg, err := types.NewMsgCreateValidator(valAddr, config.PubKey, amount, description)
 	if err != nil {
 		return txBldr, msg, err
 	}
