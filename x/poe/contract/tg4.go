@@ -26,7 +26,7 @@ func SortByWeightDesc(s []TG4Member) []TG4Member {
 // TG4Query applies to all tg4 types - stake, group, and mixer
 type TG4Query struct {
 	Admin               *struct{}                 `json:"admin,omitempty"`
-	TotalWeight         *struct{}                 `json:"total_weight,omitempty"`
+	TotalPoints         *struct{}                 `json:"total_points,omitempty"`
 	ListMembers         *ListMembersQuery         `json:"list_members,omitempty"`
 	ListMembersByPoints *ListMembersByPointsQuery `json:"list_members_by_points,omitempty"`
 	Member              *MemberQuery              `json:"member,omitempty"`
@@ -105,9 +105,9 @@ func QueryTG4Member(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddres
 	return response.Points, err
 }
 
-// QueryTG4TotalWeight returns the weight of this member. (nil, nil) means not present
-func QueryTG4TotalWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress) (int, error) {
-	query := TG4Query{TotalWeight: &struct{}{}}
+// QueryTG4TotalPoints returns the points for this member. (nil, nil) means not present
+func QueryTG4TotalPoints(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress) (int, error) {
+	query := TG4Query{TotalPoints: &struct{}{}}
 	var response TG4TotalPointsResponse
 	err := doQuery(ctx, k, tg4Addr, query, &response)
 	return response.Points, err

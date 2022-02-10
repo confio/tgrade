@@ -89,7 +89,7 @@ func (a EngagementContractAdapter) UpdateAdmin(ctx sdk.Context, newAdmin, sender
 // See https://github.com/confio/poe-contracts/blob/v0.5.3-2/contracts/tg4-engagement/src/msg.rs#L77-L123
 type EngagementQuery struct {
 	Admin                  *struct{}                    `json:"admin,omitempty"`
-	TotalWeight            *struct{}                    `json:"total_weight,omitempty"`
+	TotalPoints            *struct{}                    `json:"total_points,omitempty"`
 	ListMembers            *ListMembersQuery            `json:"list_members,omitempty"`
 	ListMembersByPoints    *ListMembersByPointsQuery    `json:"list_members_by_points,omitempty"`
 	Member                 *MemberQuery                 `json:"member,omitempty"`
