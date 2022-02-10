@@ -41,7 +41,7 @@ func TestSetValidatorInitialEngagementPoints(t *testing.T) {
 				capturedUpdateMsg = msg
 				return nil, nil
 			},
-			expUpdateMsg: fmt.Sprintf(`{"update_member":{"addr": %q, "weight":%d}}`, myOpAddr.String(), initialPointsToGrant),
+			expUpdateMsg: fmt.Sprintf(`{"update_member":{"addr": %q, "points":%d}}`, myOpAddr.String(), initialPointsToGrant),
 		},
 		"self delegation below min - no points": {
 			selfDelegation: sdk.NewCoin("ALX", sdk.NewInt(1)),
@@ -61,7 +61,7 @@ func TestSetValidatorInitialEngagementPoints(t *testing.T) {
 				capturedUpdateMsg = msg
 				return nil, nil
 			},
-			expUpdateMsg: fmt.Sprintf(`{"update_member":{"addr": %q, "weight":%d}}`, myOpAddr.String(), initialPointsToGrant),
+			expUpdateMsg: fmt.Sprintf(`{"update_member":{"addr": %q, "points":%d}}`, myOpAddr.String(), initialPointsToGrant),
 		},
 		"operator has engagement points = initial - no update": {
 			selfDelegation: sdk.NewCoin("ALX", sdk.NewInt(11)),
