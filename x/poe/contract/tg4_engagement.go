@@ -95,9 +95,9 @@ type EngagementQuery struct {
 	Member                 *MemberQuery                 `json:"member,omitempty"`
 	Hooks                  *struct{}                    `json:"hooks,omitempty"`
 	Preauths               *struct{}                    `json:"preauths,omitempty"`
-	WithdrawableFunds      *WithdrawableFundsQuery      `json:"withdrawable_funds,omitempty"`
-	DistributedFunds       *struct{}                    `json:"distributed_funds,omitempty"`
-	UndistributedFunds     *struct{}                    `json:"undistributed_funds,omitempty"`
+	WithdrawableRewards    *WithdrawableRewardsQuery    `json:"withdrawable_rewards,omitempty"`
+	DistributedRewards     *struct{}                    `json:"distributed_rewards,omitempty"`
+	UndistributedRewards   *struct{}                    `json:"undistributed_rewards,omitempty"`
 	Delegated              *DelegatedQuery              `json:"delegated,omitempty"`
 	Halflife               *struct{}                    `json:"halflife,omitempty"`
 	IsSlasher              *IsSlasher                   `json:"is_slasher,omitempty"`
