@@ -141,10 +141,10 @@ func (v StakeContractAdapter) QueryStakedAmount(ctx sdk.Context, opAddr sdk.AccA
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "contract query")
 	}
-	if resp.Weight == nil {
+	if resp.Points == nil {
 		return nil, nil
 	}
-	amount := sdk.NewInt(int64(*resp.Weight))
+	amount := sdk.NewInt(int64(*resp.Points))
 	// we should return Coin instead: https://github.com/confio/tgrade-contracts/issues/265
 	return &amount, nil
 }

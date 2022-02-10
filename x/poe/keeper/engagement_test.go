@@ -54,7 +54,7 @@ func TestSetValidatorInitialEngagementPoints(t *testing.T) {
 			queryFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				require.Equal(t, engagementContractAddr, contractAddr)
 				var current = 1
-				return json.Marshal(contract.TG4MemberResponse{Weight: &current})
+				return json.Marshal(contract.TG4MemberResponse{Points: &current})
 			},
 			SudoFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, msg []byte) ([]byte, error) {
 				require.Equal(t, engagementContractAddr, contractAddr)
@@ -68,7 +68,7 @@ func TestSetValidatorInitialEngagementPoints(t *testing.T) {
 			queryFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				require.Equal(t, engagementContractAddr, contractAddr)
 				var current = initialPointsToGrant
-				return json.Marshal(contract.TG4MemberResponse{Weight: &current})
+				return json.Marshal(contract.TG4MemberResponse{Points: &current})
 			},
 		},
 		"operator has engagement points > initial - no update": {
@@ -76,7 +76,7 @@ func TestSetValidatorInitialEngagementPoints(t *testing.T) {
 			queryFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				require.Equal(t, engagementContractAddr, contractAddr)
 				var current = initialPointsToGrant + 1
-				return json.Marshal(contract.TG4MemberResponse{Weight: &current})
+				return json.Marshal(contract.TG4MemberResponse{Points: &current})
 			},
 		},
 		"engagement status query fails": {

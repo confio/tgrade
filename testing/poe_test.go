@@ -45,7 +45,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 		addr := clix.GetKeyAddr(fmt.Sprintf("node%d", i))
 		engagementGroup[i] = poecontracts.TG4Member{
 			Addr:   addr,
-			Weight: uint64(sut.nodesCount - i), // unique weight
+			Points: uint64(sut.nodesCount - i), // unique weight
 		}
 		initialStakedTokenAmount := sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction) //set via testnet command
 		stakedAmounts[i] = initialStakedTokenAmount.Uint64()
@@ -392,7 +392,7 @@ func assertValidatorsUpdated(t *testing.T, sortedMember []poecontracts.TG4Member
 	require.Len(t, v, expValidators, "got %#v", v)
 	for i := 0; i < expValidators; i++ {
 		// ordered by power desc
-		expWeight := int64(math.Sqrt(float64(sortedMember[i].Weight * stakedAmounts[i]))) // function implemented in mixer
+		expWeight := int64(math.Sqrt(float64(sortedMember[i].Points * stakedAmounts[i]))) // function implemented in mixer
 		assert.Equal(t, expWeight, v[i].VotingPower, "address: %s", encodeBech32Addr(v[i].Address.Bytes()))
 	}
 }

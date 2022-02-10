@@ -109,7 +109,7 @@ func clearTokenAmount(validators []stakingtypes.Validator) []stakingtypes.Valida
 
 func clearWeight(members []contract.TG4Member) []contract.TG4Member {
 	for i, m := range members {
-		m.Weight = 0
+		m.Points = 0
 		members[i] = m
 	}
 	return members

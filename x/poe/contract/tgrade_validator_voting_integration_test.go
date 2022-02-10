@@ -43,7 +43,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, members, 3)
 	for _, m := range members {
-		t.Logf("%s : %d\n", m.Addr, m.Weight)
+		t.Logf("%s : %d\n", m.Addr, m.Points)
 	}
 
 	// Consensus variables for referencing
@@ -261,7 +261,7 @@ func TestQueryTG4Members(t *testing.T) {
 	for i, m := range members {
 		expMembers[i] = contract.TG4Member{
 			Addr:   m.Address,
-			Weight: 0,
+			Points: 0,
 		}
 	}
 
@@ -336,7 +336,7 @@ func TestQueryTG4MembersByWeight(t *testing.T) {
 	require.Len(t, expMembers, 3)
 
 	sort.Slice(expMembers, func(i, j int) bool {
-		return expMembers[i].Weight > expMembers[j].Weight
+		return expMembers[i].Points > expMembers[j].Points
 	})
 
 	specs := map[string]struct {

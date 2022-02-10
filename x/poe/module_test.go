@@ -134,7 +134,7 @@ func (v validators) expEngagementGroup() []contract.TG4Member {
 	for i, x := range v {
 		r[i] = contract.TG4Member{
 			Addr:   x.operatorAddr.String(),
-			Weight: x.engagement,
+			Points: x.engagement,
 		}
 	}
 	return contract.SortByWeightDesc(r)
@@ -146,7 +146,7 @@ func (v validators) expStakingGroup() []contract.TG4Member {
 	for i, x := range v {
 		r[i] = contract.TG4Member{
 			Addr:   x.operatorAddr.String(),
-			Weight: x.stakedAmount,
+			Points: x.stakedAmount,
 		}
 	}
 	return contract.SortByWeightDesc(r)

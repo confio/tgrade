@@ -309,7 +309,7 @@ func newEngagementInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contr
 	for i, v := range gs.Engagement {
 		tg4EngagementInitMsg.Members[i] = contract.TG4Member{
 			Addr:   v.Address,
-			Weight: v.Weight,
+			Points: v.Weight,
 		}
 	}
 	return tg4EngagementInitMsg

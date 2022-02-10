@@ -60,7 +60,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				Admin:            mySystemAdmin, // updated later
 				PreAuthsHooks:    1,
 				PreAuthsSlashing: 1,
-				Members:          []contract.TG4Member{{Addr: myUser, Weight: 10}, {Addr: myOtherUser, Weight: 11}},
+				Members:          []contract.TG4Member{{Addr: myUser, Points: 10}, {Addr: myOtherUser, Points: 11}},
 				Denom:            "utgd",
 				Halflife:         15552000,
 			},

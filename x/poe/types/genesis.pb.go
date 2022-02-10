@@ -3275,7 +3275,7 @@ func (m *TG4Member) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Weight", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Points", wireType)
 			}
 			m.Weight = 0
 			for shift := uint(0); ; shift += 7 {
