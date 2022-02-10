@@ -171,7 +171,7 @@ type ValsetConfigResponse struct {
 	// Percentage of total accumulated fees which is subtracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
 	FeePercentage         sdk.Dec                `json:"fee_percentage"`
 	DistributionContracts []DistributionContract `json:"distribution_contracts,omitempty"`
-	RewardsContract       string                 `json:"rewards_contract"`
+	ValidatorGroup        string                 `json:"validator_group"`
 	AutoUnjail            bool                   `json:"auto_unjail"`
 }
 

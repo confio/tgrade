@@ -79,9 +79,9 @@ func TestInitGenesis(t *testing.T) {
 			{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
 			{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
 		},
-		EpochReward:     sdk.NewInt64Coin("utgd", 100000),
-		RewardsContract: twasm.ContractAddress(1, 7).String(),
-		AutoUnjail:      false,
+		EpochReward:    sdk.NewInt64Coin("utgd", 100000),
+		ValidatorGroup: twasm.ContractAddress(1, 7).String(),
+		AutoUnjail:     false,
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)
 

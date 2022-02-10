@@ -185,7 +185,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "query valset config")
 	}
 
-	distrAddr, err := sdk.AccAddressFromBech32(valsetCfg.RewardsContract)
+	distrAddr, err := sdk.AccAddressFromBech32(valsetCfg.ValidatorGroup)
 	if err != nil {
 		return sdkerrors.Wrap(err, "distribution contract address")
 	}

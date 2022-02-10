@@ -230,7 +230,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
 			return poetesting.ValsetContractMock{
 				QueryConfigFn: func(ctx sdk.Context) (*contract.ValsetConfigResponse, error) {
-					return &contract.ValsetConfigResponse{RewardsContract: distributionContractAddr.String()}, nil
+					return &contract.ValsetConfigResponse{ValidatorGroup: distributionContractAddr.String()}, nil
 				},
 				UpdateAdminFn: func(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
 					assert.Equal(t, ocGovProposalContractAddr, newAdmin)
