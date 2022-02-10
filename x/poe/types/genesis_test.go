@@ -115,13 +115,13 @@ func TestValidateGenesis(t *testing.T) {
 		},
 		"engagement contract not set": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagmentContractConfig = nil
+				m.EngagementContractConfig = nil
 			}),
 			expErr: true,
 		},
 		"invalid engagement contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagmentContractConfig.Halflife = time.Nanosecond
+				m.EngagementContractConfig.Halflife = time.Nanosecond
 			}),
 			expErr: true,
 		},
@@ -216,17 +216,17 @@ func TestValidateEngagementContractConfig(t *testing.T) {
 		expErr bool
 	}{
 		"default": {
-			src: DefaultGenesisState().EngagmentContractConfig,
+			src: DefaultGenesisState().EngagementContractConfig,
 		},
 		"halflife empty": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagmentContractConfig.Halflife = 0
-			}).EngagmentContractConfig,
+				m.EngagementContractConfig.Halflife = 0
+			}).EngagementContractConfig,
 		},
 		"halflife contains elements < second": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagmentContractConfig.Halflife = time.Minute + time.Millisecond
-			}).EngagmentContractConfig,
+				m.EngagementContractConfig.Halflife = time.Minute + time.Millisecond
+			}).EngagementContractConfig,
 			expErr: true,
 		},
 	}

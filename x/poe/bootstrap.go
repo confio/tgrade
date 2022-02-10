@@ -304,7 +304,7 @@ func newEngagementInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contr
 		PreAuthsHooks:    1,
 		PreAuthsSlashing: 1,
 		Denom:            gs.BondDenom,
-		Halflife:         uint64(gs.EngagmentContractConfig.Halflife.Seconds()),
+		Halflife:         uint64(gs.EngagementContractConfig.Halflife.Seconds()),
 	}
 	for i, v := range gs.Engagement {
 		tg4EngagementInitMsg.Members[i] = contract.TG4Member{

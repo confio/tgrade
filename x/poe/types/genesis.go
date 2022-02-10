@@ -38,7 +38,7 @@ func DefaultGenesisState() GenesisState {
 			EngagementRewardRatio:    sdk.MustNewDecFromStr("47.5"),
 			CommunityPoolRewardRatio: sdk.MustNewDecFromStr("5"),
 		},
-		EngagmentContractConfig: &EngagementContractConfig{
+		EngagementContractConfig: &EngagementContractConfig{
 			Halflife: 180 * 24 * time.Hour,
 		},
 		OversightCommitteeContractConfig: &OversightCommitteeContractConfig{
@@ -80,10 +80,10 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		if len(g.Engagement) == 0 {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty engagement group")
 		}
-		if g.EngagmentContractConfig == nil {
+		if g.EngagementContractConfig == nil {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty engagement contract config")
 		}
-		if err := g.EngagmentContractConfig.ValidateBasic(); err != nil {
+		if err := g.EngagementContractConfig.ValidateBasic(); err != nil {
 			return sdkerrors.Wrap(err, "engagement contract config")
 		}
 		if err := sdk.ValidateDenom(g.BondDenom); err != nil {
