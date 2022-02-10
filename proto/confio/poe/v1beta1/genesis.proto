@@ -49,8 +49,8 @@ message GenesisState {
 
   ValsetContractConfig valset_contract_config = 8
       [ (gogoproto.jsontag) = "valset_contract_config,omitempty" ];
-  EngagementContractConfig engagment_contract_config = 9
-      [ (gogoproto.jsontag) = "engagment_contract_config,omitempty" ];
+  EngagementContractConfig engagement_contract_config = 9
+      [ (gogoproto.jsontag) = "engagement_contract_config,omitempty" ];
   // BondDenom defines the bondable coin denomination.
   string bond_denom = 10 [ (gogoproto.moretags) = "yaml:\"bond_denom\"" ];
   OversightCommitteeContractConfig oversight_committee_contract_config = 11
