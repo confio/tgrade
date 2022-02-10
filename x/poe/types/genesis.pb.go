@@ -6,11 +6,6 @@ package types
 import (
 	encoding_json "encoding/json"
 	fmt "fmt"
-	io "io"
-	math "math"
-	math_bits "math/bits"
-	time "time"
-
 	_ "github.com/CosmWasm/wasmd/x/wasm/types"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
@@ -18,6 +13,10 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
 	_ "google.golang.org/protobuf/types/known/durationpb"
+	io "io"
+	math "math"
+	math_bits "math/bits"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -187,7 +186,7 @@ func (m *GenesisState) GetValidatorVotingContractConfig() *ValidatorVotingContra
 // StakeContractConfig initial setup config
 type StakeContractConfig struct {
 	MinBond              uint64        `protobuf:"varint,1,opt,name=min_bond,json=minBond,proto3" json:"min_bond,omitempty"`
-	TokensPerWeight      uint64        `protobuf:"varint,2,opt,name=tokens_per_weight,json=tokensPerWeight,proto3" json:"tokens_per_points,omitempty"`
+	TokensPerWeight      uint64        `protobuf:"varint,2,opt,name=tokens_per_weight,json=tokensPerWeight,proto3" json:"tokens_per_weight,omitempty"`
 	UnbondingPeriod      time.Duration `protobuf:"bytes,3,opt,name=unbonding_period,json=unbondingPeriod,proto3,stdduration" json:"unbonding_period"`
 	ClaimAutoreturnLimit uint32        `protobuf:"varint,4,opt,name=claim_autoreturn_limit,json=claimAutoreturnLimit,proto3" json:"claim_autoreturn_limit,omitempty"`
 }
@@ -2229,7 +2228,7 @@ func (m *StakeContractConfig) Unmarshal(dAtA []byte) error {
 			}
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TokensPerPoint", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TokensPerWeight", wireType)
 			}
 			m.TokensPerWeight = 0
 			for shift := uint(0); ; shift += 7 {
@@ -2350,7 +2349,7 @@ func (m *ValsetContractConfig) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MinPoints", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field MinWeight", wireType)
 			}
 			m.MinWeight = 0
 			for shift := uint(0); ; shift += 7 {
@@ -3275,7 +3274,7 @@ func (m *TG4Member) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Points", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Weight", wireType)
 			}
 			m.Weight = 0
 			for shift := uint(0); ; shift += 7 {
