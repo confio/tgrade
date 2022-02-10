@@ -49,7 +49,7 @@ type ValsetInitMsg struct {
 	DistributionContracts []DistributionContract `json:"distribution_contracts,omitempty"`
 	// This is the code-id of the cw2222-compliant contract used to handle rewards for the validators
 	// Generally should the the tg4-engagement code id
-	RewardsCodeID uint64 `json:"rewards_code_id"`
+	ValidatorGroupCodeID uint64 `json:"validator_group_code_id"`
 }
 
 type DistributionContract struct {

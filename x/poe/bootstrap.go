@@ -353,7 +353,7 @@ func newValsetInitMsg(
 			{Address: engagementAddr.String(), Ratio: *contract.DecimalFromPercentage(config.EngagementRewardRatio)},
 			{Address: communityPoolAddr.String(), Ratio: *contract.DecimalFromPercentage(config.CommunityPoolRewardRatio)},
 		},
-		RewardsCodeID: engagementCodeID,
+		ValidatorGroupCodeID: engagementCodeID,
 	}
 }
 
