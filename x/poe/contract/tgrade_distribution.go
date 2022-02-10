@@ -14,7 +14,7 @@ type WithdrawableRewardsQuery struct {
 	Owner string `json:"owner"`
 }
 type RewardsResponse struct {
-	Funds sdk.Coin
+	Rewards sdk.Coin
 }
 
 type DistributionContractAdapter struct {
@@ -38,5 +38,5 @@ func (d DistributionContractAdapter) ValidatorOutstandingReward(ctx sdk.Context,
 	if err != nil {
 		return sdk.Coin{}, err
 	}
-	return resp.Funds, err
+	return resp.Rewards, err
 }
