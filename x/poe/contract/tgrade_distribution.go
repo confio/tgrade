@@ -7,7 +7,7 @@ import (
 )
 
 type DistributionQuery struct {
-	WithdrawableRewards *WithdrawableRewardsQuery `json:"withdrawable_funds,omitempty"`
+	WithdrawableRewards *WithdrawableRewardsQuery `json:"withdrawable_rewards,omitempty"`
 }
 
 type WithdrawableRewardsQuery struct {
