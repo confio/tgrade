@@ -28,7 +28,7 @@ type TG4Query struct {
 	Admin               *struct{}                 `json:"admin,omitempty"`
 	TotalWeight         *struct{}                 `json:"total_weight,omitempty"`
 	ListMembers         *ListMembersQuery         `json:"list_members,omitempty"`
-	ListMembersByWeight *ListMembersByWeightQuery `json:"list_members_by_weight,omitempty"`
+	ListMembersByPoints *ListMembersByPointsQuery `json:"list_members_by_points,omitempty"`
 	Member              *MemberQuery              `json:"member,omitempty"`
 }
 
@@ -37,7 +37,7 @@ type ListMembersQuery struct {
 	Limit      int    `json:"limit,omitempty"`
 }
 
-type ListMembersByWeightQuery struct {
+type ListMembersByPointsQuery struct {
 	StartAfter *TG4Member `json:"start_after,omitempty"`
 	Limit      int        `json:"limit,omitempty"`
 }
@@ -78,7 +78,7 @@ func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.
 		}
 		limit = int(pagination.Limit)
 	}
-	query := TG4Query{ListMembersByWeight: &ListMembersByWeightQuery{StartAfter: startAfter, Limit: limit}}
+	query := TG4Query{ListMembersByPoints: &ListMembersByPointsQuery{StartAfter: startAfter, Limit: limit}}
 	var response TG4MemberListResponse
 	err := doQuery(ctx, k, tg4Addr, query, &response)
 	return response.Members, err

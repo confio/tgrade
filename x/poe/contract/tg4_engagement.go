@@ -91,7 +91,7 @@ type EngagementQuery struct {
 	Admin                  *struct{}                    `json:"admin,omitempty"`
 	TotalWeight            *struct{}                    `json:"total_weight,omitempty"`
 	ListMembers            *ListMembersQuery            `json:"list_members,omitempty"`
-	ListMembersByWeight    *ListMembersByWeightQuery    `json:"list_members_by_weight,omitempty"`
+	ListMembersByPoints    *ListMembersByPointsQuery    `json:"list_members_by_points,omitempty"`
 	Member                 *MemberQuery                 `json:"member,omitempty"`
 	Hooks                  *struct{}                    `json:"hooks,omitempty"`
 	Preauths               *struct{}                    `json:"preauths,omitempty"`
