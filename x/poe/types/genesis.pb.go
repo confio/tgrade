@@ -187,7 +187,7 @@ func (m *GenesisState) GetValidatorVotingContractConfig() *ValidatorVotingContra
 // StakeContractConfig initial setup config
 type StakeContractConfig struct {
 	MinBond              uint64        `protobuf:"varint,1,opt,name=min_bond,json=minBond,proto3" json:"min_bond,omitempty"`
-	TokensPerWeight      uint64        `protobuf:"varint,2,opt,name=tokens_per_weight,json=tokensPerWeight,proto3" json:"tokens_per_weight,omitempty"`
+	TokensPerWeight      uint64        `protobuf:"varint,2,opt,name=tokens_per_weight,json=tokensPerWeight,proto3" json:"tokens_per_points,omitempty"`
 	UnbondingPeriod      time.Duration `protobuf:"bytes,3,opt,name=unbonding_period,json=unbondingPeriod,proto3,stdduration" json:"unbonding_period"`
 	ClaimAutoreturnLimit uint32        `protobuf:"varint,4,opt,name=claim_autoreturn_limit,json=claimAutoreturnLimit,proto3" json:"claim_autoreturn_limit,omitempty"`
 }
@@ -2229,7 +2229,7 @@ func (m *StakeContractConfig) Unmarshal(dAtA []byte) error {
 			}
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TokensPerWeight", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TokensPerPoint", wireType)
 			}
 			m.TokensPerWeight = 0
 			for shift := uint(0); ; shift += 7 {

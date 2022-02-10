@@ -321,7 +321,7 @@ func newStakeInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.T
 		Admin:            adminAddr.String(),
 		Denom:            gs.BondDenom,
 		MinBond:          gs.StakeContractConfig.MinBond,
-		TokensPerWeight:  gs.StakeContractConfig.TokensPerWeight,
+		TokensPerPoint:   gs.StakeContractConfig.TokensPerWeight,
 		UnbondingPeriod:  uint64(gs.StakeContractConfig.UnbondingPeriod.Seconds()),
 		AutoReturnLimit:  &claimLimit,
 		PreAuthsHooks:    1,

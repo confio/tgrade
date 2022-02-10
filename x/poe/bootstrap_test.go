@@ -92,7 +92,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				Admin:            mySystemAdmin,
 				Denom:            "utgd",
 				MinBond:          1,
-				TokensPerWeight:  1,
+				TokensPerPoint:   1,
 				UnbondingPeriod:  21 * 24 * 60 * 60,
 				AutoReturnLimit:  &defaultLimit,
 				PreAuthsHooks:    1,
