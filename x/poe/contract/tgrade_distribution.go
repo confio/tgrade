@@ -13,7 +13,7 @@ type DistributionQuery struct {
 type WithdrawableRewardsQuery struct {
 	Owner string `json:"owner"`
 }
-type FundsResponse struct {
+type RewardsResponse struct {
 	Funds sdk.Coin
 }
 
@@ -33,7 +33,7 @@ func (d DistributionContractAdapter) ValidatorOutstandingReward(ctx sdk.Context,
 		return sdk.Coin{}, d.addressLookupErr
 	}
 	query := DistributionQuery{WithdrawableRewards: &WithdrawableRewardsQuery{Owner: addr.String()}}
-	var resp FundsResponse
+	var resp RewardsResponse
 	err := doQuery(ctx, d.contractQuerier, d.contractAddr, query, &resp)
 	if err != nil {
 		return sdk.Coin{}, err
