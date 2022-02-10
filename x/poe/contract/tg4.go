@@ -62,7 +62,7 @@ type TG4MemberResponse struct {
 }
 
 type TG4TotalPointsResponse struct {
-	Points int `json:"points"`
+	Points int `json:"total_points"`
 }
 
 func QueryTG4MembersByWeight(ctx sdk.Context, k types.SmartQuerier, tg4Addr sdk.AccAddress, pagination *Paginator) ([]TG4Member, error) {
