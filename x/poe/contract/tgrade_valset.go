@@ -35,7 +35,7 @@ func DecimalFromProMille(promille int64) *sdk.Dec {
 type ValsetInitMsg struct {
 	Admin         string      `json:"admin,omitempty"`
 	Membership    string      `json:"membership"`
-	MinWeight     uint64      `json:"min_weight"`
+	MinPoints     uint64      `json:"min_points"`
 	MaxValidators uint32      `json:"max_validators"`
 	EpochLength   uint64      `json:"epoch_length"`
 	EpochReward   sdk.Coin    `json:"epoch_reward"`
@@ -80,7 +80,7 @@ type TG4ValsetExecute struct {
 }
 
 type UpdateConfigMsg struct {
-	MinWeight     uint64 `json:"min_weight,omitempty"`
+	MinPoints     uint64 `json:"min_points,omitempty"`
 	MaxValidators uint32 `json:"max_validators,omitempty"`
 }
 
@@ -164,7 +164,7 @@ type ListValidatorsQuery struct {
 // ValsetConfigResponse Response to `config` query
 type ValsetConfigResponse struct {
 	Membership    string   `json:"membership"`
-	MinWeight     uint64   `json:"min_weight"`
+	MinPoints     uint64   `json:"min_points"`
 	MaxValidators uint32   `json:"max_validators"`
 	Scaling       uint32   `json:"scaling,omitempty"`
 	EpochReward   sdk.Coin `json:"epoch_reward"`

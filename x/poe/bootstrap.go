@@ -341,7 +341,7 @@ func newValsetInitMsg(
 	return contract.ValsetInitMsg{
 		Admin:         admin.String(),
 		Membership:    mixerContractAddr.String(),
-		MinWeight:     config.MinWeight,
+		MinPoints:     config.MinWeight,
 		MaxValidators: config.MaxValidators,
 		EpochLength:   uint64(config.EpochLength.Seconds()),
 		EpochReward:   config.EpochReward,

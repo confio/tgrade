@@ -121,7 +121,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			expInitMsg: contract.ValsetInitMsg{
 				Admin:         mySystemAdmin,
 				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
+				MinPoints:     1,
 				MaxValidators: 100,
 				EpochLength:   60,
 				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
@@ -334,7 +334,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 			exp: contract.ValsetInitMsg{
 				Admin:         systemAdmin.String(),
 				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
+				MinPoints:     1,
 				MaxValidators: 100,
 				EpochLength:   60,
 				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
@@ -357,7 +357,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 			exp: contract.ValsetInitMsg{
 				Admin:         systemAdmin.String(),
 				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
+				MinPoints:     1,
 				MaxValidators: 100,
 				EpochLength:   60,
 				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
@@ -380,7 +380,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 			exp: contract.ValsetInitMsg{
 				Admin:         systemAdmin.String(),
 				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
+				MinPoints:     1,
 				MaxValidators: 100,
 				EpochLength:   60,
 				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
@@ -403,7 +403,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 			exp: contract.ValsetInitMsg{
 				Admin:         systemAdmin.String(),
 				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
+				MinPoints:     1,
 				MaxValidators: 100,
 				EpochLength:   60,
 				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),

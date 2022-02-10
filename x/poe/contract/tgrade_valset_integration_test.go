@@ -200,7 +200,7 @@ func TestQueryValsetConfig(t *testing.T) {
 
 	expConfig := &contract.ValsetConfigResponse{
 		Membership:      mixerContractAddr.String(),
-		MinWeight:       1,
+		MinPoints:       1,
 		MaxValidators:   100,
 		Scaling:         1,
 		EpochReward:     sdk.NewInt64Coin("utgd", 100000),

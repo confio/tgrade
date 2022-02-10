@@ -2350,7 +2350,7 @@ func (m *ValsetContractConfig) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MinWeight", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field MinPoints", wireType)
 			}
 			m.MinWeight = 0
 			for shift := uint(0); ; shift += 7 {

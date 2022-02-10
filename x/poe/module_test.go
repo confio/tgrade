@@ -71,7 +71,7 @@ func TestInitGenesis(t *testing.T) {
 	engagementAddr := twasm.ContractAddress(1, 1)
 	expConfig := &contract.ValsetConfigResponse{
 		Membership:    mixerAddr.String(),
-		MinWeight:     1,
+		MinPoints:     1,
 		MaxValidators: 100,
 		Scaling:       1,
 		FeePercentage: sdk.MustNewDecFromStr("0.50"),
