@@ -34,5 +34,5 @@ type OCGovProposalExecute struct {
 
 type EngagementMember struct {
 	Addr   string `json:"member"`
-	Weight uint64 `json:"points"`
+	Points uint64 `json:"points"`
 }

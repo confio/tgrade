@@ -40,13 +40,13 @@ func SetGlobalMinFee(t *testing.T, fees ...sdk.DecCoin) GenesisMutator {
 	}
 }
 
-// SetAllEngagementPoints set the given value for all members of the engament group (default = validators)
+// SetAllEngagementPoints set the given value for all members of the engagement group (default = validators)
 func SetAllEngagementPoints(t *testing.T, points int) GenesisMutator {
 	return func(raw []byte) []byte {
 		group := gjson.GetBytes(raw, "app_state.poe.engagement").Array()
 		for i := range group {
 			var err error
-			raw, err = sjson.SetRawBytes(raw, fmt.Sprintf("app_state.poe.engagement.%d.weight", i), []byte(fmt.Sprintf(`"%d"`, points)))
+			raw, err = sjson.SetRawBytes(raw, fmt.Sprintf("app_state.poe.engagement.%d.points", i), []byte(fmt.Sprintf(`"%d"`, points)))
 			require.NoError(t, err)
 		}
 		return raw

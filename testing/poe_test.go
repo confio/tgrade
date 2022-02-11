@@ -182,7 +182,7 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 	// and new operator should not be in engagement group
 	query := poecontracts.TG4Query{Member: &poecontracts.MemberQuery{Addr: opAddr}}
 	qResult := cli.CustomQuery("q", "wasm", "contract-state", "smart", engagementGroupAddr, toJson(t, query))
-	assert.Empty(t, gjson.Get(qResult, "data.weight").String(), qResult)
+	assert.Empty(t, gjson.Get(qResult, "data.points").String(), qResult)
 
 	// and when
 	// val operator added to engagement group via gov
@@ -194,7 +194,7 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 			Proposal: testingcontract.Proposal{
 				GrantEngagement: testingcontract.EngagementMember{
 					Addr:   opAddr,
-					Weight: 10,
+					Points: 10,
 				},
 			},
 		},
@@ -211,7 +211,7 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 
 	// then new operator should be in engagement group
 	qResult = cli.CustomQuery("q", "wasm", "contract-state", "smart", engagementGroupAddr, toJson(t, query))
-	assert.Equal(t, int64(10), gjson.Get(qResult, "data.weight").Int(), qResult)
+	assert.Equal(t, int64(10), gjson.Get(qResult, "data.points").Int(), qResult)
 	AwaitValsetEpochCompleted(t)
 
 	// and in new validator set
