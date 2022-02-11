@@ -73,7 +73,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			for len(desc.Moniker) < 3 { // ensure min length is met
 				f.Fuzz(&desc)
 			}
-			desc.Website = "http://" + desc.Website
+			desc.Website = "https://" + desc.Website
 
 			genTx, opAddr, pubKey := types.RandomGenTX(t, uint32(power), func(m *types.MsgCreateValidator) {
 				m.Description = desc

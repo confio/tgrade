@@ -155,7 +155,7 @@ func TestUpdateValidator(t *testing.T) {
 					m.Description = stakingtypes.NewDescription(
 						"otherMoniker",
 						"otherIdentity",
-						"http://otherWebsite.com",
+						"https://otherWebsite.com",
 						"otherContact",
 						"otherDetails",
 					)
@@ -164,7 +164,7 @@ func TestUpdateValidator(t *testing.T) {
 			exp: &contract.ValidatorMetadata{
 				Moniker:         "otherMoniker",
 				Identity:        "otherIdentity",
-				Website:         "http://otherWebsite.com",
+				Website:         "https://otherWebsite.com",
 				SecurityContact: "otherContact",
 				Details:         "otherDetails",
 			},
@@ -218,7 +218,7 @@ func TestUpdateValidator(t *testing.T) {
 					m.Description = stakingtypes.NewDescription(
 						stakingtypes.DoNotModifyDesc,
 						stakingtypes.DoNotModifyDesc,
-						"http://otherWebsite.com",
+						"https://otherWebsite.com",
 						stakingtypes.DoNotModifyDesc,
 						stakingtypes.DoNotModifyDesc,
 					)
@@ -227,7 +227,7 @@ func TestUpdateValidator(t *testing.T) {
 			exp: &contract.ValidatorMetadata{
 				Moniker:         "myMoniker",
 				Identity:        "myIdentity",
-				Website:         "http://otherWebsite.com",
+				Website:         "https://otherWebsite.com",
 				SecurityContact: "myContact",
 				Details:         "myDetails",
 			},
