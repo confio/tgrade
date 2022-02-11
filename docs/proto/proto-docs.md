@@ -285,7 +285,7 @@ GenesisState - initial state of module
 | `engagement` | [TG4Member](#confio.poe.v1beta1.TG4Member) | repeated | Engagement weighted members of the engagement group. Validators should be in here. |
 | `stake_contract_config` | [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig) |  |  |
 | `valset_contract_config` | [ValsetContractConfig](#confio.poe.v1beta1.ValsetContractConfig) |  |  |
-| `engagment_contract_config` | [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig) |  |  |
+| `engagement_contract_config` | [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig) |  |  |
 | `bond_denom` | [string](#string) |  | BondDenom defines the bondable coin denomination. |
 | `oversight_committee_contract_config` | [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig) |  |  |
 | `community_pool_contract_config` | [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig) |  |  |
@@ -339,7 +339,7 @@ StakeContractConfig initial setup config
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `min_bond` | [uint64](#uint64) |  |  |
-| `tokens_per_weight` | [uint64](#uint64) |  |  |
+| `tokens_per_point` | [uint64](#uint64) |  |  |
 | `unbonding_period` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
 | `claim_autoreturn_limit` | [uint32](#uint32) |  |  |
 
@@ -357,7 +357,7 @@ TG4Member member of the Engagement group.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `address` | [string](#string) |  | Address is the bech32 address string |
-| `weight` | [uint64](#uint64) |  |  |
+| `points` | [uint64](#uint64) |  |  |
 
 
 
@@ -387,7 +387,7 @@ ValsetContractConfig initial setup config
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `min_weight` | [uint64](#uint64) |  |  |
+| `min_points` | [uint64](#uint64) |  |  |
 | `max_validators` | [uint32](#uint32) |  |  |
 | `epoch_length` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
 | `epoch_reward` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |

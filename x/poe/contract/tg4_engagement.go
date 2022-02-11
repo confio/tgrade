@@ -89,15 +89,15 @@ func (a EngagementContractAdapter) UpdateAdmin(ctx sdk.Context, newAdmin, sender
 // See https://github.com/confio/poe-contracts/blob/v0.5.3-2/contracts/tg4-engagement/src/msg.rs#L77-L123
 type EngagementQuery struct {
 	Admin                  *struct{}                    `json:"admin,omitempty"`
-	TotalWeight            *struct{}                    `json:"total_weight,omitempty"`
+	TotalPoints            *struct{}                    `json:"total_points,omitempty"`
 	ListMembers            *ListMembersQuery            `json:"list_members,omitempty"`
-	ListMembersByWeight    *ListMembersByWeightQuery    `json:"list_members_by_weight,omitempty"`
+	ListMembersByPoints    *ListMembersByPointsQuery    `json:"list_members_by_points,omitempty"`
 	Member                 *MemberQuery                 `json:"member,omitempty"`
 	Hooks                  *struct{}                    `json:"hooks,omitempty"`
 	Preauths               *struct{}                    `json:"preauths,omitempty"`
-	WithdrawableFunds      *WithdrawableFundsQuery      `json:"withdrawable_funds,omitempty"`
-	DistributedFunds       *struct{}                    `json:"distributed_funds,omitempty"`
-	UndistributedFunds     *struct{}                    `json:"undistributed_funds,omitempty"`
+	WithdrawableRewards    *WithdrawableRewardsQuery    `json:"withdrawable_rewards,omitempty"`
+	DistributedRewards     *struct{}                    `json:"distributed_rewards,omitempty"`
+	UndistributedRewards   *struct{}                    `json:"undistributed_rewards,omitempty"`
 	Delegated              *DelegatedQuery              `json:"delegated,omitempty"`
 	Halflife               *struct{}                    `json:"halflife,omitempty"`
 	IsSlasher              *IsSlasher                   `json:"is_slasher,omitempty"`

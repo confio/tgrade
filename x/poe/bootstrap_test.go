@@ -60,7 +60,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				Admin:            mySystemAdmin, // updated later
 				PreAuthsHooks:    1,
 				PreAuthsSlashing: 1,
-				Members:          []contract.TG4Member{{Addr: myUser, Weight: 10}, {Addr: myOtherUser, Weight: 11}},
+				Members:          []contract.TG4Member{{Addr: myUser, Points: 10}, {Addr: myOtherUser, Points: 11}},
 				Denom:            "utgd",
 				Halflife:         15552000,
 			},
@@ -92,7 +92,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				Admin:            mySystemAdmin,
 				Denom:            "utgd",
 				MinBond:          1,
-				TokensPerWeight:  1,
+				TokensPerPoint:   1,
 				UnbondingPeriod:  21 * 24 * 60 * 60,
 				AutoReturnLimit:  &defaultLimit,
 				PreAuthsHooks:    1,
@@ -119,16 +119,16 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		},
 		types.PoEContractTypeValset: {
 			expInitMsg: contract.ValsetInitMsg{
-				Admin:         mySystemAdmin,
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: expFeePercentage,
-				InitialKeys:   []contract.Validator{},
-				RewardsCodeID: 1,
+				Admin:                mySystemAdmin,
+				Membership:           mixerContractAddr.String(),
+				MinPoints:            1,
+				MaxValidators:        100,
+				EpochLength:          60,
+				EpochReward:          sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:              1,
+				FeePercentage:        expFeePercentage,
+				InitialKeys:          []contract.Validator{},
+				ValidatorGroupCodeID: 1,
 				DistributionContracts: []contract.DistributionContract{
 					{Address: engagementContractAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
 					{Address: communityPoolContractAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
@@ -230,7 +230,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		ValsetContractFn: func(ctx sdk.Context) keeper.ValsetContract {
 			return poetesting.ValsetContractMock{
 				QueryConfigFn: func(ctx sdk.Context) (*contract.ValsetConfigResponse, error) {
-					return &contract.ValsetConfigResponse{RewardsContract: distributionContractAddr.String()}, nil
+					return &contract.ValsetConfigResponse{ValidatorGroup: distributionContractAddr.String()}, nil
 				},
 				UpdateAdminFn: func(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
 					assert.Equal(t, ocGovProposalContractAddr, newAdmin)
@@ -258,7 +258,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 	ctx := sdk.Context{}.WithLogger(log.TestingLogger())
 	genesis := types.GenesisStateFixture(func(m *types.GenesisState) {
 		m.SystemAdminAddress = mySystemAdmin
-		m.Engagement = []types.TG4Member{{Address: myUser, Weight: 10}, {Address: myOtherUser, Weight: 11}}
+		m.Engagement = []types.TG4Member{{Address: myUser, Points: 10}, {Address: myOtherUser, Points: 11}}
 	})
 	gotErr := bootstrapPoEContracts(ctx, cm, tm, pm, genesis)
 
@@ -332,16 +332,16 @@ func TestCreateValsetInitMsg(t *testing.T) {
 		"default": {
 			genesis: types.DefaultGenesisState(),
 			exp: contract.ValsetInitMsg{
-				Admin:         systemAdmin.String(),
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: contract.DecimalFromProMille(500),
-				InitialKeys:   []contract.Validator{},
-				RewardsCodeID: engagementID,
+				Admin:                systemAdmin.String(),
+				Membership:           mixerContractAddr.String(),
+				MinPoints:            1,
+				MaxValidators:        100,
+				EpochLength:          60,
+				EpochReward:          sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:              1,
+				FeePercentage:        contract.DecimalFromProMille(500),
+				InitialKeys:          []contract.Validator{},
+				ValidatorGroupCodeID: engagementID,
 				DistributionContracts: []contract.DistributionContract{
 					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
 					{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
@@ -355,16 +355,16 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Admin:         systemAdmin.String(),
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: contract.DecimalFromProMille(501),
-				InitialKeys:   []contract.Validator{},
-				RewardsCodeID: engagementID,
+				Admin:                systemAdmin.String(),
+				Membership:           mixerContractAddr.String(),
+				MinPoints:            1,
+				MaxValidators:        100,
+				EpochLength:          60,
+				EpochReward:          sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:              1,
+				FeePercentage:        contract.DecimalFromProMille(501),
+				InitialKeys:          []contract.Validator{},
+				ValidatorGroupCodeID: engagementID,
 				DistributionContracts: []contract.DistributionContract{
 					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
 					{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
@@ -378,16 +378,16 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Admin:         systemAdmin.String(),
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: contract.DecimalFromProMille(1),
-				InitialKeys:   []contract.Validator{},
-				RewardsCodeID: engagementID,
+				Admin:                systemAdmin.String(),
+				Membership:           mixerContractAddr.String(),
+				MinPoints:            1,
+				MaxValidators:        100,
+				EpochLength:          60,
+				EpochReward:          sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:              1,
+				FeePercentage:        contract.DecimalFromProMille(1),
+				InitialKeys:          []contract.Validator{},
+				ValidatorGroupCodeID: engagementID,
 				DistributionContracts: []contract.DistributionContract{
 					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
 					{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
@@ -401,16 +401,16 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Admin:         systemAdmin.String(),
-				Membership:    mixerContractAddr.String(),
-				MinWeight:     1,
-				MaxValidators: 100,
-				EpochLength:   60,
-				EpochReward:   sdk.NewCoin("utgd", sdk.NewInt(100_000)),
-				Scaling:       1,
-				FeePercentage: &minDecimal,
-				InitialKeys:   []contract.Validator{},
-				RewardsCodeID: engagementID,
+				Admin:                systemAdmin.String(),
+				Membership:           mixerContractAddr.String(),
+				MinPoints:            1,
+				MaxValidators:        100,
+				EpochLength:          60,
+				EpochReward:          sdk.NewCoin("utgd", sdk.NewInt(100_000)),
+				Scaling:              1,
+				FeePercentage:        &minDecimal,
+				InitialKeys:          []contract.Validator{},
+				ValidatorGroupCodeID: engagementID,
 				DistributionContracts: []contract.DistributionContract{
 					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
 					{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},

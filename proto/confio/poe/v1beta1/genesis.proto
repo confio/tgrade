@@ -49,8 +49,8 @@ message GenesisState {
 
   ValsetContractConfig valset_contract_config = 8
       [ (gogoproto.jsontag) = "valset_contract_config,omitempty" ];
-  EngagementContractConfig engagment_contract_config = 9
-      [ (gogoproto.jsontag) = "engagment_contract_config,omitempty" ];
+  EngagementContractConfig engagement_contract_config = 9
+      [ (gogoproto.jsontag) = "engagement_contract_config,omitempty" ];
   // BondDenom defines the bondable coin denomination.
   string bond_denom = 10 [ (gogoproto.moretags) = "yaml:\"bond_denom\"" ];
   OversightCommitteeContractConfig oversight_committee_contract_config = 11
@@ -64,7 +64,7 @@ message GenesisState {
 // StakeContractConfig initial setup config
 message StakeContractConfig {
   uint64 min_bond = 1;
-  uint64 tokens_per_weight = 2;
+  uint64 tokens_per_point = 2;
   google.protobuf.Duration unbonding_period = 3
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
   uint32 claim_autoreturn_limit = 4;
@@ -72,7 +72,7 @@ message StakeContractConfig {
 
 // ValsetContractConfig initial setup config
 message ValsetContractConfig {
-  uint64 min_weight = 1;
+  uint64 min_points = 1;
   uint32 max_validators = 2;
   google.protobuf.Duration epoch_length = 3
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
@@ -160,7 +160,7 @@ message PoEContract {
 message TG4Member {
   // Address is the bech32 address string
   string address = 1 [ (gogoproto.jsontag) = "address" ];
-  uint64 weight = 2 [ (gogoproto.jsontag) = "weight" ];
+  uint64 points = 2 [ (gogoproto.jsontag) = "points" ];
 }
 
 // VotingRules contains configuration for the tally.

@@ -125,7 +125,7 @@ func BondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, operatorAddres
 // SetEngagementPoints set engagement points  If the member already exists, its weight will be reset to the weight sent here
 func SetEngagementPoints(ctx sdk.Context, contractAddr sdk.AccAddress, k types.Sudoer, opAddr sdk.AccAddress, points uint64) error {
 	msg := TG4EngagementSudoMsg{
-		UpdateMember: &TG4Member{Addr: opAddr.String(), Weight: points},
+		UpdateMember: &TG4Member{Addr: opAddr.String(), Points: points},
 	}
 	msgBz, err := json.Marshal(msg)
 	if err != nil {

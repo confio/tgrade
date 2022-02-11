@@ -185,7 +185,7 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "query valset config")
 	}
 
-	distrAddr, err := sdk.AccAddressFromBech32(valsetCfg.RewardsContract)
+	distrAddr, err := sdk.AccAddressFromBech32(valsetCfg.ValidatorGroup)
 	if err != nil {
 		return sdkerrors.Wrap(err, "distribution contract address")
 	}
@@ -304,12 +304,12 @@ func newEngagementInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contr
 		PreAuthsHooks:    1,
 		PreAuthsSlashing: 1,
 		Denom:            gs.BondDenom,
-		Halflife:         uint64(gs.EngagmentContractConfig.Halflife.Seconds()),
+		Halflife:         uint64(gs.EngagementContractConfig.Halflife.Seconds()),
 	}
 	for i, v := range gs.Engagement {
 		tg4EngagementInitMsg.Members[i] = contract.TG4Member{
 			Addr:   v.Address,
-			Weight: v.Weight,
+			Points: v.Points,
 		}
 	}
 	return tg4EngagementInitMsg
@@ -321,7 +321,7 @@ func newStakeInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.T
 		Admin:            adminAddr.String(),
 		Denom:            gs.BondDenom,
 		MinBond:          gs.StakeContractConfig.MinBond,
-		TokensPerWeight:  gs.StakeContractConfig.TokensPerWeight,
+		TokensPerPoint:   gs.StakeContractConfig.TokensPerPoint,
 		UnbondingPeriod:  uint64(gs.StakeContractConfig.UnbondingPeriod.Seconds()),
 		AutoReturnLimit:  &claimLimit,
 		PreAuthsHooks:    1,
@@ -341,7 +341,7 @@ func newValsetInitMsg(
 	return contract.ValsetInitMsg{
 		Admin:         admin.String(),
 		Membership:    mixerContractAddr.String(),
-		MinWeight:     config.MinWeight,
+		MinPoints:     config.MinPoints,
 		MaxValidators: config.MaxValidators,
 		EpochLength:   uint64(config.EpochLength.Seconds()),
 		EpochReward:   config.EpochReward,
@@ -353,7 +353,7 @@ func newValsetInitMsg(
 			{Address: engagementAddr.String(), Ratio: *contract.DecimalFromPercentage(config.EngagementRewardRatio)},
 			{Address: communityPoolAddr.String(), Ratio: *contract.DecimalFromPercentage(config.CommunityPoolRewardRatio)},
 		},
-		RewardsCodeID: engagementCodeID,
+		ValidatorGroupCodeID: engagementCodeID,
 	}
 }
 

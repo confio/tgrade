@@ -37,7 +37,7 @@ func GenesisStateFixture(mutators ...func(m *GenesisState)) GenesisState {
 	r := DefaultGenesisState()
 	r.Engagement = []TG4Member{{
 		Address: RandomAccAddress().String(),
-		Weight:  10,
+		Points:  10,
 	}}
 
 	for _, m := range mutators {

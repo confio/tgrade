@@ -35,7 +35,7 @@ func DecimalFromProMille(promille int64) *sdk.Dec {
 type ValsetInitMsg struct {
 	Admin         string      `json:"admin,omitempty"`
 	Membership    string      `json:"membership"`
-	MinWeight     uint64      `json:"min_weight"`
+	MinPoints     uint64      `json:"min_points"`
 	MaxValidators uint32      `json:"max_validators"`
 	EpochLength   uint64      `json:"epoch_length"`
 	EpochReward   sdk.Coin    `json:"epoch_reward"`
@@ -49,7 +49,7 @@ type ValsetInitMsg struct {
 	DistributionContracts []DistributionContract `json:"distribution_contracts,omitempty"`
 	// This is the code-id of the cw2222-compliant contract used to handle rewards for the validators
 	// Generally should the the tg4-engagement code id
-	RewardsCodeID uint64 `json:"rewards_code_id"`
+	ValidatorGroupCodeID uint64 `json:"validator_group_code_id"`
 }
 
 type DistributionContract struct {
@@ -80,7 +80,7 @@ type TG4ValsetExecute struct {
 }
 
 type UpdateConfigMsg struct {
-	MinWeight     uint64 `json:"min_weight,omitempty"`
+	MinPoints     uint64 `json:"min_points,omitempty"`
 	MaxValidators uint32 `json:"max_validators,omitempty"`
 }
 
@@ -164,14 +164,14 @@ type ListValidatorsQuery struct {
 // ValsetConfigResponse Response to `config` query
 type ValsetConfigResponse struct {
 	Membership    string   `json:"membership"`
-	MinWeight     uint64   `json:"min_weight"`
+	MinPoints     uint64   `json:"min_points"`
 	MaxValidators uint32   `json:"max_validators"`
 	Scaling       uint32   `json:"scaling,omitempty"`
 	EpochReward   sdk.Coin `json:"epoch_reward"`
 	// Percentage of total accumulated fees which is subtracted from tokens minted as a rewards. A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0
 	FeePercentage         sdk.Dec                `json:"fee_percentage"`
 	DistributionContracts []DistributionContract `json:"distribution_contracts,omitempty"`
-	RewardsContract       string                 `json:"rewards_contract"`
+	ValidatorGroup        string                 `json:"validator_group"`
 	AutoUnjail            bool                   `json:"auto_unjail"`
 }
 

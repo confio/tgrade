@@ -199,14 +199,14 @@ func TestQueryValsetConfig(t *testing.T) {
 	require.NoError(t, gotErr)
 
 	expConfig := &contract.ValsetConfigResponse{
-		Membership:      mixerContractAddr.String(),
-		MinWeight:       1,
-		MaxValidators:   100,
-		Scaling:         1,
-		EpochReward:     sdk.NewInt64Coin("utgd", 100000),
-		FeePercentage:   sdk.MustNewDecFromStr("0.50"),
-		RewardsContract: distributionAddr.String(),
-		AutoUnjail:      false,
+		Membership:     mixerContractAddr.String(),
+		MinPoints:      1,
+		MaxValidators:  100,
+		Scaling:        1,
+		EpochReward:    sdk.NewInt64Coin("utgd", 100000),
+		FeePercentage:  sdk.MustNewDecFromStr("0.50"),
+		ValidatorGroup: distributionAddr.String(),
+		AutoUnjail:     false,
 		DistributionContracts: []contract.DistributionContract{
 			{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
 			{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},

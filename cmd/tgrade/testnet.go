@@ -342,7 +342,7 @@ func initGenFiles(
 	for i, addr := range genAccounts {
 		poeGenesisState.Engagement = append(poeGenesisState.Engagement, poetypes.TG4Member{
 			Address: addr.GetAddress().String(),
-			Weight:  uint64(len(genAccounts) - i), // unique weight
+			Points:  uint64(len(genAccounts) - i), // unique weight
 		})
 	}
 	poeGenesisState.SystemAdminAddress = admin.String()

@@ -30,8 +30,8 @@ func TestValidateGenesis(t *testing.T) {
 		"seed with duplicates in engagement group": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.Engagement = []TG4Member{
-					{Address: anyAccAddr.String(), Weight: 1},
-					{Address: anyAccAddr.String(), Weight: 2},
+					{Address: anyAccAddr.String(), Points: 1},
+					{Address: anyAccAddr.String(), Points: 2},
 				}
 			}),
 			expErr: true,
@@ -39,7 +39,7 @@ func TestValidateGenesis(t *testing.T) {
 		"seed with invalid addr in engagement group": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.Engagement = []TG4Member{
-					{Address: "invalid", Weight: 1},
+					{Address: "invalid", Points: 1},
 				}
 			}),
 			expErr: true,
@@ -47,7 +47,7 @@ func TestValidateGenesis(t *testing.T) {
 		"seed with invalid weight in engagement group": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.Engagement = []TG4Member{
-					{Address: RandomAccAddress().String(), Weight: 0},
+					{Address: RandomAccAddress().String(), Points: 0},
 				}
 			}),
 			expErr: true,
@@ -87,7 +87,7 @@ func TestValidateGenesis(t *testing.T) {
 				m.GenTxs = []json.RawMessage{myGenTx}
 				m.Engagement = append(m.Engagement, TG4Member{
 					Address: myOperatorAddr.String(),
-					Weight:  11,
+					Points:  11,
 				})
 			}),
 		},
@@ -96,7 +96,7 @@ func TestValidateGenesis(t *testing.T) {
 				m.GenTxs = []json.RawMessage{myGenTx, myGenTx}
 				m.Engagement = append(m.Engagement, TG4Member{
 					Address: myOperatorAddr.String(),
-					Weight:  11,
+					Points:  11,
 				})
 			}),
 			expErr: true,
@@ -115,13 +115,13 @@ func TestValidateGenesis(t *testing.T) {
 		},
 		"engagement contract not set": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagmentContractConfig = nil
+				m.EngagementContractConfig = nil
 			}),
 			expErr: true,
 		},
 		"invalid engagement contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagmentContractConfig.Halflife = time.Nanosecond
+				m.EngagementContractConfig.Halflife = time.Nanosecond
 			}),
 			expErr: true,
 		},
@@ -216,17 +216,17 @@ func TestValidateEngagementContractConfig(t *testing.T) {
 		expErr bool
 	}{
 		"default": {
-			src: DefaultGenesisState().EngagmentContractConfig,
+			src: DefaultGenesisState().EngagementContractConfig,
 		},
 		"halflife empty": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagmentContractConfig.Halflife = 0
-			}).EngagmentContractConfig,
+				m.EngagementContractConfig.Halflife = 0
+			}).EngagementContractConfig,
 		},
 		"halflife contains elements < second": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagmentContractConfig.Halflife = time.Minute + time.Millisecond
-			}).EngagmentContractConfig,
+				m.EngagementContractConfig.Halflife = time.Minute + time.Millisecond
+			}).EngagementContractConfig,
 			expErr: true,
 		},
 	}
@@ -384,7 +384,7 @@ func TestValidateStakeContractConfig(t *testing.T) {
 		},
 		"tokens per weight empty": {
 			src: *GenesisStateFixture(
-				func(m *GenesisState) { m.StakeContractConfig.TokensPerWeight = 0 },
+				func(m *GenesisState) { m.StakeContractConfig.TokensPerPoint = 0 },
 			).StakeContractConfig,
 			expErr: true,
 		},

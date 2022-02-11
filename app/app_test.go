@@ -87,7 +87,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	poeGS := poetypes.GetGenesisStateFromAppState(marshaler, genesisState)
 	poeGS.BondDenom = poetypes.DefaultBondDenom
 	poeGS.GenTxs = []json.RawMessage{myGenTx}
-	poeGS.Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Weight: 10}}
+	poeGS.Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Points: 10}}
 	poeGS.SystemAdminAddress = systemAdminAddr.String()
 	genesisState = poetypes.SetGenesisStateInAppState(marshaler, genesisState, poeGS)
 }

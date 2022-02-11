@@ -17,10 +17,10 @@ import (
 // TG4StakeInitMsg instantiation message
 // See https://github.com/confio/tgrade-contracts/blob/v0.5.0-alpha/contracts/tg4-stake/src/msg.rs
 type TG4StakeInitMsg struct {
-	Admin           string `json:"admin,omitempty"`
-	Denom           string `json:"denom"`
-	MinBond         uint64 `json:"min_bond,string"`
-	TokensPerWeight uint64 `json:"tokens_per_weight,string"`
+	Admin          string `json:"admin,omitempty"`
+	Denom          string `json:"denom"`
+	MinBond        uint64 `json:"min_bond,string"`
+	TokensPerPoint uint64 `json:"tokens_per_point,string"`
 	// UnbondingPeriod unbonding period in seconds
 	UnbondingPeriod uint64 `json:"unbonding_period"`
 	// AutoReturnLimit limits how much claims would be automatically returned at end of block, 20 by default. Setting this to 0 disables auto returning claims.
@@ -141,10 +141,10 @@ func (v StakeContractAdapter) QueryStakedAmount(ctx sdk.Context, opAddr sdk.AccA
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "contract query")
 	}
-	if resp.Weight == nil {
+	if resp.Points == nil {
 		return nil, nil
 	}
-	amount := sdk.NewInt(int64(*resp.Weight))
+	amount := sdk.NewInt(int64(*resp.Points))
 	// we should return Coin instead: https://github.com/confio/tgrade-contracts/issues/265
 	return &amount, nil
 }

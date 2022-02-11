@@ -7,14 +7,14 @@ import (
 )
 
 type DistributionQuery struct {
-	WithdrawableFunds *WithdrawableFundsQuery `json:"withdrawable_funds,omitempty"`
+	WithdrawableRewards *WithdrawableRewardsQuery `json:"withdrawable_rewards,omitempty"`
 }
 
-type WithdrawableFundsQuery struct {
+type WithdrawableRewardsQuery struct {
 	Owner string `json:"owner"`
 }
-type FundsResponse struct {
-	Funds sdk.Coin
+type RewardsResponse struct {
+	Rewards sdk.Coin
 }
 
 type DistributionContractAdapter struct {
@@ -32,11 +32,11 @@ func (d DistributionContractAdapter) ValidatorOutstandingReward(ctx sdk.Context,
 	if d.addressLookupErr != nil {
 		return sdk.Coin{}, d.addressLookupErr
 	}
-	query := DistributionQuery{WithdrawableFunds: &WithdrawableFundsQuery{Owner: addr.String()}}
-	var resp FundsResponse
+	query := DistributionQuery{WithdrawableRewards: &WithdrawableRewardsQuery{Owner: addr.String()}}
+	var resp RewardsResponse
 	err := doQuery(ctx, d.contractQuerier, d.contractAddr, query, &resp)
 	if err != nil {
 		return sdk.Coin{}, err
 	}
-	return resp.Funds, err
+	return resp.Rewards, err
 }

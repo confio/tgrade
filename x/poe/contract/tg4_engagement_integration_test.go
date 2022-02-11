@@ -33,7 +33,7 @@ func TestEngagementUpdateAdmin(t *testing.T) {
 		Admin: systemAdminAddr.String(),
 		Members: []contract.TG4Member{{
 			Addr:   newAddress.String(), // test only passes with new admin address in the group
-			Weight: 1,
+			Points: 1,
 		}},
 		PreAuthsHooks:    1,
 		PreAuthsSlashing: 1,

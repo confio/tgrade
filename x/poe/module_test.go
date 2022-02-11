@@ -71,7 +71,7 @@ func TestInitGenesis(t *testing.T) {
 	engagementAddr := twasm.ContractAddress(1, 1)
 	expConfig := &contract.ValsetConfigResponse{
 		Membership:    mixerAddr.String(),
-		MinWeight:     1,
+		MinPoints:     1,
 		MaxValidators: 100,
 		Scaling:       1,
 		FeePercentage: sdk.MustNewDecFromStr("0.50"),
@@ -79,9 +79,9 @@ func TestInitGenesis(t *testing.T) {
 			{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
 			{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
 		},
-		EpochReward:     sdk.NewInt64Coin("utgd", 100000),
-		RewardsContract: twasm.ContractAddress(1, 7).String(),
-		AutoUnjail:      false,
+		EpochReward:    sdk.NewInt64Coin("utgd", 100000),
+		ValidatorGroup: twasm.ContractAddress(1, 7).String(),
+		AutoUnjail:     false,
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)
 
@@ -134,7 +134,7 @@ func (v validators) expEngagementGroup() []contract.TG4Member {
 	for i, x := range v {
 		r[i] = contract.TG4Member{
 			Addr:   x.operatorAddr.String(),
-			Weight: x.engagement,
+			Points: x.engagement,
 		}
 	}
 	return contract.SortByWeightDesc(r)
@@ -146,7 +146,7 @@ func (v validators) expStakingGroup() []contract.TG4Member {
 	for i, x := range v {
 		r[i] = contract.TG4Member{
 			Addr:   x.operatorAddr.String(),
-			Weight: x.stakedAmount,
+			Points: x.stakedAmount,
 		}
 	}
 	return contract.SortByWeightDesc(r)
@@ -176,7 +176,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 				engagement:   uint64(engagement),
 			}
 			m.GenTxs[i] = genTx
-			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Weight: uint64(engagement)}
+			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Points: uint64(engagement)}
 			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
 			example.Faucet.Fund(ctx, opAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewIntFromUint64(stakedAmount)))
 		}

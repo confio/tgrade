@@ -45,7 +45,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 		addr := clix.GetKeyAddr(fmt.Sprintf("node%d", i))
 		engagementGroup[i] = poecontracts.TG4Member{
 			Addr:   addr,
-			Weight: uint64(sut.nodesCount - i), // unique weight
+			Points: uint64(sut.nodesCount - i), // unique weight
 		}
 		initialStakedTokenAmount := sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction) //set via testnet command
 		stakedAmounts[i] = initialStakedTokenAmount.Uint64()
@@ -182,7 +182,7 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 	// and new operator should not be in engagement group
 	query := poecontracts.TG4Query{Member: &poecontracts.MemberQuery{Addr: opAddr}}
 	qResult := cli.CustomQuery("q", "wasm", "contract-state", "smart", engagementGroupAddr, toJson(t, query))
-	assert.Empty(t, gjson.Get(qResult, "data.weight").String(), qResult)
+	assert.Empty(t, gjson.Get(qResult, "data.points").String(), qResult)
 
 	// and when
 	// val operator added to engagement group via gov
@@ -194,7 +194,7 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 			Proposal: testingcontract.Proposal{
 				GrantEngagement: testingcontract.EngagementMember{
 					Addr:   opAddr,
-					Weight: 10,
+					Points: 10,
 				},
 			},
 		},
@@ -211,7 +211,7 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 
 	// then new operator should be in engagement group
 	qResult = cli.CustomQuery("q", "wasm", "contract-state", "smart", engagementGroupAddr, toJson(t, query))
-	assert.Equal(t, int64(10), gjson.Get(qResult, "data.weight").Int(), qResult)
+	assert.Equal(t, int64(10), gjson.Get(qResult, "data.points").Int(), qResult)
 	AwaitValsetEpochCompleted(t)
 
 	// and in new validator set
@@ -392,7 +392,7 @@ func assertValidatorsUpdated(t *testing.T, sortedMember []poecontracts.TG4Member
 	require.Len(t, v, expValidators, "got %#v", v)
 	for i := 0; i < expValidators; i++ {
 		// ordered by power desc
-		expWeight := int64(math.Sqrt(float64(sortedMember[i].Weight * stakedAmounts[i]))) // function implemented in mixer
+		expWeight := int64(math.Sqrt(float64(sortedMember[i].Points * stakedAmounts[i]))) // function implemented in mixer
 		assert.Equal(t, expWeight, v[i].VotingPower, "address: %s", encodeBech32Addr(v[i].Address.Bytes()))
 	}
 }

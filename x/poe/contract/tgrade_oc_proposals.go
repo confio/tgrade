@@ -105,7 +105,7 @@ type OCProposalResponse struct {
 	// TODO: clarify this format
 	// Expires     EXP               `json:"expires"`
 	Rules       VotingRules `json:"rules"`
-	TotalWeight uint64      `json:"total_weight"`
+	TotalPoints uint64      `json:"total_points"`
 	Votes       Votes       `json:"votes"`
 }
 

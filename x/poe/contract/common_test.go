@@ -73,6 +73,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			for len(desc.Moniker) < 3 { // ensure min length is met
 				f.Fuzz(&desc)
 			}
+			desc.Website = "https://" + desc.Website
 
 			genTx, opAddr, pubKey := types.RandomGenTX(t, uint32(power), func(m *types.MsgCreateValidator) {
 				m.Description = desc
@@ -89,7 +90,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			})
 
 			m.GenTxs[i] = genTx
-			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Weight: uint64(engagement)}
+			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Points: uint64(engagement)}
 			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
 			example.Faucet.Fund(ctx, opAddr, sdk.NewCoin(types.DefaultBondDenom, stakedAmount))
 		}
@@ -109,7 +110,7 @@ func clearTokenAmount(validators []stakingtypes.Validator) []stakingtypes.Valida
 
 func clearWeight(members []contract.TG4Member) []contract.TG4Member {
 	for i, m := range members {
-		m.Weight = 0
+		m.Points = 0
 		members[i] = m
 	}
 	return members

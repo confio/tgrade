@@ -34,7 +34,7 @@ func TestQueryWithdrawableFunds(t *testing.T) {
 			src:        opAddr,
 			expRewards: false,
 		},
-		"with rewards after epoche": {
+		"with rewards after epoch": {
 			setup: func(ctx sdk.Context) sdk.Context {
 				ctx = ctx.WithBlockTime(ctx.BlockTime().Add(types.DefaultGenesisState().ValsetContractConfig.EpochLength))
 				poe.EndBlocker(ctx, example.TWasmKeeper)
