@@ -138,7 +138,7 @@ func setupSystem(t *testing.T, workDir string, encodingConfig appparams.Encoding
 	state.BondDenom = bondDenum
 	state.Engagement = append(state.Engagement, types.TG4Member{
 		Address: addr.String(),
-		Weight:  1,
+		Points:  1,
 	})
 	types.SetGenesisStateInAppState(encodingConfig.Codec, gs, state)
 	// with bank setup

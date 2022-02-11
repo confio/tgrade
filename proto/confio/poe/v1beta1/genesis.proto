@@ -160,7 +160,7 @@ message PoEContract {
 message TG4Member {
   // Address is the bech32 address string
   string address = 1 [ (gogoproto.jsontag) = "address" ];
-  uint64 weight = 2 [ (gogoproto.jsontag) = "weight" ];
+  uint64 points = 2 [ (gogoproto.jsontag) = "points" ];
 }
 
 // VotingRules contains configuration for the tally.

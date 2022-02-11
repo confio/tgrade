@@ -308,7 +308,7 @@ func (c TG4Member) ValidateBasic() error {
 	if _, err := sdk.AccAddressFromBech32(c.Address); err != nil {
 		return sdkerrors.Wrap(err, "address")
 	}
-	if c.Weight == 0 {
+	if c.Points == 0 {
 		return sdkerrors.Wrap(wasmtypes.ErrInvalid, "weight")
 	}
 	return nil

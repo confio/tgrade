@@ -90,7 +90,7 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			})
 
 			m.GenTxs[i] = genTx
-			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Weight: uint64(engagement)}
+			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Points: uint64(engagement)}
 			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
 			example.Faucet.Fund(ctx, opAddr, sdk.NewCoin(types.DefaultBondDenom, stakedAmount))
 		}

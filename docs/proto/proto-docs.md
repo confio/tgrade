@@ -357,7 +357,7 @@ TG4Member member of the Engagement group.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `address` | [string](#string) |  | Address is the bech32 address string |
-| `weight` | [uint64](#uint64) |  |  |
+| `points` | [uint64](#uint64) |  |  |
 
 
 
