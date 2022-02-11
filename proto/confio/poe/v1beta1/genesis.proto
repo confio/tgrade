@@ -72,7 +72,7 @@ message StakeContractConfig {
 
 // ValsetContractConfig initial setup config
 message ValsetContractConfig {
-  uint64 min_weight = 1;
+  uint64 min_points = 1;
   uint32 max_validators = 2;
   google.protobuf.Duration epoch_length = 3
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];

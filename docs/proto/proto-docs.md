@@ -387,7 +387,7 @@ ValsetContractConfig initial setup config
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `min_weight` | [uint64](#uint64) |  |  |
+| `min_points` | [uint64](#uint64) |  |  |
 | `max_validators` | [uint32](#uint32) |  |  |
 | `epoch_length` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
 | `epoch_reward` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |

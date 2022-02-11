@@ -26,7 +26,7 @@ func DefaultGenesisState() GenesisState {
 			ClaimAutoreturnLimit: 20,
 		},
 		ValsetContractConfig: &ValsetContractConfig{
-			MinWeight:                1,
+			MinPoints:                1,
 			MaxValidators:            100,
 			EpochLength:              60 * time.Second,
 			EpochReward:              sdk.NewCoin(DefaultBondDenom, sdk.NewInt(100_000)),
