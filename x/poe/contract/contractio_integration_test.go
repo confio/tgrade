@@ -61,12 +61,15 @@ func TestUnbondDelegation(t *testing.T) {
 	myOperatorAddr, _ := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
 	stakingContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	require.NoError(t, err)
+	unbodingPeriod, err := example.PoEKeeper.StakeContract(ctx).QueryStakingUnbondingPeriod(ctx)
+	require.NoError(t, err)
 
 	// when
-	err = contract.UnbondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt()), example.TWasmKeeper.GetContractKeeper())
+	completionTime, err := contract.UnbondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt()), example.TWasmKeeper.GetContractKeeper())
 
 	// then
 	require.NoError(t, err)
+	assert.Equal(t, ctx.BlockTime().Add(unbodingPeriod).UTC(), *completionTime)
 
 	gotRes, err := contract.QueryStakedAmount(ctx, example.TWasmKeeper, stakingContractAddr, myOperatorAddr)
 	require.NoError(t, err)

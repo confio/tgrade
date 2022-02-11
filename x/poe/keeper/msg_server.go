@@ -191,10 +191,7 @@ func (m msgServer) Undelegate(c context.Context, msg *types.MsgUndelegate) (*typ
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "staking contract")
 	}
-	if msg.Amount.Denom != m.keeper.GetBondDenom(ctx) {
-		return nil, sdkerrors.Wrap(types.ErrInvalid, "denom")
-	}
-	err = contract.UnbondDelegation(ctx, stakingContractAddr, operatorAddress, msg.Amount, m.contractKeeper)
+	completionTime, err := contract.UnbondDelegation(ctx, stakingContractAddr, operatorAddress, msg.Amount, m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "unbond delegation")
 	}
@@ -210,6 +207,5 @@ func (m msgServer) Undelegate(c context.Context, msg *types.MsgUndelegate) (*typ
 			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Amount.String()),
 		),
 	})
-	return &types.MsgUndelegateResponse{}, nil
-
+	return &types.MsgUndelegateResponse{CompletionTime: *completionTime}, nil
 }
