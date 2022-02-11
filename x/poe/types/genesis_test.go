@@ -384,7 +384,7 @@ func TestValidateStakeContractConfig(t *testing.T) {
 		},
 		"tokens per weight empty": {
 			src: *GenesisStateFixture(
-				func(m *GenesisState) { m.StakeContractConfig.TokensPerWeight = 0 },
+				func(m *GenesisState) { m.StakeContractConfig.TokensPerPoint = 0 },
 			).StakeContractConfig,
 			expErr: true,
 		},

@@ -339,7 +339,7 @@ StakeContractConfig initial setup config
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `min_bond` | [uint64](#uint64) |  |  |
-| `tokens_per_weight` | [uint64](#uint64) |  |  |
+| `tokens_per_point` | [uint64](#uint64) |  |  |
 | `unbonding_period` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
 | `claim_autoreturn_limit` | [uint32](#uint32) |  |  |
 

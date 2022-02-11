@@ -64,7 +64,7 @@ message GenesisState {
 // StakeContractConfig initial setup config
 message StakeContractConfig {
   uint64 min_bond = 1;
-  uint64 tokens_per_weight = 2;
+  uint64 tokens_per_point = 2;
   google.protobuf.Duration unbonding_period = 3
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
   uint32 claim_autoreturn_limit = 4;

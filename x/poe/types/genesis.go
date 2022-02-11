@@ -21,7 +21,7 @@ func DefaultGenesisState() GenesisState {
 		BondDenom:     DefaultBondDenom,
 		StakeContractConfig: &StakeContractConfig{
 			MinBond:              1,
-			TokensPerWeight:      1,
+			TokensPerPoint:       1,
 			UnbondingPeriod:      time.Hour * 21 * 24,
 			ClaimAutoreturnLimit: 20,
 		},
@@ -240,7 +240,7 @@ func (c StakeContractConfig) ValidateBasic() error {
 	if c.MinBond == 0 {
 		return sdkerrors.Wrap(ErrEmpty, "min bond")
 	}
-	if c.TokensPerWeight == 0 {
+	if c.TokensPerPoint == 0 {
 		return sdkerrors.Wrap(ErrEmpty, "tokens per weight")
 	}
 	if c.UnbondingPeriod == 0 {
