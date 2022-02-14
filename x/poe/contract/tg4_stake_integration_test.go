@@ -67,8 +67,9 @@ func TestQueryStakedAmount(t *testing.T) {
 			setup: func(ctx sdk.Context) {
 				err := contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())), contractKeeper)
 				require.NoError(t, err)
-				err = contract.UnbondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoin("utgd", sdk.OneInt()), contractKeeper)
+				completionTime, err := contract.UnbondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoin("utgd", sdk.OneInt()), contractKeeper)
 				require.NoError(t, err)
+				require.NotEmpty(t, completionTime)
 			},
 			expAmount: nil,
 		},
@@ -108,7 +109,7 @@ func TestQueryValidatorUnboding(t *testing.T) {
 	unbondedAmount := sdk.NewInt(10)
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	require.NoError(t, err)
-	err = contract.UnbondDelegation(ctx, contractAddr, op1Addr, sdk.NewCoin("utgd", unbondedAmount), example.TWasmKeeper.GetContractKeeper())
+	_, err = contract.UnbondDelegation(ctx, contractAddr, op1Addr, sdk.NewCoin("utgd", unbondedAmount), example.TWasmKeeper.GetContractKeeper())
 	require.NoError(t, err)
 
 	op2Addr, err := sdk.AccAddressFromBech32(vals[1].OperatorAddress)

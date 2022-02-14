@@ -2,6 +2,10 @@ package contract
 
 import (
 	"encoding/json"
+	"strconv"
+	"time"
+
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
@@ -94,18 +98,54 @@ func CallEndBlockWithValidatorUpdate(ctx sdk.Context, contractAddr sdk.AccAddres
 
 // UnbondDelegation unbond the given amount from the operators self delegation
 // Amount must be in bonding token denom
-func UnbondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, operatorAddress sdk.AccAddress, amount sdk.Coin, k types.Executor) error {
+func UnbondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, operatorAddress sdk.AccAddress, amount sdk.Coin, k types.Executor) (*time.Time, error) {
 	if amount.Amount.IsNil() || amount.IsZero() || amount.IsNegative() || !amount.Amount.IsInt64() {
-		return sdkerrors.Wrap(types.ErrInvalid, "amount")
+		return nil, sdkerrors.Wrap(types.ErrInvalid, "amount")
 	}
 	msg := TG4StakeExecute{Unbond: &Unbond{Tokens: wasmvmtypes.NewCoin(amount.Amount.Uint64(), amount.Denom)}}
 	msgBz, err := json.Marshal(msg)
 	if err != nil {
-		return sdkerrors.Wrap(err, "TG4StakeExecute message")
+		return nil, sdkerrors.Wrap(err, "TG4StakeExecute message")
 	}
+	// execute with a custom event manager so that captured events can be parsed for payload
+	em := sdk.EventManager{}
+	defer func() {
+		ctx.EventManager().EmitEvents(em.Events())
+	}()
 
-	_, err = k.Execute(ctx, contractAddr, operatorAddress, msgBz, nil)
-	return sdkerrors.Wrap(err, "execute staking contract")
+	if _, err = k.Execute(ctx.WithEventManager(&em), contractAddr, operatorAddress, msgBz, nil); err != nil {
+		return nil, sdkerrors.Wrap(err, "execute staking contract")
+	}
+	// parse events for unbound completion time
+	for _, e := range em.Events() {
+		if e.Type != wasmtypes.WasmModuleEventType {
+			continue
+		}
+		var trusted bool
+		for _, a := range e.Attributes {
+			if string(a.Key) != wasmtypes.AttributeKeyContractAddr || string(a.Value) != contractAddr.String() {
+				continue
+			}
+			trusted = true
+			break
+		}
+		if !trusted { //  filter out other events
+			continue
+		}
+		for _, a := range e.Attributes {
+			if string(a.Key) != "completion_time" {
+				continue
+			}
+			nanos, err := strconv.ParseInt(string(a.Value), 10, 64)
+			if err != nil {
+				return nil, sdkerrors.Wrap(err, "completion time value")
+			}
+			completionTime := time.Unix(0, nanos).UTC()
+			return &completionTime, nil
+		}
+
+	}
+	return nil, types.ErrInvalid.Wrap("completion_time event attribute")
 }
 
 // BondDelegation sends given amount to the staking contract to increase the bonded amount for the validator operator
