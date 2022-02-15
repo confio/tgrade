@@ -87,13 +87,12 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 	}
 
 	initRootCmd(rootCmd, encodingConfig)
-
 	return rootCmd, encodingConfig
 }
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig appparams.EncodingConfig) {
 	rootCmd.AddCommand(
-		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
+		customizeInitCmdDefaults(genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome)),
 		cli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome),
 		genutilcli.MigrateGenesisCmd(),
 		cli.GenTxCmd(app.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome),
@@ -120,6 +119,19 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig appparams.EncodingConfig
 		txCommand(),
 		keys.Commands(app.DefaultNodeHome),
 	)
+}
+
+// customize init config
+func customizeInitCmdDefaults(initCmd *cobra.Command) *cobra.Command {
+	orig := initCmd.RunE
+	initCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		cfg := server.GetServerContextFromCmd(cmd)
+		// set a high default value to have a more resilient network but this also puts a higher strain on node memory
+		cfg.Config.P2P.MaxNumOutboundPeers = 200
+		server.SetCmdServerContext(cmd, cfg)
+		return orig(initCmd, args)
+	}
+	return initCmd
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {
