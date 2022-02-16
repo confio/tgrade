@@ -235,12 +235,17 @@ func (v OperatorResponse) ToValidator() (stakingtypes.Validator, error) {
 		return stakingtypes.Validator{}, sdkerrors.Wrap(err, "convert to any type")
 	}
 
+	status := stakingtypes.Bonded
+	if !v.ActiveValidator {
+		status = stakingtypes.Unbonded
+	}
+
 	return stakingtypes.Validator{
 		OperatorAddress: v.Operator,
 		ConsensusPubkey: any,
 		Description:     v.Metadata.ToDescription(),
 		DelegatorShares: sdk.OneDec(),
-		Status:          stakingtypes.Bonded,
+		Status:          status,
 		Jailed:          v.JailedUntil != nil,
 	}, nil
 }
