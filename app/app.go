@@ -584,6 +584,12 @@ func (app *TgradeApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) ab
 		panic(err)
 	}
 
+	testMap := map[string]int{"t1": 1, "t2": 2, "t3": 3}
+
+	for k, v := range testMap {
+		testMap[k] = v * 2
+	}
+
 	app.upgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap())
 
 	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
