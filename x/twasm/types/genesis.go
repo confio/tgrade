@@ -30,5 +30,33 @@ func (g GenesisState) ValidateBasic() error {
 		}
 		uniqueAddr[a] = struct{}{}
 	}
+
+	uniquePinnedCodeIDs := make(map[uint64]struct{}, len(g.PinnedCodeIDs))
+	for _, code := range g.PinnedCodeIDs {
+		if _, exists := uniquePinnedCodeIDs[code]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "pinned codeID %d", code)
+		}
+		uniquePinnedCodeIDs[code] = struct{}{}
+	}
+
+	genesisCodes, err := getAllCodes(&g.Wasm)
+	if err != nil {
+		return sdkerrors.Wrapf(wasmtypes.ErrInvalid, "genesis codes: %s", err.Error())
+	}
+	for _, code := range genesisCodes {
+		delete(uniquePinnedCodeIDs, code.CodeID)
+	}
+	if len(uniquePinnedCodeIDs) > 0 {
+		return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "%d pinned codeIDs not found in genesis codeIDs", len(uniquePinnedCodeIDs))
+	}
+
+	genesisContracts := getAllContracts(&g.Wasm)
+	for _, contract := range genesisContracts {
+		delete(uniqueAddr, contract.ContractAddress)
+	}
+	if len(uniqueAddr) > 0 {
+		return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "%d privileged contract addresses not found in genesis contract addresses", len(uniqueAddr))
+	}
+
 	return nil
 }

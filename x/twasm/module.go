@@ -67,11 +67,11 @@ func (b AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 // ValidateGenesis performs genesis state validation for the wasm module.
 func (b AppModuleBasic) ValidateGenesis(marshaler codec.JSONCodec, config client.TxEncodingConfig, message json.RawMessage) error {
 	var data types.GenesisState
-	err := marshaler.UnmarshalJSON(message, &data)
-	if err != nil {
-		return err
+	if err := marshaler.UnmarshalJSON(message, &data); err != nil {
+		return sdkerrors.Wrap(err, "validate genesis")
 	}
-	return nil
+
+	return data.ValidateBasic()
 }
 
 // RegisterRESTRoutes registers the REST routes for the wasm module.
