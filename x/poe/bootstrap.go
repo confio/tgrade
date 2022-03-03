@@ -10,6 +10,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
+	twasmtypes "github.com/confio/tgrade/x/twasm/types"
+
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
@@ -246,6 +248,15 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 
 	if err := setAllPoEContractsInstanceMigrators(ctx, k, poeKeeper, systemAdminAddr, validatorVotingContractAddr); err != nil {
 		return sdkerrors.Wrap(err, "set new instance admin")
+	}
+
+	// ensure setup constraints
+	ok, err := tk.HasPrivilegedContract(ctx, stakeContractAddr, twasmtypes.PrivilegeDelegator)
+	if err != nil {
+		panic(err)
+	}
+	if !ok {
+		panic("no contract with delegator privileges")
 	}
 	return nil
 }

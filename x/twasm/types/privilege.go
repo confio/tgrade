@@ -34,6 +34,9 @@ var (
 
 	// PrivilegeConsensusParamChanger is a permission to modify the consensus parameters
 	PrivilegeConsensusParamChanger = registerCallbackType(0x6, "consensus_param_changer", false)
+
+	// PrivilegeDelegator is a permission to let accounts send tokens via delegation to this contract. Can be used by vesting accounts
+	PrivilegeDelegator = registerCallbackType(0x7, "delegator", false)
 )
 
 var (

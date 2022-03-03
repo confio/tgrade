@@ -23,11 +23,22 @@ type Keeper struct {
 }
 
 // NewKeeper constructor
-func NewKeeper(marshaler codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace, twasmK types.TWasmKeeper) Keeper {
+func NewKeeper(
+	marshaler codec.Codec,
+	key sdk.StoreKey,
+	paramSpace paramtypes.Subspace,
+	twasmK types.TWasmKeeper,
+	ak types.AuthKeeper,
+) Keeper {
 	// set KeyTable if it has not already been set
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
 	}
+	// ensure bonded and not bonded module accounts are set
+	if addr := ak.GetModuleAddress(types.BondedPoolName); addr == nil {
+		panic(fmt.Sprintf("%s module account has not been set", types.BondedPoolName))
+	}
+
 	return Keeper{
 		codec:       marshaler,
 		storeKey:    key,

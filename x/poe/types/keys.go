@@ -12,6 +12,9 @@ const (
 
 	// RouterKey is the msg router key for the staking module
 	RouterKey = ModuleName
+
+	// BondedPoolName is the bonded tokens module account name
+	BondedPoolName = "bonded_tokens_pool"
 )
 
 // nolint

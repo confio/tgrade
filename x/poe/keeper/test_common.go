@@ -188,6 +188,7 @@ func createTestInput(
 		ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
 		minttypes.ModuleName:        {authtypes.Minter, authtypes.Burner}, // for the faucet only
+		types.BondedPoolName:        {authtypes.Burner, authtypes.Staking},
 	}
 	accountKeeper := authkeeper.NewAccountKeeper(
 		appCodec,
@@ -235,7 +236,11 @@ func createTestInput(
 		keys[types.StoreKey],
 		subspace(types.ModuleName),
 		&twasmKeeper,
+		accountKeeper,
 	)
+	//poeSubsp, _ := paramsKeeper.GetSubspace(types.ModuleName)
+	//poeKeeper := NewKeeper(appCodec, keyPoE, poeSubsp, twasmKeeper, authKeeper)
+	//router.AddRoute(sdk.NewRoute(twasmtypes.RouterKey, wasm.NewHandler(twasmKeeper.GetContractKeeper())))
 
 	ibcKeeper := ibckeeper.NewKeeper(
 		appCodec,
@@ -366,6 +371,6 @@ func createMinTestInput(t *testing.T) (sdk.Context, simappparams.EncodingConfig,
 		Time:   time.Date(2020, time.April, 22, 12, 0, 0, 0, time.UTC),
 	}, false, log.NewNopLogger())
 
-	k := NewKeeper(encodingConfig.Marshaler, keyPoe, paramsKeeper.Subspace(types.ModuleName), nil)
+	k := NewKeeper(encodingConfig.Marshaler, keyPoe, paramsKeeper.Subspace(types.ModuleName), nil, nil)
 	return ctx, encodingConfig, k
 }
