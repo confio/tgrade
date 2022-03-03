@@ -65,17 +65,18 @@ type TgradeHandler struct {
 func NewTgradeHandler(
 	cdc codec.Codec,
 	keeper TgradeWasmHandlerKeeper,
-	bankKeeper types.BankKeeper,
+	minter minter,
 	consensusParamsUpdater ConsensusParamsUpdater,
 	govRouter govtypes.Router,
+	staker staker,
 ) *TgradeHandler {
 	return &TgradeHandler{
 		cdc:                    cdc,
 		keeper:                 keeper,
 		govRouter:              restrictParamsDecorator(govRouter),
-		minter:                 bankKeeper,
+		minter:                 minter,
 		consensusParamsUpdater: consensusParamsUpdater,
-		staker:                 bankKeeper,
+		staker:                 staker,
 	}
 }
 

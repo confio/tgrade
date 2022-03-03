@@ -39,7 +39,7 @@ func SetupWasmHandlers(
 			}),
 			nested,
 			// append our custom message handler
-			twasmkeeper.NewTgradeHandler(cdc, twasmKeeper, bankKeeper, consensusParamsUpdater, govRouter),
+			twasmkeeper.NewTgradeHandler(cdc, twasmKeeper, bankKeeper, consensusParamsUpdater, govRouter, bankKeeper),
 		)
 	})
 	return []wasm.Option{

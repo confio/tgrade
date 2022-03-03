@@ -263,7 +263,7 @@ func createTestInput(
 			}),
 			nested,
 			// append our custom message handler
-			NewTgradeHandler(appCodec, &keeper, bankKeeper, nil, nil),
+			NewTgradeHandler(appCodec, &keeper, bankKeeper, nil, nil, nil),
 		)
 	})
 
