@@ -16,7 +16,8 @@ import (
 
 func TestSetValidatorInitialEngagementPoints(t *testing.T) {
 	var myOpAddr = RandomAddress(t)
-	ctx, _, k := createMinTestInput(t)
+	ctx, example := CreateDefaultTestInput(t)
+	k := example.PoEKeeper
 	const initialPointsToGrant = 2
 	k.setParams(ctx, types.NewParams(0, initialPointsToGrant, sdk.NewCoins(sdk.NewCoin("ALX", sdk.NewInt(10)))))
 	engagementContractAddr := RandomAddress(t)
