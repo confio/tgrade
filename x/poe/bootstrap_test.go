@@ -221,8 +221,10 @@ func TestBootstrapPoEContracts(t *testing.T) {
 	}
 
 	spFn, capPriv := CaptureSetPrivilegedFn()
+	hpFn := CaptureHasPrivilegedContractFn(capPriv)
 	tm := twasmKeeperMock{
-		SetPrivilegedFn: spFn,
+		SetPrivilegedFn:         spFn,
+		HasPrivilegedContractFn: hpFn,
 	}
 	sFn, capSetAddr := keeper.CaptureSetPoEContractAddressFn()
 	pm := keeper.PoEKeeperMock{
@@ -477,4 +479,15 @@ func CaptureSetPrivilegedFn() (func(ctx sdk.Context, contractAddr sdk.AccAddress
 		r = append(r, contractAddr)
 		return nil
 	}, &r
+}
+
+func CaptureHasPrivilegedContractFn(r *[]sdk.AccAddress) func(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error) {
+	return func(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error) {
+		for _, addr := range *r {
+			if addr.Equals(contractAddr) {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
 }
