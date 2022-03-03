@@ -22,6 +22,8 @@ type TgradeMsg struct {
 	ExecuteGovProposal *ExecuteGovProposal    `json:"execute_gov_proposal,omitempty"`
 	MintTokens         *MintTokens            `json:"mint_tokens,omitempty"`
 	ConsensusParams    *ConsensusParamsUpdate `json:"consensus_params,omitempty"`
+	Delegate           *Delegate              `json:"delegate,omitempty"`
+	Undelegate         *Undelegate            `json:"undelegate,omitempty"`
 }
 
 // UnmarshalWithAny from json to Go objects with cosmos-sdk Any types that have their objects/ interfaces unpacked and
@@ -311,6 +313,22 @@ type MintTokens struct {
 type ConsensusParamsUpdate struct {
 	Block    *BlockParams    `json:"block,omitempty"`
 	Evidence *EvidenceParams `json:"evidence,omitempty"`
+}
+
+// Delegate.
+// See
+type Delegate struct {
+	Denom      string `json:"denom"`
+	Amount     string `json:"amount"`
+	SenderAddr string `json:"sender"`
+}
+
+// Undelegate.
+// See
+type Undelegate struct {
+	Denom         string `json:"denom"`
+	Amount        string `json:"amount"`
+	RecipientAddr string `json:"recipient"`
 }
 
 // ValidateBasic check basics

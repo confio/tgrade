@@ -15,6 +15,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	poetypes "github.com/confio/tgrade/x/poe/types"
 	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/confio/tgrade/x/twasm/types"
 )
@@ -34,6 +35,14 @@ type minter interface {
 	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
 }
 
+// staker is a subset of bank keeper
+type staker interface {
+	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
+	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+	DelegateCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+	UndelegateCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
+}
+
 // ConsensusParamsUpdater is a subset of baseapp to store the consensus params
 type ConsensusParamsUpdater interface {
 	GetConsensusParams(ctx sdk.Context) *abci.ConsensusParams
@@ -49,13 +58,14 @@ type TgradeHandler struct {
 	minter                 minter
 	govRouter              govtypes.Router
 	consensusParamsUpdater ConsensusParamsUpdater
+	staker                 staker
 }
 
 // NewTgradeHandler constructor
 func NewTgradeHandler(
 	cdc codec.Codec,
 	keeper TgradeWasmHandlerKeeper,
-	bankKeeper minter,
+	bankKeeper types.BankKeeper,
 	consensusParamsUpdater ConsensusParamsUpdater,
 	govRouter govtypes.Router,
 ) *TgradeHandler {
@@ -65,6 +75,7 @@ func NewTgradeHandler(
 		govRouter:              restrictParamsDecorator(govRouter),
 		minter:                 bankKeeper,
 		consensusParamsUpdater: consensusParamsUpdater,
+		staker:                 bankKeeper,
 	}
 }
 
@@ -95,6 +106,12 @@ func (h TgradeHandler) DispatchMsg(ctx sdk.Context, contractAddr sdk.AccAddress,
 		return append(evts, em.Events()...), nil, err
 	case tMsg.ConsensusParams != nil:
 		evts, err := h.handleConsensusParamsUpdate(ctx, contractAddr, tMsg.ConsensusParams)
+		return append(evts, em.Events()...), nil, err
+	case tMsg.Delegate != nil:
+		evts, err := h.handleDelegate(ctx, contractAddr, tMsg.Delegate)
+		return append(evts, em.Events()...), nil, err
+	case tMsg.Undelegate != nil:
+		evts, err := h.handleUndelegate(ctx, contractAddr, tMsg.Undelegate)
 		return append(evts, em.Events()...), nil, err
 	}
 
@@ -235,6 +252,72 @@ func mergeConsensusParamsUpdate(src *abci.ConsensusParams, delta *contract.Conse
 		}
 	}
 	return src
+}
+
+// handle delegate token message
+func (h TgradeHandler) handleDelegate(ctx sdk.Context, contractAddr sdk.AccAddress, delegate *contract.Delegate) ([]sdk.Event, error) {
+	if err := h.assertHasPrivilege(ctx, contractAddr, types.PrivilegeDelegator); err != nil {
+		return nil, err
+	}
+	fromAddr, err := sdk.AccAddressFromBech32(delegate.SenderAddr)
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "fromAddr")
+	}
+	amount, ok := sdk.NewIntFromString(delegate.Amount)
+	if !ok {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, delegate.Amount+delegate.Denom)
+	}
+	token := sdk.Coin{Denom: delegate.Denom, Amount: amount}
+	if err := token.Validate(); err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, err.Error()), "delegate tokens handler")
+	}
+	amt := sdk.NewCoins(token)
+	if err := h.staker.DelegateCoinsFromAccountToModule(ctx, fromAddr, poetypes.BondedPoolName, amt); err != nil {
+		return nil, sdkerrors.Wrap(err, "delegate")
+	}
+	if err := h.staker.SendCoinsFromModuleToAccount(ctx, poetypes.BondedPoolName, contractAddr, amt); err != nil {
+		return nil, sdkerrors.Wrap(err, "module to contract")
+	}
+
+	return sdk.Events{sdk.NewEvent(
+		types.EventTypeDelegateTokens,
+		sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
+		sdk.NewAttribute(sdk.AttributeKeyAmount, token.String()),
+		sdk.NewAttribute(types.AttributeKeySender, delegate.SenderAddr),
+	)}, nil
+}
+
+// handle undelegate token message
+func (h TgradeHandler) handleUndelegate(ctx sdk.Context, contractAddr sdk.AccAddress, undelegate *contract.Undelegate) ([]sdk.Event, error) {
+	if err := h.assertHasPrivilege(ctx, contractAddr, types.PrivilegeDelegator); err != nil {
+		return nil, err
+	}
+	recipient, err := sdk.AccAddressFromBech32(undelegate.RecipientAddr)
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "recipient")
+	}
+	amount, ok := sdk.NewIntFromString(undelegate.Amount)
+	if !ok {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, undelegate.Amount+undelegate.Denom)
+	}
+	token := sdk.Coin{Denom: undelegate.Denom, Amount: amount}
+	if err := token.Validate(); err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, err.Error()), "undelegate tokens handler")
+	}
+	amt := sdk.NewCoins(token)
+	if err := h.staker.SendCoinsFromAccountToModule(ctx, contractAddr, poetypes.BondedPoolName, amt); err != nil {
+		return nil, sdkerrors.Wrap(err, "contract to module")
+	}
+	if err := h.staker.UndelegateCoinsFromModuleToAccount(ctx, poetypes.BondedPoolName, recipient, amt); err != nil {
+		return nil, sdkerrors.Wrap(err, "undelegate")
+	}
+
+	return sdk.Events{sdk.NewEvent(
+		types.EventTypeUndelegateTokens,
+		sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
+		sdk.NewAttribute(sdk.AttributeKeyAmount, token.String()),
+		sdk.NewAttribute(types.AttributeKeyRecipient, undelegate.RecipientAddr),
+	)}, nil
 }
 
 // assertHasPrivilege helper to assert that the contract has the required privilege
