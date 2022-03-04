@@ -584,7 +584,7 @@ func TestHandleMintToken(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cdc := MakeEncodingConfig(t).Codec
 			mintFn, capturedMintedCoins := CaptureMintedCoinsFn()
-			sendFn, capturedSentCoins := CaptureSendCoinsFn()
+			sendFn, capturedSentCoins := CaptureSentCoinsFromModuleFn()
 			mock := BankMock{MintCoinsFn: mintFn, SendCoinsFromModuleToAccountFn: sendFn}
 			keeperMock := handlerTgradeKeeperMock{}
 			spec.setup(&keeperMock)
@@ -677,6 +677,276 @@ func TestHandleConsensusParamsUpdate(t *testing.T) {
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
 			assert.Len(t, gotEvts, 0)
 			assert.Equal(t, spec.expStored, gotStored)
+		})
+	}
+}
+
+func TestHandleDelegate(t *testing.T) {
+	myContractAddr := RandomAddress(t)
+	myStakerAddr := RandomAddress(t)
+	specs := map[string]struct {
+		src               contract.Delegate
+		setup             func(k *handlerTgradeKeeperMock)
+		expErr            *sdkerrors.Error
+		expSentCoins      sdk.Coins
+		expDelegatedCoins capturedSentCoinsFromAddress
+	}{
+		"all good": {
+			src: contract.Delegate{
+				Funds: wasmvmtypes.Coin{
+					Denom:  "foo",
+					Amount: "123",
+				},
+				StakerAddr: myStakerAddr.String(),
+			},
+			setup:        withPrivilegeRegistered(types.PrivilegeDelegator),
+			expSentCoins: sdk.NewCoins(sdk.NewCoin("foo", sdk.NewInt(123))),
+			expDelegatedCoins: capturedSentCoinsFromAddress{
+				recipientModule: "bonded_tokens_pool",
+				coins:           sdk.NewCoins(sdk.NewCoin("foo", sdk.NewInt(123))),
+			},
+		},
+		"unauthorized contract": {
+			src: contract.Delegate{
+				Funds: wasmvmtypes.Coin{
+					Denom:  "foo",
+					Amount: "123",
+				},
+				StakerAddr: myStakerAddr.String(),
+			},
+			setup: func(k *handlerTgradeKeeperMock) {
+				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredPrivileges: []types.RegisteredPrivilege{},
+						})
+					})
+					return &c
+				}
+			},
+			expErr: sdkerrors.ErrUnauthorized,
+		},
+		"invalid denom": {
+			src: contract.Delegate{
+				Funds: wasmvmtypes.Coin{
+					Denom:  "&&&foo",
+					Amount: "123",
+				},
+				StakerAddr: myStakerAddr.String(),
+			},
+			setup:  withPrivilegeRegistered(types.PrivilegeDelegator),
+			expErr: sdkerrors.ErrJSONUnmarshal,
+		},
+		"invalid amount": {
+			src: contract.Delegate{
+				Funds: wasmvmtypes.Coin{
+					Denom:  "foo",
+					Amount: "not-a-number",
+				},
+				StakerAddr: myStakerAddr.String(),
+			},
+			setup:  withPrivilegeRegistered(types.PrivilegeDelegator),
+			expErr: sdkerrors.ErrJSONUnmarshal,
+		},
+		"invalid recipient": {
+			src: contract.Delegate{
+				Funds: wasmvmtypes.Coin{
+					Denom:  "foo",
+					Amount: "123",
+				},
+				StakerAddr: "not-an-address",
+			},
+			setup: func(k *handlerTgradeKeeperMock) {
+				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "delegator"}},
+						})
+					})
+					return &c
+				}
+			},
+			expErr: sdkerrors.ErrInvalidAddress,
+		},
+		"no content": {
+			src:    contract.Delegate{},
+			setup:  withPrivilegeRegistered(types.PrivilegeDelegator),
+			expErr: sdkerrors.ErrInvalidAddress,
+		},
+		"unknown origin contract": {
+			src: contract.Delegate{
+				Funds: wasmvmtypes.Coin{
+					Denom:  "&&&foo",
+					Amount: "123",
+				},
+				StakerAddr: "not-an-address",
+			},
+			setup: func(m *handlerTgradeKeeperMock) {
+				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					return nil
+				}
+			},
+			expErr: wasmtypes.ErrNotFound,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			cdc := MakeEncodingConfig(t).Codec
+			delegateFn, capturedDelegatedCoins := CaptureDelegatedCoinsFn()
+			sendFn, capturedSentCoins := CaptureSentCoinsFromModuleFn()
+			mock := BankMock{DelegateCoinsFromAccountToModuleFn: delegateFn, SendCoinsFromModuleToAccountFn: sendFn}
+			keeperMock := handlerTgradeKeeperMock{}
+			spec.setup(&keeperMock)
+			h := NewTgradeHandler(cdc, keeperMock, mock, nil, nil)
+			var ctx sdk.Context
+			gotEvts, gotErr := h.handleDelegate(ctx, myContractAddr, &spec.src)
+			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
+			if spec.expErr != nil {
+				assert.Len(t, gotEvts, 0)
+				return
+			}
+			require.Len(t, *capturedDelegatedCoins, 1)
+			assert.Equal(t, spec.expDelegatedCoins, (*capturedDelegatedCoins)[0])
+			require.Len(t, *capturedSentCoins, 1)
+			assert.Equal(t, (*capturedSentCoins)[0].coins, spec.expSentCoins)
+			assert.Equal(t, (*capturedSentCoins)[0].recipientAddr, myContractAddr)
+			require.Len(t, gotEvts, 1)
+			assert.Equal(t, types.EventTypeDelegateTokens, gotEvts[0].Type)
+		})
+	}
+}
+
+func TestHandleUndelegate(t *testing.T) {
+	myContractAddr := RandomAddress(t)
+	myRecipientAddr := RandomAddress(t)
+	specs := map[string]struct {
+		src                 contract.Undelegate
+		setup               func(k *handlerTgradeKeeperMock)
+		expErr              *sdkerrors.Error
+		expSentCoins        sdk.Coins
+		expUndelegatedCoins capturedSentCoinsFromModule
+	}{
+		"all good": {
+			src: contract.Undelegate{
+				Funds: wasmvmtypes.Coin{
+					Denom:  "foo",
+					Amount: "123",
+				},
+				RecipientAddr: myRecipientAddr.String(),
+			},
+			setup:        withPrivilegeRegistered(types.PrivilegeDelegator),
+			expSentCoins: sdk.NewCoins(sdk.NewCoin("foo", sdk.NewInt(123))),
+			expUndelegatedCoins: capturedSentCoinsFromModule{
+				recipientAddr: myRecipientAddr,
+				coins:         sdk.NewCoins(sdk.NewCoin("foo", sdk.NewInt(123))),
+			},
+		},
+		"unauthorized contract": {
+			src: contract.Undelegate{
+				Funds: wasmvmtypes.Coin{
+					Denom:  "foo",
+					Amount: "123",
+				},
+				RecipientAddr: myRecipientAddr.String(),
+			},
+			setup: func(k *handlerTgradeKeeperMock) {
+				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredPrivileges: []types.RegisteredPrivilege{},
+						})
+					})
+					return &c
+				}
+			},
+			expErr: sdkerrors.ErrUnauthorized,
+		},
+		"invalid denom": {
+			src: contract.Undelegate{
+				Funds: wasmvmtypes.Coin{
+					Denom:  "&&&foo",
+					Amount: "123",
+				},
+				RecipientAddr: myRecipientAddr.String(),
+			},
+			setup:  withPrivilegeRegistered(types.PrivilegeDelegator),
+			expErr: sdkerrors.ErrJSONUnmarshal,
+		},
+		"invalid amount": {
+			src: contract.Undelegate{
+				Funds: wasmvmtypes.Coin{
+					Denom:  "foo",
+					Amount: "not-a-number",
+				},
+				RecipientAddr: myRecipientAddr.String(),
+			},
+			setup:  withPrivilegeRegistered(types.PrivilegeDelegator),
+			expErr: sdkerrors.ErrJSONUnmarshal,
+		},
+		"invalid recipient": {
+			src: contract.Undelegate{
+				Funds: wasmvmtypes.Coin{
+					Denom:  "foo",
+					Amount: "123",
+				},
+				RecipientAddr: "not-an-address",
+			},
+			setup: func(k *handlerTgradeKeeperMock) {
+				k.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					c := wasmtypes.ContractInfoFixture(func(info *wasmtypes.ContractInfo) {
+						info.SetExtension(&types.TgradeContractDetails{
+							RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "delegator"}},
+						})
+					})
+					return &c
+				}
+			},
+			expErr: sdkerrors.ErrInvalidAddress,
+		},
+		"no content": {
+			src:    contract.Undelegate{},
+			setup:  withPrivilegeRegistered(types.PrivilegeDelegator),
+			expErr: sdkerrors.ErrInvalidAddress,
+		},
+		"unknown origin contract": {
+			src: contract.Undelegate{
+				Funds: wasmvmtypes.Coin{
+					Denom:  "&&&foo",
+					Amount: "123",
+				},
+				RecipientAddr: "not-an-address",
+			},
+			setup: func(m *handlerTgradeKeeperMock) {
+				m.GetContractInfoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+					return nil
+				}
+			},
+			expErr: wasmtypes.ErrNotFound,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			cdc := MakeEncodingConfig(t).Codec
+			undelegateFn, capturedUndelegatedCoins := CaptureUndelegatedCoinsFn()
+			sendFn, capturedSentCoins := CaptureSentCoinsFromAccountFn()
+			mock := BankMock{UndelegateCoinsFromModuleToAccountFn: undelegateFn, SendCoinsFromAccountToModuleFn: sendFn}
+			keeperMock := handlerTgradeKeeperMock{}
+			spec.setup(&keeperMock)
+			h := NewTgradeHandler(cdc, keeperMock, mock, nil, nil)
+			var ctx sdk.Context
+			gotEvts, gotErr := h.handleUndelegate(ctx, myContractAddr, &spec.src)
+			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
+			if spec.expErr != nil {
+				assert.Len(t, gotEvts, 0)
+				return
+			}
+			require.Len(t, *capturedUndelegatedCoins, 1)
+			assert.Equal(t, spec.expUndelegatedCoins, (*capturedUndelegatedCoins)[0])
+			require.Len(t, *capturedSentCoins, 1)
+			assert.Equal(t, (*capturedSentCoins)[0].coins, spec.expSentCoins)
+			assert.Equal(t, (*capturedSentCoins)[0].recipientModule, "bonded_tokens_pool")
+			require.Len(t, gotEvts, 1)
+			assert.Equal(t, types.EventTypeUndelegateTokens, gotEvts[0].Type)
 		})
 	}
 }
@@ -830,15 +1100,44 @@ func CaptureMintedCoinsFn() (func(ctx sdk.Context, moduleName string, amt sdk.Co
 	}, &r
 }
 
-type capturedSendCoins struct {
+type capturedSentCoinsFromModule struct {
 	recipientAddr sdk.AccAddress
 	coins         sdk.Coins
 }
 
-func CaptureSendCoinsFn() (func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error, *[]capturedSendCoins) {
-	var r []capturedSendCoins
-	return func(ctx sdk.Context, moduleName string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-		r = append(r, capturedSendCoins{recipientAddr: recipientAddr, coins: amt})
+type capturedSentCoinsFromAddress struct {
+	recipientModule string
+	coins           sdk.Coins
+}
+
+func CaptureSentCoinsFromModuleFn() (func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error, *[]capturedSentCoinsFromModule) {
+	var r []capturedSentCoinsFromModule
+	return func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+		r = append(r, capturedSentCoinsFromModule{recipientAddr: recipientAddr, coins: amt})
+		return nil
+	}, &r
+}
+
+func CaptureSentCoinsFromAccountFn() (func(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error, *[]capturedSentCoinsFromAddress) {
+	var r []capturedSentCoinsFromAddress
+	return func(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+		r = append(r, capturedSentCoinsFromAddress{recipientModule: recipientModule, coins: amt})
+		return nil
+	}, &r
+}
+
+func CaptureDelegatedCoinsFn() (func(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error, *[]capturedSentCoinsFromAddress) {
+	var r []capturedSentCoinsFromAddress
+	return func(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+		r = append(r, capturedSentCoinsFromAddress{recipientModule: recipientModule, coins: amt})
+		return nil
+	}, &r
+}
+
+func CaptureUndelegatedCoinsFn() (func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error, *[]capturedSentCoinsFromModule) {
+	var r []capturedSentCoinsFromModule
+	return func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+		r = append(r, capturedSentCoinsFromModule{recipientAddr: recipientAddr, coins: amt})
 		return nil
 	}, &r
 }
