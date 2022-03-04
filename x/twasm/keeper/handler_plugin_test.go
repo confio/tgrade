@@ -53,7 +53,7 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 			expCapturedGovContent: []govtypes.Content{&govtypes.TextProposal{Title: "foo", Description: "bar"}},
 			expEvents:             sdk.Events{sdk.NewEvent("testing")},
 		},
-		"handle bankKeeper msg": {
+		"handle mint msg": {
 			src: wasmvmtypes.CosmosMsg{
 				Custom: []byte(fmt.Sprintf(`{"mint_tokens":{"amount":"1","denom":"utgd","recipient":%q}}`, otherAddr.String())),
 			},
@@ -293,6 +293,25 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []types.RegisteredPrivilege{}},
 			expUnRegistrations: []unregistration{{cb: types.PrivilegeTypeGovProposalExecutor, pos: 1, addr: myContractAddr}},
 		},
+		"register delegator": {
+			src:   contract.PrivilegeMsg{Request: types.PrivilegeDelegator},
+			setup: captureWithMock(),
+			expDetails: &types.TgradeContractDetails{
+				RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "delegator"}},
+			},
+			expRegistrations: []registration{{cb: types.PrivilegeDelegator, addr: myContractAddr}},
+		},
+		"unregister delegator": {
+			src: contract.PrivilegeMsg{Release: types.PrivilegeDelegator},
+			setup: captureWithMock(func(info *wasmtypes.ContractInfo) {
+				ext := &types.TgradeContractDetails{
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "delegator"}},
+				}
+				info.SetExtension(ext)
+			}),
+			expDetails:         &types.TgradeContractDetails{RegisteredPrivileges: []types.RegisteredPrivilege{}},
+			expUnRegistrations: []unregistration{{cb: types.PrivilegeDelegator, pos: 1, addr: myContractAddr}},
+		},
 		"register privilege fails": {
 			src: contract.PrivilegeMsg{Request: types.PrivilegeTypeValidatorSetUpdate},
 			setup: func(m *handlerTgradeKeeperMock) {
@@ -344,8 +363,7 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			}},
 			expUnRegistrations: []unregistration{{cb: types.PrivilegeTypeBeginBlock, pos: 1, addr: myContractAddr}},
 		},
-
-		"unregister begin block with without existing registration": {
+		"unregister begin block without existing registration": {
 			src:   contract.PrivilegeMsg{Release: types.PrivilegeTypeBeginBlock},
 			setup: captureWithMock(),
 		},
