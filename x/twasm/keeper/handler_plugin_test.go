@@ -75,6 +75,34 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 				setupHandlerKeeperMock(m, withPrivilegeSet(t, types.PrivilegeConsensusParamChanger))
 			},
 		},
+		"handle delegate msg": {
+			src: wasmvmtypes.CosmosMsg{
+				Custom: []byte(fmt.Sprintf(`{"delegate":{ "funds": { "amount": "1", "denom": "utgd"} ,"staker":%q}}`, otherAddr.String())),
+			},
+			setup: func(m *handlerTgradeKeeperMock) {
+				setupHandlerKeeperMock(m, withPrivilegeSet(t, types.PrivilegeDelegator))
+			},
+			expEvents: sdk.Events{sdk.NewEvent(
+				types.EventTypeDelegateTokens,
+				sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
+				sdk.NewAttribute(sdk.AttributeKeyAmount, "1utgd"),
+				sdk.NewAttribute(types.AttributeKeySender, otherAddr.String()),
+			)},
+		},
+		"handle undelegate msg": {
+			src: wasmvmtypes.CosmosMsg{
+				Custom: []byte(fmt.Sprintf(`{"undelegate":{ "funds": { "amount": "2", "denom": "utgd"} ,"recipient":%q}}`, otherAddr.String())),
+			},
+			setup: func(m *handlerTgradeKeeperMock) {
+				setupHandlerKeeperMock(m, withPrivilegeSet(t, types.PrivilegeDelegator))
+			},
+			expEvents: sdk.Events{sdk.NewEvent(
+				types.EventTypeUndelegateTokens,
+				sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
+				sdk.NewAttribute(sdk.AttributeKeyAmount, "2utgd"),
+				sdk.NewAttribute(types.AttributeKeyRecipient, otherAddr.String()),
+			)},
+		},
 		"non custom msg rejected": {
 			src:    wasmvmtypes.CosmosMsg{},
 			setup:  func(m *handlerTgradeKeeperMock) {},
@@ -104,10 +132,11 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 			cdc := MakeEncodingConfig(t).Codec
 			govRouter := &CapturingGovRouter{}
 			minterMock := NoopMinterMock()
+			stakerMock := NoopStakerMock()
 			mock := handlerTgradeKeeperMock{}
 			consensusStoreMock := NoopConsensusParamsStoreMock()
 			spec.setup(&mock)
-			h := NewTgradeHandler(cdc, mock, minterMock, consensusStoreMock, govRouter, nil)
+			h := NewTgradeHandler(cdc, mock, minterMock, consensusStoreMock, govRouter, stakerMock)
 			em := sdk.NewEventManager()
 			ctx := sdk.Context{}.WithEventManager(em)
 
@@ -738,6 +767,59 @@ func NoopMinterMock() *MinterMock {
 			return nil
 		},
 		SendCoinsFromModuleToAccountFn: func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+			return nil
+		},
+	}
+}
+
+// StakerMock test helper that satisfies the `staker` interface
+type StakerMock struct {
+	SendCoinsFromModuleToAccountFn       func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
+	SendCoinsFromAccountToModuleFn       func(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+	DelegateCoinsFromAccountToModuleFn   func(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+	UndelegateCoinsFromModuleToAccountFn func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
+}
+
+func (m StakerMock) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	if m.SendCoinsFromModuleToAccountFn == nil {
+		panic("not expected to be called")
+	}
+	return m.SendCoinsFromModuleToAccountFn(ctx, senderModule, recipientAddr, amt)
+}
+
+func (m StakerMock) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	if m.SendCoinsFromAccountToModuleFn == nil {
+		panic("not expected to be called")
+	}
+	return m.SendCoinsFromAccountToModuleFn(ctx, senderAddr, recipientModule, amt)
+}
+
+func (m StakerMock) UndelegateCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	if m.UndelegateCoinsFromModuleToAccountFn == nil {
+		panic("not expected to be called")
+	}
+	return m.UndelegateCoinsFromModuleToAccountFn(ctx, senderModule, recipientAddr, amt)
+}
+
+func (m StakerMock) DelegateCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	if m.DelegateCoinsFromAccountToModuleFn == nil {
+		panic("not expected to be called")
+	}
+	return m.DelegateCoinsFromAccountToModuleFn(ctx, senderAddr, recipientModule, amt)
+}
+
+func NoopStakerMock() *StakerMock {
+	return &StakerMock{
+		SendCoinsFromModuleToAccountFn: func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+			return nil
+		},
+		SendCoinsFromAccountToModuleFn: func(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+			return nil
+		},
+		DelegateCoinsFromAccountToModuleFn: func(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+			return nil
+		},
+		UndelegateCoinsFromModuleToAccountFn: func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 			return nil
 		},
 	}
