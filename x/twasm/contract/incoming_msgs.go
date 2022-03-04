@@ -200,7 +200,7 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 			var proxy = struct { // todo: better use wasmvmtypes.MigrateMsg when names match
 				Contract string `json:"contract"`
 				CodeID   uint64 `json:"code_id"`
-				Msg      []byte `json:"msg"`
+				Msg      []byte `json:"migrate_msg"`
 			}{}
 			if err := json.Unmarshal(b, &proxy); err != nil {
 				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())

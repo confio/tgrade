@@ -155,7 +155,7 @@ func TestGetProposalContent(t *testing.T) {
       "migrate_contract": {
         "code_id": 1,
 		"contract": "cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09",
-        "msg": "e30="
+        "migrate_msg": "e30="
       }}}}`,
 			expGovProposal: &wasmtypes.MigrateContractProposal{
 				Title:       "foo",
