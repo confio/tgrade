@@ -2,7 +2,9 @@ package contract
 
 import (
 	"encoding/json"
+
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -315,20 +317,16 @@ type ConsensusParamsUpdate struct {
 	Evidence *EvidenceParams `json:"evidence,omitempty"`
 }
 
-// Delegate.
-// See
+// Delegate funds. Used for vesting accounts.
 type Delegate struct {
-	Denom      string `json:"denom"`
-	Amount     string `json:"amount"`
-	SenderAddr string `json:"sender"`
+	Funds      wasmvmtypes.Coin `json:"funds"`
+	StakerAddr string           `json:"staker"`
 }
 
-// Undelegate.
-// See
+// Undelegate funds. Used with vesting accounts.
 type Undelegate struct {
-	Denom         string `json:"denom"`
-	Amount        string `json:"amount"`
-	RecipientAddr string `json:"recipient"`
+	Funds         wasmvmtypes.Coin `json:"funds"`
+	RecipientAddr string           `json:"recipient"`
 }
 
 // ValidateBasic check basics

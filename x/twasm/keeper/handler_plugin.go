@@ -260,19 +260,14 @@ func (h TgradeHandler) handleDelegate(ctx sdk.Context, contractAddr sdk.AccAddre
 	if err := h.assertHasPrivilege(ctx, contractAddr, types.PrivilegeDelegator); err != nil {
 		return nil, err
 	}
-	fromAddr, err := sdk.AccAddressFromBech32(delegate.SenderAddr)
+	fromAddr, err := sdk.AccAddressFromBech32(delegate.StakerAddr)
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "fromAddr")
 	}
-	amount, ok := sdk.NewIntFromString(delegate.Amount)
-	if !ok {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, delegate.Amount+delegate.Denom)
+	amt, err := convertWasmCoinsToSdkCoins(wasmvmtypes.Coins{delegate.Funds})
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
-	token := sdk.Coin{Denom: delegate.Denom, Amount: amount}
-	if err := token.Validate(); err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, err.Error()), "delegate tokens handler")
-	}
-	amt := sdk.NewCoins(token)
 	if err := h.staker.DelegateCoinsFromAccountToModule(ctx, fromAddr, poetypes.BondedPoolName, amt); err != nil {
 		return nil, sdkerrors.Wrap(err, "delegate")
 	}
@@ -283,8 +278,8 @@ func (h TgradeHandler) handleDelegate(ctx sdk.Context, contractAddr sdk.AccAddre
 	return sdk.Events{sdk.NewEvent(
 		types.EventTypeDelegateTokens,
 		sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
-		sdk.NewAttribute(sdk.AttributeKeyAmount, token.String()),
-		sdk.NewAttribute(types.AttributeKeySender, delegate.SenderAddr),
+		sdk.NewAttribute(sdk.AttributeKeyAmount, delegate.Funds.Amount),
+		sdk.NewAttribute(types.AttributeKeySender, delegate.StakerAddr),
 	)}, nil
 }
 
@@ -297,15 +292,10 @@ func (h TgradeHandler) handleUndelegate(ctx sdk.Context, contractAddr sdk.AccAdd
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "recipient")
 	}
-	amount, ok := sdk.NewIntFromString(undelegate.Amount)
-	if !ok {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, undelegate.Amount+undelegate.Denom)
+	amt, err := convertWasmCoinsToSdkCoins(wasmvmtypes.Coins{undelegate.Funds})
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
-	token := sdk.Coin{Denom: undelegate.Denom, Amount: amount}
-	if err := token.Validate(); err != nil {
-		return nil, sdkerrors.Wrap(sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, err.Error()), "undelegate tokens handler")
-	}
-	amt := sdk.NewCoins(token)
 	if err := h.staker.SendCoinsFromAccountToModule(ctx, contractAddr, poetypes.BondedPoolName, amt); err != nil {
 		return nil, sdkerrors.Wrap(err, "contract to module")
 	}
@@ -316,7 +306,7 @@ func (h TgradeHandler) handleUndelegate(ctx sdk.Context, contractAddr sdk.AccAdd
 	return sdk.Events{sdk.NewEvent(
 		types.EventTypeUndelegateTokens,
 		sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
-		sdk.NewAttribute(sdk.AttributeKeyAmount, token.String()),
+		sdk.NewAttribute(sdk.AttributeKeyAmount, undelegate.Funds.Amount),
 		sdk.NewAttribute(types.AttributeKeyRecipient, undelegate.RecipientAddr),
 	)}, nil
 }
@@ -378,4 +368,29 @@ func (d restrictedParamsRouter) AddRoute(r string, h govtypes.Handler) (rtr govt
 
 func (d restrictedParamsRouter) Seal() {
 	panic("not supported")
+}
+
+func convertWasmCoinsToSdkCoins(coins []wasmvmtypes.Coin) (sdk.Coins, error) {
+	var toSend sdk.Coins
+	for _, coin := range coins {
+		c, err := convertWasmCoinToSdkCoin(coin)
+		if err != nil {
+			return nil, err
+		}
+		toSend = append(toSend, c)
+	}
+	return toSend, nil
+}
+
+// copied from wasmd. Should be public soon
+func convertWasmCoinToSdkCoin(coin wasmvmtypes.Coin) (sdk.Coin, error) {
+	amount, ok := sdk.NewIntFromString(coin.Amount)
+	if !ok {
+		return sdk.Coin{}, sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, coin.Amount+coin.Denom)
+	}
+	r := sdk.Coin{
+		Denom:  coin.Denom,
+		Amount: amount,
+	}
+	return r, r.Validate()
 }
