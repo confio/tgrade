@@ -29,14 +29,9 @@ type TgradeWasmHandlerKeeper interface {
 	GetContractInfo(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
 }
 
-// minter is a subset of bank keeper
-type minter interface {
+// bankKeeper is a subset of the SDK bank keeper
+type bankKeeper interface {
 	MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error
-	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
-}
-
-// staker is a subset of bank keeper
-type staker interface {
 	SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
 	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 	DelegateCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
@@ -55,28 +50,25 @@ var _ wasmkeeper.Messenger = TgradeHandler{}
 type TgradeHandler struct {
 	cdc                    codec.Codec
 	keeper                 TgradeWasmHandlerKeeper
-	minter                 minter
+	bankKeeper             bankKeeper
 	govRouter              govtypes.Router
 	consensusParamsUpdater ConsensusParamsUpdater
-	staker                 staker
 }
 
 // NewTgradeHandler constructor
 func NewTgradeHandler(
 	cdc codec.Codec,
 	keeper TgradeWasmHandlerKeeper,
-	minter minter,
+	bankKeeper bankKeeper,
 	consensusParamsUpdater ConsensusParamsUpdater,
 	govRouter govtypes.Router,
-	staker staker,
 ) *TgradeHandler {
 	return &TgradeHandler{
 		cdc:                    cdc,
 		keeper:                 keeper,
 		govRouter:              restrictParamsDecorator(govRouter),
-		minter:                 minter,
+		bankKeeper:             bankKeeper,
 		consensusParamsUpdater: consensusParamsUpdater,
-		staker:                 staker,
 	}
 }
 
@@ -203,11 +195,11 @@ func (h TgradeHandler) handleMintToken(ctx sdk.Context, contractAddr sdk.AccAddr
 	if err := token.Validate(); err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, err.Error()), "mint tokens handler")
 	}
-	if err := h.minter.MintCoins(ctx, types.ModuleName, sdk.NewCoins(token)); err != nil {
+	if err := h.bankKeeper.MintCoins(ctx, types.ModuleName, sdk.NewCoins(token)); err != nil {
 		return nil, sdkerrors.Wrap(err, "mint")
 	}
 
-	if err := h.minter.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipient, sdk.NewCoins(token)); err != nil {
+	if err := h.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, recipient, sdk.NewCoins(token)); err != nil {
 		return nil, sdkerrors.Wrap(err, "send to recipient")
 	}
 
@@ -268,10 +260,10 @@ func (h TgradeHandler) handleDelegate(ctx sdk.Context, contractAddr sdk.AccAddre
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
-	if err := h.staker.DelegateCoinsFromAccountToModule(ctx, fromAddr, poetypes.BondedPoolName, amt); err != nil {
+	if err := h.bankKeeper.DelegateCoinsFromAccountToModule(ctx, fromAddr, poetypes.BondedPoolName, amt); err != nil {
 		return nil, sdkerrors.Wrap(err, "delegate")
 	}
-	if err := h.staker.SendCoinsFromModuleToAccount(ctx, poetypes.BondedPoolName, contractAddr, amt); err != nil {
+	if err := h.bankKeeper.SendCoinsFromModuleToAccount(ctx, poetypes.BondedPoolName, contractAddr, amt); err != nil {
 		return nil, sdkerrors.Wrap(err, "module to contract")
 	}
 
@@ -296,10 +288,10 @@ func (h TgradeHandler) handleUndelegate(ctx sdk.Context, contractAddr sdk.AccAdd
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
-	if err := h.staker.SendCoinsFromAccountToModule(ctx, contractAddr, poetypes.BondedPoolName, amt); err != nil {
+	if err := h.bankKeeper.SendCoinsFromAccountToModule(ctx, contractAddr, poetypes.BondedPoolName, amt); err != nil {
 		return nil, sdkerrors.Wrap(err, "contract to module")
 	}
-	if err := h.staker.UndelegateCoinsFromModuleToAccount(ctx, poetypes.BondedPoolName, recipient, amt); err != nil {
+	if err := h.bankKeeper.UndelegateCoinsFromModuleToAccount(ctx, poetypes.BondedPoolName, recipient, amt); err != nil {
 		return nil, sdkerrors.Wrap(err, "undelegate")
 	}
 

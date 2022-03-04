@@ -53,7 +53,7 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 			expCapturedGovContent: []govtypes.Content{&govtypes.TextProposal{Title: "foo", Description: "bar"}},
 			expEvents:             sdk.Events{sdk.NewEvent("testing")},
 		},
-		"handle minter msg": {
+		"handle bankKeeper msg": {
 			src: wasmvmtypes.CosmosMsg{
 				Custom: []byte(fmt.Sprintf(`{"mint_tokens":{"amount":"1","denom":"utgd","recipient":%q}}`, otherAddr.String())),
 			},
@@ -131,12 +131,11 @@ func TestTgradeHandlesDispatchMsg(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cdc := MakeEncodingConfig(t).Codec
 			govRouter := &CapturingGovRouter{}
-			minterMock := NoopMinterMock()
-			stakerMock := NoopStakerMock()
+			bankMock := NoopBankMock()
 			mock := handlerTgradeKeeperMock{}
 			consensusStoreMock := NoopConsensusParamsStoreMock()
 			spec.setup(&mock)
-			h := NewTgradeHandler(cdc, mock, minterMock, consensusStoreMock, govRouter, stakerMock)
+			h := NewTgradeHandler(cdc, mock, bankMock, consensusStoreMock, govRouter)
 			em := sdk.NewEventManager()
 			ctx := sdk.Context{}.WithEventManager(em)
 
@@ -362,7 +361,7 @@ func TestTgradeHandlesPrivilegeMsg(t *testing.T) {
 			capturedDetails, capturedRegistrations, capturedUnRegistrations = nil, nil, nil
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
-			h := NewTgradeHandler(nil, mock, nil, nil, nil, nil)
+			h := NewTgradeHandler(nil, mock, nil, nil, nil)
 			var ctx sdk.Context
 			gotErr := h.handlePrivilege(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -460,7 +459,7 @@ func TestHandleGovProposalExecution(t *testing.T) {
 			mock := handlerTgradeKeeperMock{}
 			spec.setup(&mock)
 			router := &CapturingGovRouter{}
-			h := NewTgradeHandler(cdc, mock, nil, nil, router, nil)
+			h := NewTgradeHandler(cdc, mock, nil, nil, router)
 			var ctx sdk.Context
 			gotErr := h.handleGovProposalExecution(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -568,10 +567,10 @@ func TestHandleMintToken(t *testing.T) {
 			cdc := MakeEncodingConfig(t).Codec
 			mintFn, capturedMintedCoins := CaptureMintedCoinsFn()
 			sendFn, capturedSentCoins := CaptureSendCoinsFn()
-			mock := MinterMock{MintCoinsFn: mintFn, SendCoinsFromModuleToAccountFn: sendFn}
+			mock := BankMock{MintCoinsFn: mintFn, SendCoinsFromModuleToAccountFn: sendFn}
 			keeperMock := handlerTgradeKeeperMock{}
 			spec.setup(&keeperMock)
-			h := NewTgradeHandler(cdc, keeperMock, mock, nil, nil, nil)
+			h := NewTgradeHandler(cdc, keeperMock, mock, nil, nil)
 			var ctx sdk.Context
 			gotEvts, gotErr := h.handleMintToken(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -654,7 +653,7 @@ func TestHandleConsensusParamsUpdate(t *testing.T) {
 
 			keeperMock := handlerTgradeKeeperMock{}
 			spec.setup(&keeperMock)
-			h := NewTgradeHandler(cdc, keeperMock, nil, mock, nil, nil)
+			h := NewTgradeHandler(cdc, keeperMock, nil, mock, nil)
 			var ctx sdk.Context
 			gotEvts, gotErr := h.handleConsensusParamsUpdate(ctx, myContractAddr, &spec.src)
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
@@ -741,75 +740,55 @@ func (m handlerTgradeKeeperMock) GetContractInfo(ctx sdk.Context, contractAddres
 	return m.GetContractInfoFn(ctx, contractAddress)
 }
 
-// MinterMock test helper that satisfies the `minter` interface
-type MinterMock struct {
-	MintCoinsFn                    func(ctx sdk.Context, moduleName string, amt sdk.Coins) error
-	SendCoinsFromModuleToAccountFn func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
-}
-
-func (m MinterMock) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
-	if m.MintCoinsFn == nil {
-		panic("not expected to be called")
-	}
-	return m.MintCoinsFn(ctx, moduleName, amt)
-}
-
-func (m MinterMock) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-	if m.SendCoinsFromModuleToAccountFn == nil {
-		panic("not expected to be called")
-	}
-	return m.SendCoinsFromModuleToAccountFn(ctx, senderModule, recipientAddr, amt)
-}
-
-func NoopMinterMock() *MinterMock {
-	return &MinterMock{
-		MintCoinsFn: func(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
-			return nil
-		},
-		SendCoinsFromModuleToAccountFn: func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-			return nil
-		},
-	}
-}
-
-// StakerMock test helper that satisfies the `staker` interface
-type StakerMock struct {
+// BankMock test helper that satisfies the `bankKeeper` interface
+type BankMock struct {
+	MintCoinsFn                          func(ctx sdk.Context, moduleName string, amt sdk.Coins) error
 	SendCoinsFromModuleToAccountFn       func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
 	SendCoinsFromAccountToModuleFn       func(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 	DelegateCoinsFromAccountToModuleFn   func(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 	UndelegateCoinsFromModuleToAccountFn func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
 }
 
-func (m StakerMock) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+func (m BankMock) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+	if m.MintCoinsFn == nil {
+		panic("not expected to be called")
+	}
+	return m.MintCoinsFn(ctx, moduleName, amt)
+}
+
+func (m BankMock) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	if m.SendCoinsFromModuleToAccountFn == nil {
 		panic("not expected to be called")
 	}
 	return m.SendCoinsFromModuleToAccountFn(ctx, senderModule, recipientAddr, amt)
 }
 
-func (m StakerMock) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+func (m BankMock) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	if m.SendCoinsFromAccountToModuleFn == nil {
 		panic("not expected to be called")
 	}
 	return m.SendCoinsFromAccountToModuleFn(ctx, senderAddr, recipientModule, amt)
 }
 
-func (m StakerMock) UndelegateCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+func (m BankMock) UndelegateCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	if m.UndelegateCoinsFromModuleToAccountFn == nil {
 		panic("not expected to be called")
 	}
 	return m.UndelegateCoinsFromModuleToAccountFn(ctx, senderModule, recipientAddr, amt)
 }
 
-func (m StakerMock) DelegateCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+func (m BankMock) DelegateCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	if m.DelegateCoinsFromAccountToModuleFn == nil {
 		panic("not expected to be called")
 	}
 	return m.DelegateCoinsFromAccountToModuleFn(ctx, senderAddr, recipientModule, amt)
 }
 
-func NoopStakerMock() *StakerMock {
-	return &StakerMock{
+func NoopBankMock() *BankMock {
+	return &BankMock{
+		MintCoinsFn: func(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+			return nil
+		},
 		SendCoinsFromModuleToAccountFn: func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 			return nil
 		},

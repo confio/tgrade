@@ -280,7 +280,7 @@ func createTestInput(
 			}),
 			nested,
 			// append our custom message handler
-			twasmkeeper.NewTgradeHandler(appCodec, &twasmKeeper, bankKeeper, consensusParamsUpdater, govRouter, bankKeeper),
+			twasmkeeper.NewTgradeHandler(appCodec, &twasmKeeper, bankKeeper, consensusParamsUpdater, govRouter),
 		)
 	})
 
