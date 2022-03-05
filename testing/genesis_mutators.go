@@ -63,17 +63,17 @@ func SetEpochLength(t *testing.T, epoch time.Duration) GenesisMutator {
 	}
 }
 
-// SetUnbodingPeriod set the stake contract config unboding period
-func SetUnbodingPeriod(t *testing.T, unboding time.Duration) GenesisMutator {
+// SetUnbondingPeriod set the stake contract config unbonding period
+func SetUnbondingPeriod(t *testing.T, unbonding time.Duration) GenesisMutator {
 	return func(genesis []byte) []byte {
 		t.Helper()
-		state, err := sjson.SetRawBytes(genesis, "app_state.poe.stake_contract_config.unbonding_period", []byte(fmt.Sprintf("%q", unboding)))
+		state, err := sjson.SetRawBytes(genesis, "app_state.poe.stake_contract_config.unbonding_period", []byte(fmt.Sprintf("%q", unbonding)))
 		require.NoError(t, err)
 		return state
 	}
 }
 
-// SetBlockRewards set the valset contract config unboding period
+// SetBlockRewards set the valset contract config unbonding period
 func SetBlockRewards(t *testing.T, amount sdk.Coin) GenesisMutator {
 	return func(genesis []byte) []byte {
 		t.Helper()

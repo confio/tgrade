@@ -260,7 +260,7 @@ func TestPoEUndelegate(t *testing.T) {
 	// then claims got executed automatically
 
 	unbodingPeriod := 10 * time.Second // not too short so that claims not get auto unbonded
-	sut.ModifyGenesisJSON(t, SetUnbodingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin("utgd", sdk.ZeroInt())))
+	sut.ModifyGenesisJSON(t, SetUnbondingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin("utgd", sdk.ZeroInt())))
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 
