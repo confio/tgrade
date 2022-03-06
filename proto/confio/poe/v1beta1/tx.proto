@@ -78,6 +78,7 @@ message MsgDelegate {
   string operator_address = 1
       [ (gogoproto.moretags) = "yaml:\"operator_address\"" ];
   cosmos.base.v1beta1.Coin amount = 2 [ (gogoproto.nullable) = false ];
+  cosmos.base.v1beta1.Coin vesting_amount = 3 [ (gogoproto.nullable) = false ];
 }
 
 // MsgDelegateResponse defines the Msg/Delegate response type.
