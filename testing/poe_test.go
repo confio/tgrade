@@ -234,7 +234,7 @@ func TestPoESelfDelegate(t *testing.T) {
 	powerBefore := queryTendermintValidatorPower(t, sut, 0)
 
 	// when
-	txResult := cli.CustomCommand("tx", "poe", "self-delegate", "100000utgd", "--from=node0")
+	txResult := cli.CustomCommand("tx", "poe", "self-delegate", "100000utgd", "0utgd", "--from=node0")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
