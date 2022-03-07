@@ -301,24 +301,34 @@ func (s SystemUnderTest) BuildNewBinary() {
 // Returns the new height
 func (s *SystemUnderTest) AwaitNextBlock(t *testing.T, timeout ...time.Duration) int64 {
 	t.Helper()
-	var maxWaitTime = s.blockTime * 3
-	if len(timeout) != 0 { // optional argument to overwrite default timeout
+	next := atomic.LoadInt64(&s.currentHeight) + 1
+	s.AwaitBlockHeight(t, next, timeout...)
+	return next
+}
+
+// AwaitBlockHeight blocks and waits for the block height to come. if current height is > expected height then it fails
+func (s *SystemUnderTest) AwaitBlockHeight(t *testing.T, expHeight int64, timeout ...time.Duration) {
+	t.Helper()
+	current := atomic.LoadInt64(&s.currentHeight)
+	if current > expHeight {
+		t.Fatalf("can not wait for %d as current height already at: %d", expHeight, current)
+	}
+	t.Logf("await block %d, at:  %d\n", expHeight, current)
+	maxWaitTime := s.blockTime*time.Duration(expHeight-current) + 5*time.Second // + buffer for some shifts
+	if len(timeout) != 0 {                                                      // optional argument to overwrite default timeout
 		maxWaitTime = timeout[0]
 	}
-	done := make(chan int64)
+	done := make(chan struct{})
 	go func() {
-		for start, current := atomic.LoadInt64(&s.currentHeight), atomic.LoadInt64(&s.currentHeight); current == start; current = atomic.LoadInt64(&s.currentHeight) {
+		for ; current < expHeight; current = atomic.LoadInt64(&s.currentHeight) {
 			time.Sleep(s.blockTime)
 		}
-		done <- atomic.LoadInt64(&s.currentHeight)
 		close(done)
 	}()
 	select {
-	case v := <-done:
-		return v
+	case <-done:
 	case <-time.NewTimer(maxWaitTime).C:
 		t.Fatalf("Timeout - no block within %s", maxWaitTime)
-		return -1
 	}
 }
 
