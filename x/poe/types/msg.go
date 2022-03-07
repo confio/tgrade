@@ -162,10 +162,11 @@ func (msg MsgUpdateValidator) ValidateBasic() error {
 }
 
 // NewMsgDelegate constructor
-func NewMsgDelegate(delAddr sdk.AccAddress, amount sdk.Coin) *MsgDelegate {
+func NewMsgDelegate(delAddr sdk.AccAddress, amount sdk.Coin, vestingAmount sdk.Coin) *MsgDelegate {
 	return &MsgDelegate{
 		OperatorAddress: delAddr.String(),
 		Amount:          amount,
+		VestingAmount:   vestingAmount,
 	}
 }
 

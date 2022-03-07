@@ -148,10 +148,14 @@ func UnbondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, operatorAddr
 	return nil, types.ErrInvalid.Wrap("completion_time event attribute")
 }
 
-// BondDelegation sends given amount to the staking contract to increase the bonded amount for the validator operator
-func BondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, operatorAddress sdk.AccAddress, amount sdk.Coins, k types.Executor) error {
+// BondDelegation sends given amounts to the staking contract to increase the bonded amount for the validator operator
+func BondDelegation(ctx sdk.Context, contractAddr sdk.AccAddress, operatorAddress sdk.AccAddress, amount sdk.Coins, vestingAmount *sdk.Coin, k types.Executor) error {
+	var vestingTokens *wasmvmtypes.Coin
+	if vestingAmount != nil {
+		vestingTokens = &wasmvmtypes.Coin{Amount: vestingAmount.Amount.String(), Denom: vestingAmount.Denom}
+	}
 	bondStake := TG4StakeExecute{
-		Bond: &struct{}{},
+		Bond: &Bond{VestingTokens: vestingTokens},
 	}
 	payloadBz, err := json.Marshal(&bondStake)
 	if err != nil {

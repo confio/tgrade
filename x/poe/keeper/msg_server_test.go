@@ -348,7 +348,7 @@ func TestDelegate(t *testing.T) {
 		expErr            *sdkerrors.Error
 	}{
 		"all good": {
-			src:               types.NewMsgDelegate(myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt())),
+			src:               types.NewMsgDelegate(myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt()), sdk.Coin{}),
 			expSelfDelegation: &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.OneInt()},
 		},
 	}

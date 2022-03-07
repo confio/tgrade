@@ -43,7 +43,7 @@ func TestBondDelegation(t *testing.T) {
 	require.NoError(t, err)
 
 	// when
-	err = contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())), example.TWasmKeeper.GetContractKeeper())
+	err = contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())), nil, example.TWasmKeeper.GetContractKeeper())
 
 	// then
 	require.NoError(t, err)

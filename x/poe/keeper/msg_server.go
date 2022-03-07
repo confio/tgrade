@@ -80,7 +80,7 @@ func (m msgServer) CreateValidator(c context.Context, msg *types.MsgCreateValida
 		return nil, sdkerrors.Wrap(err, "staking contract")
 	}
 
-	err = contract.BondDelegation(ctx, stakingContractAddr, operatorAddress, sdk.NewCoins(msg.Value), m.contractKeeper)
+	err = contract.BondDelegation(ctx, stakingContractAddr, operatorAddress, sdk.NewCoins(msg.Value), nil, m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "self delegation validator")
 	}
@@ -162,7 +162,7 @@ func (m msgServer) Delegate(c context.Context, msg *types.MsgDelegate) (*types.M
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "staking contract")
 	}
-	err = contract.BondDelegation(ctx, stakingContractAddr, operatorAddress, sdk.NewCoins(msg.Amount), m.contractKeeper)
+	err = contract.BondDelegation(ctx, stakingContractAddr, operatorAddress, sdk.NewCoins(msg.Amount), &msg.VestingAmount, m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "bond delegation")
 	}
