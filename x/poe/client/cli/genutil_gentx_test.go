@@ -133,6 +133,7 @@ func setupSystem(t *testing.T, workDir string, encodingConfig appparams.Encoding
 	moduleManager := module.NewBasicManager(poe.AppModuleBasic{}, auth.AppModuleBasic{}, bank.AppModuleBasic{})
 	moduleManager.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	gs := moduleManager.DefaultGenesis(encodingConfig.Codec)
+
 	// with PoE setup
 	state := types.GetGenesisStateFromAppState(encodingConfig.Codec, gs)
 	state.BondDenom = bondDenum
@@ -140,6 +141,8 @@ func setupSystem(t *testing.T, workDir string, encodingConfig appparams.Encoding
 		Address: addr.String(),
 		Points:  1,
 	})
+	state.OversightCommunityMembers = []string{types.RandomAccAddress().String()}
+
 	types.SetGenesisStateInAppState(encodingConfig.Codec, gs, state)
 	// with bank setup
 	bs := banktypes.GetGenesisStateFromAppState(encodingConfig.Codec, gs)

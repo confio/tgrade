@@ -213,6 +213,25 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
+		"empty oversight community members": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommunityMembers = nil
+			}),
+			expErr: true,
+		},
+		"duplicate oversight community members": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommunityMembers = append(m.OversightCommunityMembers, m.OversightCommunityMembers[0])
+			}),
+			expErr: true,
+		},
+		"invalid oc members address": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.OversightCommunityMembers = append(m.OversightCommunityMembers, "invalid address")
+
+			}),
+			expErr: true,
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {

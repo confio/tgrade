@@ -290,6 +290,7 @@ GenesisState - initial state of module
 | `oversight_committee_contract_config` | [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig) |  |  |
 | `community_pool_contract_config` | [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig) |  |  |
 | `validator_voting_contract_config` | [ValidatorVotingContractConfig](#confio.poe.v1beta1.ValidatorVotingContractConfig) |  |  |
+| `oversightCommunityMembers` | [string](#string) | repeated |  |
 
 
 

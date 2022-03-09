@@ -1,4 +1,4 @@
-package contract_test
+package poe_test
 
 import (
 	"encoding/json"
@@ -10,20 +10,42 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	fuzz "github.com/google/gofuzz"
-	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/confio/tgrade/x/poe/keeper"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/confio/tgrade/x/poe"
 	"github.com/confio/tgrade/x/poe/contract"
-	"github.com/confio/tgrade/x/poe/keeper"
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-type ExampleValidator struct {
-	stakingtypes.Validator
+func TestIntegrationBootstrapPoEContracts(t *testing.T) {
+	// setup contracts and seed some data
+	ctx, example, _, members := setupPoEContracts(t)
+
+	ocContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunity)
+	require.NoError(t, err)
+	tcAdapter := contract.NewTrustedCircleContractAdapter(ocContractAddr, example.TWasmKeeper, nil)
+
+	voters, err := tcAdapter.QueryListVoters(ctx)
+	require.NoError(t, err)
+
+	//verify the members list are all voting members
+	notVotingMembers := make(map[string]struct{}, len(members))
+	for _, m := range members {
+		notVotingMembers[m] = struct{}{}
+	}
+
+	for _, v := range voters.Members {
+		delete(notVotingMembers, v.Addr)
+	}
+	assert.Empty(t, notVotingMembers)
 }
 
-func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator, []types.TG4Member) {
+func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator, []string) {
 	t.Helper()
 	ctx, example := keeper.CreateDefaultTestInput(t)
 	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
@@ -33,6 +55,7 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
 	adminAddress, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	example.Faucet.Fund(ctx, adminAddress, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
+
 	for _, member := range gs.OversightCommunityMembers {
 		addr, err := sdk.AccAddressFromBech32(member)
 		require.NoError(t, err)
@@ -41,7 +64,7 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-	return ctx, example, expValidators, gs.Engagement
+	return ctx, example, expValidators, gs.OversightCommunityMembers
 }
 
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
@@ -103,20 +126,4 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			return collectValidators[i].Tokens.LT(collectValidators[j].Tokens) // sort ASC
 		})
 	}, collectValidators
-}
-
-func clearTokenAmount(validators []stakingtypes.Validator) []stakingtypes.Validator {
-	for i, v := range validators {
-		v.Tokens = sdk.Int{}
-		validators[i] = v
-	}
-	return validators
-}
-
-func clearWeight(members []contract.TG4Member) []contract.TG4Member {
-	for i, m := range members {
-		m.Points = 0
-		members[i] = m
-	}
-	return members
 }

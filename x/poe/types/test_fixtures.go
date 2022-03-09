@@ -40,6 +40,8 @@ func GenesisStateFixture(mutators ...func(m *GenesisState)) GenesisState {
 		Points:  10,
 	}}
 
+	r.OversightCommunityMembers = []string{RandomAccAddress().String(), RandomAccAddress().String()}
+
 	for _, m := range mutators {
 		m(&r)
 	}

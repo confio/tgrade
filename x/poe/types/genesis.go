@@ -196,6 +196,22 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		}
 		uniquePubKeys[pk] = struct{}{}
 	}
+
+	if len(g.OversightCommunityMembers) == 0 {
+		return sdkerrors.Wrapf(wasmtypes.ErrEmpty, "oversight community members")
+	}
+
+	uniqueOCMembers := make(map[string]struct{}, len(g.OversightCommunityMembers))
+	for _, member := range g.OversightCommunityMembers {
+		if _, err := sdk.AccAddressFromBech32(member); err != nil {
+			return sdkerrors.Wrap(err, "oc member address")
+		}
+		if _, exists := uniqueOCMembers[member]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "oc member: %s", member)
+		}
+		uniqueOCMembers[member] = struct{}{}
+	}
+
 	return nil
 }
 

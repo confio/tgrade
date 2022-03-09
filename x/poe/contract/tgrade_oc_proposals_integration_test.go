@@ -14,6 +14,7 @@ import (
 )
 
 func TestSlashValidator(t *testing.T) {
+	t.Skip()
 	var systemAdmin sdk.AccAddress = rand.Bytes(address.Len)
 	// setup contracts and seed some data
 	ctx, example, vals, _ := setupPoEContracts(t, setSystemAdminMutator(systemAdmin))

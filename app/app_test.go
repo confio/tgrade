@@ -81,6 +81,15 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	coins := sdk.Coins{sdk.NewCoin(poetypes.DefaultBondDenom, sdk.NewInt(1000000000))}
 	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: myAddr.String(), Coins: coins.Sort()})
 	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: systemAdminAddr.String(), Coins: coins.Sort()})
+
+	// add 3 oc members
+	ocMembers := make([]string, 3)
+	for i := 0; i < 3; i++ {
+		addr := poetypes.RandomAccAddress().String()
+		bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: addr, Coins: coins.Sort()})
+		ocMembers[i] = addr
+	}
+
 	genesisState[banktypes.ModuleName] = marshaler.MustMarshalJSON(&bankGenState)
 
 	// add system admin to not fail poe on validation
@@ -89,6 +98,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	poeGS.GenTxs = []json.RawMessage{myGenTx}
 	poeGS.Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Points: 10}}
 	poeGS.SystemAdminAddress = systemAdminAddr.String()
+	poeGS.OversightCommunityMembers = ocMembers
 	genesisState = poetypes.SetGenesisStateInAppState(marshaler, genesisState, poeGS)
 }
 
