@@ -2,7 +2,7 @@ package contract
 
 import (
 	"encoding/json"
-
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -196,6 +196,40 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 			}
 			return nil
 		},
+		"migrate_contract": func(b []byte) error {
+			var proxy = struct { // todo: better use wasmvmtypes.MigrateMsg when names match
+				Contract string `json:"contract"`
+				CodeID   uint64 `json:"code_id"`
+				Msg      []byte `json:"migrate_msg"`
+			}{}
+			if err := json.Unmarshal(b, &proxy); err != nil {
+				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
+			}
+			result.MigrateContract = &wasmtypes.MigrateContractProposal{
+				Contract: proxy.Contract,
+				CodeID:   proxy.CodeID,
+				Msg:      proxy.Msg,
+			}
+			return nil
+		}, "instantiate_contract": func(b []byte) error {
+			var proxy = wasmvmtypes.InstantiateMsg{}
+			if err := json.Unmarshal(b, &proxy); err != nil {
+				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
+			}
+			funds, err := convertWasmCoinsToSdkCoins(proxy.Funds)
+			if err != nil {
+				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
+			}
+			result.InstantiateContract = &wasmtypes.InstantiateContractProposal{
+				//RunAs:       "",
+				Admin:  proxy.Admin,
+				CodeID: proxy.CodeID,
+				Label:  proxy.Label,
+				Msg:    proxy.Msg,
+				Funds:  funds,
+			}
+			return nil
+		},
 	}
 	for field, unmarshaler := range customUnmarshalers {
 		if bz, ok := raws[field]; ok {
@@ -330,4 +364,30 @@ func (p *EvidenceParams) ValidateBasic() error {
 		return wasmtypes.ErrEmpty
 	}
 	return nil
+}
+
+// copied from wasmd. should be public soon
+func convertWasmCoinsToSdkCoins(coins []wasmvmtypes.Coin) (sdk.Coins, error) {
+	var toSend sdk.Coins
+	for _, coin := range coins {
+		c, err := convertWasmCoinToSdkCoin(coin)
+		if err != nil {
+			return nil, err
+		}
+		toSend = append(toSend, c)
+	}
+	return toSend, nil
+}
+
+// copied from wasmd. should be public soon
+func convertWasmCoinToSdkCoin(coin wasmvmtypes.Coin) (sdk.Coin, error) {
+	amount, ok := sdk.NewIntFromString(coin.Amount)
+	if !ok {
+		return sdk.Coin{}, sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, coin.Amount+coin.Denom)
+	}
+	r := sdk.Coin{
+		Denom:  coin.Denom,
+		Amount: amount,
+	}
+	return r, r.Validate()
 }

@@ -116,7 +116,7 @@ func TestGetProposalContent(t *testing.T) {
         "admin": "cosmos1g6chpwdke3kz69x67jkak5y7gynneqm3nulfrd",
         "code_id": 1,
         "funds": [{"denom": "ALX", "amount": "2"},{"denom": "BLX","amount": "3"}],
-        "msg": {},
+        "msg": "e30=",
         "label": "testing"
       }}}}`,
 			expGovProposal: &wasmtypes.InstantiateContractProposal{
@@ -155,7 +155,7 @@ func TestGetProposalContent(t *testing.T) {
       "migrate_contract": {
         "code_id": 1,
 		"contract": "cosmos1vtg95naqtvf99hj8pe0s9aevy622vt0jmupc09",
-        "msg": {}
+        "migrate_msg": "e30="
       }}}}`,
 			expGovProposal: &wasmtypes.MigrateContractProposal{
 				Title:       "foo",
