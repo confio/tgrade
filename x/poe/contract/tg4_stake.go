@@ -77,7 +77,8 @@ type TG4StakeClaimsResponse struct {
 }
 
 type TG4StakedAmountsResponse struct {
-	Stake wasmvmtypes.Coin `json:"stake"`
+	Liquid  wasmvmtypes.Coin `json:"liquid"`
+	Vesting wasmvmtypes.Coin `json:"vesting"`
 }
 
 type TG4StakeClaim struct {
