@@ -270,7 +270,7 @@ func (h TgradeHandler) handleDelegate(ctx sdk.Context, contractAddr sdk.AccAddre
 	return sdk.Events{sdk.NewEvent(
 		types.EventTypeDelegateTokens,
 		sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
-		sdk.NewAttribute(sdk.AttributeKeyAmount, delegate.Funds.Amount+delegate.Funds.Denom),
+		sdk.NewAttribute(sdk.AttributeKeyAmount, amt.String()),
 		sdk.NewAttribute(types.AttributeKeySender, delegate.StakerAddr),
 	)}, nil
 }
@@ -298,7 +298,7 @@ func (h TgradeHandler) handleUndelegate(ctx sdk.Context, contractAddr sdk.AccAdd
 	return sdk.Events{sdk.NewEvent(
 		types.EventTypeUndelegateTokens,
 		sdk.NewAttribute(wasmtypes.AttributeKeyContractAddr, contractAddr.String()),
-		sdk.NewAttribute(sdk.AttributeKeyAmount, undelegate.Funds.Amount+undelegate.Funds.Denom),
+		sdk.NewAttribute(sdk.AttributeKeyAmount, amt.String()),
 		sdk.NewAttribute(types.AttributeKeyRecipient, undelegate.RecipientAddr),
 	)}, nil
 }
