@@ -362,6 +362,7 @@ func (d restrictedParamsRouter) Seal() {
 	panic("not supported")
 }
 
+// FIXME: Use public wasmd helper function when available
 func convertWasmCoinsToSdkCoins(coins []wasmvmtypes.Coin) (sdk.Coins, error) {
 	var toSend sdk.Coins
 	for _, coin := range coins {
@@ -374,7 +375,7 @@ func convertWasmCoinsToSdkCoins(coins []wasmvmtypes.Coin) (sdk.Coins, error) {
 	return toSend, nil
 }
 
-// copied from wasmd. Should be public soon
+// FIXME: Use public wasmd helper function when available
 func convertWasmCoinToSdkCoin(coin wasmvmtypes.Coin) (sdk.Coin, error) {
 	amount, ok := sdk.NewIntFromString(coin.Amount)
 	if !ok {
