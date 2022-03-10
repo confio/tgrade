@@ -322,14 +322,14 @@ func BuildCreateValidatorMsg(clientCtx client.Context, config TxCreateValidatorC
 
 func NewDelegateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "self-delegate [amount] [vesting-amount]",
+		Use:   "self-delegate <liquid-amount> <vesting-amount>",
 		Args:  cobra.ExactArgs(2),
 		Short: "Delegate liquid and illiquid tokens to a validator",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Delegate an amount of liquid and/or illiquid (vesting) coins to a validator from your wallet.
 
 Examples:
-$ %s tx poe self-delegate 1000stake --from mykey
+$ %s tx poe self-delegate 1000stake 0stake --from mykey
 $ %s tx poe self-delegate 500stake 500stake --from mykey
 `,
 				version.AppName,
