@@ -131,7 +131,7 @@ func TestPoEAddPostGenesisValidatorWithAutoEngagementPoints(t *testing.T) {
 	require.NoError(t, err)
 	// when
 	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd",
-		"--pubkey="+string(pubKeyEncoded), "--from=newOperator", "--gas=250000")
+		"--pubkey="+string(pubKeyEncoded), "--from=newOperator", "--gas=275000")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
