@@ -233,7 +233,7 @@ func createTestInput(
 	scopedIBCKeeper := capabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedWasmKeeper := capabilityKeeper.ScopeToModule(types.ModuleName)
 
-	faucet := wasmkeeper.NewTestFaucet(t, ctx, bankKeeper, sdk.NewCoin("utgd", sdk.NewInt(100_000_000_000)))
+	faucet := wasmkeeper.NewTestFaucet(t, ctx, bankKeeper, types.ModuleName, sdk.NewCoin("utgd", sdk.NewInt(100_000_000_000)))
 
 	ibcKeeper := ibckeeper.NewKeeper(
 		appCodec,

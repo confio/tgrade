@@ -187,7 +187,7 @@ func createTestInput(
 	maccPerms := map[string][]string{ // module account permissions
 		ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
-		minttypes.ModuleName:        {authtypes.Minter, authtypes.Burner}, // for the faucet only
+		types.ModuleName:            {authtypes.Minter, authtypes.Burner},
 	}
 	accountKeeper := authkeeper.NewAccountKeeper(
 		appCodec,
@@ -309,7 +309,7 @@ func createTestInput(
 	twasm.NewAppModule(appCodec, &twasmKeeper, poestakingadapter.StakingAdapter{}).RegisterServices(configurator)
 	govRouter.AddRoute(twasm.RouterKey, twasmkeeper.NewProposalHandler(twasmKeeper))
 
-	faucet := wasmkeeper.NewTestFaucet(t, ctx, bankKeeper, sdk.NewCoin("utgd", sdk.NewInt(100_000_000_000)))
+	faucet := wasmkeeper.NewTestFaucet(t, ctx, bankKeeper, types.ModuleName, sdk.NewCoin("utgd", sdk.NewInt(100_000_000_000)))
 
 	keepers := TestKeepers{
 		AccountKeeper:  accountKeeper,
