@@ -32,12 +32,20 @@ type TG4StakeInitMsg struct {
 // TG4StakeExecute staking contract execute messages
 // See https://github.com/confio/tgrade-contracts/blob/v0.5.0-alpha/contracts/tg4-stake/src/msg.rs
 type TG4StakeExecute struct {
-	Bond   *struct{} `json:"bond,omitempty"`
+	Bond   *Bond     `json:"bond,omitempty"`
 	Unbond *Unbond   `json:"unbond,omitempty"`
 	Claim  *struct{} `json:"claim,omitempty"`
 }
 
-// Unbond will start the unbonding process for the given number of tokens. The sender immediately loses weight from these tokens, and can claim them back to his wallet after `unbonding_period`",
+// Bond will bond all staking tokens sent with the message and update membership points.
+// The optional `vesting_tokens` will be staked (delegated) as well, if set.
+type Bond struct {
+	VestingTokens *wasmvmtypes.Coin `json:"vesting_tokens,omitempty"`
+}
+
+// Unbond will start the unbonding process for the given number of tokens.
+// The sender immediately loses points from these tokens, and can claim them back to his wallet after `unbonding_period`.
+// Tokens will be unbonded from the liquid pool first, and then from the vesting pool if available.
 type Unbond struct {
 	// Tokens are the amount to unbond
 	Tokens wasmvmtypes.Coin `json:"tokens"`
@@ -69,7 +77,8 @@ type TG4StakeClaimsResponse struct {
 }
 
 type TG4StakedAmountsResponse struct {
-	Stake wasmvmtypes.Coin `json:"stake"`
+	Liquid  wasmvmtypes.Coin `json:"liquid"`
+	Vesting wasmvmtypes.Coin `json:"vesting"`
 }
 
 type TG4StakeClaim struct {

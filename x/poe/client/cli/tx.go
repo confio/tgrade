@@ -322,15 +322,17 @@ func BuildCreateValidatorMsg(clientCtx client.Context, config TxCreateValidatorC
 
 func NewDelegateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "self-delegate [amount]",
-		Args:  cobra.ExactArgs(1),
-		Short: "Delegate liquid tokens to a validator",
+		Use:   "self-delegate <liquid-amount> <vesting-amount>",
+		Args:  cobra.ExactArgs(2),
+		Short: "Delegate liquid and illiquid tokens to a validator",
 		Long: strings.TrimSpace(
-			fmt.Sprintf(`Delegate an amount of liquid coins to a validator from your wallet.
+			fmt.Sprintf(`Delegate an amount of liquid and/or illiquid (vesting) coins to a validator from your wallet.
 
-Example:
-$ %s tx poe self-delegate 1000stake --from mykey
+Examples:
+$ %s tx poe self-delegate 1000stake 0stake --from mykey
+$ %s tx poe self-delegate 500stake 500stake --from mykey
 `,
+				version.AppName,
 				version.AppName,
 			),
 		),
@@ -343,9 +345,13 @@ $ %s tx poe self-delegate 1000stake --from mykey
 			if err != nil {
 				return err
 			}
+			vesting_amount, err := sdk.ParseCoinNormalized(args[1])
+			if err != nil {
+				return err
+			}
 
 			delAddr := clientCtx.GetFromAddress()
-			msg := types.NewMsgDelegate(delAddr, amount)
+			msg := types.NewMsgDelegate(delAddr, amount, vesting_amount)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

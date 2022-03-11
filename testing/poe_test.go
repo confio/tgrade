@@ -131,7 +131,7 @@ func TestPoEAddPostGenesisValidatorWithAutoEngagementPoints(t *testing.T) {
 	require.NoError(t, err)
 	// when
 	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd",
-		"--pubkey="+string(pubKeyEncoded), "--from=newOperator", "--gas=250000")
+		"--pubkey="+string(pubKeyEncoded), "--from=newOperator", "--gas=275000")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
@@ -234,7 +234,7 @@ func TestPoESelfDelegate(t *testing.T) {
 	powerBefore := queryTendermintValidatorPower(t, sut, 0)
 
 	// when
-	txResult := cli.CustomCommand("tx", "poe", "self-delegate", "100000utgd", "--from=node0")
+	txResult := cli.CustomCommand("tx", "poe", "self-delegate", "100000utgd", "0utgd", "--from=node0")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
@@ -260,7 +260,7 @@ func TestPoEUndelegate(t *testing.T) {
 	// then claims got executed automatically
 
 	unbodingPeriod := 10 * time.Second // not too short so that claims not get auto unbonded
-	sut.ModifyGenesisJSON(t, SetUnbodingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin("utgd", sdk.ZeroInt())))
+	sut.ModifyGenesisJSON(t, SetUnbondingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin("utgd", sdk.ZeroInt())))
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 

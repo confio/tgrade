@@ -43,7 +43,7 @@ func TestBondDelegation(t *testing.T) {
 	require.NoError(t, err)
 
 	// when
-	err = contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())), example.TWasmKeeper.GetContractKeeper())
+	err = contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())), nil, example.TWasmKeeper.GetContractKeeper())
 
 	// then
 	require.NoError(t, err)
@@ -51,7 +51,7 @@ func TestBondDelegation(t *testing.T) {
 	gotRes, err := contract.QueryStakedAmount(ctx, example.TWasmKeeper, stakingContractAddr, myOperatorAddr)
 	require.NoError(t, err)
 	expAmount := vals[0].Tokens.Add(sdk.OneInt())
-	assert.Equal(t, gotRes.Stake.Amount, expAmount.String())
+	assert.Equal(t, gotRes.Liquid.Amount, expAmount.String())
 }
 
 func TestUnbondDelegation(t *testing.T) {
@@ -74,5 +74,5 @@ func TestUnbondDelegation(t *testing.T) {
 	gotRes, err := contract.QueryStakedAmount(ctx, example.TWasmKeeper, stakingContractAddr, myOperatorAddr)
 	require.NoError(t, err)
 	expAmount := vals[0].Tokens.Sub(sdk.OneInt())
-	assert.Equal(t, gotRes.Stake.Amount, expAmount.String())
+	assert.Equal(t, gotRes.Liquid.Amount, expAmount.String())
 }

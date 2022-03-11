@@ -188,6 +188,7 @@ func createTestInput(
 		ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
 		types.ModuleName:            {authtypes.Minter, authtypes.Burner},
+		types.BondedPoolName:        {authtypes.Burner, authtypes.Staking},    
 	}
 	accountKeeper := authkeeper.NewAccountKeeper(
 		appCodec,
@@ -235,6 +236,7 @@ func createTestInput(
 		keys[types.StoreKey],
 		subspace(types.ModuleName),
 		&twasmKeeper,
+		accountKeeper,
 	)
 
 	ibcKeeper := ibckeeper.NewKeeper(
@@ -349,23 +351,48 @@ func createMinTestInput(t *testing.T) (sdk.Context, simappparams.EncodingConfig,
 		keyPoe     = sdk.NewKVStoreKey(types.StoreKey)
 		keyParams  = sdk.NewKVStoreKey(paramstypes.StoreKey)
 		tkeyParams = sdk.NewTransientStoreKey(paramstypes.TStoreKey)
+		keyAuth    = sdk.NewKVStoreKey(authtypes.StoreKey)
 	)
+
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
 	ms.MountStoreWithDB(keyPoe, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(keyParams, sdk.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(tkeyParams, sdk.StoreTypeTransient, db)
+	ms.MountStoreWithDB(keyAuth, sdk.StoreTypeIAVL, db)
 
 	require.NoError(t, ms.LoadLatestVersion())
 	encodingConfig := types.MakeEncodingConfig(t)
 
+	appCodec := encodingConfig.Marshaler
+
 	paramsKeeper := paramskeeper.NewKeeper(encodingConfig.Marshaler, encodingConfig.Amino, keyParams, tkeyParams)
+
+	paramsKeeper.Subspace(authtypes.ModuleName)
+	subspace := func(m string) paramstypes.Subspace {
+		r, ok := paramsKeeper.GetSubspace(m)
+		require.True(t, ok)
+		return r
+	}
+	maccPerms := map[string][]string{ // module account permissions
+		ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
+		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
+		minttypes.ModuleName:        {authtypes.Minter, authtypes.Burner}, // for the faucet only
+		types.BondedPoolName:        {authtypes.Burner, authtypes.Staking},
+	}
+	accountKeeper := authkeeper.NewAccountKeeper(
+		appCodec,
+		keyPoe,
+		subspace(authtypes.ModuleName),
+		authtypes.ProtoBaseAccount, // prototype
+		maccPerms,
+	)
 
 	ctx := sdk.NewContext(ms, tmproto.Header{
 		Height: 1234567,
 		Time:   time.Date(2020, time.April, 22, 12, 0, 0, 0, time.UTC),
 	}, false, log.NewNopLogger())
 
-	k := NewKeeper(encodingConfig.Marshaler, keyPoe, paramsKeeper.Subspace(types.ModuleName), nil)
+	k := NewKeeper(encodingConfig.Marshaler, keyPoe, paramsKeeper.Subspace(types.ModuleName), nil, accountKeeper)
 	return ctx, encodingConfig, k
 }

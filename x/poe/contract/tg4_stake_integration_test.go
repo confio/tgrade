@@ -57,7 +57,7 @@ func TestQueryStakedAmount(t *testing.T) {
 		"address has staked amount": {
 			addr: myOperatorAddr,
 			setup: func(ctx sdk.Context) {
-				err := contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())), contractKeeper)
+				err := contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())), nil, contractKeeper)
 				require.NoError(t, err)
 			},
 			expAmount: &oneInt,
@@ -65,7 +65,7 @@ func TestQueryStakedAmount(t *testing.T) {
 		"address had formerly staked amount": {
 			addr: myOperatorAddr,
 			setup: func(ctx sdk.Context) {
-				err := contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())), contractKeeper)
+				err := contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())), nil, contractKeeper)
 				require.NoError(t, err)
 				completionTime, err := contract.UnbondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoin("utgd", sdk.OneInt()), contractKeeper)
 				require.NoError(t, err)
@@ -96,7 +96,7 @@ func TestQueryStakedAmount(t *testing.T) {
 	}
 }
 
-func TestQueryValidatorUnboding(t *testing.T) {
+func TestQueryValidatorUnbonding(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example, vals, _ := setupPoEContracts(t)
 

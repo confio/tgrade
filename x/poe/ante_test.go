@@ -51,7 +51,7 @@ func TestDeductFeeDecorator(t *testing.T) {
 		"with fee": {
 			feeAmount: sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt())},
 			accounts:  accountsMock(mySenderAddr),
-			bank: bankKeeperMock{func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+			bank: bankKeeperMock{SendCoinsFn: func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
 				assert.Equal(t, mySenderAddr, fromAddr)
 				assert.Equal(t, myContractAddr, toAddr)
 				assert.Equal(t, sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt())}, amt)
@@ -72,7 +72,7 @@ func TestDeductFeeDecorator(t *testing.T) {
 		"with multiple fees": {
 			feeAmount: sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt()), sdk.NewCoin("BLX", sdk.NewInt(2))},
 			accounts:  accountsMock(mySenderAddr),
-			bank: bankKeeperMock{func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+			bank: bankKeeperMock{SendCoinsFn: func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
 				assert.Equal(t, mySenderAddr, fromAddr)
 				assert.Equal(t, myContractAddr, toAddr)
 				assert.Equal(t, sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt()), sdk.NewCoin("BLX", sdk.NewInt(2))}, amt)
@@ -96,7 +96,7 @@ func TestDeductFeeDecorator(t *testing.T) {
 			granter:   myFeeGranterAddr,
 			accounts:  accountsMock(myFeeGranterAddr),
 			grants:    capturingGrantKeeper,
-			bank: bankKeeperMock{func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+			bank: bankKeeperMock{SendCoinsFn: func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
 				assert.Equal(t, myFeeGranterAddr, fromAddr)
 				assert.Equal(t, myContractAddr, toAddr)
 				assert.Equal(t, sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt())}, amt)
@@ -118,7 +118,7 @@ func TestDeductFeeDecorator(t *testing.T) {
 		"bank send fails": {
 			feeAmount: sdk.Coins{sdk.NewCoin("ALX", sdk.OneInt()), sdk.NewCoin("BLX", sdk.NewInt(2))},
 			accounts:  accountsMock(mySenderAddr),
-			bank: bankKeeperMock{func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
+			bank: bankKeeperMock{SendCoinsFn: func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {
 				return errors.New("testing")
 			}},
 			expErr: true,
@@ -168,7 +168,39 @@ func captureUseGrantedFees() (feegrantMock, *[]capturedGrantedFee) {
 }
 
 type bankKeeperMock struct {
-	SendCoinsFn func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error
+	SendCoinsFn                          func(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error
+	SendCoinsFromAccountToModuleFn       func(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+	SendCoinsFromModuleToAccountFn       func(ctx sdk.Context, s string, addr sdk.AccAddress, amt sdk.Coins) error
+	DelegateCoinsFromAccountToModuleFn   func(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+	UndelegateCoinsFromModuleToAccountFn func(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
+}
+
+func (m bankKeeperMock) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	if m.SendCoinsFromAccountToModuleFn == nil {
+		panic("not expected to be called")
+	}
+	return m.SendCoinsFromAccountToModule(ctx, senderAddr, recipientModule, amt)
+}
+
+func (m bankKeeperMock) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	if m.SendCoinsFromModuleToAccountFn == nil {
+		panic("not expected to be called")
+	}
+	return m.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amt)
+}
+
+func (m bankKeeperMock) DelegateCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+	if m.DelegateCoinsFromAccountToModuleFn == nil {
+		panic("not expected to be called")
+	}
+	return m.DelegateCoinsFromAccountToModuleFn(ctx, senderAddr, recipientModule, amt)
+}
+
+func (m bankKeeperMock) UndelegateCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	if m.UndelegateCoinsFromModuleToAccountFn == nil {
+		panic("not expected to be called")
+	}
+	return m.UndelegateCoinsFromModuleToAccountFn(ctx, senderModule, recipientAddr, amt)
 }
 
 func (m bankKeeperMock) SendCoins(ctx sdk.Context, fromAddr sdk.AccAddress, toAddr sdk.AccAddress, amt sdk.Coins) error {

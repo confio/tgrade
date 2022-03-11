@@ -2,7 +2,9 @@ package contract
 
 import (
 	"encoding/json"
+
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -22,6 +24,8 @@ type TgradeMsg struct {
 	ExecuteGovProposal *ExecuteGovProposal    `json:"execute_gov_proposal,omitempty"`
 	MintTokens         *MintTokens            `json:"mint_tokens,omitempty"`
 	ConsensusParams    *ConsensusParamsUpdate `json:"consensus_params,omitempty"`
+	Delegate           *Delegate              `json:"delegate,omitempty"`
+	Undelegate         *Undelegate            `json:"undelegate,omitempty"`
 }
 
 // UnmarshalWithAny from json to Go objects with cosmos-sdk Any types that have their objects/ interfaces unpacked and
@@ -311,6 +315,18 @@ type MintTokens struct {
 type ConsensusParamsUpdate struct {
 	Block    *BlockParams    `json:"block,omitempty"`
 	Evidence *EvidenceParams `json:"evidence,omitempty"`
+}
+
+// Delegate funds. Used for vesting accounts.
+type Delegate struct {
+	Funds      wasmvmtypes.Coin `json:"funds"`
+	StakerAddr string           `json:"staker"`
+}
+
+// Undelegate funds. Used with vesting accounts.
+type Undelegate struct {
+	Funds         wasmvmtypes.Coin `json:"funds"`
+	RecipientAddr string           `json:"recipient"`
 }
 
 // ValidateBasic check basics

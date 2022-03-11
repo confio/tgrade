@@ -6,9 +6,12 @@ const (
 	EventTypeRegisterPrivilege = "register_privilege"
 	EventTypeReleasePrivilege  = "release_privilege"
 	EventTypeMintTokens        = "mint"
+	EventTypeDelegateTokens    = "delegate"
+	EventTypeUndelegateTokens  = "undelegate"
 )
 
 const ( // event attributes
 	AttributeKeyCallbackType = "privilege_type"
 	AttributeKeyRecipient    = "recipient"
+	AttributeKeySender       = "sender"
 )

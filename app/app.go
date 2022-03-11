@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	poetypes "github.com/confio/tgrade/x/poe/types"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -141,6 +143,7 @@ var (
 	maccPerms = map[string][]string{
 		ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
+		poetypes.BondedPoolName:     {authtypes.Burner, authtypes.Staking},
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -388,6 +391,7 @@ func NewTgradeApp(
 		keys[poe.StoreKey],
 		app.getSubspace(poe.ModuleName),
 		app.twasmKeeper,
+		app.accountKeeper,
 	)
 	/****  Module Options ****/
 
