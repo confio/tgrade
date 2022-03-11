@@ -188,7 +188,7 @@ func createTestInput(
 		ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
 		types.ModuleName:            {authtypes.Minter, authtypes.Burner},
-		types.BondedPoolName:        {authtypes.Burner, authtypes.Staking},    
+		types.BondedPoolName:        {authtypes.Burner, authtypes.Staking},
 	}
 	accountKeeper := authkeeper.NewAccountKeeper(
 		appCodec,

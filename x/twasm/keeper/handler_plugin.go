@@ -256,7 +256,7 @@ func (h TgradeHandler) handleDelegate(ctx sdk.Context, contractAddr sdk.AccAddre
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "fromAddr")
 	}
-	amt, err := convertWasmCoinsToSdkCoins(wasmvmtypes.Coins{delegate.Funds})
+	amt, err := wasmkeeper.ConvertWasmCoinsToSdkCoins(wasmvmtypes.Coins{delegate.Funds})
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
@@ -284,7 +284,7 @@ func (h TgradeHandler) handleUndelegate(ctx sdk.Context, contractAddr sdk.AccAdd
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "recipient")
 	}
-	amt, err := convertWasmCoinsToSdkCoins(wasmvmtypes.Coins{undelegate.Funds})
+	amt, err := wasmkeeper.ConvertWasmCoinsToSdkCoins(wasmvmtypes.Coins{undelegate.Funds})
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
@@ -360,30 +360,4 @@ func (d restrictedParamsRouter) AddRoute(r string, h govtypes.Handler) (rtr govt
 
 func (d restrictedParamsRouter) Seal() {
 	panic("not supported")
-}
-
-// FIXME: Use public wasmd helper function when available
-func convertWasmCoinsToSdkCoins(coins []wasmvmtypes.Coin) (sdk.Coins, error) {
-	var toSend sdk.Coins
-	for _, coin := range coins {
-		c, err := convertWasmCoinToSdkCoin(coin)
-		if err != nil {
-			return nil, err
-		}
-		toSend = append(toSend, c)
-	}
-	return toSend, nil
-}
-
-// FIXME: Use public wasmd helper function when available
-func convertWasmCoinToSdkCoin(coin wasmvmtypes.Coin) (sdk.Coin, error) {
-	amount, ok := sdk.NewIntFromString(coin.Amount)
-	if !ok {
-		return sdk.Coin{}, sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, coin.Amount+coin.Denom)
-	}
-	r := sdk.Coin{
-		Denom:  coin.Denom,
-		Amount: amount,
-	}
-	return r, r.Validate()
 }
