@@ -168,6 +168,7 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 	}
 
 	uniqueOperators := make(map[string]struct{}, len(g.GenTxs))
+	uniquePubKeys := make(map[string]struct{}, len(g.GenTxs))
 	for i, v := range g.GenTxs {
 		genTx, err := txJSONDecoder(v)
 		if err != nil {
@@ -188,6 +189,12 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator used already with another gen tx: %q, gentx: %d", msg.OperatorAddress, i)
 		}
 		uniqueOperators[msg.OperatorAddress] = struct{}{}
+
+		pk := msg.Pubkey.String()
+		if _, exists := uniquePubKeys[pk]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx public key used already with another gen tx: %q, gentx: %d", pk, i)
+		}
+		uniquePubKeys[pk] = struct{}{}
 	}
 	return nil
 }

@@ -21,11 +21,20 @@ import (
 // Scenario: add WASM code as part of genesis and pin it in VM cache forever
 //           for faster execution.
 func TestGenesisCodePin(t *testing.T) {
+	cli := NewTgradeCli(t, sut, verbose)
+	myKey := cli.GetKeyAddr("node0")
+	require.NotEmpty(t, myKey)
+	t.Logf("key: %q", myKey)
 	sut.ResetChain(t)
 	// WASM code 1-5 is present.
 	sut.ModifyGenesisCLI(t,
+		[]string{
+			"wasm-genesis-message",
+			"store",
+			"x/poe/contract/tgrade_gov_reflect.wasm",
+			fmt.Sprintf("--run-as=%s", myKey),
+		},
 		[]string{"wasm-genesis-flags", "set-pinned", "1"},
-		[]string{"wasm-genesis-flags", "set-pinned", "3"},
 	)
 
 	// At the time of writing this test, there is no public interface to
@@ -33,9 +42,8 @@ func TestGenesisCodePin(t *testing.T) {
 	// file only.
 	raw := sut.ReadGenesisJSON(t)
 	codeIDs := gjson.GetBytes([]byte(raw), "app_state.wasm.pinned_code_ids").Array()
-	require.Len(t, codeIDs, 2)
+	require.Len(t, codeIDs, 1)
 	require.Equal(t, codeIDs[0].Int(), int64(1))
-	require.Equal(t, codeIDs[1].Int(), int64(3))
 }
 
 func TestUnsafeResetAll(t *testing.T) {

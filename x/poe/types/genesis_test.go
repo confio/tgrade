@@ -6,13 +6,16 @@ import (
 	"testing"
 	"time"
 
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestValidateGenesis(t *testing.T) {
 	var anyAccAddr = RandomAccAddress()
-	myGenTx, myOperatorAddr, _ := RandomGenTX(t, 100)
+	myGenTx, myOperatorAddr, myPubKey := RandomGenTX(t, 100)
+	myPk, err := codectypes.NewAnyWithValue(myPubKey)
+	require.NoError(t, err)
 	txConfig := MakeEncodingConfig(t).TxConfig
 	specs := map[string]struct {
 		source GenesisState
@@ -194,6 +197,19 @@ func TestValidateGenesis(t *testing.T) {
 		"invalid validator voting contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.ValidatorVotingContractConfig.VotingRules.VotingPeriod = 0
+			}),
+			expErr: true,
+		},
+		"duplicate gentx pub keys": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				genTx1, opAddr1, _ := RandomGenTX(t, 101, func(m *MsgCreateValidator) {
+					m.Pubkey = myPk
+				})
+				m.GenTxs = []json.RawMessage{myGenTx, genTx1}
+				m.Engagement = []TG4Member{
+					{Address: myOperatorAddr.String(), Points: 1},
+					{Address: opAddr1.String(), Points: 2},
+				}
 			}),
 			expErr: true,
 		},
