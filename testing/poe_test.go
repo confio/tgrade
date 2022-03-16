@@ -155,7 +155,6 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 		SetPoEParamsMutator(t, poetypes.NewParams(100, 0, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(5))))),
 	)
 	sut.StartChain(t)
-	systemAdminAddr := cli.GetKeyAddr("systemadmin")
 	engagementGroupAddr := gjson.Get(cli.CustomQuery("q", "poe", "contract-address", "ENGAGEMENT"), "address").String()
 
 	newNode := sut.AddFullnode(t)
@@ -199,14 +198,27 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 			},
 		},
 	})
-	execRsp := cli.Execute(ocGovPropContractAddr, msgBz, systemAdminAddr)
+	execRsp := cli.Execute(ocGovPropContractAddr, msgBz, cli.GetKeyAddr("oc-member-1"))
 	RequireTxSuccess(t, execRsp)
 	AwaitValsetEpochCompleted(t)
 
+	// and when vote
+	msgBz = toJson(t, testingcontract.OCGovProposalMsg{
+		Vote: &testingcontract.OCGovProposalVote{
+			ProposalID:          1, // this is the first proposal
+			OCGovProposalOption: testingcontract.VoteYes,
+		},
+	})
+
+	execRsp = cli.Execute(ocGovPropContractAddr, msgBz, cli.GetKeyAddr("oc-member-2"))
+	RequireTxSuccess(t, execRsp)
+	AwaitValsetEpochCompleted(t)
+
+	// and when execute proposal
 	msgBz = toJson(t, testingcontract.OCGovProposalMsg{
 		Execute: &testingcontract.OCGovProposalExecute{ProposalID: 1},
 	})
-	RequireTxSuccess(t, cli.Execute(ocGovPropContractAddr, msgBz, systemAdminAddr))
+	RequireTxSuccess(t, cli.Execute(ocGovPropContractAddr, msgBz, cli.GetKeyAddr("oc-member-1")))
 	AwaitValsetEpochCompleted(t)
 
 	// then new operator should be in engagement group
