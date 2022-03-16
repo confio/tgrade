@@ -144,9 +144,10 @@ func InitTestnet(
 	appConfig.Telemetry.GlobalLabels = [][]string{{"chain_id", chainID}}
 
 	var (
-		genAccounts []authtypes.GenesisAccount
-		genBalances []banktypes.Balance
-		genFiles    []string
+		genAccounts      []authtypes.GenesisAccount
+		genBalances      []banktypes.Balance
+		genOCMemberAddrs []string
+		genFiles         []string
 	)
 	const (
 		rpcPort     = 26657
@@ -155,6 +156,11 @@ func InitTestnet(
 		grpcWebPort = 8090
 	)
 	p2pPortStart := 26656
+
+	addGenAccount := func(addr sdk.AccAddress, coins ...sdk.Coin) {
+		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: sdk.Coins(coins).Sort()})
+		genAccounts = append(genAccounts, authtypes.NewBaseAccount(addr, nil, 0, 0))
+	}
 
 	inBuf := bufio.NewReader(cmd.InOrStdin())
 	var adminAddr sdk.AccAddress
@@ -217,14 +223,23 @@ func InitTestnet(
 			return err
 		}
 		if i == 0 { // generate new key for system admin in node0 keychain. This keychain is used by system tests
+			// PoE setup
 			adminAddr, _, err = server.GenerateSaveCoinKey(kb, "systemadmin", true, algo)
 			if err != nil {
 				_ = os.RemoveAll(outputDir)
 				return err
 			}
-			coins := sdk.Coins{sdk.NewCoin(stakingToken, sdk.NewInt(100_000_000_000))}
-			genBalances = append(genBalances, banktypes.Balance{Address: adminAddr.String(), Coins: coins.Sort()})
-			genAccounts = append(genAccounts, authtypes.NewBaseAccount(adminAddr, nil, 0, 0))
+			addGenAccount(adminAddr, sdk.NewCoin(stakingToken, sdk.NewInt(100_000_000_000)))
+			// add a number of OC members
+			for i := 0; i < 3; i++ {
+				memberAddr, _, err := server.GenerateSaveCoinKey(kb, fmt.Sprintf("oc-member-%d", i+1), true, algo)
+				if err != nil {
+					_ = os.RemoveAll(outputDir)
+					return err
+				}
+				addGenAccount(memberAddr, sdk.NewCoin(stakingToken, sdk.NewInt(1_000_000_000)))
+				genOCMemberAddrs = append(genOCMemberAddrs, memberAddr.String())
+			}
 		}
 
 		info := map[string]string{"secret": secret}
@@ -241,13 +256,9 @@ func InitTestnet(
 
 		accTokens := sdk.TokensFromConsensusPower(1000, sdk.DefaultPowerReduction)
 		accStakingTokens := sdk.TokensFromConsensusPower(500, sdk.DefaultPowerReduction)
-		coins := sdk.Coins{
+		addGenAccount(addr,
 			sdk.NewCoin(fmt.Sprintf("%stoken", nodeDirName), accTokens),
-			sdk.NewCoin(stakingToken, accStakingTokens),
-		}
-
-		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: coins.Sort()})
-		genAccounts = append(genAccounts, authtypes.NewBaseAccount(addr, nil, 0, 0))
+			sdk.NewCoin(stakingToken, accStakingTokens))
 
 		valTokens := sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction)
 		moniker := fmt.Sprintf("moniker-%d", i)
@@ -291,7 +302,7 @@ func InitTestnet(
 
 		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appConfig)
 	}
-	if err := initGenFiles(clientCtx, mbm, chainID, genAccounts, genBalances, genFiles, numValidators, adminAddr); err != nil {
+	if err := initGenFiles(clientCtx, mbm, chainID, genAccounts, genBalances, genFiles, numValidators, adminAddr, genOCMemberAddrs); err != nil {
 		return err
 	}
 
@@ -317,6 +328,7 @@ func initGenFiles(
 	genFiles []string,
 	numValidators int,
 	admin sdk.AccAddress,
+	ocMemberAddrs []string,
 ) error {
 	appGenState := mbm.DefaultGenesis(clientCtx.Codec)
 
@@ -346,6 +358,7 @@ func initGenFiles(
 		})
 	}
 	poeGenesisState.SystemAdminAddress = admin.String()
+	poeGenesisState.OversightCommunityMembers = ocMemberAddrs
 	poetypes.SetGenesisStateInAppState(clientCtx.Codec, appGenState, poeGenesisState)
 
 	appGenStateJSON, err := json.MarshalIndent(appGenState, "", "  ")
