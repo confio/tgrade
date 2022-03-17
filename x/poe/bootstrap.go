@@ -128,7 +128,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 			}
 			err = tcAdapter.DepositEscrow(ctx, gs.OversightCommitteeContractConfig.EscrowAmount, ocMember)
 			if err != nil {
-				return sdkerrors.Wrap(err, "deposit escrow")
+				return sdkerrors.Wrapf(err, "%s deposit escrow", ocMember)
 			}
 		}
 	}
