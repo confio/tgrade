@@ -1,1 +1,2 @@
 v0.6.2
+tg4_stake.wasm custom build: b7b2ec7
