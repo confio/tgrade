@@ -641,7 +641,8 @@ Based on the SDK staking.MsgCreateValidator
 | `description` | [cosmos.staking.v1beta1.Description](#cosmos.staking.v1beta1.Description) |  | Description meta data |
 | `operator_address` | [string](#string) |  | OperatorAddress is the bech32 address string |
 | `pubkey` | [google.protobuf.Any](#google.protobuf.Any) |  | Pubkey public key |
-| `value` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | Value defines the initial staking amount |
+| `amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | Amount defines the initial staking amount from a liquid balance |
+| `vesting_amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | VestingAmount defines the initial staking amount from a vesting account balance |
 
 
 

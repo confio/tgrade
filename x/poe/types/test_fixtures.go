@@ -13,7 +13,7 @@ func MsgCreateValidatorFixture(mutators ...func(m *MsgCreateValidator)) *MsgCrea
 	pk1 := ed25519.GenPrivKey().PubKey()
 	desc := stakingtypes.NewDescription("testname", "", "", "", "")
 
-	r, err := NewMsgCreateValidator(sdk.AccAddress(pk1.Address()), pk1, sdk.NewInt64Coin(DefaultBondDenom, 50), desc)
+	r, err := NewMsgCreateValidator(sdk.AccAddress(pk1.Address()), pk1, sdk.NewInt64Coin(DefaultBondDenom, 50), sdk.NewInt64Coin(DefaultBondDenom, 0), desc)
 	if err != nil {
 		panic(err)
 	}

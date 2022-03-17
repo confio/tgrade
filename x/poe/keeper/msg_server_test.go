@@ -53,7 +53,7 @@ func TestCreateValidator(t *testing.T) {
 			src: types.MsgCreateValidatorFixture(
 				func(m *types.MsgCreateValidator) {
 					m.OperatorAddress = myOperatorAddr.String()
-					m.Value = sdk.NewInt64Coin(types.DefaultBondDenom, 1)
+					m.Amount = sdk.NewInt64Coin(types.DefaultBondDenom, 1)
 				},
 			),
 			expSelfDelegation: &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.NewInt(1)},

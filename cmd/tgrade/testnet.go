@@ -266,6 +266,7 @@ func InitTestnet(
 			addr,
 			valPubKeys[i],
 			sdk.NewCoin(stakingToken, valTokens),
+			sdk.NewCoin(stakingToken, sdk.ZeroInt()),
 			// moniker must be at least 3 chars. let's pad it to ensure
 			stakingtypes.NewDescription(moniker, "", "", "", ""),
 		)

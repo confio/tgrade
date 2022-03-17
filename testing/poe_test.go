@@ -130,7 +130,7 @@ func TestPoEAddPostGenesisValidatorWithAutoEngagementPoints(t *testing.T) {
 	pubKeyEncoded, err := app.MakeEncodingConfig().Codec.MarshalInterfaceJSON(newPubKey)
 	require.NoError(t, err)
 	// when
-	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd",
+	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd", "--vesting-amount=0utgd",
 		"--pubkey="+string(pubKeyEncoded), "--from=newOperator", "--gas=275000")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
@@ -167,7 +167,7 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 	require.NoError(t, err)
 
 	// when
-	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd",
+	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd", "--vesting-amount=0utgd",
 		"--pubkey="+string(pubKeyEncoded), "--from=newOperator")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution

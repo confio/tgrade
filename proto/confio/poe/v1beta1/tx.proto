@@ -44,8 +44,11 @@ message MsgCreateValidator {
   google.protobuf.Any pubkey = 6
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
 
-  // Value defines the initial staking amount
-  cosmos.base.v1beta1.Coin value = 7 [ (gogoproto.nullable) = false ];
+  // Amount defines the initial staking amount from a liquid balance
+  cosmos.base.v1beta1.Coin amount = 7 [ (gogoproto.nullable) = false ];
+  // VestingAmount defines the initial staking amount from a vesting account
+  // balance
+  cosmos.base.v1beta1.Coin vesting_amount = 8 [ (gogoproto.nullable) = false ];
 }
 
 // MsgCreateValidatorResponse defines the MsgCreateValidator response type.

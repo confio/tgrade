@@ -70,6 +70,7 @@ func RandomGenTX(t *testing.T, power uint32, mutators ...func(*MsgCreateValidato
 		addr,
 		valPubKey,
 		sdk.NewCoin(DefaultBondDenom, valTokens),
+		sdk.NewCoin(DefaultBondDenom, sdk.ZeroInt()),
 		stakingtypes.NewDescription("testing", "", "", "", ""),
 	)
 	require.NoError(t, err)
