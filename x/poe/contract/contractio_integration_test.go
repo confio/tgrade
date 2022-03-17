@@ -110,15 +110,14 @@ func TestUnbondDelegation(t *testing.T) {
 	require.NoError(t, err)
 
 	myOperatorAddr, _ := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
+	genTxStakedAmount := vals[0].Tokens
+
 	vestingAmount := sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt())
 	example.Faucet.Fund(ctx, myOperatorAddr, vestingAmount)
 	convertToFullVestingAccount(t, example, ctx, myOperatorAddr)
 
-	liquidAmount := sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt())
-	example.Faucet.Fund(ctx, myOperatorAddr, liquidAmount)
-	someLiquidAmount := sdk.NewCoins(liquidAmount) // todo: should be empty when fixed in PoE contract
 	// and bond from vesting amount
-	err = contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, someLiquidAmount, &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.OneInt()}, example.TWasmKeeper.GetContractKeeper())
+	err = contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(), &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.OneInt()}, example.TWasmKeeper.GetContractKeeper())
 	require.NoError(t, err)
 	unbodingPeriod, err := example.PoEKeeper.StakeContract(ctx).QueryStakingUnbondingPeriod(ctx)
 	require.NoError(t, err)
@@ -130,36 +129,44 @@ func TestUnbondDelegation(t *testing.T) {
 		expVestingBond sdk.Int
 		expErr         bool
 	}{
-		"liquid": {
+		"some liquid": {
 			unbondAmount:   sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt()),
-			expLiquidBond:  sdk.OneInt(),
+			expLiquidBond:  genTxStakedAmount.Sub(sdk.OneInt()),
 			expVestingBond: sdk.OneInt(),
 		},
-		"liquid + vesting": {
-			unbondAmount:   sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(3)),
+		"all liquid": {
+			unbondAmount:   sdk.NewCoin(types.DefaultBondDenom, genTxStakedAmount),
+			expLiquidBond:  sdk.ZeroInt(),
+			expVestingBond: sdk.OneInt(),
+		},
+		"all liquid + vesting": {
+			unbondAmount:   sdk.NewCoin(types.DefaultBondDenom, genTxStakedAmount.AddRaw(1)),
 			expLiquidBond:  sdk.ZeroInt(),
 			expVestingBond: sdk.ZeroInt(),
+		},
+		"more than staked": {
+			unbondAmount: sdk.NewCoin(types.DefaultBondDenom, genTxStakedAmount.AddRaw(10)),
+			expErr:       true,
 		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 			ctx, _ = parentCtx.CacheContext()
 			// when
-			completionTime, err := contract.UnbondDelegation(ctx, stakingContractAddr, myOperatorAddr, spec.unbondAmount, example.TWasmKeeper.GetContractKeeper())
+			completionTime, gotErr := contract.UnbondDelegation(ctx, stakingContractAddr, myOperatorAddr, spec.unbondAmount, example.TWasmKeeper.GetContractKeeper())
 
 			// then
-			require.NoError(t, err)
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
 			assert.Equal(t, ctx.BlockTime().Add(unbodingPeriod).UTC(), *completionTime)
 
-			gotRes, err := contract.QueryStakedAmount(ctx, example.TWasmKeeper, stakingContractAddr, myOperatorAddr)
-			require.NoError(t, err)
-			// amount staked during genTx + bond liquid + bond vesting - unbond amount
-			expAmount := vals[0].Tokens.Add(liquidAmount.Amount).Sub(spec.expLiquidBond)
-			assert.Equal(t, expAmount.String(), gotRes.Liquid.Amount)
+			gotRes, gotErr := contract.QueryStakedAmount(ctx, example.TWasmKeeper, stakingContractAddr, myOperatorAddr)
+			require.NoError(t, gotErr)
+			assert.Equal(t, spec.expLiquidBond.String(), gotRes.Liquid.Amount)
 			assert.Equal(t, spec.expVestingBond.String(), gotRes.Vesting.Amount)
-			// todo: claim and check if added to balance
-			//a:=contract.NewStakeContractAdapter(stakingContractAddr, example.TWasmKeeper, nil)
-			//a.Claim()
 		})
 	}
 }
