@@ -57,9 +57,9 @@ type poeKeeper interface {
 	EngagementContract(ctx sdk.Context) keeper.EngagementContract
 }
 
-// bootstrapPoEContracts stores and instantiates all PoE contracts:
+// BootstrapPoEContracts stores and instantiates all PoE contracts:
 // See https://github.com/confio/tgrade-contracts/blob/main/docs/Architecture.md#multi-level-governance for an overview
-func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
+func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
 	systemAdminAddr, err := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	if err != nil {
 		return sdkerrors.Wrap(err, "system admin")
@@ -91,7 +91,13 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 	ocInitMsg := newOCInitMsg(gs)
 	deposit := sdk.NewCoins(gs.OversightCommitteeContractConfig.EscrowAmount)
-	ocContractAddr, _, err := k.Instantiate(ctx, ocCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(ocInitMsg), "oversight_committee", deposit)
+
+	firstMember, err := sdk.AccAddressFromBech32(gs.OversightCommunityMembers[0])
+	if err != nil {
+		return sdkerrors.Wrap(err, "first member")
+	}
+
+	ocContractAddr, _, err := k.Instantiate(ctx, ocCodeID, firstMember, systemAdminAddr, mustMarshalJson(ocInitMsg), "oversight_committee", deposit)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg trusted circle contract")
 	}
@@ -99,6 +105,34 @@ func bootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err := k.PinCode(ctx, ocCodeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tg trusted circle contract")
 	}
+
+	if len(gs.OversightCommunityMembers) > 1 {
+		tcAdapter := contract.NewTrustedCircleContractAdapter(ocContractAddr, tk, nil)
+		err = tcAdapter.AddVotingMembersProposal(ctx, gs.OversightCommunityMembers[1:], firstMember)
+		if err != nil {
+			return sdkerrors.Wrap(err, "add voting members proposal")
+		}
+		latest, err := tcAdapter.LatestProposal(ctx)
+		if err != nil {
+			return sdkerrors.Wrap(err, "query latest proposal")
+		}
+		err = tcAdapter.ExecuteProposal(ctx, latest.ID, firstMember)
+		if err != nil {
+			return sdkerrors.Wrap(err, "execute proposal")
+		}
+		// deposit escrow
+		for _, member := range gs.OversightCommunityMembers[1:] {
+			ocMember, err := sdk.AccAddressFromBech32(member)
+			if err != nil {
+				return sdkerrors.Wrapf(err, "%s oc member", member)
+			}
+			err = tcAdapter.DepositEscrow(ctx, gs.OversightCommitteeContractConfig.EscrowAmount, ocMember)
+			if err != nil {
+				return sdkerrors.Wrapf(err, "%s deposit escrow", ocMember)
+			}
+		}
+	}
+
 	logger.Info("oversight community contract", "address", ocContractAddr, "code_id", ocCodeID)
 
 	// setup stake contract

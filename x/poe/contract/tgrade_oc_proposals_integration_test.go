@@ -14,9 +14,9 @@ import (
 )
 
 func TestSlashValidator(t *testing.T) {
-	var systemAdmin sdk.AccAddress = rand.Bytes(address.Len)
+	var ocMember sdk.AccAddress = rand.Bytes(address.Len)
 	// setup contracts and seed some data
-	ctx, example, vals, _ := setupPoEContracts(t, setSystemAdminMutator(systemAdmin))
+	ctx, example, vals, _ := setupPoEContracts(t, types.SetGenesisOCMembersMutator(ocMember))
 
 	ocProposeAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunityGovProposals)
 	require.NoError(t, err)
@@ -37,13 +37,13 @@ func TestSlashValidator(t *testing.T) {
 	ctx = ctx.WithBlockHeight(ctx.BlockHeight() + 1)
 
 	// check system admin is OC member with voting power
-	power, err := contract.QueryTG4Member(ctx, example.TWasmKeeper, ocAddr, systemAdmin)
+	power, err := contract.QueryTG4Member(ctx, example.TWasmKeeper, ocAddr, ocMember)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, *power, 1, "system admin must be voting member")
 
 	// slash some
 	props := contract.NewOCProposalsContractAdapter(ocProposeAddr, example.TWasmKeeper, nil)
-	err = props.ProposeSlash(ctx, opAddr, *contract.DecimalFromProMille(500), systemAdmin)
+	err = props.ProposeSlash(ctx, opAddr, *contract.DecimalFromProMille(500), ocMember)
 	require.NoError(t, err)
 
 	// get the proposal id
@@ -51,7 +51,7 @@ func TestSlashValidator(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, latest)
 	// execute the contract
-	err = props.ExecuteProposal(ctx, latest.ID, systemAdmin)
+	err = props.ExecuteProposal(ctx, latest.ID, ocMember)
 	require.NoError(t, err)
 
 	// check the points have gone down
@@ -62,10 +62,4 @@ func TestSlashValidator(t *testing.T) {
 	// this is not always the same as half due to rounding
 	expected := *points - (*points / 2)
 	assert.Equal(t, expected, *slashed)
-}
-
-func setSystemAdminMutator(admin sdk.AccAddress) func(m *types.GenesisState) {
-	return func(m *types.GenesisState) {
-		m.SystemAdminAddress = admin.String()
-	}
 }

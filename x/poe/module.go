@@ -167,7 +167,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	}
 
 	if genesisState.SeedContracts {
-		if err := bootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, genesisState); err != nil {
+		if err := BootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, genesisState); err != nil {
 			panic(fmt.Sprintf("bootstrap PoE contracts: %+v", err))
 		}
 	} else {

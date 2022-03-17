@@ -59,6 +59,11 @@ message GenesisState {
       [ (gogoproto.jsontag) = "community_pool_contract_config,omitempty" ];
   ValidatorVotingContractConfig validator_voting_contract_config = 13
       [ (gogoproto.jsontag) = "validator_voting_contract_config,omitempty" ];
+
+  repeated string oversightCommunityMembers = 14 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "oversight_community_members,omitempty"
+  ];
 }
 
 // StakeContractConfig initial setup config

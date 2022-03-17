@@ -40,6 +40,12 @@ func TestInitGenesis(t *testing.T) {
 	adminAddr, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	example.Faucet.Fund(ctx, adminAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
 
+	for _, member := range gs.OversightCommunityMembers {
+		addr, err := sdk.AccAddressFromBech32(member)
+		require.NoError(t, err)
+		example.Faucet.Fund(ctx, addr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(1_000_000)))
+	}
+
 	// when
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
 	gotValset := app.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)

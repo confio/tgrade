@@ -40,10 +40,23 @@ func GenesisStateFixture(mutators ...func(m *GenesisState)) GenesisState {
 		Points:  10,
 	}}
 
+	r.OversightCommunityMembers = []string{RandomAccAddress().String(), RandomAccAddress().String()}
+
 	for _, m := range mutators {
 		m(&r)
 	}
 	return r
+}
+
+// SetGenesisOCMembersMutator helper to overwrite the oversight community members within GenesisStateFixture
+func SetGenesisOCMembersMutator(members ...sdk.AccAddress) func(m *GenesisState) {
+	return func(m *GenesisState) {
+		oc := make([]string, len(members))
+		for i, v := range members {
+			oc[i] = v.String()
+		}
+		m.OversightCommunityMembers = oc
+	}
 }
 
 func ValidatorFixture(mutators ...func(m *stakingtypes.Validator)) stakingtypes.Validator {
