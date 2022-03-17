@@ -40,7 +40,7 @@ func TestBondDelegation(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example, vals, _ := setupPoEContracts(t)
 	myOperatorAddr, _ := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
-	example.Faucet.Fund(ctx, myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.OneInt()))
+	example.Faucet.Fund(ctx, myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(2)))
 
 	convertToFullVestingAccount(t, example, ctx, myOperatorAddr)
 	// and one liquid token
@@ -56,17 +56,20 @@ func TestBondDelegation(t *testing.T) {
 		"liquid only": {
 			liquid: sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())),
 		},
-		"insufficient liquid tokens": {
-			liquid: sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(2))),
-			expErr: true,
+		"vesting only": {
+			vesting: &sdk.Coin{Denom: "utgd", Amount: sdk.NewInt(2)},
 		},
-		// todo: "vesting only": { // rejected by contract currently
-		//	vesting: &sdk.Coin{Denom: "utgd", Amount: sdk.OneInt()},
-		//},
-		// todo: insufficient vesting tokens
 		"both": {
 			liquid:  sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(1))),
-			vesting: &sdk.Coin{Denom: "utgd", Amount: sdk.OneInt()},
+			vesting: &sdk.Coin{Denom: "utgd", Amount: sdk.NewInt(2)},
+		},
+		"insufficient liquid tokens": {
+			liquid: sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(3))),
+			expErr: true,
+		},
+		"insufficient vesting tokens": {
+			vesting: &sdk.Coin{Denom: "utgd", Amount: sdk.NewInt(100000)},
+			expErr:  true,
 		},
 	}
 	parentCtx := ctx
@@ -85,8 +88,16 @@ func TestBondDelegation(t *testing.T) {
 
 			gotRes, err := contract.QueryStakedAmount(ctx, example.TWasmKeeper, stakingContractAddr, myOperatorAddr)
 			require.NoError(t, err)
-			expAmount := vals[0].Tokens.Add(sdk.OneInt())
-			assert.Equal(t, gotRes.Liquid.Amount, expAmount.String())
+			expAmount := vals[0].Tokens.Add(spec.liquid.AmountOf("utgd")).String()
+			assert.Equal(t, expAmount, gotRes.Liquid.Amount)
+			assert.Equal(t, "utgd", gotRes.Liquid.Denom)
+
+			expAmount = "0"
+			if spec.vesting != nil {
+				expAmount = spec.vesting.Amount.String()
+			}
+			assert.Equal(t, expAmount, gotRes.Vesting.Amount)
+			assert.Equal(t, "utgd", gotRes.Vesting.Denom)
 		})
 	}
 
