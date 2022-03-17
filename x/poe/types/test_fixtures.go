@@ -48,6 +48,17 @@ func GenesisStateFixture(mutators ...func(m *GenesisState)) GenesisState {
 	return r
 }
 
+// SetGenesisOCMembersMutator helper to overwrite the oversight community members within GenesisStateFixture
+func SetGenesisOCMembersMutator(members ...sdk.AccAddress) func(m *GenesisState) {
+	return func(m *GenesisState) {
+		oc := make([]string, len(members))
+		for i, v := range members {
+			oc[i] = v.String()
+		}
+		m.OversightCommunityMembers = oc
+	}
+}
+
 func ValidatorFixture(mutators ...func(m *stakingtypes.Validator)) stakingtypes.Validator {
 	pkAny, err := codectypes.NewAnyWithValue(ed25519.GenPrivKey().PubKey())
 	if err != nil {
