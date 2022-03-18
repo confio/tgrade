@@ -44,6 +44,7 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 		SetBlockRewards(t, sdk.NewCoin("utgd", sdk.NewInt(10_000_000))),
 	)
 	sut.StartChain(t)
+	defer sut.MarkDirty()
 	newNode := sut.AddFullnode(t)
 	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
 	newPubKey := loadValidatorPubKeyForNode(t, sut, sut.nodesCount-1)
@@ -125,11 +126,11 @@ func TestVestingAccountExecutes(t *testing.T) {
 	//   then: the TX fails
 
 	cli := NewTgradeCli(t, sut, verbose)
-	vest1Addr := cli.AddKey("vesting1")
+	vestAddr := cli.AddKey("vesting2")
 	myEndTimestamp := time.Now().Add(time.Hour).Unix()
 	sut.ModifyGenesisCLI(t,
 		// delayed vesting no cash
-		[]string{"add-genesis-account", vest1Addr, "100000000utgd", "--vesting-amount=100000000utgd", fmt.Sprintf("--vesting-end-time=%d", myEndTimestamp)},
+		[]string{"add-genesis-account", vestAddr, "100000000utgd", "--vesting-amount=100000000utgd", fmt.Sprintf("--vesting-end-time=%d", myEndTimestamp)},
 	)
 	sut.StartChain(t)
 
