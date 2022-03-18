@@ -151,6 +151,12 @@ $ %s gentx my-key-name 1000000utgd --home=/path/to/home/dir --keyring-backend=os
 			// Ideally, the `create-validator` command should take a validator
 			// config file instead of so many flags.
 			// ref: https://github.com/cosmos/cosmos-sdk/issues/8177
+			if createValCfg.LiquidAmount != "" && createValCfg.LiquidAmount != liquidAmount {
+				return errors.New("liquid amount param and argument missmatch")
+			}
+			if createValCfg.VestingAmount != "" && createValCfg.VestingAmount != vestedAmount {
+				return errors.New("vesting amount param and argument missmatch")
+			}
 			createValCfg.LiquidAmount = liquidAmount
 			createValCfg.VestingAmount = vestedAmount
 

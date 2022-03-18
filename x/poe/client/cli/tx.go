@@ -287,6 +287,11 @@ func PrepareConfigForTxCreateValidator(flagSet *flag.FlagSet, moniker, nodeID, c
 		return c, err
 	}
 
+	c.VestingAmount, err = flagSet.GetString(FlagVestingAmount)
+	if err != nil {
+		return c, err
+	}
+
 	c.NodeID = nodeID
 	c.PubKey = valPubKey
 	c.Website = website
