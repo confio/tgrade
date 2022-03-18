@@ -82,10 +82,10 @@ func (msg MsgCreateValidator) ValidateBasic() error {
 		return stakingtypes.ErrEmptyValidatorPubKey
 	}
 
-	if !msg.Amount.IsValid() {
+	if msg.Amount.IsNil() || !msg.Amount.IsValid() {
 		return sdkerrors.ErrInvalidRequest.Wrap("delegation liquid amount")
 	}
-	if !msg.VestingAmount.IsValid() {
+	if msg.VestingAmount.IsNil() || !msg.VestingAmount.IsValid() {
 		return sdkerrors.ErrInvalidRequest.Wrap("delegation vesting amount")
 	}
 	if msg.Amount.Add(msg.VestingAmount).IsZero() {

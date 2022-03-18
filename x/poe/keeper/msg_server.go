@@ -80,9 +80,13 @@ func (m msgServer) CreateValidator(c context.Context, msg *types.MsgCreateValida
 		return nil, sdkerrors.Wrap(err, "staking contract")
 	}
 
-	err = contract.BondDelegation(ctx, stakingContractAddr, operatorAddress, sdk.NewCoins(msg.Amount), nil, m.contractKeeper)
+	err = contract.BondDelegation(ctx, stakingContractAddr, operatorAddress, sdk.NewCoins(msg.Amount), &msg.VestingAmount, m.contractKeeper)
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "self delegation validator")
+	}
+	totalAmount := msg.Amount
+	if !msg.VestingAmount.IsZero() {
+		totalAmount = totalAmount.Add(msg.VestingAmount)
 	}
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
@@ -95,10 +99,10 @@ func (m msgServer) CreateValidator(c context.Context, msg *types.MsgCreateValida
 			sdk.NewAttribute(types.AttributeKeyValOperator, msg.OperatorAddress),
 			sdk.NewAttribute(types.AttributeKeyMoniker, msg.Description.Moniker),
 			sdk.NewAttribute(types.AttributeKeyPubKeyHex, hex.EncodeToString(pk.Bytes())),
-			sdk.NewAttribute(sdk.AttributeKeyAmount, msg.Amount.Amount.String()),
+			sdk.NewAttribute(sdk.AttributeKeyAmount, totalAmount.Amount.String()),
 		),
 	})
-	if err := m.keeper.SetValidatorInitialEngagementPoints(ctx, operatorAddress, msg.Amount); err != nil {
+	if err := m.keeper.SetValidatorInitialEngagementPoints(ctx, operatorAddress, totalAmount); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &types.MsgCreateValidatorResponse{}, nil

@@ -73,7 +73,8 @@ func TestMsgCreateValidator(t *testing.T) {
 		{"empty address", "hello", "b", "c", "d", "e", emptyAddr, pk1, coinPos, coinZero, false},
 		{"empty pubkey", "hello", "b", "c", "d", "e", valAddr1, emptyPubkey, coinPos, coinZero, false},
 		{"empty bond", "hello", "b", "c", "d", "e", valAddr1, pk1, coinZero, coinZero, false},
-		{"nil bond", "hello", "b", "c", "d", "e", valAddr1, pk1, sdk.Coin{}, coinZero, false},
+		{"nil liquid bond", "hello", "b", "c", "d", "e", valAddr1, pk1, sdk.Coin{}, coinZero, false},
+		{"nil vesting bond", "hello", "b", "c", "d", "e", valAddr1, pk1, coinZero, sdk.Coin{}, false},
 	}
 
 	for _, tc := range tests {
