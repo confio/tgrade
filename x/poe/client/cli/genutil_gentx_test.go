@@ -50,10 +50,14 @@ func TestGenTxCmd(t *testing.T) {
 			liquidStakingAmount: "1utgd",
 			vestedStakingAmount: "0utgd",
 		},
-		//"stake vested": {
-		//	liquidStakingAmount: sdk.NewCoin(bondDenum, sdk.NewInt(1)),
-		//	vestedStakingAmount: sdk.NewCoin(bondDenum, sdk.NewInt(0)),
-		//},
+		"stake vested": {
+			liquidStakingAmount: "0utgd",
+			vestedStakingAmount: "1utgd",
+		},
+		"stake both": {
+			liquidStakingAmount: "1utgd",
+			vestedStakingAmount: "1utgd",
+		},
 		"staked more than balance": {
 			liquidStakingAmount: "101utgd",
 			vestedStakingAmount: "0utgd",
@@ -81,6 +85,8 @@ func TestGenTxCmd(t *testing.T) {
 			cmd.SetArgs([]string{
 				fmt.Sprintf("--%s=%s", flags.FlagChainID, myChainID),
 				fmt.Sprintf("--%s=%s", flags.FlagOutputDocument, genTxFile),
+				fmt.Sprintf("--%s=%s", cli.FlagAmount, spec.liquidStakingAmount),
+				fmt.Sprintf("--%s=%s", cli.FlagVestingAmount, spec.vestedStakingAmount),
 				myKey,
 				spec.liquidStakingAmount,
 				spec.vestedStakingAmount,
