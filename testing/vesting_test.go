@@ -139,6 +139,6 @@ func TestVestingAccountExecutes(t *testing.T) {
 
 	t.Log("Instantiate wasm code")
 	initMsg := fmt.Sprintf(`{"verifier":%q, "beneficiary":%q}`, randomBech32Addr(), randomBech32Addr())
-	txResult := cli.CustomCommand("tx", "wasm", "instantiate", strconv.Itoa(codeID), initMsg, "--label=testing", "--from=vesting1", "--gas=1500000", "--amount=1000utgd", "--no-admin")
+	txResult := cli.CustomCommand("tx", "wasm", "instantiate", strconv.Itoa(codeID), initMsg, "--label=testing", fmt.Sprintf("--from=%s", vestAddr), "--gas=1500000", "--amount=1000utgd", "--no-admin")
 	RequireTxFailure(t, txResult, "insufficient funds")
 }
