@@ -637,6 +637,7 @@ type (
 // For query syntax See https://docs.cosmos.network/master/core/events.html#subscribing-to-events
 func (l *EventListener) Subscribe(query string, cb EventConsumer) func() {
 	ctx, done := context.WithCancel(context.Background())
+	l.t.Cleanup(done)
 	eventsChan, err := l.client.WSEvents.Subscribe(ctx, "testing", query)
 	require.NoError(l.t, err)
 	cleanup := func() {
@@ -674,6 +675,7 @@ func (l *EventListener) AwaitQuery(query string, optMaxWaitTime ...time.Duration
 // a result returned
 func TimeoutConsumer(t *testing.T, maxWaitTime time.Duration, next EventConsumer) EventConsumer {
 	ctx, done := context.WithCancel(context.Background())
+	t.Cleanup(done)
 	timeout := time.NewTimer(maxWaitTime)
 	go func() {
 		select {
