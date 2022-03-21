@@ -46,6 +46,5 @@ echo "$content" > "$HOME"/.tgrade/config/genesis.json
   echo "$PASSWORD"
   echo "$PASSWORD"
 ) | tgrade gentx validator "0$STAKE" "250000000$STAKE" --chain-id="$CHAIN_ID" --amount="0$STAKE" --vesting-amount="250000000$STAKE"
-## should be:
-# (echo "$PASSWORD"; echo "$PASSWORD"; echo "$PASSWORD") | tgrade gentx validator "250000000$STAKE" --chain-id="$CHAIN_ID"
+
 tgrade collect-gentxs
