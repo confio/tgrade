@@ -32,6 +32,7 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	//    and: the vesting account balance is restored
 	//    and: the staking account balance is decreased
 
+	sut.ResetChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 	vest1Addr := cli.AddKey("vesting1")
 	myEndTimestamp := time.Now().Add(365 * 24 * time.Hour).Unix()
@@ -44,7 +45,6 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 		SetBlockRewards(t, sdk.NewCoin("utgd", sdk.NewInt(10_000_000))),
 	)
 	sut.StartChain(t)
-	defer sut.MarkDirty()
 	newNode := sut.AddFullnode(t)
 	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
 	newPubKey := loadValidatorPubKeyForNode(t, sut, sut.nodesCount-1)
@@ -124,7 +124,7 @@ func TestVestingAccountExecutes(t *testing.T) {
 	//   given: a running chain with a vesting account
 	//   when: a message is executed with some deposits amount from a vesting account
 	//   then: the TX fails
-
+	sut.ResetChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 	vestAddr := cli.AddKey("vesting2")
 	myEndTimestamp := time.Now().Add(time.Hour).Unix()
