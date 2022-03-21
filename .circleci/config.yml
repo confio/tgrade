@@ -232,10 +232,9 @@ workflows:
       - test-cover:
           requires:
             - setup-dependencies
-# No coverage upload supported for private repos
-#      - upload-coverage:
-#          requires:
-#            - test-cover
+      - upload-coverage:
+          requires:
+            - test-cover
       - test-system:
           requires:
             - setup-dependencies
