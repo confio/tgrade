@@ -146,10 +146,13 @@ func TestMsgDelegate(t *testing.T) {
 		vestingBond  sdk.Coin
 		expectPass   bool
 	}{
-		{"basic good", sdk.AccAddress(valAddr1), coinPos, sdk.Coin{}, true},
-		{"empty operator", sdk.AccAddress(emptyAddr), coinPos, sdk.Coin{}, false},
-		{"empty bond", sdk.AccAddress(valAddr1), coinZero, sdk.Coin{}, false},
-		{"nil bold", sdk.AccAddress(valAddr1), sdk.Coin{}, sdk.Coin{}, false},
+		{"liquid and vesting bond", sdk.AccAddress(valAddr1), coinPos, coinPos, true},
+		{"empty operator", sdk.AccAddress(emptyAddr), coinPos, coinZero, false},
+		{"vesting only", sdk.AccAddress(valAddr1), coinZero, coinPos, true},
+		{"liquid only", sdk.AccAddress(valAddr1), coinPos, coinZero, true},
+		{"empty bond and vesting", sdk.AccAddress(valAddr1), coinZero, coinZero, false},
+		{"nil bond", sdk.AccAddress(valAddr1), sdk.Coin{}, coinPos, false},
+		{"nil vesting", sdk.AccAddress(valAddr1), coinPos, sdk.Coin{}, false},
 	}
 	for _, tc := range tests {
 		msg := NewMsgDelegate(tc.operatorAddr, tc.bond, tc.vestingBond)

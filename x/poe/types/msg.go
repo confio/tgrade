@@ -197,10 +197,15 @@ func (msg MsgDelegate) ValidateBasic() error {
 		return sdkerrors.Wrap(ErrEmpty, "operator address")
 	}
 
-	if !msg.Amount.IsValid() || !msg.Amount.Amount.IsPositive() {
+	if !msg.Amount.IsValid() {
 		return sdkerrors.Wrap(ErrInvalid, "delegation amount")
 	}
-
+	if !msg.VestingAmount.IsValid() {
+		return sdkerrors.Wrap(ErrInvalid, "vesting amount")
+	}
+	if msg.Amount.IsZero() && msg.VestingAmount.IsZero() {
+		return sdkerrors.Wrap(ErrInvalid, "empty amounts")
+	}
 	return nil
 }
 
