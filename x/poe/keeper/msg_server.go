@@ -84,10 +84,8 @@ func (m msgServer) CreateValidator(c context.Context, msg *types.MsgCreateValida
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "self delegation validator")
 	}
-	totalAmount := msg.Amount
-	if !msg.VestingAmount.IsZero() {
-		totalAmount = totalAmount.Add(msg.VestingAmount)
-	}
+	totalAmount := msg.Amount.Add(msg.VestingAmount)
+
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			sdk.EventTypeMessage,
