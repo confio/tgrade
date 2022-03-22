@@ -224,6 +224,7 @@ PoEContractType type of PoE contract
 | COMMUNITY_POOL | 8 |  |
 | VALIDATOR_VOTING | 9 |  |
 | ARBITER_POOL | 10 |  |
+| ARBITER_POOL_VOTING | 11 |  |
 
 
  <!-- end enums -->

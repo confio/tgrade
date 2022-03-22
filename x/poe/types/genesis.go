@@ -76,6 +76,7 @@ func DefaultGenesisState() GenesisState {
 				Threshold:     sdk.NewDec(55),
 				AllowEndEarly: true,
 			},
+			DisputeCost: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
 		},
 		SystemAdminAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 		Params:             DefaultParams(),
