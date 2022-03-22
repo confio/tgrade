@@ -60,10 +60,14 @@ message GenesisState {
   ValidatorVotingContractConfig validator_voting_contract_config = 13
       [ (gogoproto.jsontag) = "validator_voting_contract_config,omitempty" ];
 
-  repeated string oversightCommunityMembers = 14 [
-    (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "oversight_community_members,omitempty"
-  ];
+  repeated string oversightCommunityMembers = 14
+      [ (gogoproto.jsontag) = "oversight_community_members,omitempty" ];
+
+  repeated string arbiterPoolMembers = 15
+      [ (gogoproto.jsontag) = "arbiter_pool_members,omitempty" ];
+
+  ArbiterPoolContractConfig arbiter_pool_contract_config = 16
+      [ (gogoproto.jsontag) = "arbiter_pool_contract_config,omitempty" ];
 }
 
 // StakeContractConfig initial setup config
@@ -186,4 +190,25 @@ message VotingRules {
   // end before voting period finished. (Recommended value: true, unless you
   // have special needs)
   bool allow_end_early = 4;
+}
+
+// ArbiterPoolContractConfig initial setup config for the trusted circle
+message ArbiterPoolContractConfig {
+  // Name of TRUSTED_CIRCLE
+  string name = 1;
+  // EscrowAmount The required escrow amount, in the default denom (utgd)
+  cosmos.base.v1beta1.Coin escrow_amount = 2 [ (gogoproto.nullable) = false ];
+
+  // VotingRules rules for the tally
+  VotingRules voting_rules = 3 [ (gogoproto.nullable) = false ];
+
+  // DenyListContractAddress is an optional cw4 contract with list of addresses
+  // denied to be part of TrustedCircle
+  string deny_list_contract_address = 4;
+
+  // DisputeCost The required dispute amount, in the default denom (utgd)
+  cosmos.base.v1beta1.Coin dispute_cost = 5 [ (gogoproto.nullable) = false ];
+
+  google.protobuf.Duration waiting_period = 6
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 }

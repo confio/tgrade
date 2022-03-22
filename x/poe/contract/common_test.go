@@ -33,11 +33,16 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
 	adminAddress, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	example.Faucet.Fund(ctx, adminAddress, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
-	for _, member := range gs.OversightCommunityMembers {
-		addr, err := sdk.AccAddressFromBech32(member)
-		require.NoError(t, err)
-		example.Faucet.Fund(ctx, addr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(1_000_000)))
+	fundMembers := func(members []string, coins sdk.Int) {
+		for _, member := range members {
+			addr, err := sdk.AccAddressFromBech32(member)
+			require.NoError(t, err)
+			example.Faucet.Fund(ctx, addr, sdk.NewCoin(types.DefaultBondDenom, coins))
+		}
 	}
+
+	fundMembers(gs.OversightCommunityMembers, sdk.NewInt(1_000_000))
+	fundMembers(gs.ArbiterPoolMembers, sdk.NewInt(1_000_000))
 
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)

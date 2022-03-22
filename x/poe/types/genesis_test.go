@@ -232,6 +232,25 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
+		"empty arbiter pool members": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.ArbiterPoolMembers = nil
+			}),
+			expErr: true,
+		},
+		"duplicate arbiter pool members": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.ArbiterPoolMembers = append(m.ArbiterPoolMembers, m.ArbiterPoolMembers[0])
+			}),
+			expErr: true,
+		},
+		"invalid ap members address": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.ArbiterPoolMembers = append(m.ArbiterPoolMembers, "invalid address")
+
+			}),
+			expErr: true,
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
