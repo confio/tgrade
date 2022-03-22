@@ -24,34 +24,28 @@ import (
 
 func TestIntegrationBootstrapPoEContracts(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, _, members := setupPoEContracts(t)
+	ctx, example, ocMembers, apMembers := setupPoEContracts(t)
 
 	ocContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunity)
 	require.NoError(t, err)
-	tcAdapter := contract.NewTrustedCircleContractAdapter(ocContractAddr, example.TWasmKeeper, nil)
-
-	voters, err := tcAdapter.QueryListVoters(ctx)
+	areAllVotingMembers, err := membersAreAllVotingMembers(ctx, ocMembers, ocContractAddr, example.TWasmKeeper)
 	require.NoError(t, err)
+	assert.True(t, areAllVotingMembers)
 
-	//verify the members list are all voting members
-	notVotingMembers := make(map[string]struct{}, len(members))
-	for _, m := range members {
-		notVotingMembers[m] = struct{}{}
-	}
-
-	for _, v := range voters.Members {
-		delete(notVotingMembers, v.Addr)
-	}
-	assert.Empty(t, notVotingMembers)
+	apContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeArbiterPool)
+	require.NoError(t, err)
+	areAllVotingMembers, err = membersAreAllVotingMembers(ctx, apMembers, apContractAddr, example.TWasmKeeper)
+	require.NoError(t, err)
+	assert.True(t, areAllVotingMembers)
 }
 
-func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator, []string) {
+func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []string, []string) {
 	t.Helper()
 	ctx, example := keeper.CreateDefaultTestInput(t)
 	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
 	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
 
-	mutator, expValidators := withRandomValidators(t, ctx, example, 3)
+	mutator, _ := withRandomValidators(t, ctx, example, 3)
 	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
 	adminAddress, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	example.Faucet.Fund(ctx, adminAddress, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
@@ -69,7 +63,7 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-	return ctx, example, expValidators, gs.OversightCommunityMembers
+	return ctx, example, gs.OversightCommunityMembers, gs.ArbiterPoolMembers
 }
 
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
@@ -131,4 +125,21 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			return collectValidators[i].Tokens.LT(collectValidators[j].Tokens) // sort ASC
 		})
 	}, collectValidators
+}
+
+func membersAreAllVotingMembers(ctx sdk.Context, members []string, contractAddr sdk.AccAddress, tk types.TWasmKeeper) (bool, error) {
+	ocTrustedCircleAdapter := contract.NewTrustedCircleContractAdapter(contractAddr, tk, nil)
+	voters, err := ocTrustedCircleAdapter.QueryListVoters(ctx)
+	if err != nil {
+		return false, err
+	}
+	notVotingMembers := make(map[string]struct{}, len(members))
+	for _, m := range members {
+		notVotingMembers[m] = struct{}{}
+	}
+
+	for _, v := range voters.Members {
+		delete(notVotingMembers, v.Addr)
+	}
+	return len(notVotingMembers) == 0, nil
 }
