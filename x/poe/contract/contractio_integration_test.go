@@ -71,6 +71,11 @@ func TestBondDelegation(t *testing.T) {
 			vesting: &sdk.Coin{Denom: "utgd", Amount: sdk.NewInt(100000)},
 			expErr:  true,
 		},
+		"both zero amounts": {
+			liquid:  sdk.NewCoins(sdk.NewCoin("utgd", sdk.ZeroInt())),
+			vesting: &sdk.Coin{Denom: "utgd", Amount: sdk.ZeroInt()},
+			expErr:  true,
+		},
 	}
 	parentCtx := ctx
 	for name, spec := range specs {
