@@ -22,7 +22,7 @@ done
 
 # hardcode the account for this instance
 echo "$PASSWORD" | tgrade add-genesis-account systemadmin "1000000000$STAKE"
-echo "$PASSWORD" | tgrade add-genesis-account validator "1000000000$STAKE" --vesting-amount="1000000000$STAKE" --vesting-end-time="$(date -v+10y +%s)"
+echo "$PASSWORD" | tgrade add-genesis-account validator "1001000000$STAKE" --vesting-amount="1000000000$STAKE" --vesting-end-time="$(date -v+10y +%s)"
 
 # (optionally) add a few more genesis accounts
 for addr in "$@"; do
@@ -34,8 +34,13 @@ done
 
 # set engagement points
 content=$(cat "$HOME"/.tgrade/config/genesis.json | jq  ".app_state.poe.engagement |= . + [{\"address\":\"$(tgrade keys show -a validator)\",\"points\":\"100\"}]")
+# set oversight community
+content=$(echo "$content" | jq  ".app_state.poe.oversightCommunityMembers |= . + [\"$(tgrade keys show -a systemadmin)\"]")
 # set system admin
 content=$(echo "$content" | jq  ".app_state.poe.system_admin_address |= \"$(tgrade keys show -a systemadmin)\"")
+# set min fee
+content=$(echo "$content" | jq  ".app_state.globalfee.params.minimum_gas_prices |= [{\"denom\":\"$STAKE\",\"amount\":\"0.001\"}]")
+
 mv "$HOME"/.tgrade/config/genesis.json  "$HOME"/.tgrade/config/genesis.json_old
 echo "$content" > "$HOME"/.tgrade/config/genesis.json
 
@@ -45,6 +50,6 @@ echo "$content" > "$HOME"/.tgrade/config/genesis.json
   echo "$PASSWORD"
   echo "$PASSWORD"
   echo "$PASSWORD"
-) | tgrade gentx validator "0$STAKE" "250000000$STAKE" --chain-id="$CHAIN_ID" --amount="0$STAKE" --vesting-amount="250000000$STAKE"
+) | tgrade gentx validator "0$STAKE" "250000000$STAKE" --chain-id="$CHAIN_ID" --amount="0$STAKE" --vesting-amount="250000000$STAKE" --fees="2000$STAKE"
 
 tgrade collect-gentxs
