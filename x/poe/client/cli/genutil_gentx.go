@@ -39,9 +39,9 @@ func GenTxCmd(mbm module.BasicManager, txEncCfg client.TxEncodingConfig, genBalI
 	fsCreateValidator, defaultsDesc := CreateValidatorMsgFlagSet(ipDefault)
 
 	cmd := &cobra.Command{
-		Use:   "gentx [key_name] [amount]",
+		Use:   "gentx [key_name] [liquid-amount] [vesting-amount]",
 		Short: "Generate a genesis tx carrying a self delegation",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(3),
 		Long: fmt.Sprintf(`Generate a genesis transaction that creates a validator with a self-delegation,
 that is signed by the key in the Keyring referenced by a given name. A node ID and Bech32 consensus
 pubkey may optionally be provided. If they are omitted, they will be retrieved from the priv_validator.json
@@ -117,13 +117,18 @@ $ %s gentx my-key-name 1000000utgd --home=/path/to/home/dir --keyring-backend=os
 				return errors.Wrap(err, "error creating configuration to create validator msg")
 			}
 
-			amount := args[1]
-			coins, err := sdk.ParseCoinsNormalized(amount)
+			liquidAmount := args[1]
+			liquidCoins, err := sdk.ParseCoinsNormalized(liquidAmount)
 			if err != nil {
-				return errors.Wrap(err, "failed to parse coins")
+				return errors.Wrap(err, "failed to parse coins for liquid amount")
+			}
+			vestedAmount := args[2]
+			vestedCoins, err := sdk.ParseCoinsNormalized(vestedAmount)
+			if err != nil {
+				return errors.Wrap(err, "failed to parse coins for vested amount")
 			}
 
-			err = ValidateAccountInGenesis(genesisState, genBalIterator, key.GetAddress(), coins, cdc)
+			err = ValidateAccountInGenesis(genesisState, genBalIterator, key.GetAddress(), liquidCoins.Add(vestedCoins...), cdc)
 			if err != nil {
 				return errors.Wrap(err, "failed to validate account in genesis")
 			}
@@ -146,7 +151,14 @@ $ %s gentx my-key-name 1000000utgd --home=/path/to/home/dir --keyring-backend=os
 			// Ideally, the `create-validator` command should take a validator
 			// config file instead of so many flags.
 			// ref: https://github.com/cosmos/cosmos-sdk/issues/8177
-			createValCfg.Amount = amount
+			if createValCfg.LiquidAmount != "" && createValCfg.LiquidAmount != liquidAmount {
+				return errors.New("liquid amount param and argument missmatch")
+			}
+			if createValCfg.VestingAmount != "" && createValCfg.VestingAmount != vestedAmount {
+				return errors.New("vesting amount param and argument missmatch")
+			}
+			createValCfg.LiquidAmount = liquidAmount
+			createValCfg.VestingAmount = vestedAmount
 
 			// create a 'create-validator' message
 			txBldr, msg, err := BuildCreateValidatorMsg(clientCtx, createValCfg, txFactory, true)

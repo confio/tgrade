@@ -40,7 +40,7 @@ func TestMsgDecode(t *testing.T) {
 
 	// now let's try to serialize the whole message
 
-	msg, err := NewMsgCreateValidator(valAddr1, pk1, coinPos, stakingtypes.Description{})
+	msg, err := NewMsgCreateValidator(valAddr1, pk1, coinPos, sdk.NewInt64Coin(sdk.DefaultBondDenom, 2000), stakingtypes.Description{})
 	require.NoError(t, err)
 	msgSerialized, err := cdc.MarshalInterface(msg)
 	require.NoError(t, err)
@@ -50,7 +50,8 @@ func TestMsgDecode(t *testing.T) {
 	require.NoError(t, err)
 	msg2, ok := msgUnmarshaled.(*MsgCreateValidator)
 	require.True(t, ok)
-	require.True(t, msg.Value.IsEqual(msg2.Value))
+	require.True(t, msg.Amount.IsEqual(msg2.Amount))
+	require.True(t, msg.VestingAmount.IsEqual(msg2.VestingAmount))
 	require.True(t, msg.Pubkey.Equal(msg2.Pubkey))
 }
 
@@ -60,27 +61,30 @@ func TestMsgCreateValidator(t *testing.T) {
 		name, moniker, identity, website, securityContact, details string
 		operatorAddr                                               sdk.AccAddress
 		pubkey                                                     cryptotypes.PubKey
-		bond                                                       sdk.Coin
+		bondLiquid                                                 sdk.Coin
+		bondVesting                                                sdk.Coin
 		expectPass                                                 bool
 	}{
-		{"basic good", "hello", "b", "c", "d", "e", valAddr1, pk1, coinPos, true},
-		{"partial description", "hello", "", "c", "", "", valAddr1, pk1, coinPos, true},
-		{"short moniker", "a", "", "", "", "", valAddr1, pk1, coinPos, false},
-		{"empty description", "", "", "", "", "", valAddr1, pk1, coinPos, false},
-		{"empty address", "hello", "b", "c", "d", "e", emptyAddr, pk1, coinPos, false},
-		{"empty pubkey", "hello", "b", "c", "d", "e", valAddr1, emptyPubkey, coinPos, false},
-		{"empty bond", "hello", "b", "c", "d", "e", valAddr1, pk1, coinZero, false},
-		{"nil bond", "hello", "b", "c", "d", "e", valAddr1, pk1, sdk.Coin{}, false},
+		{"basic good", "hello", "b", "c", "d", "e", valAddr1, pk1, coinPos, coinZero, true},
+		{"partial description", "hello", "", "c", "", "", valAddr1, pk1, coinPos, coinZero, true},
+		{"vesting bond", "hello", "b", "c", "d", "e", valAddr1, pk1, coinZero, coinPos, true},
+		{"short moniker", "a", "", "", "", "", valAddr1, pk1, coinPos, coinZero, false},
+		{"empty description", "", "", "", "", "", valAddr1, pk1, coinPos, coinZero, false},
+		{"empty address", "hello", "b", "c", "d", "e", emptyAddr, pk1, coinPos, coinZero, false},
+		{"empty pubkey", "hello", "b", "c", "d", "e", valAddr1, emptyPubkey, coinPos, coinZero, false},
+		{"empty bond", "hello", "b", "c", "d", "e", valAddr1, pk1, coinZero, coinZero, false},
+		{"nil liquid bond", "hello", "b", "c", "d", "e", valAddr1, pk1, sdk.Coin{}, coinZero, false},
+		{"nil vesting bond", "hello", "b", "c", "d", "e", valAddr1, pk1, coinZero, sdk.Coin{}, false},
 	}
 
 	for _, tc := range tests {
 		description := stakingtypes.NewDescription(tc.moniker, tc.identity, tc.website, tc.securityContact, tc.details)
-		msg, err := NewMsgCreateValidator(tc.operatorAddr, tc.pubkey, tc.bond, description)
+		msg, err := NewMsgCreateValidator(tc.operatorAddr, tc.pubkey, tc.bondLiquid, tc.bondVesting, description)
 		require.NoError(t, err)
 		if tc.expectPass {
-			require.Nil(t, msg.ValidateBasic(), "test: %v", tc.name)
+			require.NoError(t, msg.ValidateBasic(), "test: %v", tc.name)
 		} else {
-			require.NotNil(t, msg.ValidateBasic(), "test: %v", tc.name)
+			require.Error(t, msg.ValidateBasic(), "test: %v", tc.name)
 		}
 	}
 }

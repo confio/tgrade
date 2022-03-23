@@ -25,7 +25,8 @@ var (
 func NewMsgCreateValidator(
 	valAddr sdk.AccAddress,
 	pubKey cryptotypes.PubKey,
-	selfDelegation sdk.Coin,
+	selfDelegationLiquid sdk.Coin,
+	selfDelegationVesting sdk.Coin,
 	description stakingtypes.Description,
 ) (*MsgCreateValidator, error) {
 	var pkAny *codectypes.Any
@@ -39,7 +40,8 @@ func NewMsgCreateValidator(
 		Description:     description,
 		OperatorAddress: valAddr.String(),
 		Pubkey:          pkAny,
-		Value:           selfDelegation,
+		Amount:          selfDelegationLiquid,
+		VestingAmount:   selfDelegationVesting,
 	}, nil
 }
 
@@ -80,8 +82,14 @@ func (msg MsgCreateValidator) ValidateBasic() error {
 		return stakingtypes.ErrEmptyValidatorPubKey
 	}
 
-	if !msg.Value.IsValid() || !msg.Value.Amount.IsPositive() {
-		return sdkerrors.ErrInvalidRequest.Wrap("delegation amount")
+	if msg.Amount.IsNil() || !msg.Amount.IsValid() {
+		return sdkerrors.ErrInvalidRequest.Wrap("delegation liquid amount")
+	}
+	if msg.VestingAmount.IsNil() || !msg.VestingAmount.IsValid() {
+		return sdkerrors.ErrInvalidRequest.Wrap("delegation vesting amount")
+	}
+	if msg.Amount.Add(msg.VestingAmount).IsZero() {
+		return sdkerrors.ErrInvalidRequest.Wrap("empty delegation amounts")
 	}
 
 	if msg.Description == (stakingtypes.Description{}) {

@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -75,7 +77,8 @@ address instead of keyname to --from flag.
 
 Example:
 $ tgrade tx poe create-validator \
-	--amount 1000utgd
+	--amount 1000utgd \
+	--vesting-amount 1000utgd \
 	--from tgrade1n4kjhlrpapnpv0n0e3048ydftrjs9m6mm473jf \
 	--pubkey tgradevalconspub1zcjduepqu7xf85mmfyv5p9m8mc6wk0u0pcjwcpr9p8wsv4h96dhpxqyxs4uqv06vlq \
 	--home $APP_HOME \
@@ -88,7 +91,7 @@ $ tgrade tx poe create-validator \
 	}
 
 	cmd.Flags().AddFlagSet(FlagSetPublicKey())
-	cmd.Flags().AddFlagSet(FlagSetAmount())
+	cmd.Flags().AddFlagSet(FlagSetAmounts())
 	cmd.Flags().AddFlagSet(flagSetDescriptionCreate())
 
 	cmd.Flags().String(FlagIP, "", fmt.Sprintf("The node's public IP. It takes effect only when used in combination with --%s", flags.FlagGenerateOnly))
@@ -97,6 +100,7 @@ $ tgrade tx poe create-validator \
 
 	_ = cmd.MarkFlagRequired(flags.FlagFrom)
 	_ = cmd.MarkFlagRequired(FlagAmount)
+	_ = cmd.MarkFlagRequired(FlagVestingAmount)
 	_ = cmd.MarkFlagRequired(FlagPubKey)
 	_ = cmd.MarkFlagRequired(FlagMoniker)
 
@@ -104,10 +108,22 @@ $ tgrade tx poe create-validator \
 }
 
 func NewBuildCreateValidatorMsg(clientCtx client.Context, txf tx.Factory, fs *flag.FlagSet) (tx.Factory, sdk.Msg, error) {
-	fAmount, _ := fs.GetString(FlagAmount)
-	amount, err := sdk.ParseCoinNormalized(fAmount)
+	liquidAmt, err := fs.GetString(FlagAmount)
 	if err != nil {
-		return txf, nil, err
+		return txf, nil, sdkerrors.Wrap(err, "liquid")
+	}
+	liquidStakeAmount, err := sdk.ParseCoinNormalized(liquidAmt)
+	if err != nil {
+		return txf, nil, sdkerrors.Wrap(err, "liquid")
+	}
+	vestingAmt, err := fs.GetString(FlagVestingAmount)
+	if err != nil {
+		return txf, nil, sdkerrors.Wrap(err, "vesting")
+	}
+
+	vestingStakeAmount, err := sdk.ParseCoinNormalized(vestingAmt)
+	if err != nil {
+		return txf, nil, sdkerrors.Wrap(err, "vesting")
 	}
 
 	valAddr := clientCtx.GetFromAddress()
@@ -134,7 +150,7 @@ func NewBuildCreateValidatorMsg(clientCtx client.Context, txf tx.Factory, fs *fl
 		details,
 	)
 
-	msg, err := types.NewMsgCreateValidator(valAddr, pk, amount, description)
+	msg, err := types.NewMsgCreateValidator(valAddr, pk, liquidStakeAmount, vestingStakeAmount, description)
 	if err != nil {
 		return txf, nil, err
 	}
@@ -194,7 +210,7 @@ func CreateValidatorMsgFlagSet(ipDefault string) (fs *flag.FlagSet, defaultsDesc
 	fsCreateValidator.String(FlagNodeID, "", "The node's NodeID")
 
 	fsCreateValidator.AddFlagSet(flagSetValidatorDescription(""))
-	fsCreateValidator.AddFlagSet(FlagSetAmount())
+	fsCreateValidator.AddFlagSet(FlagSetAmounts())
 	fsCreateValidator.AddFlagSet(FlagSetPublicKey())
 
 	defaultsDesc = fmt.Sprintf(`delegation amount: %s`, defaultAmount)
@@ -217,7 +233,8 @@ type TxCreateValidatorConfig struct {
 	NodeID  string
 	Moniker string
 
-	Amount string
+	LiquidAmount  string
+	VestingAmount string
 
 	PubKey cryptotypes.PubKey
 
@@ -265,7 +282,12 @@ func PrepareConfigForTxCreateValidator(flagSet *flag.FlagSet, moniker, nodeID, c
 	}
 	c.Identity = identity
 
-	c.Amount, err = flagSet.GetString(FlagAmount)
+	c.LiquidAmount, err = flagSet.GetString(FlagAmount)
+	if err != nil {
+		return c, err
+	}
+
+	c.VestingAmount, err = flagSet.GetString(FlagVestingAmount)
 	if err != nil {
 		return c, err
 	}
@@ -279,8 +301,8 @@ func PrepareConfigForTxCreateValidator(flagSet *flag.FlagSet, moniker, nodeID, c
 	c.ChainID = chainID
 	c.Moniker = moniker
 
-	if c.Amount == "" {
-		c.Amount = defaultAmount
+	if c.LiquidAmount == "" {
+		c.LiquidAmount = defaultAmount
 	}
 
 	return c, nil
@@ -288,9 +310,11 @@ func PrepareConfigForTxCreateValidator(flagSet *flag.FlagSet, moniker, nodeID, c
 
 // BuildCreateValidatorMsg makes a new MsgCreateValidator.
 func BuildCreateValidatorMsg(clientCtx client.Context, config TxCreateValidatorConfig, txBldr tx.Factory, generateOnly bool) (tx.Factory, sdk.Msg, error) {
-	amounstStr := config.Amount
-	amount, err := sdk.ParseCoinNormalized(amounstStr)
-
+	liquidStakeAmount, err := sdk.ParseCoinNormalized(config.LiquidAmount)
+	if err != nil {
+		return txBldr, nil, err
+	}
+	vestingStakeAmount, err := sdk.ParseCoinNormalized(config.VestingAmount)
 	if err != nil {
 		return txBldr, nil, err
 	}
@@ -304,7 +328,7 @@ func BuildCreateValidatorMsg(clientCtx client.Context, config TxCreateValidatorC
 		config.Details,
 	)
 
-	msg, err := types.NewMsgCreateValidator(valAddr, config.PubKey, amount, description)
+	msg, err := types.NewMsgCreateValidator(valAddr, config.PubKey, liquidStakeAmount, vestingStakeAmount, description)
 	if err != nil {
 		return txBldr, msg, err
 	}
@@ -322,15 +346,15 @@ func BuildCreateValidatorMsg(clientCtx client.Context, config TxCreateValidatorC
 
 func NewDelegateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "self-delegate <liquid-amount> <vesting-amount>",
+		Use:   "self-delegate [liquid-amount] [vesting-amount]",
 		Args:  cobra.ExactArgs(2),
 		Short: "Delegate liquid and illiquid tokens to a validator",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Delegate an amount of liquid and/or illiquid (vesting) coins to a validator from your wallet.
 
 Examples:
-$ %s tx poe self-delegate 1000stake 0stake --from mykey
-$ %s tx poe self-delegate 500stake 500stake --from mykey
+$ %s tx poe self-delegate 1000000000utgd 0utgd --from mykey
+$ %s tx poe self-delegate 500000000utgd 500000000utgd --from mykey
 `,
 				version.AppName,
 				version.AppName,
@@ -345,13 +369,13 @@ $ %s tx poe self-delegate 500stake 500stake --from mykey
 			if err != nil {
 				return err
 			}
-			vesting_amount, err := sdk.ParseCoinNormalized(args[1])
+			vestingAmount, err := sdk.ParseCoinNormalized(args[1])
 			if err != nil {
 				return err
 			}
 
 			delAddr := clientCtx.GetFromAddress()
-			msg := types.NewMsgDelegate(delAddr, amount, vesting_amount)
+			msg := types.NewMsgDelegate(delAddr, amount, vestingAmount)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

@@ -94,7 +94,7 @@ func requireEnoughFileHandlers(nodesCount int) error {
 	if err != nil {
 		panic(fmt.Sprintf("unexpected error :%#+v, output: %s", err, string(out)))
 	}
-	expFH := nodesCount * 250 // random number that worked on my box
+	expFH := nodesCount * 260 // random number that worked on my box
 	if fileDescrCount < expFH {
 		panic(fmt.Sprintf("Fail fast. Insufficient setup. Run 'ulimit -n %d'", expFH))
 	}

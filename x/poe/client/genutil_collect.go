@@ -168,10 +168,10 @@ func collectTxs(cdc codec.JSONCodec, txJSONDecoder sdk.TxDecoder, moniker, genTx
 			return appGenTxs, persistentPeers, fmt.Errorf("account %s balance not in genesis state: %+v", delAddr, balancesMap)
 		}
 
-		if delBal.GetCoins().AmountOf(msg.Value.Denom).LT(msg.Value.Amount) {
+		if delBal.GetCoins().AmountOf(msg.Amount.Denom).LT(msg.Amount.Amount) {
 			return appGenTxs, persistentPeers, fmt.Errorf(
 				"insufficient fund for delegation %v: %v < %v",
-				delBal.GetAddress().String(), delBal.GetCoins().AmountOf(msg.Value.Denom), msg.Value.Amount,
+				delBal.GetAddress().String(), delBal.GetCoins().AmountOf(msg.Amount.Denom), msg.Amount.Amount,
 			)
 		}
 

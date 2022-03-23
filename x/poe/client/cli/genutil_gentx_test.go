@@ -42,15 +42,26 @@ const (
 
 func TestGenTxCmd(t *testing.T) {
 	specs := map[string]struct {
-		stakingAmount sdk.Coin
-		expErr        bool
+		liquidStakingAmount string
+		vestedStakingAmount string
+		expErr              bool
 	}{
-		"all good": {
-			stakingAmount: sdk.NewCoin(bondDenum, sdk.NewInt(1)),
+		"stake liquid": {
+			liquidStakingAmount: "1utgd",
+			vestedStakingAmount: "0utgd",
+		},
+		"stake vested": {
+			liquidStakingAmount: "0utgd",
+			vestedStakingAmount: "1utgd",
+		},
+		"stake both": {
+			liquidStakingAmount: "1utgd",
+			vestedStakingAmount: "1utgd",
 		},
 		"staked more than balance": {
-			stakingAmount: sdk.NewCoin(bondDenum, sdk.NewInt(initialBalance+1)),
-			expErr:        true,
+			liquidStakingAmount: "101utgd",
+			vestedStakingAmount: "0utgd",
+			expErr:              true,
 		},
 	}
 	for name, spec := range specs {
@@ -74,8 +85,11 @@ func TestGenTxCmd(t *testing.T) {
 			cmd.SetArgs([]string{
 				fmt.Sprintf("--%s=%s", flags.FlagChainID, myChainID),
 				fmt.Sprintf("--%s=%s", flags.FlagOutputDocument, genTxFile),
+				fmt.Sprintf("--%s=%s", cli.FlagAmount, spec.liquidStakingAmount),
+				fmt.Sprintf("--%s=%s", cli.FlagVestingAmount, spec.vestedStakingAmount),
 				myKey,
-				spec.stakingAmount.String(),
+				spec.liquidStakingAmount,
+				spec.vestedStakingAmount,
 			})
 
 			gotErr := cmd.ExecuteContext(ctx)
@@ -102,7 +116,8 @@ func TestGenTxCmd(t *testing.T) {
 
 			require.IsType(t, &types.MsgCreateValidator{}, msgs[0])
 			require.Equal(t, []sdk.AccAddress{addr}, msgs[0].GetSigners())
-			require.Equal(t, spec.stakingAmount, msgs[0].(*types.MsgCreateValidator).Value)
+			require.Equal(t, spec.liquidStakingAmount, msgs[0].(*types.MsgCreateValidator).Amount.String())
+			require.Equal(t, spec.vestedStakingAmount, msgs[0].(*types.MsgCreateValidator).VestingAmount.String())
 			require.NoError(t, tx.ValidateBasic())
 			require.NoError(t, msgs[0].ValidateBasic())
 		})

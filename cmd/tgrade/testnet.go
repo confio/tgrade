@@ -266,6 +266,7 @@ func InitTestnet(
 			addr,
 			valPubKeys[i],
 			sdk.NewCoin(stakingToken, valTokens),
+			sdk.NewCoin(stakingToken, sdk.ZeroInt()),
 			// moniker must be at least 3 chars. let's pad it to ensure
 			stakingtypes.NewDescription(moniker, "", "", "", ""),
 		)
@@ -348,6 +349,13 @@ func initGenFiles(
 	var bankGenState banktypes.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[banktypes.ModuleName], &bankGenState)
 
+	bankGenState.Balances = banktypes.SanitizeGenesisBalances(genBalances)
+	var total sdk.Coins
+	for _, v := range genBalances {
+		total = total.Add(v.Coins...)
+	}
+
+	bankGenState.Supply = bankGenState.Supply.Add(total...)
 	bankGenState.Balances = genBalances
 	appGenState[banktypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&bankGenState)
 	poeGenesisState := poetypes.GetGenesisStateFromAppState(clientCtx.Codec, appGenState)

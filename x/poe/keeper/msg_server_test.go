@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -45,18 +47,44 @@ func TestCreateValidator(t *testing.T) {
 	}
 
 	specs := map[string]struct {
-		src               *types.MsgCreateValidator
-		expSelfDelegation *sdk.Coin
-		expErr            *sdkerrors.Error
+		src                  *types.MsgCreateValidator
+		expLiquidDelegation  *sdk.Coin
+		expVestingDelegation *sdk.Coin
+		expTotalDelegation   *sdk.Coin
+		expErr               *sdkerrors.Error
 	}{
-		"all good": {
+		"with liquid amount only": {
 			src: types.MsgCreateValidatorFixture(
 				func(m *types.MsgCreateValidator) {
 					m.OperatorAddress = myOperatorAddr.String()
-					m.Value = sdk.NewInt64Coin(types.DefaultBondDenom, 1)
+					m.Amount = sdk.NewInt64Coin(types.DefaultBondDenom, 1)
 				},
 			),
-			expSelfDelegation: &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.NewInt(1)},
+			expLiquidDelegation: &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.NewInt(1)},
+			expTotalDelegation:  &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.NewInt(1)},
+		},
+		"with vesting amount only": {
+			src: types.MsgCreateValidatorFixture(
+				func(m *types.MsgCreateValidator) {
+					m.OperatorAddress = myOperatorAddr.String()
+					m.Amount = sdk.NewInt64Coin(types.DefaultBondDenom, 0)
+					m.VestingAmount = sdk.NewInt64Coin(types.DefaultBondDenom, 1)
+				},
+			),
+			expVestingDelegation: &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.NewInt(1)},
+			expTotalDelegation:   &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.NewInt(1)},
+		},
+		"both amounts": {
+			src: types.MsgCreateValidatorFixture(
+				func(m *types.MsgCreateValidator) {
+					m.OperatorAddress = myOperatorAddr.String()
+					m.Amount = sdk.NewInt64Coin(types.DefaultBondDenom, 2)
+					m.VestingAmount = sdk.NewInt64Coin(types.DefaultBondDenom, 1)
+				},
+			),
+			expVestingDelegation: &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.NewInt(1)},
+			expLiquidDelegation:  &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.NewInt(2)},
+			expTotalDelegation:   &sdk.Coin{Denom: types.DefaultBondDenom, Amount: sdk.NewInt(3)},
 		},
 		"invalid algo": {
 			src: types.MsgCreateValidatorFixture(
@@ -92,15 +120,31 @@ func TestCreateValidator(t *testing.T) {
 			require.NoError(t, gotErr)
 			// and contract called
 			require.Len(t, *execs, 2)
+			// first register validator
 			assert.Equal(t, myValsetContract, (*execs)[0].ContractAddress)
 			assert.Equal(t, myOperatorAddr, (*execs)[0].Caller)
 			assert.Nil(t, (*execs)[0].Coins)
+			// then bond delegation
 			assert.Equal(t, myStakingContract, (*execs)[1].ContractAddress)
 			assert.Equal(t, myOperatorAddr, (*execs)[1].Caller)
-			assert.Equal(t, sdk.NewCoins(sdk.NewInt64Coin(types.DefaultBondDenom, 1)), (*execs)[1].Coins)
+			if spec.expLiquidDelegation != nil {
+				assert.Equal(t, sdk.NewCoins(*spec.expLiquidDelegation), (*execs)[1].Coins)
+			} else {
+				assert.True(t, (*execs)[1].Coins.IsZero())
+			}
+			// and msg vesting amount declared
+			var gotStakeMsg contract.TG4StakeExecute
+			require.NoError(t, json.Unmarshal((*execs)[1].Msg, &gotStakeMsg))
+			require.NotNil(t, gotStakeMsg.Bond.VestingTokens)
+			if spec.expVestingDelegation != nil {
+				assert.Equal(t, spec.expVestingDelegation.Amount.String(), gotStakeMsg.Bond.VestingTokens.Amount)
+				assert.Equal(t, spec.expVestingDelegation.Denom, gotStakeMsg.Bond.VestingTokens.Denom)
+			} else {
+				assert.Equal(t, wasmvmtypes.NewCoin(0, "utgd"), *gotStakeMsg.Bond.VestingTokens)
+			}
 
 			assert.Equal(t, myOperatorAddr, capturedOpAddr)
-			assert.Equal(t, spec.expSelfDelegation, capturedSelfDelegation)
+			assert.Equal(t, spec.expTotalDelegation, capturedSelfDelegation)
 
 			// and events emitted
 			require.NoError(t, gotErr)
