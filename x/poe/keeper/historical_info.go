@@ -47,11 +47,11 @@ func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 func (k Keeper) iterateHistoricalInfo(ctx sdk.Context, cb func(stakingtypes.HistoricalInfo) bool) {
 	store := ctx.KVStore(k.storeKey)
 
-	iterator := sdk.KVStorePrefixIterator(store, types.HistoricalInfoKey)
-	defer iterator.Close()
+	iter := sdk.KVStorePrefixIterator(store, types.HistoricalInfoKey)
+	defer iter.Close()
 
-	for ; iterator.Valid(); iterator.Next() {
-		histInfo := stakingtypes.MustUnmarshalHistoricalInfo(k.codec, iterator.Value())
+	for ; iter.Valid(); iter.Next() {
+		histInfo := stakingtypes.MustUnmarshalHistoricalInfo(k.codec, iter.Value())
 		if cb(histInfo) {
 			break
 		}

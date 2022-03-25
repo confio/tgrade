@@ -70,6 +70,7 @@ func (k Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractTy
 func (k Keeper) IteratePoEContracts(ctx sdk.Context, cb func(types.PoEContractType, sdk.AccAddress) bool) {
 	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), types.ContractPrefix)
 	iter := prefixStore.Iterator(nil, nil)
+	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
 		// cb returns true to stop early
 		ctype := types.PoEContractType_value[string(iter.Key())]
