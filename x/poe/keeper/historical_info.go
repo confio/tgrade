@@ -98,6 +98,9 @@ func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 
 	// Create HistoricalInfo struct
 	var valSet stakingtypes.Validators // not used by IBC so we keep it empty
+	if valSet == nil {
+		return
+	}
 	historicalEntry := stakingtypes.NewHistoricalInfo(ctx.BlockHeader(), valSet, sdk.DefaultPowerReduction)
 
 	// Set latest HistoricalInfo at current height
