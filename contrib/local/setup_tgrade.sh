@@ -7,6 +7,8 @@ FEE=${FEE_TOKEN:-utgd}
 CHAIN_ID=${CHAIN_ID:-testing}
 MONIKER=${MONIKER:-node001}
 
+echo "$PASSWORD"
+
 tgrade init --chain-id "$CHAIN_ID" "$MONIKER"
 # staking/governance token is hardcoded in config, change this
 ## OSX requires: -i.
@@ -16,28 +18,30 @@ for x in validator systemadmin; do
     (
       echo "$PASSWORD"
       echo "$PASSWORD"
-    ) | tgrade keys add validator
+    ) | tgrade keys add "$x"
   fi
 done
 
 # hardcode the account for this instance
 echo "$PASSWORD" | tgrade add-genesis-account systemadmin "1000000000$STAKE"
-echo "$PASSWORD" | tgrade add-genesis-account validator "1001000000$STAKE" --vesting-amount="1000000000$STAKE" --vesting-end-time="$(date -v+10y +%s)"
+echo "$PASSWORD" | tgrade add-genesis-account validator "1001000000$STAKE" --vesting-amount="1000000000$STAKE" --vesting-end-time="$(date -d "+10 years" +%s)"
+
 
 # (optionally) add a few more genesis accounts
 for addr in "$@"; do
   echo "$addr"
   tgrade add-genesis-account "$addr" "1000000000$STAKE"
 done
+
 ## POE setup
 # set systemadmin address (temporary)
 
 # set engagement points
-content=$(cat "$HOME"/.tgrade/config/genesis.json | jq  ".app_state.poe.engagement |= . + [{\"address\":\"$(tgrade keys show -a validator)\",\"points\":\"100\"}]")
+content=$(cat "$HOME"/.tgrade/config/genesis.json | jq  ".app_state.poe.engagement |= . + [{\"address\":\"$(echo "$PASSWORD" | tgrade keys show -a validator)\",\"points\":\"100\"}]")
 # set oversight community
-content=$(echo "$content" | jq  ".app_state.poe.oversightCommunityMembers |= . + [\"$(tgrade keys show -a systemadmin)\"]")
+content=$(echo "$content" | jq  ".app_state.poe.oversightCommunityMembers |= . + [\"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"]")
 # set system admin
-content=$(echo "$content" | jq  ".app_state.poe.system_admin_address |= \"$(tgrade keys show -a systemadmin)\"")
+content=$(echo "$content" | jq  ".app_state.poe.system_admin_address |= \"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"")
 # set min fee
 content=$(echo "$content" | jq  ".app_state.globalfee.params.minimum_gas_prices |= [{\"denom\":\"$STAKE\",\"amount\":\"0.001\"}]")
 
