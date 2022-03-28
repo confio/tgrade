@@ -7,8 +7,6 @@ FEE=${FEE_TOKEN:-utgd}
 CHAIN_ID=${CHAIN_ID:-testing}
 MONIKER=${MONIKER:-node001}
 
-echo "$PASSWORD"
-
 tgrade init --chain-id "$CHAIN_ID" "$MONIKER"
 # staking/governance token is hardcoded in config, change this
 ## OSX requires: -i.
@@ -22,9 +20,17 @@ for x in validator systemadmin; do
   fi
 done
 
+# set date based on OS
+end_time='unknown'
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  end_time=$(date -d "+10 years" +%s)
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  end_time=$(date -v+10y +%s)
+fi
+
 # hardcode the account for this instance
 echo "$PASSWORD" | tgrade add-genesis-account systemadmin "1000000000$STAKE"
-echo "$PASSWORD" | tgrade add-genesis-account validator "1001000000$STAKE" --vesting-amount="1000000000$STAKE" --vesting-end-time="$(date -d "+10 years" +%s)"
+echo "$PASSWORD" | tgrade add-genesis-account validator "1001000000$STAKE" --vesting-amount="1000000000$STAKE" --vesting-end-time="$end_time"
 
 
 # (optionally) add a few more genesis accounts
