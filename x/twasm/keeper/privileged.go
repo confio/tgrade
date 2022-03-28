@@ -156,6 +156,7 @@ func (k Keeper) IsPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) bool 
 func (k Keeper) IteratePrivileged(ctx sdk.Context, cb func(sdk.AccAddress) bool) {
 	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), privilegedContractsSecondaryIndexPrefix)
 	iter := prefixStore.Iterator(nil, nil)
+	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
 		// cb returns true to stop early
 		if cb(iter.Key()) {
@@ -170,9 +171,10 @@ func (k Keeper) appendToPrivilegedContracts(ctx sdk.Context, privilegeType types
 
 	// find last position value for privilege type
 	var pos uint8
-	it := prefix.NewStore(store, getContractPrivilegesSecondaryIndexPrefix(privilegeType)).ReverseIterator(nil, nil)
-	if it.Valid() {
-		key := it.Key()
+	iter := prefix.NewStore(store, getContractPrivilegesSecondaryIndexPrefix(privilegeType)).ReverseIterator(nil, nil)
+	defer iter.Close()
+	if iter.Valid() {
+		key := iter.Key()
 		pos = key[0]
 		if privilegeType.IsSingleton() {
 			return 0, wasmtypes.ErrDuplicate
@@ -233,14 +235,16 @@ func (k Keeper) ExistsAnyPrivilegedContract(ctx sdk.Context, privilegeType types
 	end := []byte{math.MaxUint8}
 	prefixStore := prefix.NewStore(store, getContractPrivilegesSecondaryIndexPrefix(privilegeType))
 
-	it := prefixStore.Iterator(start, end)
-	return it.Valid()
+	iter := prefixStore.Iterator(start, end)
+	defer iter.Close()
+	return iter.Valid()
 }
 
 // IteratePrivilegedContractsByType iterates through all contracts for the given type by position and address ASC
 func (k Keeper) IteratePrivilegedContractsByType(ctx sdk.Context, privilegeType types.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool) {
 	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), getContractPrivilegesSecondaryIndexPrefix(privilegeType))
 	iter := prefixStore.Iterator(nil, nil)
+	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
 		// cb returns true to stop early
 		if cb(parseContractPosition(iter.Key()), iter.Value()) {
