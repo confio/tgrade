@@ -302,7 +302,7 @@ func (c StakeContractConfig) ValidateBasic() error {
 		return sdkerrors.Wrap(ErrEmpty, "unbonding period")
 	}
 	if time.Duration(uint64(c.UnbondingPeriod.Seconds()))*time.Second != c.UnbondingPeriod {
-		return sdkerrors.Wrap(ErrInvalid, "unbonding period not convertable to seconds")
+		return sdkerrors.Wrap(ErrInvalid, "unbonding period not convertible to seconds")
 	}
 	return nil
 }
@@ -407,6 +407,9 @@ func (c ArbiterPoolContractConfig) ValidateBasic() error {
 		if _, err := sdk.AccAddressFromBech32(c.DenyListContractAddress); err != nil {
 			return sdkerrors.Wrap(ErrInvalid, "deny list contract address")
 		}
+	}
+	if time.Duration(uint64(c.WaitingPeriod.Seconds()))*time.Second != c.WaitingPeriod {
+		return sdkerrors.Wrap(ErrInvalid, "waiting period not convertible to seconds")
 	}
 	return nil
 }

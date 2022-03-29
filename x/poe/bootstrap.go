@@ -271,7 +271,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "first ap member")
 	}
 
-	apContractAddr, _, err := k.Instantiate(ctx, trustedCircleCodeID, firstAPMember, systemAdminAddr, mustMarshalJson(apTrustedCircleInitMsg), "arbter_pool", apDeposit)
+	apContractAddr, _, err := k.Instantiate(ctx, trustedCircleCodeID, firstAPMember, systemAdminAddr, mustMarshalJson(apTrustedCircleInitMsg), "arbiter_pool", apDeposit)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg trusted circle contract")
 	}
@@ -286,7 +286,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	// setup arbiter pool
 	apCodeID, err := k.Create(ctx, systemAdminAddr, tgArbiterPool, &wasmtypes.AllowEverybody)
 	if err != nil {
-		return sdkerrors.Wrap(err, "store tg ap contract: ")
+		return sdkerrors.Wrap(err, "store arbiter voting contract: ")
 	}
 	apVotingInitMsg := newArbiterPoolVotingInitMsg(gs, apContractAddr)
 	apVotingContractAddr, _, err := k.Instantiate(ctx, apCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(apVotingInitMsg), "arbiter pool voting", apDeposit)

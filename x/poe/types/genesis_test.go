@@ -251,6 +251,18 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
+		"arbiter pool contract config not set": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.ArbiterPoolContractConfig = nil
+			}),
+			expErr: true,
+		},
+		"invalid arbiter pool contract config": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.ArbiterPoolContractConfig.DenyListContractAddress = "invalid address"
+			}),
+			expErr: true,
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
@@ -604,6 +616,63 @@ func TestValidateVotingRules(t *testing.T) {
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 
+			gotErr := spec.src.ValidateBasic()
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+		})
+	}
+}
+
+func TestValidateArbiterPoolContractConfig(t *testing.T) {
+	specs := map[string]struct {
+		src    ArbiterPoolContractConfig
+		expErr bool
+	}{
+		"default": {
+			src: *DefaultGenesisState().ArbiterPoolContractConfig,
+		},
+		"name empty": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.ArbiterPoolContractConfig.Name = ""
+			}).ArbiterPoolContractConfig,
+			expErr: true,
+		},
+		"name too long": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.ArbiterPoolContractConfig.Name = strings.Repeat("a", 101)
+			}).ArbiterPoolContractConfig,
+			expErr: true,
+		},
+		"escrow amount too low": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.ArbiterPoolContractConfig.EscrowAmount = sdk.NewCoin(DefaultBondDenom, sdk.NewInt(999_999))
+			}).ArbiterPoolContractConfig,
+			expErr: true,
+		},
+		"voting rules invalid": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.ArbiterPoolContractConfig.VotingRules.VotingPeriod = 0
+			}).ArbiterPoolContractConfig,
+			expErr: true,
+		},
+		"deny contract address not an address": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.ArbiterPoolContractConfig.DenyListContractAddress = "not-an-address"
+			}).ArbiterPoolContractConfig,
+			expErr: true,
+		},
+		"not convertible to seconds": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.ArbiterPoolContractConfig.WaitingPeriod = time.Second + time.Nanosecond
+			}).ArbiterPoolContractConfig,
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
 			gotErr := spec.src.ValidateBasic()
 			if spec.expErr {
 				require.Error(t, gotErr)
