@@ -95,7 +95,7 @@ func (c TgradeCli) run(args []string) string {
 	gotOut, gotErr := func() (out []byte, err error) {
 		defer func() {
 			if r := recover(); r != nil {
-				err = fmt.Errorf("recovered from panc: %w", r)
+				err = fmt.Errorf("recovered from panc: %v", r)
 			}
 		}()
 		cmd := exec.Command(locateExecutable("tgrade"), args...) //nolint:gosec
