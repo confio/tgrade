@@ -6,21 +6,16 @@ import (
 	"math/rand"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	"github.com/confio/tgrade/x/twasm/client/cli"
-	"github.com/confio/tgrade/x/twasm/keeper"
-
 	wasmcli "github.com/CosmWasm/wasmd/x/wasm/client/cli"
 	wasmrest "github.com/CosmWasm/wasmd/x/wasm/client/rest"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	wasmsimuliation "github.com/CosmWasm/wasmd/x/wasm/simulation"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/gorilla/mux"
@@ -28,6 +23,9 @@ import (
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	"github.com/confio/tgrade/x/twasm/client/cli"
+	"github.com/confio/tgrade/x/twasm/keeper"
+	"github.com/confio/tgrade/x/twasm/simulation"
 	"github.com/confio/tgrade/x/twasm/types"
 )
 
@@ -171,7 +169,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, b abci.RequestEndBlock) []abci.Val
 
 // GenerateGenesisState creates a randomized GenState of the bank module.
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
-	wasmsimuliation.RandomizedGenState(simState)
+	simulation.RandomizedGenState(simState)
 }
 
 // ProposalContents doesn't return any content functions for governance proposals.
@@ -181,7 +179,8 @@ func (AppModule) ProposalContents(simState module.SimulationState) []simtypes.We
 
 // RandomizedParams creates randomized bank param changes for the simulator.
 func (am AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
-	return wasmsimuliation.ParamChanges(r, am.cdc)
+	//return wasmsimuliation.ParamChanges(r, am.cdc)
+	return nil
 }
 
 // RegisterStoreDecoder registers a decoder for supply module's types
