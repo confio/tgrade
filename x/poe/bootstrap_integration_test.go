@@ -24,47 +24,125 @@ import (
 
 func TestIntegrationBootstrapPoEContracts(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, _, members := setupPoEContracts(t)
+	ctx, example, gs := setupPoEContracts(t)
 
-	ocContractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunity)
-	require.NoError(t, err)
-	tcAdapter := contract.NewTrustedCircleContractAdapter(ocContractAddr, example.TWasmKeeper, nil)
-
-	voters, err := tcAdapter.QueryListVoters(ctx)
-	require.NoError(t, err)
-
-	//verify the members list are all voting members
-	notVotingMembers := make(map[string]struct{}, len(members))
-	for _, m := range members {
-		notVotingMembers[m] = struct{}{}
+	testCases := []struct {
+		testName             string
+		contractType         types.PoEContractType
+		isPrivilegedContract bool
+		isPinnedCode         bool
+	}{
+		{
+			testName:             "staking contract",
+			contractType:         types.PoEContractTypeStaking,
+			isPrivilegedContract: true,
+			isPinnedCode:         true,
+		},
+		{
+			testName:             "valset contract",
+			contractType:         types.PoEContractTypeValset,
+			isPrivilegedContract: true,
+			isPinnedCode:         true,
+		},
+		{
+			testName:             "engagement contract",
+			contractType:         types.PoEContractTypeEngagement,
+			isPrivilegedContract: false,
+			isPinnedCode:         true,
+		},
+		{
+			testName:             "mixer contract",
+			contractType:         types.PoEContractTypeMixer,
+			isPrivilegedContract: false,
+			isPinnedCode:         true,
+		},
+		{
+			testName:             "distribution contract",
+			contractType:         types.PoEContractTypeDistribution,
+			isPrivilegedContract: false,
+			isPinnedCode:         true,
+		},
+		{
+			testName:             "oversight community contract",
+			contractType:         types.PoEContractTypeOversightCommunity,
+			isPrivilegedContract: false,
+			isPinnedCode:         true,
+		},
+		{
+			testName:             "oversight community gov proposals contract",
+			contractType:         types.PoEContractTypeOversightCommunityGovProposals,
+			isPrivilegedContract: false,
+			isPinnedCode:         true,
+		},
+		{
+			testName:             "community pool contract",
+			contractType:         types.PoEContractTypeCommunityPool,
+			isPrivilegedContract: false,
+			isPinnedCode:         true,
+		},
+		{
+			testName:             "validator voting contract",
+			contractType:         types.PoEContractTypeValidatorVoting,
+			isPrivilegedContract: true,
+			isPinnedCode:         true,
+		},
+		{
+			testName:             "arbiter pool contract",
+			contractType:         types.PoEContractTypeArbiterPool,
+			isPrivilegedContract: false,
+			isPinnedCode:         true,
+		},
+		{
+			testName:             "arbiter pool voting contract",
+			contractType:         types.PoEContractTypeArbiterPoolVoting,
+			isPrivilegedContract: false,
+			isPinnedCode:         true,
+		},
 	}
 
-	for _, v := range voters.Members {
-		delete(notVotingMembers, v.Addr)
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, tc.contractType)
+			require.NoError(t, err)
+			assert.Equal(t, tc.isPrivilegedContract, example.TWasmKeeper.IsPrivileged(ctx, contractAddr))
+			codeID := example.TWasmKeeper.GetContractInfo(ctx, contractAddr).CodeID
+			assert.Equal(t, tc.isPinnedCode, example.TWasmKeeper.IsPinnedCode(ctx, codeID))
+
+			switch tc.contractType {
+			case types.PoEContractTypeOversightCommunity:
+				membersAreAllVotingMembers(t, ctx, gs.OversightCommunityMembers, contractAddr, example.TWasmKeeper)
+			case types.PoEContractTypeArbiterPool:
+				membersAreAllVotingMembers(t, ctx, gs.ArbiterPoolMembers, contractAddr, example.TWasmKeeper)
+			}
+		})
 	}
-	assert.Empty(t, notVotingMembers)
 }
 
-func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator, []string) {
+func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, types.GenesisState) {
 	t.Helper()
 	ctx, example := keeper.CreateDefaultTestInput(t)
 	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
 	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
 
-	mutator, expValidators := withRandomValidators(t, ctx, example, 3)
+	mutator, _ := withRandomValidators(t, ctx, example, 3)
 	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
 	adminAddress, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	example.Faucet.Fund(ctx, adminAddress, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
 
-	for _, member := range gs.OversightCommunityMembers {
-		addr, err := sdk.AccAddressFromBech32(member)
-		require.NoError(t, err)
-		example.Faucet.Fund(ctx, addr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(1_000_000)))
+	fundMembers := func(members []string, coins sdk.Int) {
+		for _, member := range members {
+			addr, err := sdk.AccAddressFromBech32(member)
+			require.NoError(t, err)
+			example.Faucet.Fund(ctx, addr, sdk.NewCoin(types.DefaultBondDenom, coins))
+		}
 	}
+
+	fundMembers(gs.OversightCommunityMembers, sdk.NewInt(1_000_000))
+	fundMembers(gs.ArbiterPoolMembers, sdk.NewInt(1_000_000))
 
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-	return ctx, example, expValidators, gs.OversightCommunityMembers
+	return ctx, example, gs
 }
 
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
@@ -126,4 +204,21 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 			return collectValidators[i].Tokens.LT(collectValidators[j].Tokens) // sort ASC
 		})
 	}, collectValidators
+}
+
+func membersAreAllVotingMembers(t *testing.T, ctx sdk.Context, members []string, contractAddr sdk.AccAddress, tk types.TWasmKeeper) {
+	ocTrustedCircleAdapter := contract.NewTrustedCircleContractAdapter(contractAddr, tk, nil)
+	voters, err := ocTrustedCircleAdapter.QueryListVoters(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, len(voters.Members), len(members))
+
+	notVotingMembers := make(map[string]struct{}, len(members))
+	for _, m := range members {
+		notVotingMembers[m] = struct{}{}
+	}
+
+	for _, v := range voters.Members {
+		delete(notVotingMembers, v.Addr)
+	}
+	assert.Empty(t, notVotingMembers)
 }

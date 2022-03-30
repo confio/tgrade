@@ -82,13 +82,20 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: myAddr.String(), Coins: coins.Sort()})
 	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: systemAdminAddr.String(), Coins: coins.Sort()})
 
-	// add 3 oc members
-	ocMembers := make([]string, 3)
-	for i := 0; i < 3; i++ {
-		addr := poetypes.RandomAccAddress().String()
-		bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: addr, Coins: coins.Sort()})
-		ocMembers[i] = addr
+	genAddrAndUpdateBalance := func(numAddr int, balance sdk.Coins) []string {
+		genAddr := make([]string, numAddr)
+		for i := 0; i < numAddr; i++ {
+			addr := poetypes.RandomAccAddress().String()
+			bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: addr, Coins: balance})
+			genAddr[i] = addr
+		}
+		return genAddr
 	}
+	// add 3 oc members
+	ocMembers := genAddrAndUpdateBalance(3, coins.Sort())
+
+	// add 2 ap members
+	apMembers := genAddrAndUpdateBalance(2, coins.Sort())
 
 	genesisState[banktypes.ModuleName] = marshaler.MustMarshalJSON(&bankGenState)
 
@@ -99,6 +106,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	poeGS.Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Points: 10}}
 	poeGS.SystemAdminAddress = systemAdminAddr.String()
 	poeGS.OversightCommunityMembers = ocMembers
+	poeGS.ArbiterPoolMembers = apMembers
 	genesisState = poetypes.SetGenesisStateInAppState(marshaler, genesisState, poeGS)
 }
 

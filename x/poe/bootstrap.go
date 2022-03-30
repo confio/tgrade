@@ -34,6 +34,8 @@ var (
 	tgCommunityPool []byte
 	//go:embed contract/tgrade_validator_voting.wasm
 	tgValidatorVoting []byte
+	//go:embed contract/tgrade_ap_voting.wasm
+	tgArbiterPool []byte
 	//go:embed contract/version.txt
 	contractVersion []byte
 )
@@ -48,6 +50,7 @@ func ClearEmbeddedContracts() {
 	tgOCGovProposalsCircles = nil
 	tgCommunityPool = nil
 	tgValidatorVoting = nil
+	tgArbiterPool = nil
 }
 
 type poeKeeper interface {
@@ -85,55 +88,35 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 
 	// setup trusted circle for oversight community
 	//
-	ocCodeID, err := k.Create(ctx, systemAdminAddr, tgTrustedCircles, &wasmtypes.AllowEverybody)
+	trustedCircleCodeID, err := k.Create(ctx, systemAdminAddr, tgTrustedCircles, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg trusted circle contract")
 	}
 	ocInitMsg := newOCInitMsg(gs)
-	deposit := sdk.NewCoins(gs.OversightCommitteeContractConfig.EscrowAmount)
+	ocDeposit := sdk.NewCoins(gs.OversightCommitteeContractConfig.EscrowAmount)
 
-	firstMember, err := sdk.AccAddressFromBech32(gs.OversightCommunityMembers[0])
+	firstOCMember, err := sdk.AccAddressFromBech32(gs.OversightCommunityMembers[0])
 	if err != nil {
 		return sdkerrors.Wrap(err, "first member")
 	}
 
-	ocContractAddr, _, err := k.Instantiate(ctx, ocCodeID, firstMember, systemAdminAddr, mustMarshalJson(ocInitMsg), "oversight_committee", deposit)
+	ocContractAddr, _, err := k.Instantiate(ctx, trustedCircleCodeID, firstOCMember, systemAdminAddr, mustMarshalJson(ocInitMsg), "oversight_committee", ocDeposit)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg trusted circle contract")
 	}
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeOversightCommunity, ocContractAddr)
-	if err := k.PinCode(ctx, ocCodeID); err != nil {
+	if err := k.PinCode(ctx, trustedCircleCodeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tg trusted circle contract")
 	}
 
 	if len(gs.OversightCommunityMembers) > 1 {
-		tcAdapter := contract.NewTrustedCircleContractAdapter(ocContractAddr, tk, nil)
-		err = tcAdapter.AddVotingMembersProposal(ctx, gs.OversightCommunityMembers[1:], firstMember)
+		err = addToTrustedCircle(ctx, ocContractAddr, tk, gs.OversightCommunityMembers[1:], firstOCMember, gs.OversightCommitteeContractConfig.EscrowAmount)
 		if err != nil {
-			return sdkerrors.Wrap(err, "add voting members proposal")
-		}
-		latest, err := tcAdapter.LatestProposal(ctx)
-		if err != nil {
-			return sdkerrors.Wrap(err, "query latest proposal")
-		}
-		err = tcAdapter.ExecuteProposal(ctx, latest.ID, firstMember)
-		if err != nil {
-			return sdkerrors.Wrap(err, "execute proposal")
-		}
-		// deposit escrow
-		for _, member := range gs.OversightCommunityMembers[1:] {
-			ocMember, err := sdk.AccAddressFromBech32(member)
-			if err != nil {
-				return sdkerrors.Wrapf(err, "%s oc member", member)
-			}
-			err = tcAdapter.DepositEscrow(ctx, gs.OversightCommitteeContractConfig.EscrowAmount, ocMember)
-			if err != nil {
-				return sdkerrors.Wrapf(err, "%s deposit escrow", ocMember)
-			}
+			return err
 		}
 	}
 
-	logger.Info("oversight community contract", "address", ocContractAddr, "code_id", ocCodeID)
+	logger.Info("oversight community contract", "address", ocContractAddr, "code_id", trustedCircleCodeID)
 
 	// setup stake contract
 	//
@@ -239,7 +222,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "store tg oc gov proposals contract: ")
 	}
 	ocGovInitMsg := newOCGovProposalsInitMsg(gs, ocContractAddr, engagementContractAddr, valsetContractAddr)
-	ocGovProposalsContractAddr, _, err := k.Instantiate(ctx, ocGovCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(ocGovInitMsg), "oversight_committee gov proposals", deposit)
+	ocGovProposalsContractAddr, _, err := k.Instantiate(ctx, ocGovCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(ocGovInitMsg), "oversight_committee gov proposals", ocDeposit)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg oc gov proposals contract")
 	}
@@ -280,6 +263,42 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 	logger.Info("validator voting contract", "address", validatorVotingContractAddr, "code_id", validatorVotingCodeID)
 
+	// setup trusted circle for ap
+	apTrustedCircleInitMsg := newAPTrustedCircleInitMsg(gs)
+	apDeposit := sdk.NewCoins(gs.ArbiterPoolContractConfig.EscrowAmount)
+	firstAPMember, err := sdk.AccAddressFromBech32(gs.ArbiterPoolMembers[0])
+	if err != nil {
+		return sdkerrors.Wrap(err, "first ap member")
+	}
+
+	apContractAddr, _, err := k.Instantiate(ctx, trustedCircleCodeID, firstAPMember, systemAdminAddr, mustMarshalJson(apTrustedCircleInitMsg), "arbiter_pool", apDeposit)
+	if err != nil {
+		return sdkerrors.Wrap(err, "instantiate tg trusted circle contract")
+	}
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeArbiterPool, apContractAddr)
+	if len(gs.ArbiterPoolMembers) > 1 {
+		err = addToTrustedCircle(ctx, apContractAddr, tk, gs.ArbiterPoolMembers[1:], firstAPMember, gs.ArbiterPoolContractConfig.EscrowAmount)
+		if err != nil {
+			return err
+		}
+	}
+
+	// setup arbiter pool
+	apCodeID, err := k.Create(ctx, systemAdminAddr, tgArbiterPool, &wasmtypes.AllowEverybody)
+	if err != nil {
+		return sdkerrors.Wrap(err, "store arbiter voting contract: ")
+	}
+	apVotingInitMsg := newArbiterPoolVotingInitMsg(gs, apContractAddr)
+	apVotingContractAddr, _, err := k.Instantiate(ctx, apCodeID, systemAdminAddr, systemAdminAddr, mustMarshalJson(apVotingInitMsg), "arbiter pool voting", apDeposit)
+	if err != nil {
+		return sdkerrors.Wrap(err, "instantiate tg ap voting contract")
+	}
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeArbiterPoolVoting, apVotingContractAddr)
+	if err := k.PinCode(ctx, apCodeID); err != nil {
+		return sdkerrors.Wrap(err, "pin tg ap voting contract")
+	}
+	logger.Info("arbiter pool voting contract", "address", apVotingContractAddr, "code_id", apCodeID)
+
 	if err := setAllPoEContractsInstanceMigrators(ctx, k, poeKeeper, systemAdminAddr, validatorVotingContractAddr); err != nil {
 		return sdkerrors.Wrap(err, "set new instance admin")
 	}
@@ -291,6 +310,34 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 	if !ok {
 		panic("no contract with delegator privileges")
+	}
+	return nil
+}
+
+func addToTrustedCircle(ctx sdk.Context, contractAddr sdk.AccAddress, tk twasmKeeper, members []string, sender sdk.AccAddress, deposit sdk.Coin) error {
+	tcAdapter := contract.NewTrustedCircleContractAdapter(contractAddr, tk, nil)
+	err := tcAdapter.AddVotingMembersProposal(ctx, members, sender)
+	if err != nil {
+		return sdkerrors.Wrap(err, "add voting members proposal")
+	}
+	latest, err := tcAdapter.LatestProposal(ctx)
+	if err != nil {
+		return sdkerrors.Wrap(err, "query latest proposal")
+	}
+	err = tcAdapter.ExecuteProposal(ctx, latest.ID, sender)
+	if err != nil {
+		return sdkerrors.Wrap(err, "execute proposal")
+	}
+	// deposit escrow
+	for _, member := range members {
+		addr, err := sdk.AccAddressFromBech32(member)
+		if err != nil {
+			return sdkerrors.Wrapf(err, "%s member", member)
+		}
+		err = tcAdapter.DepositEscrow(ctx, deposit, addr)
+		if err != nil {
+			return sdkerrors.Wrapf(err, "%s deposit escrow", addr)
+		}
 	}
 	return nil
 }
@@ -339,6 +386,34 @@ func newOCGovProposalsInitMsg(gs types.GenesisState, ocContract, engagementContr
 		ValsetContractAddress:     valsetContract.String(),
 		EngagementContractAddress: engagementContract.String(),
 		VotingRules:               toContractVotingRules(cfg.VotingRules),
+	}
+}
+
+// build instantiate message for the trusted circle contract that contains the arbiter pool
+func newAPTrustedCircleInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
+	cfg := gs.ArbiterPoolContractConfig
+	return contract.TrustedCircleInitMsg{
+		Name:                      cfg.Name,
+		EscrowAmount:              cfg.EscrowAmount.Amount,
+		VotingPeriod:              cfg.VotingRules.VotingPeriod,
+		Quorum:                    *contract.DecimalFromPercentage(cfg.VotingRules.Quorum),
+		Threshold:                 *contract.DecimalFromPercentage(cfg.VotingRules.Threshold),
+		AllowEndEarly:             cfg.VotingRules.AllowEndEarly,
+		InitialMembers:            []string{}, // sender is added to AP by default in the contract
+		DenyList:                  cfg.DenyListContractAddress,
+		EditTrustedCircleDisabled: true,
+		RewardDenom:               cfg.EscrowAmount.Denom,
+	}
+}
+
+// build instantiate message for AP contract
+func newArbiterPoolVotingInitMsg(gs types.GenesisState, apContract sdk.AccAddress) contract.APVotingInitMsg {
+	cfg := gs.ArbiterPoolContractConfig
+	return contract.APVotingInitMsg{
+		GroupContractAddress: apContract.String(),
+		VotingRules:          toContractVotingRules(cfg.VotingRules),
+		WaitingPeriod:        uint64(cfg.WaitingPeriod.Seconds()),
+		DisputeCost:          cfg.DisputeCost,
 	}
 }
 

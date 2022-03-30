@@ -20,6 +20,7 @@
     - [PoEContractType](#confio.poe.v1beta1.PoEContractType)
   
 - [confio/poe/v1beta1/genesis.proto](#confio/poe/v1beta1/genesis.proto)
+    - [ArbiterPoolContractConfig](#confio.poe.v1beta1.ArbiterPoolContractConfig)
     - [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig)
     - [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig)
     - [GenesisState](#confio.poe.v1beta1.GenesisState)
@@ -222,6 +223,8 @@ PoEContractType type of PoE contract
 | OVERSIGHT_COMMUNITY_PROPOSALS | 7 |  |
 | COMMUNITY_POOL | 8 |  |
 | VALIDATOR_VOTING | 9 |  |
+| ARBITER_POOL | 10 |  |
+| ARBITER_POOL_VOTING | 11 |  |
 
 
  <!-- end enums -->
@@ -236,6 +239,26 @@ PoEContractType type of PoE contract
 <p align="right"><a href="#top">Top</a></p>
 
 ## confio/poe/v1beta1/genesis.proto
+
+
+
+<a name="confio.poe.v1beta1.ArbiterPoolContractConfig"></a>
+
+### ArbiterPoolContractConfig
+ArbiterPoolContractConfig initial setup config for the trusted circle
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `name` | [string](#string) |  | Name of TRUSTED_CIRCLE |
+| `escrow_amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | EscrowAmount The required escrow amount, in the default denom (utgd) |
+| `voting_rules` | [VotingRules](#confio.poe.v1beta1.VotingRules) |  | VotingRules rules for the tally |
+| `deny_list_contract_address` | [string](#string) |  | DenyListContractAddress is an optional cw4 contract with list of addresses denied to be part of TrustedCircle |
+| `dispute_cost` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | DisputeCost The required dispute amount, in the default denom (utgd) |
+| `waiting_period` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
+
+
+
 
 
 
@@ -291,6 +314,8 @@ GenesisState - initial state of module
 | `community_pool_contract_config` | [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig) |  |  |
 | `validator_voting_contract_config` | [ValidatorVotingContractConfig](#confio.poe.v1beta1.ValidatorVotingContractConfig) |  |  |
 | `oversightCommunityMembers` | [string](#string) | repeated |  |
+| `arbiterPoolMembers` | [string](#string) | repeated |  |
+| `arbiter_pool_contract_config` | [ArbiterPoolContractConfig](#confio.poe.v1beta1.ArbiterPoolContractConfig) |  |  |
 
 
 

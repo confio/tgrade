@@ -67,6 +67,17 @@ func DefaultGenesisState() GenesisState {
 				AllowEndEarly: true,
 			},
 		},
+		ArbiterPoolContractConfig: &ArbiterPoolContractConfig{
+			Name:         "Arbiter Pool",
+			EscrowAmount: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+			VotingRules: VotingRules{
+				VotingPeriod:  30,
+				Quorum:        sdk.NewDec(51),
+				Threshold:     sdk.NewDec(55),
+				AllowEndEarly: true,
+			},
+			DisputeCost: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+		},
 		SystemAdminAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 		Params:             DefaultParams(),
 	}
@@ -112,6 +123,12 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		}
 		if err := g.OversightCommitteeContractConfig.ValidateBasic(); err != nil {
 			return sdkerrors.Wrap(err, "oversight committee config")
+		}
+		if g.ArbiterPoolContractConfig == nil {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty arbiter pool contract config")
+		}
+		if err := g.ArbiterPoolContractConfig.ValidateBasic(); err != nil {
+			return sdkerrors.Wrap(err, "arbiter pool config")
 		}
 		if g.OversightCommitteeContractConfig.EscrowAmount.Denom != g.BondDenom {
 			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "escrow not in bonded denom")
@@ -212,6 +229,21 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		uniqueOCMembers[member] = struct{}{}
 	}
 
+	if len(g.ArbiterPoolMembers) == 0 {
+		return sdkerrors.Wrapf(wasmtypes.ErrEmpty, "arbiter pool members")
+	}
+
+	uniqueAPMembers := make(map[string]struct{}, len(g.ArbiterPoolMembers))
+	for _, member := range g.ArbiterPoolMembers {
+		if _, err := sdk.AccAddressFromBech32(member); err != nil {
+			return sdkerrors.Wrap(err, "ap member address")
+		}
+		if _, exists := uniqueAPMembers[member]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "ap member: %s", member)
+		}
+		uniqueAPMembers[member] = struct{}{}
+	}
+
 	return nil
 }
 
@@ -270,7 +302,7 @@ func (c StakeContractConfig) ValidateBasic() error {
 		return sdkerrors.Wrap(ErrEmpty, "unbonding period")
 	}
 	if time.Duration(uint64(c.UnbondingPeriod.Seconds()))*time.Second != c.UnbondingPeriod {
-		return sdkerrors.Wrap(ErrInvalid, "unbonding period not convertable to seconds")
+		return sdkerrors.Wrap(ErrInvalid, "unbonding period not convertible to seconds")
 	}
 	return nil
 }
@@ -355,5 +387,29 @@ func (v VotingRules) ValidateBasic() error {
 		return sdkerrors.Wrap(ErrInvalid, "threshold must be <=100")
 	}
 
+	return nil
+}
+
+// ValidateBasic ensure basic constraints
+func (c ArbiterPoolContractConfig) ValidateBasic() error {
+	if l := len(c.Name); l < minNameLength {
+		return sdkerrors.Wrap(ErrEmpty, "name")
+	} else if l > maxNameLength {
+		return sdkerrors.Wrapf(ErrInvalid, "name length > %d", maxNameLength)
+	}
+	if c.EscrowAmount.Amount.LTE(sdk.NewInt(minEscrowAmount)) {
+		return sdkerrors.Wrapf(ErrInvalid, "escrow amount must be greater %d", minEscrowAmount)
+	}
+	if err := c.VotingRules.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "voting rules")
+	}
+	if c.DenyListContractAddress != "" {
+		if _, err := sdk.AccAddressFromBech32(c.DenyListContractAddress); err != nil {
+			return sdkerrors.Wrap(ErrInvalid, "deny list contract address")
+		}
+	}
+	if time.Duration(uint64(c.WaitingPeriod.Seconds()))*time.Second != c.WaitingPeriod {
+		return sdkerrors.Wrap(ErrInvalid, "waiting period not convertible to seconds")
+	}
 	return nil
 }

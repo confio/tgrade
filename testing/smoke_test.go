@@ -36,8 +36,8 @@ func TestSmokeTest(t *testing.T) {
 	codes := gjson.Get(qResult, "code_infos.#.code_id").Array()
 	t.Log("got query result", qResult)
 
-	const poeContractCount = 9
-	const poeCodeCount = 8
+	const poeContractCount = 11
+	const poeCodeCount = 9
 	require.Len(t, codes, poeCodeCount+1, qResult)
 	require.Equal(t, int64(poeCodeCount+1), codes[poeCodeCount].Int(), "sequential ids")
 	codeID := poeCodeCount + 1

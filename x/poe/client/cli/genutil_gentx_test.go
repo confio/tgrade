@@ -157,6 +157,7 @@ func setupSystem(t *testing.T, workDir string, encodingConfig appparams.Encoding
 		Points:  1,
 	})
 	state.OversightCommunityMembers = []string{types.RandomAccAddress().String()}
+	state.ArbiterPoolMembers = []string{types.RandomAccAddress().String()}
 
 	types.SetGenesisStateInAppState(encodingConfig.Codec, gs, state)
 	// with bank setup

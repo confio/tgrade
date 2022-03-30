@@ -147,6 +147,7 @@ func InitTestnet(
 		genAccounts      []authtypes.GenesisAccount
 		genBalances      []banktypes.Balance
 		genOCMemberAddrs []string
+		genAPMemberAddrs []string
 		genFiles         []string
 	)
 	const (
@@ -240,6 +241,17 @@ func InitTestnet(
 				addGenAccount(memberAddr, sdk.NewCoin(stakingToken, sdk.NewInt(1_000_000_000)))
 				genOCMemberAddrs = append(genOCMemberAddrs, memberAddr.String())
 			}
+
+			// add a number of AP members
+			for i := 0; i < 2; i++ {
+				memberAddr, _, err := server.GenerateSaveCoinKey(kb, fmt.Sprintf("ap-member-%d", i+1), true, algo)
+				if err != nil {
+					_ = os.RemoveAll(outputDir)
+					return err
+				}
+				addGenAccount(memberAddr, sdk.NewCoin(stakingToken, sdk.NewInt(1_000_000_000)))
+				genAPMemberAddrs = append(genAPMemberAddrs, memberAddr.String())
+			}
 		}
 
 		info := map[string]string{"secret": secret}
@@ -303,7 +315,7 @@ func InitTestnet(
 
 		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appConfig)
 	}
-	if err := initGenFiles(clientCtx, mbm, chainID, genAccounts, genBalances, genFiles, numValidators, adminAddr, genOCMemberAddrs); err != nil {
+	if err := initGenFiles(clientCtx, mbm, chainID, genAccounts, genBalances, genFiles, numValidators, adminAddr, genOCMemberAddrs, genAPMemberAddrs); err != nil {
 		return err
 	}
 
@@ -330,6 +342,7 @@ func initGenFiles(
 	numValidators int,
 	admin sdk.AccAddress,
 	ocMemberAddrs []string,
+	apMemberAddrs []string,
 ) error {
 	appGenState := mbm.DefaultGenesis(clientCtx.Codec)
 
@@ -367,6 +380,7 @@ func initGenFiles(
 	}
 	poeGenesisState.SystemAdminAddress = admin.String()
 	poeGenesisState.OversightCommunityMembers = ocMemberAddrs
+	poeGenesisState.ArbiterPoolMembers = apMemberAddrs
 	poetypes.SetGenesisStateInAppState(clientCtx.Codec, appGenState, poeGenesisState)
 
 	appGenStateJSON, err := json.MarshalIndent(appGenState, "", "  ")

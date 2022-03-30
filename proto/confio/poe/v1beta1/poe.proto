@@ -34,6 +34,10 @@ enum PoEContractType {
       [ (gogoproto.enumvalue_customname) = "PoEContractTypeCommunityPool" ];
   VALIDATOR_VOTING = 9
       [ (gogoproto.enumvalue_customname) = "PoEContractTypeValidatorVoting" ];
+  ARBITER_POOL = 10
+      [ (gogoproto.enumvalue_customname) = "PoEContractTypeArbiterPool" ];
+  ARBITER_POOL_VOTING = 11
+      [ (gogoproto.enumvalue_customname) = "PoEContractTypeArbiterPoolVoting" ];
 }
 
 // Params defines the parameters for the PoE module.
