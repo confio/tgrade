@@ -223,40 +223,44 @@ func InitTestnet(
 			_ = os.RemoveAll(outputDir)
 			return err
 		}
-		if i == 0 { // generate new key for system admin in node0 keychain. This keychain is used by system tests
+		seeds := make(map[string]string)
+		seeds["secret"] = secret // for sdk backward compatibility
+		if i == 0 {              // generate new key for system admin in node0 keychain. This keychain is used by system tests
 			// PoE setup
-			adminAddr, _, err = server.GenerateSaveCoinKey(kb, "systemadmin", true, algo)
+			adminAddr, secret, err = server.GenerateSaveCoinKey(kb, "systemadmin", true, algo)
 			if err != nil {
 				_ = os.RemoveAll(outputDir)
 				return err
 			}
+			seeds[adminAddr.String()] = secret
+
 			addGenAccount(adminAddr, sdk.NewCoin(stakingToken, sdk.NewInt(100_000_000_000)))
 			// add a number of OC members
 			for i := 0; i < 3; i++ {
-				memberAddr, _, err := server.GenerateSaveCoinKey(kb, fmt.Sprintf("oc-member-%d", i+1), true, algo)
+				memberAddr, secret, err := server.GenerateSaveCoinKey(kb, fmt.Sprintf("oc-member-%d", i+1), true, algo)
 				if err != nil {
 					_ = os.RemoveAll(outputDir)
 					return err
 				}
 				addGenAccount(memberAddr, sdk.NewCoin(stakingToken, sdk.NewInt(1_000_000_000)))
 				genOCMemberAddrs = append(genOCMemberAddrs, memberAddr.String())
+				seeds[memberAddr.String()] = secret
 			}
 
 			// add a number of AP members
 			for i := 0; i < 2; i++ {
-				memberAddr, _, err := server.GenerateSaveCoinKey(kb, fmt.Sprintf("ap-member-%d", i+1), true, algo)
+				memberAddr, secret, err := server.GenerateSaveCoinKey(kb, fmt.Sprintf("ap-member-%d", i+1), true, algo)
 				if err != nil {
 					_ = os.RemoveAll(outputDir)
 					return err
 				}
 				addGenAccount(memberAddr, sdk.NewCoin(stakingToken, sdk.NewInt(1_000_000_000)))
 				genAPMemberAddrs = append(genAPMemberAddrs, memberAddr.String())
+				seeds[memberAddr.String()] = secret
 			}
 		}
 
-		info := map[string]string{"secret": secret}
-
-		cliPrint, err := json.Marshal(info)
+		cliPrint, err := json.Marshal(seeds)
 		if err != nil {
 			return err
 		}
