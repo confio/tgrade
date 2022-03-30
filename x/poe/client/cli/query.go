@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -44,7 +43,7 @@ func GetCmdShowPoEContract() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "contract-address <contract_type>",
 		Short:   "Show contract address for given contract type",
-		Long:    fmt.Sprintf("Show contract address for PoE type [%s]", allPoEContractTypes()),
+		Long:    fmt.Sprintf("Show contract address for PoE type [%s]", allPoEContractTypeNames()),
 		Aliases: []string{"ca"},
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -185,16 +184,14 @@ $ %s query poe validator %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 	return cmd
 }
 
-func allPoEContractTypes() string {
-	r := make([]string, 0, len(types.PoEContractType_name)-1)
-	for _, v := range types.PoEContractType_name {
-		if v == types.PoEContractTypeUndefined.String() {
-			continue
-		}
-		r = append(r, v)
-	}
-	sort.Strings(r)
-	return strings.Join(r, ", ")
+// returns comma separated list of all poe contract type names
+func allPoEContractTypeNames() string {
+	var names []string
+	types.IteratePoEContractTypes(func(tp types.PoEContractType) bool {
+		names = append(names, tp.String())
+		return false
+	})
+	return strings.Join(names, ", ")
 }
 
 // GetCmdQueryHistoricalInfo implements the historical info query command
