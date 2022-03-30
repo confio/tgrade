@@ -103,7 +103,7 @@ func TestValidatorDoubleSign(t *testing.T) {
 
 	require.True(t, validatorGotBytzantine)
 	rsp := cli.QuerySmart(valsetContractAddr, fmt.Sprintf(`{"validator":{"operator": %q}}`, byzantineOperatorAddr))
-	assert.Equal(t, `{"forever":{}}`, gjson.Get(rsp, "data.validator.jailed_until").String())
+	assert.Equal(t, `{"forever":{}}`, gjson.Get(rsp, "data.validator.jailed_until.end").String())
 	// and not in tendermint
 	valResult, found := cli.IsInTendermintValset(validatorPubKey)
 	assert.False(t, found, "not in validator set : %#v", valResult)
