@@ -2,6 +2,7 @@ package contract
 
 import (
 	"encoding/json"
+	"sort"
 
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 
@@ -235,7 +236,14 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 			return nil
 		},
 	}
-	for field, unmarshaler := range customUnmarshalers {
+	// make deterministic
+	fieldNames := make([]string, 0, len(customUnmarshalers))
+	for k := range customUnmarshalers {
+		fieldNames = append(fieldNames, k)
+	}
+	sort.Strings(fieldNames)
+	for _, field := range fieldNames {
+		unmarshaler := customUnmarshalers[field]
 		if bz, ok := raws[field]; ok {
 			if err := unmarshaler(bz); err != nil {
 				return sdkerrors.Wrapf(sdkerrors.ErrJSONUnmarshal, "proposal: %q: %s", field, err.Error())

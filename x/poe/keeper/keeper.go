@@ -47,17 +47,16 @@ func NewKeeper(
 	}
 }
 
+// SetPoEContractAddress stores the contract address for the given type. If one exists already then it is overwritten.
 func (k Keeper) SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(poeContractAddressKey(ctype), contractAddr.Bytes())
 }
 
+// GetPoEContractAddress get the stored contract address for the given type
 func (k Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
-	if ctype == types.PoEContractTypeUndefined {
-		return nil, sdkerrors.Wrap(wasmtypes.ErrInvalid, "contract type")
-	}
-	if _, ok := types.PoEContractType_name[int32(ctype)]; !ok {
-		return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract type")
+	if err := ctype.ValidateBasic(); err != nil {
+		return nil, sdkerrors.Wrap(err, "contract type")
 	}
 	store := ctx.KVStore(k.storeKey)
 	addr := store.Get(poeContractAddressKey(ctype))
@@ -67,14 +66,16 @@ func (k Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractTy
 	return addr, nil
 }
 
+// IteratePoEContracts for each persisted PoE contract the given callback is called.
+// When the callback returns true, the loop is aborted early.
 func (k Keeper) IteratePoEContracts(ctx sdk.Context, cb func(types.PoEContractType, sdk.AccAddress) bool) {
 	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), types.ContractPrefix)
 	iter := prefixStore.Iterator(nil, nil)
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
 		// cb returns true to stop early
-		ctype := types.PoEContractType_value[string(iter.Key())]
-		if cb(types.PoEContractType(ctype), iter.Value()) {
+		ctype := types.PoEContractTypeFrom(string(iter.Key()))
+		if cb(ctype, iter.Value()) {
 			return
 		}
 	}

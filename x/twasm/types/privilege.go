@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
@@ -81,6 +82,7 @@ func AllPrivilegeTypeNames() []string {
 	for _, v := range callbackTypeToString {
 		result = append(result, v)
 	}
+	sort.Strings(result)
 	return result
 }
 

@@ -344,21 +344,19 @@ func addToTrustedCircle(ctx sdk.Context, contractAddr sdk.AccAddress, tk twasmKe
 
 // set new migrator for all PoE contracts
 func setAllPoEContractsInstanceMigrators(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, poeKeeper poeKeeper, oldAdminAddr, newAdminAddr sdk.AccAddress) error {
-	// set new admin for all contracts
-	for name, v := range types.PoEContractType_value {
-		contractType := types.PoEContractType(v)
-		if contractType == types.PoEContractTypeUndefined {
-			continue
-		}
-		addr, err := poeKeeper.GetPoEContractAddress(ctx, contractType)
+	var rspErr error
+	types.IteratePoEContractTypes(func(tp types.PoEContractType) bool {
+		addr, err := poeKeeper.GetPoEContractAddress(ctx, tp)
 		if err != nil {
-			return sdkerrors.Wrapf(err, "failed to find contract address for %s", name)
+			rspErr = sdkerrors.Wrapf(err, "failed to find contract address for %s", tp.String())
+			return true
 		}
 		if err := k.UpdateContractAdmin(ctx, addr, oldAdminAddr, newAdminAddr); err != nil {
-			return sdkerrors.Wrapf(err, "%s contract", name)
+			rspErr = sdkerrors.Wrapf(err, "%s contract", tp.String())
 		}
-	}
-	return nil
+		return rspErr != nil
+	})
+	return rspErr
 }
 
 // build instantiate message for the trusted circle contract that contains the oversight committee
