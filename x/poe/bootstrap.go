@@ -349,6 +349,7 @@ func setAllPoEContractsInstanceMigrators(ctx sdk.Context, k wasmtypes.ContractOp
 		addr, err := poeKeeper.GetPoEContractAddress(ctx, tp)
 		if err != nil {
 			rspErr = sdkerrors.Wrapf(err, "failed to find contract address for %s", tp.String())
+			return true
 		}
 		if err := k.UpdateContractAdmin(ctx, addr, oldAdminAddr, newAdminAddr); err != nil {
 			rspErr = sdkerrors.Wrapf(err, "%s contract", tp.String())
