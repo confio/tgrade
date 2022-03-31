@@ -237,16 +237,24 @@ func TestJailUnjail(t *testing.T) {
 		expJailingPeriod contract.JailingPeriod
 	}{
 		"jail lock expired": {
-			jailDuration:     nextBlockDuration,
-			actor:            op1Addr,
-			expJailingPeriod: contract.JailingPeriod{Until: ctx.BlockTime().Add(nextBlockDuration).UTC()},
-			expErrUnjail:     true,
+			jailDuration: nextBlockDuration,
+			actor:        op1Addr,
+			expJailingPeriod: contract.JailingPeriod{
+				Start: ctx.BlockTime().UTC(),
+				End: contract.JailingEnd{
+					Until: ctx.BlockTime().Add(nextBlockDuration).UTC()},
+			},
+			expErrUnjail: true,
 		},
 		"forever": {
-			jailForever:      true,
-			actor:            op1Addr,
-			expJailingPeriod: contract.JailingPeriod{Forever: true},
-			expErrUnjail:     false,
+			jailForever: true,
+			actor:       op1Addr,
+			expJailingPeriod: contract.JailingPeriod{
+				Start: ctx.BlockTime().UTC(),
+				End: contract.JailingEnd{
+					Forever: true},
+			},
+			expErrUnjail: false,
 		},
 	}
 	for name, spec := range specs {

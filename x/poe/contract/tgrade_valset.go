@@ -199,27 +199,44 @@ type OperatorResponse struct {
 }
 
 type JailingPeriod struct {
+	Start time.Time  `json:"start,omitempty"`
+	End   JailingEnd `json:"end,omitempty"`
+}
+
+type JailingEnd struct {
 	Forever bool      `json:"forever,omitempty"`
 	Until   time.Time `json:"until,omitempty"`
 }
 
 func (j *JailingPeriod) UnmarshalJSON(data []byte) error {
 	var r struct {
-		Until   string    `json:"until,omitempty"`
-		Forever *struct{} `json:"forever,omitempty"`
+		Start string `json:"start,omitempty"`
+		End   struct {
+			Until   string    `json:"until,omitempty"`
+			Forever *struct{} `json:"forever,omitempty"`
+		} `json:"end,omitempty"`
 	}
 	if err := json.Unmarshal(data, &r); err != nil {
 		return err
 	}
-	switch {
-	case r.Forever != nil:
-		j.Forever = true
-	case r.Until != "":
-		until, err := strconv.ParseInt(r.Until, 10, 64)
+
+	if r.Start != "" {
+		start, err := strconv.ParseInt(r.Start, 10, 64)
 		if err != nil {
 			return err
 		}
-		j.Until = time.Unix(0, until).UTC()
+		j.Start = time.Unix(0, start).UTC()
+	}
+
+	switch {
+	case r.End.Forever != nil:
+		j.End.Forever = true
+	case r.End.Until != "":
+		until, err := strconv.ParseInt(r.End.Until, 10, 64)
+		if err != nil {
+			return err
+		}
+		j.End.Until = time.Unix(0, until).UTC()
 	default:
 		return errors.New("unknown json data: ")
 	}
