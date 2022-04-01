@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	authvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"net"
 	"os"
 	"path/filepath"
@@ -47,8 +48,9 @@ var (
 	flagNodeDaemonHome    = "node-daemon-home"
 	flagStartingIPAddress = "starting-ip-address"
 	// custom flags
-	flagCommitTimeout = "commit-timeout"
-	flagSingleHost    = "single-host"
+	flagCommitTimeout            = "commit-timeout"
+	flagSingleHost               = "single-host"
+	flagVestingValidatorAccounts = "vesting-validators"
 )
 
 // get cmd to initialize all files for tendermint testnet and application
@@ -82,6 +84,7 @@ Example:
 			startingIPAddress, _ := cmd.Flags().GetString(flagStartingIPAddress)
 			numValidators, _ := cmd.Flags().GetInt(flagNumValidators)
 			algo, _ := cmd.Flags().GetString(flags.FlagKeyAlgorithm)
+			vestingVals, _ := cmd.Flags().GetBool(flagVestingValidatorAccounts)
 
 			config.Consensus.TimeoutCommit, err = cmd.Flags().GetDuration(flagCommitTimeout)
 			if err != nil {
@@ -95,7 +98,7 @@ Example:
 			return InitTestnet(
 				clientCtx, cmd, config, mbm, genBalIterator, outputDir, chainID, minGasPrices,
 				nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algo, numValidators,
-				singleMachine,
+				singleMachine, vestingVals,
 			)
 		},
 	}
@@ -112,6 +115,7 @@ Example:
 	// tgrade
 	cmd.Flags().Duration(flagCommitTimeout, 5*time.Second, "Time to wait after a block commit before starting on the new height")
 	cmd.Flags().Bool(flagSingleHost, false, "Cluster runs on a single host machine with different ports")
+	cmd.Flags().Bool(flagVestingValidatorAccounts, false, "validators are setup with vesting accounts")
 	return cmd
 }
 
@@ -125,7 +129,8 @@ func InitTestnet(
 	mbm module.BasicManager,
 	genBalIterator banktypes.GenesisBalancesIterator,
 	outputDir, chainID, minGasPrices, nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algoStr string,
-	numValidators int, singleMachine bool,
+	numValidators int,
+	singleMachine, vestingVals bool,
 ) error {
 
 	if chainID == "" {
@@ -161,6 +166,17 @@ func InitTestnet(
 	addGenAccount := func(addr sdk.AccAddress, coins ...sdk.Coin) {
 		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: sdk.Coins(coins).Sort()})
 		genAccounts = append(genAccounts, authtypes.NewBaseAccount(addr, nil, 0, 0))
+	}
+	now := time.Now()
+	vestingStart := now.Add(1 * 30 * 24 * time.Hour).Unix()
+	vestingEnd := now.Add(18 * 30 * 24 * time.Hour).Unix()
+
+	addGenVestingAccount := func(addr sdk.AccAddress, vestingAmt sdk.Coin, liquidAmts ...sdk.Coin) {
+		genBalances = append(genBalances, banktypes.Balance{Address: addr.String(), Coins: sdk.NewCoins(vestingAmt).Add(liquidAmts...).Sort()})
+		baseAccount := authtypes.NewBaseAccount(addr, nil, 0, 0)
+		baseVestingAccount := authvesting.NewBaseVestingAccount(baseAccount, sdk.NewCoins(vestingAmt), vestingEnd)
+		vestingAccount := authvesting.NewContinuousVestingAccountRaw(baseVestingAccount, vestingStart)
+		genAccounts = append(genAccounts, vestingAccount)
 	}
 
 	inBuf := bufio.NewReader(cmd.InOrStdin())
@@ -270,19 +286,33 @@ func InitTestnet(
 			return err
 		}
 
-		accTokens := sdk.TokensFromConsensusPower(1000, sdk.DefaultPowerReduction)
-		accStakingTokens := sdk.TokensFromConsensusPower(500, sdk.DefaultPowerReduction)
-		addGenAccount(addr,
-			sdk.NewCoin(fmt.Sprintf("%stoken", nodeDirName), accTokens),
-			sdk.NewCoin(stakingToken, accStakingTokens))
+		// setup account and balances
+		liquidTokens := sdk.TokensFromConsensusPower(1000, sdk.DefaultPowerReduction)
+		vestingTokens := sdk.TokensFromConsensusPower(600, sdk.DefaultPowerReduction)
+		valTokens := sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction) // individual tokens per validator
+		liquidStakingAmount, vestingStakingAmount := sdk.ZeroInt(), sdk.ZeroInt()
+		if vestingVals {
+			addGenVestingAccount(addr,
+				sdk.NewCoin(stakingToken, vestingTokens),
+				// liquid tokens
+				sdk.NewCoin(fmt.Sprintf("%stoken", nodeDirName), valTokens),
+				sdk.NewCoin(stakingToken, liquidTokens),
+			)
+			vestingStakingAmount = sdk.TokensFromConsensusPower(600, sdk.DefaultPowerReduction)
+		} else {
+			addGenAccount(addr,
+				sdk.NewCoin(fmt.Sprintf("%stoken", nodeDirName), valTokens),
+				sdk.NewCoin(stakingToken, liquidTokens.Add(vestingTokens)))
+			liquidStakingAmount = sdk.TokensFromConsensusPower(700, sdk.DefaultPowerReduction)
+		}
 
-		valTokens := sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction)
+		// create gentx
 		moniker := fmt.Sprintf("moniker-%d", i)
 		createValMsg, err := poetypes.NewMsgCreateValidator(
 			addr,
 			valPubKeys[i],
-			sdk.NewCoin(stakingToken, valTokens),
-			sdk.NewCoin(stakingToken, sdk.ZeroInt()),
+			sdk.NewCoin(stakingToken, liquidStakingAmount),
+			sdk.NewCoin(stakingToken, vestingStakingAmount),
 			// moniker must be at least 3 chars. let's pad it to ensure
 			stakingtypes.NewDescription(moniker, "", "", "", ""),
 		)
