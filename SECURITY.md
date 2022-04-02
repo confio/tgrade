@@ -7,4 +7,4 @@ This is alpha software, do not run on a production system.
 
 ## Reporting a Vulnerability
 
-Please report any security issues via email to security@confio.gmbh. 
+Please report any security issues via email to [security@confio.gmbh](mailto:security@confio.gmbh). 
