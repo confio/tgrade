@@ -3,7 +3,7 @@ version: 2.1
 executors:
   golang:
     docker:
-      # https://hub.docker.com/r/circleci/golang/
+      # https://circleci.com/developer/images/image/cimg/go
       - image: cimg/go:1.18
         user: root
     # user: root # for local testing: https://github.com/CircleCI-Public/circleci-cli/issues/291
