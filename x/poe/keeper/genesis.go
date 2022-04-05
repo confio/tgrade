@@ -59,7 +59,7 @@ func DeliverGenTxs(genTxs []json.RawMessage, deliverTx DeliverTxFn, txEncodingCo
 
 		res := deliverTx(abci.RequestDeliverTx{Tx: bz})
 		if !res.IsOK() {
-			return sdkerrors.Wrap(types.ErrDeliverGenTXFailed, res.Log)
+			return sdkerrors.Wrapf(types.ErrDeliverGenTXFailed, "gentx at position %d: %s", i, res.Log)
 		}
 	}
 	return nil
