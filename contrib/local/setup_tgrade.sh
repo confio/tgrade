@@ -46,6 +46,8 @@ done
 content=$(cat "$HOME"/.tgrade/config/genesis.json | jq  ".app_state.poe.engagement |= . + [{\"address\":\"$(echo "$PASSWORD" | tgrade keys show -a validator)\",\"points\":\"100\"}]")
 # set oversight community
 content=$(echo "$content" | jq  ".app_state.poe.oversightCommunityMembers |= . + [\"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"]")
+# set arbiter pool
+content=$(echo "$content" | jq  ".app_state.poe.arbiterPoolMembers |= . + [\"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"]")
 # set system admin
 content=$(echo "$content" | jq  ".app_state.poe.system_admin_address |= \"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"")
 # set min fee
