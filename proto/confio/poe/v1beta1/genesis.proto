@@ -122,6 +122,14 @@ message ValsetContractConfig {
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
   ];
+
+  // When a validator joins the valset, verify they sign the first block since
+  // joining or jail them for a period otherwise.
+  //
+  // The verification happens every time the validator becomes an active
+  // validator, including when they are unjailed or when they just gain enough
+  // power to participate.
+  bool verify_validators = 12;
 }
 
 // EngagementContractConfig initial setup config

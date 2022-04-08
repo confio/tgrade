@@ -27,8 +27,6 @@ import (
 var emptyWasmOpts []wasm.Option = nil
 
 func TestTgradeExport(t *testing.T) {
-	t.Skip("Alex, export is not implemented")
-
 	db := db.NewMemDB()
 	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)
 	genesisState := NewDefaultGenesisState()
@@ -37,7 +35,6 @@ func TestTgradeExport(t *testing.T) {
 
 	stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
 	require.NoError(t, err)
-
 	// Initialize the chain
 	gapp.InitChain(
 		abci.RequestInitChain{

@@ -19,7 +19,7 @@ func TestGenesisValidate(t *testing.T) {
 		},
 		"wasm invalid": {
 			state: GenesisStateFixture(t, func(state *GenesisState) {
-				state.Wasm.Codes[0].CodeID = 0
+				state.Codes[0].CodeID = 0
 			}),
 			expErr: true,
 		},
@@ -44,7 +44,7 @@ func TestGenesisValidate(t *testing.T) {
 		"invalid extension": {
 			state: GenesisStateFixture(t, func(state *GenesisState) {
 				var invalidType govtypes.Proposal // any protobuf type
-				err := state.Wasm.Contracts[0].ContractInfo.SetExtension(&invalidType)
+				err := state.Contracts[0].ContractInfo.SetExtension(&invalidType)
 				require.NoError(t, err)
 			}),
 			expErr: true,
@@ -52,21 +52,21 @@ func TestGenesisValidate(t *testing.T) {
 		"unique pinned codeIDs": {
 			state: GenesisStateFixture(t, func(state *GenesisState) {
 				state.PinnedCodeIDs = []uint64{1, 2, 3}
-				state.Wasm.Codes = []types.Code{newCode(1), newCode(2), newCode(3), newCode(4)}
+				state.Codes = []types.Code{newCode(1), newCode(2), newCode(3), newCode(4)}
 			}),
 			expErr: false,
 		},
 		"duplicate pinned codeIDs": {
 			state: GenesisStateFixture(t, func(state *GenesisState) {
 				state.PinnedCodeIDs = []uint64{1, 2, 3, 3}
-				state.Wasm.Codes = []types.Code{newCode(1), newCode(2), newCode(3), newCode(4)}
+				state.Codes = []types.Code{newCode(1), newCode(2), newCode(3), newCode(4)}
 			}),
 			expErr: true,
 		},
 		"pinned codeIDs do not exist in genesis codeIDs": {
 			state: GenesisStateFixture(t, func(state *GenesisState) {
 				state.PinnedCodeIDs = []uint64{1, 2, 3}
-				state.Wasm.Codes = []types.Code{newCode(1), newCode(2), newCode(4), newCode(5)}
+				state.Codes = []types.Code{newCode(1), newCode(2), newCode(4), newCode(5)}
 			}),
 			expErr: true,
 		},
@@ -74,7 +74,7 @@ func TestGenesisValidate(t *testing.T) {
 			state: GenesisStateFixture(t, func(state *GenesisState) {
 				addresses := []string{RandomBech32Address(t), RandomBech32Address(t), RandomBech32Address(t)}
 				state.PrivilegedContractAddresses = addresses
-				state.Wasm.Contracts = []types.Contract{newContract(addresses[0]), newContract(addresses[1]), newContract(addresses[2])}
+				state.Contracts = []Contract{newContract(t, addresses[0]), newContract(t, addresses[1]), newContract(t, addresses[2])}
 			}),
 			expErr: false,
 		},
@@ -82,7 +82,7 @@ func TestGenesisValidate(t *testing.T) {
 			state: GenesisStateFixture(t, func(state *GenesisState) {
 				addresses := []string{RandomBech32Address(t), RandomBech32Address(t), RandomBech32Address(t)}
 				state.PrivilegedContractAddresses = addresses
-				state.Wasm.Contracts = []types.Contract{newContract(addresses[0]), newContract(addresses[1]), newContract(RandomBech32Address(t))}
+				state.Contracts = []Contract{newContract(t, addresses[0]), newContract(t, addresses[1]), newContract(t, RandomBech32Address(t))}
 			}),
 			expErr: true,
 		},
@@ -108,8 +108,8 @@ func newCode(codeID uint64) types.Code {
 }
 
 // newContract returns Contract with custom address
-func newContract(addr string) types.Contract {
-	contract := types.ContractFixture(func(c *types.Contract) {
+func newContract(t *testing.T, addr string) Contract {
+	contract := ContractFixture(t, func(c *Contract) {
 		c.ContractAddress = addr
 	})
 	return contract

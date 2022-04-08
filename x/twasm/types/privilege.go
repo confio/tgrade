@@ -39,7 +39,9 @@ var (
 	// PrivilegeDelegator is a permission to let accounts send tokens via delegation to this contract. Can be used by vesting accounts
 	PrivilegeDelegator = registerCallbackType(0x7, "delegator", false)
 
-	// PrivilegeStateExporterImporter is a permission to allow contracts to export / import their state
+	// PrivilegeStateExporterImporter is a permission to let contracts manage their state export on a dump and genesis import (in non seed mode)
+	// The contract receives a sudo message of type export where the result is stored in genesis. For the import path the json object containing state
+	// is passed to the contract via sudo import method.
 	PrivilegeStateExporterImporter = registerCallbackType(0x8, "state_exporter_importer", false)
 )
 
