@@ -27,11 +27,13 @@ func InitGenesis(
 	genesisState types.GenesisState,
 	txEncodingConfig client.TxEncodingConfig,
 ) error {
-	// todo (Alex): set contract addresses when started from dump
-	//for _, v := range genesisState.Contracts {
-	//	addr, _ := sdk.AccAddressFromBech32(v.Address)
-	//	keeper.SetPoEContractAddress(ctx, v.ContractType, addr)
-	//}
+	for _, v := range genesisState.Contracts {
+		addr, err := sdk.AccAddressFromBech32(v.Address)
+		if err != nil {
+			return sdkerrors.Wrapf(err, "decode address: %s", v.Address)
+		}
+		keeper.SetPoEContractAddress(ctx, v.ContractType, addr)
+	}
 	keeper.setParams(ctx, genesisState.Params)
 	if len(genesisState.GenTxs) > 0 {
 		if err := DeliverGenTxs(genesisState.GenTxs, deliverTx, txEncodingConfig); err != nil {
@@ -67,20 +69,17 @@ func DeliverGenTxs(genTxs []json.RawMessage, deliverTx DeliverTxFn, txEncodingCo
 
 // ExportGenesis returns a GenesisState for a given context and keeper.
 func ExportGenesis(ctx sdk.Context, keeper Keeper) *types.GenesisState {
-	// todo (Alex): implement proper
-	//genState := types.GenesisState{
-	//	SeedContracts:      false,
-	//	SystemAdminAddress: keeper.GetPoESystemAdminAddress(ctx).String(),
-	//	Contracts:          make([]types.PoEContract, 0),
-	// todo:add other fields
-	//}
-	//keeper.IteratePoEContracts(ctx, func(Ctype types.PoEContractType, addr sdk.AccAddress) bool {
-	//	genState.Contracts = append(genState.Contracts, types.PoEContract{
-	//		ContractType: Ctype,
-	//		Address:      addr.String(),
-	//	})
-	//	return false
-	//})
-	var genState types.GenesisState
+	genState := types.GenesisState{
+		Params:        keeper.GetParams(ctx),
+		SeedContracts: false,
+		BondDenom:     keeper.GetBondDenom(ctx),
+	}
+	keeper.IteratePoEContracts(ctx, func(Ctype types.PoEContractType, addr sdk.AccAddress) bool {
+		genState.Contracts = append(genState.Contracts, types.PoEContract{
+			ContractType: Ctype,
+			Address:      addr.String(),
+		})
+		return false
+	})
 	return &genState
 }

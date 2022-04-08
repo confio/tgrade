@@ -37,6 +37,7 @@ func DefaultGenesisState() GenesisState {
 			ValidatorRewardRatio:     sdk.MustNewDecFromStr("47.5"),
 			EngagementRewardRatio:    sdk.MustNewDecFromStr("47.5"),
 			CommunityPoolRewardRatio: sdk.MustNewDecFromStr("5"),
+			VerifyValidators:         true,
 		},
 		EngagementContractConfig: &EngagementContractConfig{
 			Halflife: 180 * 24 * time.Hour,

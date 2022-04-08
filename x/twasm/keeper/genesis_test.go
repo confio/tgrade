@@ -41,7 +41,7 @@ func TestInitGenesis(t *testing.T) {
 	}{
 		"pin WASM code": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
-				state.Wasm.Codes = append(state.Wasm.Codes,
+				state.Codes = append(state.Codes,
 					wasmtypes.CodeFixture(func(c *wasmtypes.Code) { c.CodeID = 5 }),
 					wasmtypes.CodeFixture(func(c *wasmtypes.Code) { c.CodeID = 7 }),
 				)
@@ -69,7 +69,7 @@ func TestInitGenesis(t *testing.T) {
 		"privilege set for dumped contract": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = []string{genContractAddress(2, 2).String()}
-				state.Wasm.Contracts[1] = wasmtypes.ContractFixture(func(contract *wasmtypes.Contract) {
+				state.Contracts[1] = types.ContractFixture(t, func(contract *types.Contract) {
 					contract.ContractAddress = genContractAddress(2, 2).String()
 					err := contract.ContractInfo.SetExtension(&types.TgradeContractDetails{
 						RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
@@ -84,9 +84,9 @@ func TestInitGenesis(t *testing.T) {
 		"privilege set for gen msg contract": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = []string{genContractAddress(2, 1).String()}
-				state.Wasm.Contracts = nil
-				state.Wasm.Sequences = []wasmtypes.Sequence{{IDKey: wasmtypes.KeyLastCodeID, Value: 3}}
-				state.Wasm.GenMsgs = []wasmtypes.GenesisState_GenMsgs{
+				state.Contracts = nil
+				state.Sequences = []wasmtypes.Sequence{{IDKey: wasmtypes.KeyLastCodeID, Value: 3}}
+				state.GenMsgs = []wasmtypes.GenesisState_GenMsgs{
 					{Sum: &wasmtypes.GenesisState_GenMsgs_InstantiateContract{
 						InstantiateContract: wasmtypes.MsgInstantiateContractFixture(
 							func(msg *wasmtypes.MsgInstantiateContract) {
@@ -113,7 +113,7 @@ func TestInitGenesis(t *testing.T) {
 		"privileges set from dump but not privileged anymore": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
-				err := state.Wasm.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
+				err := state.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
 					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 				})
 				require.NoError(t, err)
