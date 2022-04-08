@@ -147,12 +147,12 @@ func ExportGenesis(ctx sdk.Context, keeper *Keeper) *types.GenesisState {
 		Sequences: wasmState.Sequences,
 		GenMsgs:   wasmState.GenMsgs,
 	}
-	// privileges are also store in contract details
-	keeper.IteratePrivileged(ctx, func(contract sdk.AccAddress) bool {
-		genState.PrivilegedContractAddresses = append(genState.PrivilegedContractAddresses, contract.String())
-		return false
-	})
 
 	// pinned is stored in code info
+	// privileges are stored contract info
+	// no need to to store them again in the genesis fields
+	//
+	// note: when a privileged contract address is added to the genesis.privileged_contract_addresses then
+	// the sudo promote call is executed again so that the contract can register additional privileges
 	return &genState
 }
