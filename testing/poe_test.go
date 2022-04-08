@@ -378,7 +378,7 @@ func TestPoEQueries(t *testing.T) {
 			query: []string{"q", "poe", "self-delegation", cli.GetKeyAddr("node0")},
 			assert: func(t *testing.T, qResult string) {
 				delegatedAmount := gjson.Get(qResult, "balance.amount").Int()
-				assert.Equal(t, int64(100000000), delegatedAmount)
+				assert.Equal(t, int64(700000000), delegatedAmount)
 			},
 		},
 		"unbonding delegations": {
