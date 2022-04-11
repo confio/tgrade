@@ -37,7 +37,6 @@ func InitGenesis(
 	}
 
 	// import privileges from dumped contract infos
-	importedCallbackContracts := make(map[string]struct{})
 	for i, m := range data.Contracts {
 		info := m.ContractInfo
 		var d types.TgradeContractDetails
@@ -70,15 +69,10 @@ func InitGenesis(
 				return nil, sdkerrors.Wrapf(err, "init custom state for %s", m.ContractAddress)
 			}
 		}
-		importedCallbackContracts[m.ContractAddress] = struct{}{}
 	}
 
 	// set privileged
 	for i, a := range data.PrivilegedContractAddresses {
-		if _, ok := importedCallbackContracts[a]; ok {
-			delete(importedCallbackContracts, a)
-			continue // done via import already
-		}
 		// handle new genesis message contract
 		addr, err := sdk.AccAddressFromBech32(a)
 		if err != nil {
@@ -94,11 +88,6 @@ func InitGenesis(
 		if err := keeper.contractKeeper.PinCode(ctx, codeID); err != nil {
 			return nil, sdkerrors.Wrapf(err, "pin code with ID %d", codeID)
 		}
-	}
-
-	// sanity check that we do not have a callback imported without a privileged flag missing
-	if len(importedCallbackContracts) != 0 {
-		return nil, sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "unprivileged contracts with system callbacks: %#v", importedCallbackContracts)
 	}
 	return result, nil
 }
