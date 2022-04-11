@@ -75,9 +75,11 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	var bankGenState banktypes.GenesisState
 	marshaler.MustUnmarshalJSON(genesisState[banktypes.ModuleName], &bankGenState)
 
-	coins := sdk.Coins{sdk.NewCoin(poetypes.DefaultBondDenom, sdk.NewInt(1000000000))}
-	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: myAddr.String(), Coins: coins.Sort()})
-	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: systemAdminAddr.String(), Coins: coins.Sort()})
+	coins := sdk.Coins{sdk.NewCoin(poetypes.DefaultBondDenom, sdk.NewInt(1000000000))}.Sort()
+	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: myAddr.String(), Coins: coins})
+	bankGenState.Supply = bankGenState.Supply.Add(coins...)
+	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: systemAdminAddr.String(), Coins: coins})
+	bankGenState.Supply = bankGenState.Supply.Add(coins...)
 
 	genAddrAndUpdateBalance := func(numAddr int, balance sdk.Coins) []string {
 		genAddr := make([]string, numAddr)
@@ -85,6 +87,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 			addr := poetypes.RandomAccAddress().String()
 			bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: addr, Coins: balance})
 			genAddr[i] = addr
+			bankGenState.Supply = bankGenState.Supply.Add(balance...)
 		}
 		return genAddr
 	}
