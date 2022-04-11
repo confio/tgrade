@@ -3,7 +3,6 @@ package poe
 import (
 	_ "embed"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -477,11 +476,13 @@ func newValsetInitMsg(
 
 // verifyPoEContracts verifies all PoE contracts are setup as expected
 func verifyPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
-	return errors.New("not supported, yet")
+	ctx.Logger().Info("TODO: validate poe contract setup")
+	//return errors.New("not supported, yet")
 	// all poe contracts pinned
 	// valset privileged
 	// valset has registered for endblock valset update privilege
 	// admin set matches genesis system admin address for engagement and staking contract
+	return nil
 }
 
 // mustMarshalJson with stdlib json
