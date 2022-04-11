@@ -2,6 +2,7 @@ package types
 
 import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -84,4 +85,23 @@ func (g GenesisState) RawWasmState() wasmtypes.GenesisState {
 		Sequences: g.Sequences,
 		GenMsgs:   g.GenMsgs,
 	}
+}
+
+var _ codectypes.UnpackInterfacesMessage = GenesisState{}
+
+// UnpackInterfaces implements codectypes.UnpackInterfaces
+func (m GenesisState) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+	for _, v := range m.Contracts {
+		if err := v.UnpackInterfaces(unpacker); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+var _ codectypes.UnpackInterfacesMessage = &Contract{}
+
+// UnpackInterfaces implements codectypes.UnpackInterfaces
+func (m *Contract) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+	return m.ContractInfo.UnpackInterfaces(unpacker)
 }

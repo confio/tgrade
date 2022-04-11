@@ -19,8 +19,8 @@ type TgradeSudoMsg struct {
 
 	// Export dump state for genesis export
 	Export *struct{} `json:"export,omitempty"`
-	// Import genesis State
-	Import wasmtypes.RawContractMessage `json:"import,omitempty"`
+	// Import genesis state
+	Import *ImportMsg `json:"import,omitempty"`
 }
 
 // PrivilegeChangeMsg is called on a contract when it is made privileged or demoted
@@ -60,4 +60,9 @@ type Validator struct {
 	// The first 20 bytes of SHA256(public key)
 	Address []byte `json:"address"`
 	Power   uint64 `json:"power"`
+}
+
+// ImportMsg custom genesis state import message type
+type ImportMsg struct {
+	Msg wasmtypes.RawContractMessage `json:"import,omitempty"`
 }
