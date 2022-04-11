@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -21,7 +22,7 @@ type Keeper struct {
 	storeKey          sdk.StoreKey
 	paramStore        paramtypes.Subspace
 	twasmKeeper       types.TWasmKeeper
-	contractAddrCache map[types.PoEContractType]sdk.AccAddress
+	contractAddrCache sync.Map
 }
 
 // NewKeeper constructor
@@ -46,7 +47,7 @@ func NewKeeper(
 		storeKey:          key,
 		paramStore:        paramSpace,
 		twasmKeeper:       twasmK,
-		contractAddrCache: make(map[types.PoEContractType]sdk.AccAddress),
+		contractAddrCache: sync.Map{},
 	}
 }
 
@@ -54,7 +55,7 @@ func NewKeeper(
 func (k Keeper) SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(poeContractAddressKey(ctype), contractAddr.Bytes())
-	k.contractAddrCache[ctype] = contractAddr
+	k.contractAddrCache.Store(ctype, contractAddr)
 }
 
 // GetPoEContractAddress get the stored contract address for the given type or returns an error when not exists (yet)
@@ -64,8 +65,9 @@ func (k Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractTy
 	}
 
 	// try to get addr from cache
-	addr := k.contractAddrCache[ctype]
-	if addr != nil || len(addr) != 0 {
+	cachedAddr, ok := k.contractAddrCache.Load(ctype)
+	addr, ok := cachedAddr.(sdk.AccAddress)
+	if ok {
 		return addr, nil
 	}
 
@@ -75,9 +77,6 @@ func (k Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractTy
 	if len(addr) == 0 {
 		return nil, wasmtypes.ErrNotFound
 	}
-
-	// if found in store, update cache
-	k.contractAddrCache[ctype] = addr
 
 	return addr, nil
 }
