@@ -129,12 +129,27 @@ func ExportGenesis(ctx sdk.Context, keeper *Keeper) *types.GenesisState {
 		contracts[i].ContractState = &types.Contract_CustomModel{CustomModel: &types.CustomModel{Msg: got}}
 	}
 
+	var privileged []string
+	keeper.IteratePrivileged(ctx, func(address sdk.AccAddress) bool {
+		privileged = append(privileged, address.String())
+		return false
+	})
+
+	var pinned []uint64
+	for _, c := range wasmState.Codes {
+		if c.Pinned {
+			pinned = append(pinned, c.CodeID)
+		}
+	}
+
 	genState := types.GenesisState{
-		Params:    wasmState.Params,
-		Codes:     wasmState.Codes,
-		Contracts: contracts,
-		Sequences: wasmState.Sequences,
-		GenMsgs:   wasmState.GenMsgs,
+		Params:                      wasmState.Params,
+		Codes:                       wasmState.Codes,
+		Contracts:                   contracts,
+		Sequences:                   wasmState.Sequences,
+		GenMsgs:                     wasmState.GenMsgs,
+		PrivilegedContractAddresses: privileged,
+		PinnedCodeIDs:               pinned,
 	}
 
 	// pinned is stored in code info
