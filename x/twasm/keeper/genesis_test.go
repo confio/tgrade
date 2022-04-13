@@ -110,17 +110,6 @@ func TestInitGenesis(t *testing.T) {
 			}),
 			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeEndBlock, addr: genContractAddress(2, 1)}},
 		},
-		"privileges set from dump but not privileged anymore": {
-			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
-				state.PrivilegedContractAddresses = nil
-				err := state.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
-					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
-				})
-				require.NoError(t, err)
-			}),
-			wasmvm: noopMock,
-			expErr: true,
-		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
