@@ -62,13 +62,7 @@ func InitGenesis(
 				return nil, sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "custom state model not set for %s", m.ContractAddress)
 			}
 
-			var valsetState contract.ValsetState
-			json.Unmarshal(model.Msg, &valsetState)
-			if err != nil {
-				return nil, sdkerrors.Wrapf(err, "unmarshal valset state import for %s", m.ContractAddress)
-			}
-
-			bz, err := json.Marshal(contract.TgradeSudoMsg{Import: &valsetState})
+			bz, err := json.Marshal(contract.TgradeSudoMsg{Import: &model.Msg})
 			if err != nil {
 				return nil, sdkerrors.Wrapf(err, "marshal state import for %s", m.ContractAddress)
 			}
