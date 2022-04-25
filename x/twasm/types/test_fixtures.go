@@ -68,7 +68,6 @@ func GenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisS
 		Sequences:                   wasmState.Sequences,
 		GenMsgs:                     wasmState.GenMsgs,
 		PrivilegedContractAddresses: []string{anyContractAddr},
-		PinnedCodeIDs:               []uint64{2},
 	}
 	for _, m := range mutators {
 		m(&genesisState)

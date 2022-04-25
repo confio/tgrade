@@ -61,12 +61,10 @@ func InitGenesis(
 			if model == nil {
 				return nil, sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "custom state model not set for %s", m.ContractAddress)
 			}
-
 			bz, err := json.Marshal(contract.TgradeSudoMsg{Import: &model.Msg})
 			if err != nil {
 				return nil, sdkerrors.Wrapf(err, "marshal state import for %s", m.ContractAddress)
 			}
-
 			if _, err = keeper.Keeper.Sudo(ctx, addr, bz); err != nil {
 				return nil, sdkerrors.Wrapf(err, "init custom state for %s", m.ContractAddress)
 			}
@@ -92,10 +90,6 @@ func InitGenesis(
 		}
 	}
 	return result, nil
-}
-
-func importContracts(ctx sdk.Context, keeper *wasmkeeper.Keeper, contracts []wasmtypes.Contract) error {
-	return nil
 }
 
 // ExportGenesis returns a GenesisState for a given context and keeper.
@@ -131,32 +125,17 @@ func ExportGenesis(ctx sdk.Context, keeper *Keeper) *types.GenesisState {
 		contracts[i].ContractState = &types.Contract_CustomModel{CustomModel: &types.CustomModel{Msg: got}}
 	}
 
-	var privileged []string
-	keeper.IteratePrivileged(ctx, func(address sdk.AccAddress) bool {
-		privileged = append(privileged, address.String())
-		return false
-	})
-
-	var pinned []uint64
-	for _, c := range wasmState.Codes {
-		if c.Pinned {
-			pinned = append(pinned, c.CodeID)
-		}
-	}
-
 	genState := types.GenesisState{
-		Params:                      wasmState.Params,
-		Codes:                       wasmState.Codes,
-		Contracts:                   contracts,
-		Sequences:                   wasmState.Sequences,
-		GenMsgs:                     wasmState.GenMsgs,
-		PrivilegedContractAddresses: privileged,
-		PinnedCodeIDs:               pinned,
+		Params:    wasmState.Params,
+		Codes:     wasmState.Codes,
+		Contracts: contracts,
+		Sequences: wasmState.Sequences,
+		GenMsgs:   wasmState.GenMsgs,
 	}
 
 	// pinned is stored in code info
 	// privileges are stored contract info
-	// no need to to store them again in the genesis fields
+	// no need to store them again in the genesis fields
 	//
 	// note: when a privileged contract address is added to the genesis.privileged_contract_addresses then
 	// the sudo promote call is executed again so that the contract can register additional privileges
