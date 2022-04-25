@@ -1,7 +1,10 @@
 package types
 
 import (
+	"bytes"
 	"testing"
+
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -35,6 +38,24 @@ func DemoteProposalFixture(mutators ...func(proposal *DemotePrivilegedContractPr
 	return p
 }
 
+// DeterministicGenesisStateFixture is the same as GenesisStateFixture but with deterministic addresses and codes
+func DeterministicGenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisState {
+	genesisState := GenesisStateFixture(t)
+	for i := range genesisState.Contracts {
+		genesisState.Contracts[i].ContractAddress = wasmkeeper.BuildContractAddress(uint64(i), uint64(i)).String()
+	}
+	for i := range genesisState.Codes {
+		wasmCode := bytes.Repeat([]byte{byte(i)}, 20)
+		genesisState.Codes[i].CodeInfo = wasmtypes.CodeInfoFixture(wasmtypes.WithSHA256CodeHash(wasmCode))
+		genesisState.Codes[i].CodeBytes = wasmCode
+	}
+	for _, m := range mutators {
+		m(&genesisState)
+	}
+	return genesisState
+}
+
+// GenesisStateFixture test data fixture
 func GenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisState {
 	t.Helper()
 	anyContractAddr := RandomBech32Address(t)

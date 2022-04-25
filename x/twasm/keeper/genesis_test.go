@@ -3,7 +3,10 @@ package keeper
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"testing"
+
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
@@ -20,6 +23,10 @@ import (
 )
 
 func TestInitGenesis(t *testing.T) {
+	type vmCalls struct {
+		pinCalled  bool
+		sudoCalled bool
+	}
 	noopMock := NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
 		m.PinFn = func(checksum cosmwasm.Checksum) error { return nil }
 		m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
@@ -38,6 +45,7 @@ func TestInitGenesis(t *testing.T) {
 		wasmvm         *wasmtesting.MockWasmer
 		expCallbackReg []registeredCallback
 		expErr         bool
+		expVmCalls     vmCalls
 	}{
 		"pin WASM code": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
@@ -47,7 +55,8 @@ func TestInitGenesis(t *testing.T) {
 				)
 				state.PinnedCodeIDs = []uint64{5, 7}
 			}),
-			wasmvm: noopMock,
+			wasmvm:     noopMock,
+			expVmCalls: vmCalls{true, true},
 		},
 		"privileged contract": {
 			state:  types.GenesisStateFixture(t),
@@ -122,6 +131,75 @@ func TestInitGenesis(t *testing.T) {
 			wasmvm:         noopMock,
 			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeBeginBlock, addr: genContractAddress(2, 2)}},
 		},
+		"invalid contract details from dump": {
+			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = nil
+				var err error
+				state.Contracts[1].ContractInfo.Extension, err = codectypes.NewAnyWithValue(&types.TgradeContractDetails{
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "non-existing-privilege"}},
+				})
+				require.NoError(t, err)
+			}),
+			wasmvm: noopMock,
+			expErr: true,
+		},
+		"no contract details in dump": {
+			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = nil
+				require.NoError(t, state.Contracts[1].ContractInfo.SetExtension(nil))
+			}),
+			wasmvm: noopMock,
+		},
+		"privileged state importer contract imports from dump": {
+			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = nil
+				state.Contracts[1].ContractAddress = genContractAddress(2, 2).String()
+				state.Contracts[1].ContractState = &types.Contract_CustomModel{CustomModel: &types.CustomModel{Msg: wasmtypes.RawContractMessage(`{"my":"state"}`)}}
+				err := state.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "state_exporter_importer"}},
+				})
+				require.NoError(t, err)
+			}),
+			wasmvm: NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
+				m.PinFn = func(checksum cosmwasm.Checksum) error { return nil }
+				m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
+					return &wasmvmtypes.Response{}, 0, nil
+				}
+			}),
+			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeStateExporterImporter, addr: genContractAddress(2, 2)}},
+		},
+		"privileged state importer contract imports from dump with custom model removed": {
+			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = nil
+				state.Contracts[1].ContractAddress = genContractAddress(2, 2).String()
+				state.Contracts[1].ContractState = &types.Contract_CustomModel{}
+				err := state.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "state_exporter_importer"}},
+				})
+				require.NoError(t, err)
+			}),
+			wasmvm: noopMock,
+			expErr: true,
+		},
+		"privileged state importer contract imports fails on sudo call with custom msg": {
+			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = nil
+				state.Contracts[0].ContractAddress = genContractAddress(2, 2).String()
+				state.Contracts[0].ContractState = &types.Contract_CustomModel{CustomModel: &types.CustomModel{Msg: wasmtypes.RawContractMessage(`{"my":"state"}`)}}
+				err := state.Contracts[0].ContractInfo.SetExtension(&types.TgradeContractDetails{
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "state_exporter_importer"}},
+				})
+				require.NoError(t, err)
+				state.Contracts = []types.Contract{state.Contracts[0]}
+			}),
+			wasmvm: NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
+				m.PinFn = func(checksum cosmwasm.Checksum) error { return nil }
+				m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
+					return &wasmvmtypes.Response{}, 0, errors.New("testing error")
+				}
+			}),
+			expErr: true,
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
@@ -168,9 +246,8 @@ func TestInitGenesis(t *testing.T) {
 }
 
 func TestExportGenesis(t *testing.T) {
-	t.Skip("Alex: state export does not create the exact same output as input data was")
 	wasmCodes := make(map[string]cosmwasm.WasmCode)
-	mock := NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
+	noopVMMock := NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
 		m.CreateFn = func(code cosmwasm.WasmCode) (cosmwasm.Checksum, error) {
 			hash := sha256.Sum256(code)
 			wasmCodes[string(hash[:])] = code
@@ -188,30 +265,99 @@ func TestExportGenesis(t *testing.T) {
 	})
 
 	specs := map[string]struct {
-		state  types.GenesisState
-		expErr bool
+		srcState   types.GenesisState
+		expState   types.GenesisState
+		alterState func(ctx sdk.Context, keepers TestKeepers)
+		expErr     bool
+		mockVM     *wasmtesting.MockWasmer
 	}{
 		"export with privileged contract": {
-			state: types.GenesisStateFixture(t),
+			srcState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = []string{genContractAddress(1, 1).String()}
+			}),
+			alterState: func(ctx sdk.Context, keepers TestKeepers) {
+				// store privilege PrivilegeTypeBeginBlock
+				var details types.TgradeContractDetails
+				contractAddr := genContractAddress(1, 1)
+				contractInfo := keepers.TWasmKeeper.GetContractInfo(ctx, contractAddr)
+				require.NoError(t, contractInfo.ReadExtension(&details))
+				priv := types.PrivilegeTypeBeginBlock
+				pos, err := keepers.TWasmKeeper.appendToPrivilegedContracts(ctx, priv, genContractAddress(1, 1))
+				require.NoError(t, err)
+				details.AddRegisteredPrivilege(priv, pos)
+				require.NoError(t, keepers.TWasmKeeper.setContractDetails(ctx, contractAddr, &details))
+			},
+			expState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = nil
+				state.Contracts[1].ContractAddress = genContractAddress(1, 1).String()
+				err := state.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
+				})
+				require.NoError(t, err)
+			}),
+			mockVM: noopVMMock,
+		},
+		"privileged state exporter contract": {
+			srcState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = []string{genContractAddress(1, 1).String()}
+			}),
+			expState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = nil
+				state.Contracts[1].ContractState = &types.Contract_CustomModel{CustomModel: &types.CustomModel{Msg: wasmtypes.RawContractMessage(`{"my":"state"}`)}}
+				err := state.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
+					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "state_exporter_importer"}},
+				})
+				require.NoError(t, err)
+			}),
+			alterState: func(ctx sdk.Context, keepers TestKeepers) {
+				// store privilege PrivilegeStateExporterImporter
+				var details types.TgradeContractDetails
+				contractAddr := genContractAddress(1, 1)
+				contractInfo := keepers.TWasmKeeper.GetContractInfo(ctx, contractAddr)
+				require.NoError(t, contractInfo.ReadExtension(&details))
+				priv := types.PrivilegeStateExporterImporter
+				pos, err := keepers.TWasmKeeper.appendToPrivilegedContracts(ctx, priv, genContractAddress(1, 1))
+				require.NoError(t, err)
+				details.AddRegisteredPrivilege(priv, pos)
+				require.NoError(t, keepers.TWasmKeeper.setContractDetails(ctx, contractAddr, &details))
+			},
+			mockVM: NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
+				m.CreateFn = noopVMMock.CreateFn
+				m.PinFn = noopVMMock.PinFn
+				m.GetCodeFn = noopVMMock.GetCodeFn
+				m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
+					// return tgrade message with exported state
+					return &wasmvmtypes.Response{
+						Data: []byte(`{"my":"state"}`),
+					}, 0, nil
+				}
+			}),
 		},
 		"export without privileged contracts": {
-			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
+			srcState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
 			}),
+			expState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = nil
+			}),
+			mockVM: noopVMMock,
 		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			ctx, keepers := CreateDefaultTestInput(t, wasmkeeper.WithWasmEngine(mock))
+			ctx, keepers := CreateDefaultTestInput(t, wasmkeeper.WithWasmEngine(spec.mockVM))
 			k := keepers.TWasmKeeper
 
 			msgHandler := wasm.NewHandler(wasmkeeper.NewDefaultPermissionKeeper(k))
-			_, err := InitGenesis(ctx, k, spec.state, msgHandler)
+			_, err := InitGenesis(ctx, k, spec.srcState, msgHandler)
 			require.NoError(t, err)
 
+			if spec.alterState != nil {
+				spec.alterState(ctx, keepers)
+			}
 			// when & then
 			newState := ExportGenesis(ctx, k)
-			assert.Equal(t, spec.state, *newState)
+			assert.Equal(t, spec.expState, *newState)
 		})
 	}
 }
