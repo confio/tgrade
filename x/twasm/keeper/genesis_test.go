@@ -276,16 +276,8 @@ func TestExportGenesis(t *testing.T) {
 				state.PrivilegedContractAddresses = []string{genContractAddress(1, 1).String()}
 			}),
 			alterState: func(ctx sdk.Context, keepers TestKeepers) {
-				// store privilege PrivilegeTypeBeginBlock
-				var details types.TgradeContractDetails
-				contractAddr := genContractAddress(1, 1)
-				contractInfo := keepers.TWasmKeeper.GetContractInfo(ctx, contractAddr)
-				require.NoError(t, contractInfo.ReadExtension(&details))
 				priv := types.PrivilegeTypeBeginBlock
-				pos, err := keepers.TWasmKeeper.appendToPrivilegedContracts(ctx, priv, genContractAddress(1, 1))
-				require.NoError(t, err)
-				details.AddRegisteredPrivilege(priv, pos)
-				require.NoError(t, keepers.TWasmKeeper.setContractDetails(ctx, contractAddr, &details))
+				setContractPrivilege(t, ctx, keepers, genContractAddress(1, 1), priv)
 			},
 			expState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
@@ -310,16 +302,8 @@ func TestExportGenesis(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			alterState: func(ctx sdk.Context, keepers TestKeepers) {
-				// store privilege PrivilegeStateExporterImporter
-				var details types.TgradeContractDetails
-				contractAddr := genContractAddress(1, 1)
-				contractInfo := keepers.TWasmKeeper.GetContractInfo(ctx, contractAddr)
-				require.NoError(t, contractInfo.ReadExtension(&details))
 				priv := types.PrivilegeStateExporterImporter
-				pos, err := keepers.TWasmKeeper.appendToPrivilegedContracts(ctx, priv, genContractAddress(1, 1))
-				require.NoError(t, err)
-				details.AddRegisteredPrivilege(priv, pos)
-				require.NoError(t, keepers.TWasmKeeper.setContractDetails(ctx, contractAddr, &details))
+				setContractPrivilege(t, ctx, keepers, genContractAddress(1, 1), priv)
 			},
 			mockVM: NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
 				m.CreateFn = noopVMMock.CreateFn
@@ -360,6 +344,17 @@ func TestExportGenesis(t *testing.T) {
 			assert.Equal(t, spec.expState, *newState)
 		})
 	}
+}
+
+func setContractPrivilege(t *testing.T, ctx sdk.Context, keepers TestKeepers, contractAddr sdk.AccAddress, priv types.PrivilegeType) {
+	t.Helper()
+	var details types.TgradeContractDetails
+	contractInfo := keepers.TWasmKeeper.GetContractInfo(ctx, contractAddr)
+	require.NoError(t, contractInfo.ReadExtension(&details))
+	pos, err := keepers.TWasmKeeper.appendToPrivilegedContracts(ctx, priv, contractAddr)
+	require.NoError(t, err)
+	details.AddRegisteredPrivilege(priv, pos)
+	require.NoError(t, keepers.TWasmKeeper.setContractDetails(ctx, contractAddr, &details))
 }
 
 // genContractAddress generates a contract address as wasmd keeper does

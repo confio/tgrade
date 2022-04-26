@@ -53,7 +53,7 @@ func (k Keeper) SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractTy
 	store.Set(poeContractAddressKey(ctype), contractAddr.Bytes())
 }
 
-// GetPoEContractAddress get the stored contract address for the given type
+// GetPoEContractAddress get the stored contract address for the given type or returns an error when not exists (yet)
 func (k Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
 	if err := ctype.ValidateBasic(); err != nil {
 		return nil, sdkerrors.Wrap(err, "contract type")

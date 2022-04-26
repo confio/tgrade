@@ -1,7 +1,6 @@
 package types
 
 import (
-	"errors"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/address"
@@ -146,103 +145,109 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		if err := g.ValidatorVotingContractConfig.ValidateBasic(); err != nil {
 			return sdkerrors.Wrap(err, "validator voting config")
 		}
+
+		if _, err := sdk.AccAddressFromBech32(g.SystemAdminAddress); err != nil {
+			return sdkerrors.Wrap(err, "system admin address")
+		}
+
+		uniqueEngagementMembers := make(map[string]struct{}, len(g.Engagement))
+		for i, v := range g.Engagement {
+			if err := v.ValidateBasic(); err != nil {
+				return sdkerrors.Wrapf(err, "contract %d", i)
+			}
+			if _, exists := uniqueEngagementMembers[v.Address]; exists {
+				return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "member: %s", v.Address)
+			}
+			uniqueEngagementMembers[v.Address] = struct{}{}
+		}
+		uniqueOperators := make(map[string]struct{}, len(g.GenTxs))
+		uniquePubKeys := make(map[string]struct{}, len(g.GenTxs))
+		for i, v := range g.GenTxs {
+			genTx, err := txJSONDecoder(v)
+			if err != nil {
+				return sdkerrors.Wrapf(err, "gentx %d", i)
+			}
+			msgs := genTx.GetMsgs()
+			if len(msgs) != 1 {
+				return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "tx with single message required")
+			}
+			msg := msgs[0].(*MsgCreateValidator)
+			if err := msg.ValidateBasic(); err != nil {
+				return sdkerrors.Wrapf(err, "gentx %d", i)
+			}
+			if _, ok := uniqueEngagementMembers[msg.OperatorAddress]; !ok {
+				return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator not in engagement group: %q, gentx: %d", msg.OperatorAddress, i)
+			}
+			if _, exists := uniqueOperators[msg.OperatorAddress]; exists {
+				return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator used already with another gen tx: %q, gentx: %d", msg.OperatorAddress, i)
+			}
+			uniqueOperators[msg.OperatorAddress] = struct{}{}
+
+			pk := msg.Pubkey.String()
+			if _, exists := uniquePubKeys[pk]; exists {
+				return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx public key used already with another gen tx: %q, gentx: %d", pk, i)
+			}
+			uniquePubKeys[pk] = struct{}{}
+		}
+
+		if len(g.OversightCommunityMembers) == 0 {
+			return sdkerrors.Wrapf(wasmtypes.ErrEmpty, "oversight community members")
+		}
+
+		uniqueOCMembers := make(map[string]struct{}, len(g.OversightCommunityMembers))
+		for _, member := range g.OversightCommunityMembers {
+			if _, err := sdk.AccAddressFromBech32(member); err != nil {
+				return sdkerrors.Wrap(err, "oc member address")
+			}
+			if _, exists := uniqueOCMembers[member]; exists {
+				return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "oc member: %s", member)
+			}
+			uniqueOCMembers[member] = struct{}{}
+		}
+
+		if len(g.ArbiterPoolMembers) == 0 {
+			return sdkerrors.Wrapf(wasmtypes.ErrEmpty, "arbiter pool members")
+		}
+
+		uniqueAPMembers := make(map[string]struct{}, len(g.ArbiterPoolMembers))
+		for _, member := range g.ArbiterPoolMembers {
+			if _, err := sdk.AccAddressFromBech32(member); err != nil {
+				return sdkerrors.Wrap(err, "ap member address")
+			}
+			if _, exists := uniqueAPMembers[member]; exists {
+				return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "ap member: %s", member)
+			}
+			uniqueAPMembers[member] = struct{}{}
+		}
 	} else {
-		return errors.New("not supported, yet")
-		//if len(g.Contracts) == 0 {
-		//	return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "seed disabled but no PoE contract addresses provided")
-		//}
-		// todo (Alex): if we preserve state in the engagement contract then we need to ensure that there are no
-		// new members in the engagement group
-		// if we can reset state then the engagement group must not be empty
-		//if len(g.Engagement) != 0 {
-		//	return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "engagement group set")
-		//}
-		//uniqueContractTypes := make(map[PoEContractType]struct{}, len(g.Contracts))
-		//for i, v := range g.Contracts {
-		//	if err := v.ValidateBasic(); err != nil {
-		//		return sdkerrors.Wrapf(err, "contract %d", i)
-		//	}
-		//	if _, exists := uniqueContractTypes[v.ContractType]; exists {
-		//		return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "contract type %s", v.ContractType.String())
-		//	}
-		//}
-		//if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
-		//	return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
-		//}
-	}
-	if _, err := sdk.AccAddressFromBech32(g.SystemAdminAddress); err != nil {
-		return sdkerrors.Wrap(err, "system admin address")
-	}
+		if len(g.Contracts) == 0 {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "no PoE contract addresses provided")
+		}
+		if len(g.Engagement) != 0 {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "updates to the engagement group not supported")
+		}
+		if len(g.ArbiterPoolMembers) != 0 {
+			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "updates to the arbiter pool members not supported")
+		}
+		if g.SystemAdminAddress != "" {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "system admin address only required in seed mode")
+		}
 
-	uniqueEngagementMembers := make(map[string]struct{}, len(g.Engagement))
-	for i, v := range g.Engagement {
-		if err := v.ValidateBasic(); err != nil {
-			return sdkerrors.Wrapf(err, "contract %d", i)
+		uniqueContractTypes := make(map[PoEContractType]struct{}, len(g.Contracts))
+		for i, v := range g.Contracts {
+			if err := v.ValidateBasic(); err != nil {
+				return sdkerrors.Wrapf(err, "contract %d", i)
+			}
+			if _, exists := uniqueContractTypes[v.ContractType]; exists {
+				return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "contract type %s", v.ContractType.String())
+			}
+			uniqueContractTypes[v.ContractType] = struct{}{}
 		}
-		if _, exists := uniqueEngagementMembers[v.Address]; exists {
-			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "member: %s", v.Address)
+		if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
 		}
-		uniqueEngagementMembers[v.Address] = struct{}{}
-	}
 
-	uniqueOperators := make(map[string]struct{}, len(g.GenTxs))
-	uniquePubKeys := make(map[string]struct{}, len(g.GenTxs))
-	for i, v := range g.GenTxs {
-		genTx, err := txJSONDecoder(v)
-		if err != nil {
-			return sdkerrors.Wrapf(err, "gentx %d", i)
-		}
-		msgs := genTx.GetMsgs()
-		if len(msgs) != 1 {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "tx with single message required")
-		}
-		msg := msgs[0].(*MsgCreateValidator)
-		if err := msg.ValidateBasic(); err != nil {
-			return sdkerrors.Wrapf(err, "gentx %d", i)
-		}
-		if _, ok := uniqueEngagementMembers[msg.OperatorAddress]; !ok {
-			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator not in engagement group: %q, gentx: %d", msg.OperatorAddress, i)
-		}
-		if _, exists := uniqueOperators[msg.OperatorAddress]; exists {
-			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator used already with another gen tx: %q, gentx: %d", msg.OperatorAddress, i)
-		}
-		uniqueOperators[msg.OperatorAddress] = struct{}{}
-
-		pk := msg.Pubkey.String()
-		if _, exists := uniquePubKeys[pk]; exists {
-			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx public key used already with another gen tx: %q, gentx: %d", pk, i)
-		}
-		uniquePubKeys[pk] = struct{}{}
-	}
-
-	if len(g.OversightCommunityMembers) == 0 {
-		return sdkerrors.Wrapf(wasmtypes.ErrEmpty, "oversight community members")
-	}
-
-	uniqueOCMembers := make(map[string]struct{}, len(g.OversightCommunityMembers))
-	for _, member := range g.OversightCommunityMembers {
-		if _, err := sdk.AccAddressFromBech32(member); err != nil {
-			return sdkerrors.Wrap(err, "oc member address")
-		}
-		if _, exists := uniqueOCMembers[member]; exists {
-			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "oc member: %s", member)
-		}
-		uniqueOCMembers[member] = struct{}{}
-	}
-
-	if len(g.ArbiterPoolMembers) == 0 {
-		return sdkerrors.Wrapf(wasmtypes.ErrEmpty, "arbiter pool members")
-	}
-
-	uniqueAPMembers := make(map[string]struct{}, len(g.ArbiterPoolMembers))
-	for _, member := range g.ArbiterPoolMembers {
-		if _, err := sdk.AccAddressFromBech32(member); err != nil {
-			return sdkerrors.Wrap(err, "ap member address")
-		}
-		if _, exists := uniqueAPMembers[member]; exists {
-			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "ap member: %s", member)
-		}
-		uniqueAPMembers[member] = struct{}{}
+		// todo: ensure gentx is correct
 	}
 
 	return nil

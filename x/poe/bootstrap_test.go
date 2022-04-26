@@ -437,6 +437,8 @@ type twasmKeeperMock struct {
 	SudoFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
 	SetPrivilegedFn         func(ctx sdk.Context, contractAddr sdk.AccAddress) error
 	HasPrivilegedContractFn func(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error)
+	IsPinnedCodeFn          func(ctx sdk.Context, codeID uint64) bool
+	GetContractInfoFn       func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
 }
 
 func (m twasmKeeperMock) GetContractKeeper() wasmtypes.ContractOpsKeeper {
@@ -492,4 +494,18 @@ func CaptureHasPrivilegedContractFn(r *[]sdk.AccAddress) func(ctx sdk.Context, c
 		}
 		return false, nil
 	}
+}
+
+func (m twasmKeeperMock) IsPinnedCode(ctx sdk.Context, codeID uint64) bool {
+	if m.IsPinnedCodeFn == nil {
+		panic("not expected to be called")
+	}
+	return m.IsPinnedCodeFn(ctx, codeID)
+}
+
+func (m twasmKeeperMock) GetContractInfo(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+	if m.GetContractInfoFn == nil {
+		panic("not expected to be called")
+	}
+	return m.GetContractInfoFn(ctx, contractAddress)
 }

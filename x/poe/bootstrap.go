@@ -302,14 +302,6 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "set new instance admin")
 	}
 
-	// ensure setup constraints
-	ok, err := tk.HasPrivilegedContract(ctx, stakeContractAddr, twasmtypes.PrivilegeDelegator)
-	if err != nil {
-		panic(err)
-	}
-	if !ok {
-		panic("no contract with delegator privileges")
-	}
 	return nil
 }
 
@@ -477,13 +469,60 @@ func newValsetInitMsg(
 }
 
 // verifyPoEContracts verifies all PoE contracts are setup as expected
-func verifyPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
-	ctx.Logger().Info("TODO: validate poe contract setup")
-	//return errors.New("not supported, yet")
-	// all poe contracts pinned
-	// valset privileged
-	// valset has registered for endblock valset update privilege
-	// admin set matches genesis system admin address for engagement and staking contract
+func verifyPoEContracts(ctx sdk.Context, tk twasmKeeper, poeKeeper poeKeeper) error {
+	valVotingContractAddr, err := poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValidatorVoting)
+	if err != nil {
+		return sdkerrors.Wrap(err, "validator voting address")
+	}
+	types.IteratePoEContractTypes(func(tp types.PoEContractType) bool {
+		var addr sdk.AccAddress
+		addr, err = poeKeeper.GetPoEContractAddress(ctx, tp)
+		if err != nil {
+			return true
+		}
+		// migrator set to validator voting contract address
+		c := tk.GetContractInfo(ctx, addr)
+		if c == nil {
+			err = sdkerrors.Wrapf(types.ErrInvalid, "unknown contract: %s", addr)
+			return true
+		}
+		if c.Admin != valVotingContractAddr.String() {
+			err = sdkerrors.Wrapf(types.ErrInvalid, "admin address: %s", c.Admin)
+			return true
+		}
+		// all poe contracts pinned
+		if !tk.IsPinnedCode(ctx, c.CodeID) {
+			err = sdkerrors.Wrapf(types.ErrInvalid, "code not pinned for :%s", tp.String())
+			return true
+		}
+		return false
+	})
+	if err != nil { // return any error from within the iteration
+		return err
+	}
+	// verify PoE setup
+	addr, err := poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	if err != nil {
+		return sdkerrors.Wrap(err, "valset addr")
+	}
+	switch ok, err := tk.HasPrivilegedContract(ctx, addr, twasmtypes.PrivilegeTypeValidatorSetUpdate); {
+	case err != nil:
+		return sdkerrors.Wrap(err, "valset contract")
+	case !ok:
+		return sdkerrors.Wrap(types.ErrInvalid, "valset contract not registered for validator updates")
+	}
+	// staking contract must be 	privileged and registered for delegations
+	stakeContractAddr, err := poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	if err != nil {
+		return sdkerrors.Wrap(err, "validator voting address")
+	}
+	ok, err := tk.HasPrivilegedContract(ctx, stakeContractAddr, twasmtypes.PrivilegeDelegator)
+	if err != nil {
+		return sdkerrors.Wrap(err, "staking contract")
+	}
+	if !ok {
+		return sdkerrors.Wrap(types.ErrInvalid, "no contract with delegator privileges")
+	}
 	return nil
 }
 

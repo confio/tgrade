@@ -7,12 +7,14 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
+// defined via in protobuf package structure. Note the leading `/`
+const tgradeExtType = "/confio.twasm.v1beta1.TgradeContractDetails"
+
 func (g GenesisState) ValidateBasic() error {
 	wasmState := g.RawWasmState()
 	if err := wasmState.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "wasm")
 	}
-	const tgradeExtType = "confio.twasm.v1beta1.TgradeContractDetails"
 	for _, c := range wasmState.Contracts {
 		if c.ContractInfo.Extension != nil {
 			if tgradeExtType != c.ContractInfo.Extension.TypeUrl {

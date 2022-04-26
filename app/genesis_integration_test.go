@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	poetypes "github.com/confio/tgrade/x/poe/types"
+
 	"github.com/stretchr/testify/assert"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 
@@ -24,6 +26,7 @@ func TestTgradeGenesisExportImport(t *testing.T) {
 
 		stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
 		require.NoError(t, err)
+
 		// Initialize the chain
 		gapp.InitChain(
 			abci.RequestInitChain{
@@ -51,6 +54,7 @@ func TestTgradeGenesisExportImport(t *testing.T) {
 	require.Contains(t, gs, twasm.ModuleName)
 	var twasmGs twasmtypes.GenesisState
 	require.NoError(t, newGapp.appCodec.UnmarshalJSON(gs[twasm.ModuleName], &twasmGs))
+	// todo (Alex): enable require.NoError(t, twasmGs.ValidateBasic())
 
 	var customModelContractCount int
 	for _, v := range twasmGs.Contracts {
@@ -69,6 +73,11 @@ func TestTgradeGenesisExportImport(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 1, customModelContractCount)
+
+	// ensure poe is correct
+	var poeGs poetypes.GenesisState
+	require.NoError(t, newGapp.appCodec.UnmarshalJSON(gs[poetypes.ModuleName], &poeGs))
+	require.NoError(t, poetypes.ValidateGenesis(poeGs, MakeEncodingConfig().TxConfig.TxJSONDecoder()))
 
 	// now import the state on a fresh DB
 	memDB = db.NewMemDB()

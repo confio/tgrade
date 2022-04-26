@@ -109,6 +109,8 @@ type twasmKeeper interface {
 	endBlockKeeper
 	SetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) error
 	HasPrivilegedContract(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error)
+	IsPinnedCode(ctx sdk.Context, codeID uint64) bool
+	GetContractInfo(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
 }
 
 // NewAppModule creates a new AppModule object
@@ -170,27 +172,20 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 		if err := BootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, genesisState); err != nil {
 			panic(fmt.Sprintf("bootstrap PoE contracts: %+v", err))
 		}
-	} else {
-		if err := verifyPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, genesisState); err != nil {
-			panic(fmt.Sprintf("verify PoE bootstrap contracts: %+v", err))
-		}
 	}
-
 	if err := keeper.InitGenesis(ctx, am.poeKeeper, am.deliverTx, genesisState, am.txEncodingConfig); err != nil {
 		panic(err)
 	}
+
 	// verify PoE setup
+	if err := verifyPoEContracts(ctx, am.twasmKeeper, am.poeKeeper); err != nil {
+		panic(fmt.Sprintf("verify PoE bootstrap contracts: %+v", err))
+	}
+
 	addr, err := am.poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	if err != nil {
 		panic(fmt.Sprintf("valset addr: %s", err))
 	}
-	switch ok, err := am.twasmKeeper.HasPrivilegedContract(ctx, addr, twasmtypes.PrivilegeTypeValidatorSetUpdate); {
-	case err != nil:
-		panic(fmt.Sprintf("valset contract: %s", err))
-	case !ok:
-		panic(fmt.Sprintf("valset contract not registered for valdator updates: %s", addr.String()))
-	}
-
 	// query validators from PoE for initial abci set
 	switch diff, err := contract.CallEndBlockWithValidatorUpdate(ctx, addr, am.twasmKeeper); {
 	case err != nil:
