@@ -19,17 +19,18 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-type ExampleValidator struct {
-	stakingtypes.Validator
+func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator, []types.TG4Member) {
+	return setupPoEContractsNVal(t, 3, mutators...)
 }
 
-func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator, []types.TG4Member) {
+// setup with n validators
+func setupPoEContractsNVal(t *testing.T, n int, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, []stakingtypes.Validator, []types.TG4Member) {
 	t.Helper()
 	ctx, example := keeper.CreateDefaultTestInput(t)
 	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
 	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
 
-	mutator, expValidators := withRandomValidators(t, ctx, example, 3)
+	mutator, expValidators := withRandomValidators(t, ctx, example, n)
 	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
 	adminAddress, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	example.Faucet.Fund(ctx, adminAddress, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
@@ -61,7 +62,6 @@ func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k keeper.Keeper, con
 		msg := msgs[0].(*types.MsgCreateValidator)
 		_, err = h(ctx, msg)
 		require.NoError(t, err)
-		t.Logf("+++ create validator: %s\n", msg.OperatorAddress)
 		return abci.ResponseDeliverTx{}
 	}
 }

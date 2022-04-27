@@ -40,3 +40,7 @@ func (d DistributionContractAdapter) ValidatorOutstandingReward(ctx sdk.Context,
 	}
 	return resp.Rewards, err
 }
+
+func (d DistributionContractAdapter) Address() (sdk.AccAddress, error) {
+	return d.contractAddr, d.addressLookupErr
+}

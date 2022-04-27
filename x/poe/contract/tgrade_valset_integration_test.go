@@ -286,5 +286,33 @@ func TestJailUnjail(t *testing.T) {
 			assert.Empty(t, res.Validator.JailedUntil)
 		})
 	}
+}
 
+func TestIterateActiveValidators(t *testing.T) {
+	specs := map[string]struct {
+		valCount int
+	}{
+		"list single pages": {
+			valCount: 30,
+		},
+		"list two pages": {
+			valCount: 31,
+		},
+		"list all actives": {
+			valCount: 100,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			ctx, example, genesisValidators, _ := setupPoEContractsNVal(t, spec.valCount)
+			assert.Equal(t, spec.valCount, len(genesisValidators))
+			var gotVals []contract.ValidatorInfo
+			gotErr := example.PoEKeeper.ValsetContract(ctx).IterateActiveValidators(ctx, func(c contract.ValidatorInfo) bool {
+				gotVals = append(gotVals, c)
+				return false
+			})
+			require.NoError(t, gotErr)
+			assert.Equal(t, spec.valCount, len(gotVals))
+		})
+	}
 }

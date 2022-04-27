@@ -78,7 +78,7 @@ func TestTgradeGenesisExportImport(t *testing.T) {
 	var poeGs poetypes.GenesisState
 	require.NoError(t, newGapp.appCodec.UnmarshalJSON(gs[poetypes.ModuleName], &poeGs))
 	require.NoError(t, poetypes.ValidateGenesis(poeGs, MakeEncodingConfig().TxConfig.TxJSONDecoder()))
-
+	t.Log(string(gs[twasm.ModuleName]))
 	// now import the state on a fresh DB
 	memDB = db.NewMemDB()
 	newApp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), memDB, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)
