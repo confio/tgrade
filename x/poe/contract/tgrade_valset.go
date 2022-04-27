@@ -47,9 +47,16 @@ type ValsetInitMsg struct {
 	AutoUnjail bool `json:"auto_unjail"`
 	// This contract receives the rewards that don't go to the validator (set ot tg4-engagement)
 	DistributionContracts []DistributionContract `json:"distribution_contracts,omitempty"`
-	// This is the code-id of the cw2222-compliant contract used to handle rewards for the validators
-	// Generally should the the tg4-engagement code id
+	// This is the code-id of the cw2222-compliant contract used to handle rewards for the validators.
+	// Generally, it should the tg4-engagement code id.
 	ValidatorGroupCodeID uint64 `json:"validator_group_code_id"`
+	// When a validator joins the valset, verify they sign the first block, or jail them for a period otherwise.
+	// The verification happens every time the validator becomes an active validator, including when they are unjailed
+	// or when they just gain enough power to participate.
+	VerifyValidators bool `json:"verify_validators"`
+	// The duration in seconds to jail a validator for in case they don't sign their first epoch boundary block.
+	// After the period, they have to pass verification again, ad infinitum.
+	OfflineJailDuration uint64 `json:"offline_jail_duration"`
 }
 
 type DistributionContract struct {
