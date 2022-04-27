@@ -15,7 +15,7 @@ type APVotingInitMsg struct {
 	WaitingPeriod uint64 `json:"waiting_period"`
 	// Cw3-fixed-multisig contract code id.
 	// This code id will be used to instantiate a group contract with the proposed arbiters list.
-	MultisigCode uint64 `json:"multisig_code"`
+	MultisigCodeID uint64 `json:"multisig_code_id"`
 }
 
 // APVotingExecute ap-voting contract execute messages
@@ -35,19 +35,19 @@ type APVotingExecute struct {
 type Propose struct {
 	Title       string     `json:"title"`
 	Description string     `json:"description"`
-	APProposal  APProposal `json:"arbiter_proposal"` // FIXME? Rename json / contract to `ap_proposal`
+	APProposal  APProposal `json:"arbiter_pool_proposal"`
 }
 
 type APProposal struct {
 	// An open text proposal with no actual logic executed when it passes
-	Text *struct{} `json:"text,omitempty"` // FIXME? Useless. Remove
+	Text *struct{} `json:"text,omitempty"`
 	// Proposes arbiters for existing complaint
-	ProposeArbiters *ProposeArbiters `json:"propose_arbiters"`
+	ProposeArbiters *ProposeArbiters `json:"propose_arbiters,omitempty"`
 }
 
 type ProposeArbiters struct {
 	CaseID   uint64           `json:"case_id"`
-	Arbiters []sdk.AccAddress `json:"arbiters"` // FIXME? Use `[]string` for arbiters list
+	Arbiters []sdk.AccAddress `json:"arbiters"`
 }
 
 type VoteProposal struct {
