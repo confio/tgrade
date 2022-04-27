@@ -231,30 +231,6 @@ type PageableResult interface {
 	PaginationCursor(raw []byte) (PaginationCursor, error)
 }
 
-var _ PageableResult = RawJsonObjectPaginationCursor{}
-
-// RawJsonObjectPaginationCursor works with json object that contain one element and an array of elements.
-// {"foo":["bar", "other"]}
-// the last line of the raw json result set is the next pagination key. In the example above: "other"
-type RawJsonObjectPaginationCursor struct{}
-
-// PaginationCursor implements PageableResult.PaginationCursor
-func (x RawJsonObjectPaginationCursor) PaginationCursor(raw []byte) (PaginationCursor, error) {
-	var m map[string][]json.RawMessage
-	if err := json.Unmarshal(raw, &m); err != nil {
-		return nil, err
-	}
-	switch len(m) {
-	case 0:
-		return nil, nil // empty
-	case 1:
-		for _, v := range m {
-			return []byte(v[len(v)-1]), nil
-		}
-	}
-	return nil, sdkerrors.ErrInvalidType.Wrap("can not handle multiple elements in response")
-}
-
 // execute a smart query with the contract that returns multiple elements
 // returns a cursor whenever the result set has more than 1 element
 func (a ContractAdapter) doPageableQuery(ctx sdk.Context, query interface{}, result interface{}) (PaginationCursor, error) {
