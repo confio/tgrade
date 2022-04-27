@@ -11,8 +11,11 @@ type APVotingInitMsg struct {
 	GroupContractAddress string `json:"group_addr"`
 	// Dispute cost on this contract
 	DisputeCost sdk.Coin `json:"dispute_cost"`
-	// Waiting period for this contract
+	// Waiting period in seconds for this contract
 	WaitingPeriod uint64 `json:"waiting_period"`
+	// Cw3-fixed-multisig contract code id.
+	// This code id will be used to instantiate a group contract with the proposed arbiters list.
+	MultisigCode uint64 `json:"multisig_code"`
 }
 
 // APVotingExecute ap-voting contract execute messages
