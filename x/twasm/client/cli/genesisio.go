@@ -35,7 +35,12 @@ func NewGenesisIO() *GenesisIO {
 func (x GenesisIO) AlterWasmModuleState(cmd *cobra.Command, callback func(state *wasmtypes.GenesisState, appState map[string]json.RawMessage) error) error {
 	return x.AlterTWasmModuleState(cmd, func(state *types.GenesisState, appState map[string]json.RawMessage) error {
 		wasmState := state.RawWasmState()
-		return callback(&wasmState, appState)
+		if err := callback(&wasmState, appState); err != nil {
+			return err
+		}
+		// update genesis messages as they can be modified
+		state.GenMsgs = wasmState.GenMsgs
+		return nil
 	})
 }
 

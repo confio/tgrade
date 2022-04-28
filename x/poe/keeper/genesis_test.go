@@ -2,9 +2,10 @@ package keeper
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/tendermint/tendermint/libs/rand"
-	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
