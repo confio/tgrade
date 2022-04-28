@@ -26,13 +26,13 @@ func TestValidateGenesis(t *testing.T) {
 		},
 		"seed with empty engagement group": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.Engagement = []TG4Member{}
+				m.SeedContracts.Engagement = []TG4Member{}
 			}),
 			expErr: true,
 		},
 		"seed with duplicates in engagement group": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.Engagement = []TG4Member{
+				m.SeedContracts.Engagement = []TG4Member{
 					{Address: anyAccAddr.String(), Points: 1},
 					{Address: anyAccAddr.String(), Points: 2},
 				}
@@ -41,7 +41,7 @@ func TestValidateGenesis(t *testing.T) {
 		},
 		"seed with invalid addr in engagement group": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.Engagement = []TG4Member{
+				m.SeedContracts.Engagement = []TG4Member{
 					{Address: "invalid", Points: 1},
 				}
 			}),
@@ -49,7 +49,7 @@ func TestValidateGenesis(t *testing.T) {
 		},
 		"seed with invalid weight in engagement group": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.Engagement = []TG4Member{
+				m.SeedContracts.Engagement = []TG4Member{
 					{Address: RandomAccAddress().String(), Points: 0},
 				}
 			}),
@@ -63,32 +63,32 @@ func TestValidateGenesis(t *testing.T) {
 		},
 		"empty bond denum": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.BondDenom = ""
+				m.SeedContracts.BondDenom = ""
 			}),
 			expErr: true,
 		},
 		"invalid bond denum": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.BondDenom = "&&&"
+				m.SeedContracts.BondDenom = "&&&"
 			}),
 			expErr: true,
 		},
 		"empty system admin": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.SystemAdminAddress = ""
+				m.SeedContracts.SystemAdminAddress = ""
 			}),
 			expErr: true,
 		},
 		"invalid system admin": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.SystemAdminAddress = "invalid"
+				m.SeedContracts.SystemAdminAddress = "invalid"
 			}),
 			expErr: true,
 		},
 		"valid gentx": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.GenTxs = []json.RawMessage{myGenTx}
-				m.Engagement = append(m.Engagement, TG4Member{
+				m.SeedContracts.GenTxs = []json.RawMessage{myGenTx}
+				m.SeedContracts.Engagement = append(m.SeedContracts.Engagement, TG4Member{
 					Address: myOperatorAddr.String(),
 					Points:  11,
 				})
@@ -96,8 +96,8 @@ func TestValidateGenesis(t *testing.T) {
 		},
 		"duplicate gentx": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.GenTxs = []json.RawMessage{myGenTx, myGenTx}
-				m.Engagement = append(m.Engagement, TG4Member{
+				m.SeedContracts.GenTxs = []json.RawMessage{myGenTx, myGenTx}
+				m.SeedContracts.Engagement = append(m.SeedContracts.Engagement, TG4Member{
 					Address: myOperatorAddr.String(),
 					Points:  11,
 				})
@@ -106,97 +106,97 @@ func TestValidateGenesis(t *testing.T) {
 		},
 		"validator not in engagement group": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.GenTxs = []json.RawMessage{myGenTx}
+				m.SeedContracts.GenTxs = []json.RawMessage{myGenTx}
 			}),
 			expErr: true,
 		},
 		"invalid gentx json": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.GenTxs = []json.RawMessage{[]byte("invalid")}
+				m.SeedContracts.GenTxs = []json.RawMessage{[]byte("invalid")}
 			}),
 			expErr: true,
 		},
 		"engagement contract not set": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagementContractConfig = nil
+				m.SeedContracts.EngagementContractConfig = nil
 			}),
 			expErr: true,
 		},
 		"invalid engagement contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagementContractConfig.Halflife = time.Nanosecond
+				m.SeedContracts.EngagementContractConfig.Halflife = time.Nanosecond
 			}),
 			expErr: true,
 		},
 		"valset contract config not set": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.ValsetContractConfig = nil
+				m.SeedContracts.ValsetContractConfig = nil
 			}),
 			expErr: true,
 		},
 		"invalid valset contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.ValsetContractConfig.MaxValidators = 0
+				m.SeedContracts.ValsetContractConfig.MaxValidators = 0
 			}),
 			expErr: true,
 		},
 		"invalid valset contract denom": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.ValsetContractConfig.EpochReward = sdk.NewCoin("alx", m.ValsetContractConfig.EpochReward.Amount)
+				m.SeedContracts.ValsetContractConfig.EpochReward = sdk.NewCoin("alx", m.SeedContracts.ValsetContractConfig.EpochReward.Amount)
 			}),
 			expErr: true,
 		},
 		"stake contract config not set": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.StakeContractConfig = nil
+				m.SeedContracts.StakeContractConfig = nil
 			}),
 			expErr: true,
 		},
 		"invalid stake contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.StakeContractConfig.UnbondingPeriod = 0
+				m.SeedContracts.StakeContractConfig.UnbondingPeriod = 0
 			}),
 			expErr: true,
 		},
 		"oversight committee contract config not set": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig = nil
+				m.SeedContracts.OversightCommitteeContractConfig = nil
 			}),
 			expErr: true,
 		},
 		"invalid oversight committee contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.Name = ""
+				m.SeedContracts.OversightCommitteeContractConfig.Name = ""
 			}),
 			expErr: true,
 		},
 		"invalid oversight committee contract denom": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.EscrowAmount = sdk.NewCoin("alx", m.OversightCommitteeContractConfig.EscrowAmount.Amount)
+				m.SeedContracts.OversightCommitteeContractConfig.EscrowAmount = sdk.NewCoin("alx", m.SeedContracts.OversightCommitteeContractConfig.EscrowAmount.Amount)
 			}),
 			expErr: true,
 		},
 		"community pool contract config not set": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.CommunityPoolContractConfig = nil
+				m.SeedContracts.CommunityPoolContractConfig = nil
 			}),
 			expErr: true,
 		},
 		"invalid community pool contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.CommunityPoolContractConfig.VotingRules.VotingPeriod = 0
+				m.SeedContracts.CommunityPoolContractConfig.VotingRules.VotingPeriod = 0
 			}),
 			expErr: true,
 		},
 		"validator voting contract config not set": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.ValidatorVotingContractConfig = nil
+				m.SeedContracts.ValidatorVotingContractConfig = nil
 			}),
 			expErr: true,
 		},
 		"invalid validator voting contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.ValidatorVotingContractConfig.VotingRules.VotingPeriod = 0
+				m.SeedContracts.ValidatorVotingContractConfig.VotingRules.VotingPeriod = 0
 			}),
 			expErr: true,
 		},
@@ -205,8 +205,8 @@ func TestValidateGenesis(t *testing.T) {
 				genTx1, opAddr1, _ := RandomGenTX(t, 101, func(m *MsgCreateValidator) {
 					m.Pubkey = myPk
 				})
-				m.GenTxs = []json.RawMessage{myGenTx, genTx1}
-				m.Engagement = []TG4Member{
+				m.SeedContracts.GenTxs = []json.RawMessage{myGenTx, genTx1}
+				m.SeedContracts.Engagement = []TG4Member{
 					{Address: myOperatorAddr.String(), Points: 1},
 					{Address: opAddr1.String(), Points: 2},
 				}
@@ -215,51 +215,51 @@ func TestValidateGenesis(t *testing.T) {
 		},
 		"empty oversight community members": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommunityMembers = nil
+				m.SeedContracts.OversightCommunityMembers = nil
 			}),
 			expErr: true,
 		},
 		"duplicate oversight community members": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommunityMembers = append(m.OversightCommunityMembers, m.OversightCommunityMembers[0])
+				m.SeedContracts.OversightCommunityMembers = append(m.SeedContracts.OversightCommunityMembers, m.SeedContracts.OversightCommunityMembers[0])
 			}),
 			expErr: true,
 		},
 		"invalid oc members address": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommunityMembers = append(m.OversightCommunityMembers, "invalid address")
+				m.SeedContracts.OversightCommunityMembers = append(m.SeedContracts.OversightCommunityMembers, "invalid address")
 
 			}),
 			expErr: true,
 		},
 		"empty arbiter pool members": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.ArbiterPoolMembers = nil
+				m.SeedContracts.ArbiterPoolMembers = nil
 			}),
 			expErr: true,
 		},
 		"duplicate arbiter pool members": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.ArbiterPoolMembers = append(m.ArbiterPoolMembers, m.ArbiterPoolMembers[0])
+				m.SeedContracts.ArbiterPoolMembers = append(m.SeedContracts.ArbiterPoolMembers, m.SeedContracts.ArbiterPoolMembers[0])
 			}),
 			expErr: true,
 		},
 		"invalid ap members address": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.ArbiterPoolMembers = append(m.ArbiterPoolMembers, "invalid address")
+				m.SeedContracts.ArbiterPoolMembers = append(m.SeedContracts.ArbiterPoolMembers, "invalid address")
 
 			}),
 			expErr: true,
 		},
 		"arbiter pool contract config not set": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.ArbiterPoolContractConfig = nil
+				m.SeedContracts.ArbiterPoolContractConfig = nil
 			}),
 			expErr: true,
 		},
 		"invalid arbiter pool contract config": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.ArbiterPoolContractConfig.DenyListContractAddress = "invalid address"
+				m.SeedContracts.ArbiterPoolContractConfig.DenyListContractAddress = "invalid address"
 			}),
 			expErr: true,
 		},
@@ -282,17 +282,17 @@ func TestValidateEngagementContractConfig(t *testing.T) {
 		expErr bool
 	}{
 		"default": {
-			src: DefaultGenesisState().EngagementContractConfig,
+			src: DefaultGenesisState().SeedContracts.EngagementContractConfig,
 		},
 		"halflife empty": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagementContractConfig.Halflife = 0
-			}).EngagementContractConfig,
+				m.SeedContracts.EngagementContractConfig.Halflife = 0
+			}).SeedContracts.EngagementContractConfig,
 		},
 		"halflife contains elements < second": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.EngagementContractConfig.Halflife = time.Minute + time.Millisecond
-			}).EngagementContractConfig,
+				m.SeedContracts.EngagementContractConfig.Halflife = time.Minute + time.Millisecond
+			}).SeedContracts.EngagementContractConfig,
 			expErr: true,
 		},
 	}
@@ -314,24 +314,24 @@ func TestValidateValsetContractConfig(t *testing.T) {
 		expErr bool
 	}{
 		"default": {
-			src: *DefaultGenesisState().ValsetContractConfig,
+			src: *DefaultGenesisState().SeedContracts.ValsetContractConfig,
 		},
 		"max validators empty": {
 			src: *GenesisStateFixture(
-				func(m *GenesisState) { m.ValsetContractConfig.MaxValidators = 0 },
-			).ValsetContractConfig,
+				func(m *GenesisState) { m.SeedContracts.ValsetContractConfig.MaxValidators = 0 },
+			).SeedContracts.ValsetContractConfig,
 			expErr: true,
 		},
 		"scaling empty": {
 			src: *GenesisStateFixture(
-				func(m *GenesisState) { m.ValsetContractConfig.Scaling = 0 },
-			).ValsetContractConfig,
+				func(m *GenesisState) { m.SeedContracts.ValsetContractConfig.Scaling = 0 },
+			).SeedContracts.ValsetContractConfig,
 			expErr: true,
 		},
 		"epoch length empty": {
 			src: *GenesisStateFixture(
-				func(m *GenesisState) { m.ValsetContractConfig.EpochLength = 0 },
-			).ValsetContractConfig,
+				func(m *GenesisState) { m.SeedContracts.ValsetContractConfig.EpochLength = 0 },
+			).SeedContracts.ValsetContractConfig,
 			expErr: true,
 		},
 		"fee percentage at min": {
@@ -340,9 +340,9 @@ func TestValidateValsetContractConfig(t *testing.T) {
 					const min_fee_percentage = "0.0000000000000001"
 					val, err := sdk.NewDecFromStr(min_fee_percentage)
 					require.NoError(t, err)
-					m.ValsetContractConfig.FeePercentage = val
+					m.SeedContracts.ValsetContractConfig.FeePercentage = val
 				},
-			).ValsetContractConfig,
+			).SeedContracts.ValsetContractConfig,
 		},
 		"fee percentage below min": {
 			src: *GenesisStateFixture(
@@ -350,76 +350,76 @@ func TestValidateValsetContractConfig(t *testing.T) {
 					const min_fee_percentage = "0.00000000000000009"
 					val, err := sdk.NewDecFromStr(min_fee_percentage)
 					require.NoError(t, err)
-					m.ValsetContractConfig.FeePercentage = val
+					m.SeedContracts.ValsetContractConfig.FeePercentage = val
 				},
-			).ValsetContractConfig,
+			).SeedContracts.ValsetContractConfig,
 			expErr: true,
 		},
 		"validator rewards ratio zero": {
 			src: *GenesisStateFixture(
 				func(m *GenesisState) {
-					m.ValsetContractConfig.ValidatorRewardRatio = sdk.ZeroDec()
-					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.MustNewDecFromStr("52.5")
+					m.SeedContracts.ValsetContractConfig.ValidatorRewardRatio = sdk.ZeroDec()
+					m.SeedContracts.ValsetContractConfig.CommunityPoolRewardRatio = sdk.MustNewDecFromStr("52.5")
 				},
-			).ValsetContractConfig,
+			).SeedContracts.ValsetContractConfig,
 		},
 		"validator rewards ratio 100": {
 			src: *GenesisStateFixture(
 				func(m *GenesisState) {
-					m.ValsetContractConfig.ValidatorRewardRatio = sdk.NewDec(100)
-					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.ZeroDec()
-					m.ValsetContractConfig.EngagementRewardRatio = sdk.ZeroDec()
+					m.SeedContracts.ValsetContractConfig.ValidatorRewardRatio = sdk.NewDec(100)
+					m.SeedContracts.ValsetContractConfig.CommunityPoolRewardRatio = sdk.ZeroDec()
+					m.SeedContracts.ValsetContractConfig.EngagementRewardRatio = sdk.ZeroDec()
 				},
-			).ValsetContractConfig,
+			).SeedContracts.ValsetContractConfig,
 		},
 		"validator rewards ratio > 100": {
 			src: *GenesisStateFixture(
 				func(m *GenesisState) {
-					m.ValsetContractConfig.ValidatorRewardRatio = sdk.NewDec(101)
-					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.ZeroDec()
-					m.ValsetContractConfig.EngagementRewardRatio = sdk.ZeroDec()
+					m.SeedContracts.ValsetContractConfig.ValidatorRewardRatio = sdk.NewDec(101)
+					m.SeedContracts.ValsetContractConfig.CommunityPoolRewardRatio = sdk.ZeroDec()
+					m.SeedContracts.ValsetContractConfig.EngagementRewardRatio = sdk.ZeroDec()
 				},
-			).ValsetContractConfig,
+			).SeedContracts.ValsetContractConfig,
 			expErr: true,
 		},
 		"engagement rewards ratio > 100": {
 			src: *GenesisStateFixture(
 				func(m *GenesisState) {
-					m.ValsetContractConfig.EngagementRewardRatio = sdk.NewDec(101)
-					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.ZeroDec()
-					m.ValsetContractConfig.ValidatorRewardRatio = sdk.ZeroDec()
+					m.SeedContracts.ValsetContractConfig.EngagementRewardRatio = sdk.NewDec(101)
+					m.SeedContracts.ValsetContractConfig.CommunityPoolRewardRatio = sdk.ZeroDec()
+					m.SeedContracts.ValsetContractConfig.ValidatorRewardRatio = sdk.ZeroDec()
 				},
-			).ValsetContractConfig,
+			).SeedContracts.ValsetContractConfig,
 			expErr: true,
 		},
 		"community pool rewards ratio > 100": {
 			src: *GenesisStateFixture(
 				func(m *GenesisState) {
-					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.NewDec(101)
-					m.ValsetContractConfig.EngagementRewardRatio = sdk.ZeroDec()
-					m.ValsetContractConfig.ValidatorRewardRatio = sdk.ZeroDec()
+					m.SeedContracts.ValsetContractConfig.CommunityPoolRewardRatio = sdk.NewDec(101)
+					m.SeedContracts.ValsetContractConfig.EngagementRewardRatio = sdk.ZeroDec()
+					m.SeedContracts.ValsetContractConfig.ValidatorRewardRatio = sdk.ZeroDec()
 				},
-			).ValsetContractConfig,
+			).SeedContracts.ValsetContractConfig,
 			expErr: true,
 		},
 		"total rewards ratio > 100": {
 			src: *GenesisStateFixture(
 				func(m *GenesisState) {
-					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.MustNewDecFromStr("49")
-					m.ValsetContractConfig.EngagementRewardRatio = sdk.MustNewDecFromStr("49")
-					m.ValsetContractConfig.ValidatorRewardRatio = sdk.MustNewDecFromStr("3")
+					m.SeedContracts.ValsetContractConfig.CommunityPoolRewardRatio = sdk.MustNewDecFromStr("49")
+					m.SeedContracts.ValsetContractConfig.EngagementRewardRatio = sdk.MustNewDecFromStr("49")
+					m.SeedContracts.ValsetContractConfig.ValidatorRewardRatio = sdk.MustNewDecFromStr("3")
 				},
-			).ValsetContractConfig,
+			).SeedContracts.ValsetContractConfig,
 			expErr: true,
 		},
 		"total rewards ratio < 100": {
 			src: *GenesisStateFixture(
 				func(m *GenesisState) {
-					m.ValsetContractConfig.CommunityPoolRewardRatio = sdk.MustNewDecFromStr("10")
-					m.ValsetContractConfig.EngagementRewardRatio = sdk.MustNewDecFromStr("10")
-					m.ValsetContractConfig.ValidatorRewardRatio = sdk.MustNewDecFromStr("10")
+					m.SeedContracts.ValsetContractConfig.CommunityPoolRewardRatio = sdk.MustNewDecFromStr("10")
+					m.SeedContracts.ValsetContractConfig.EngagementRewardRatio = sdk.MustNewDecFromStr("10")
+					m.SeedContracts.ValsetContractConfig.ValidatorRewardRatio = sdk.MustNewDecFromStr("10")
 				},
-			).ValsetContractConfig,
+			).SeedContracts.ValsetContractConfig,
 			expErr: true,
 		},
 	}
@@ -440,36 +440,40 @@ func TestValidateStakeContractConfig(t *testing.T) {
 		expErr bool
 	}{
 		"default": {
-			src: *DefaultGenesisState().StakeContractConfig,
+			src: *DefaultGenesisState().SeedContracts.StakeContractConfig,
 		},
 		"min bond empty": {
 			src: *GenesisStateFixture(
-				func(m *GenesisState) { m.StakeContractConfig.MinBond = 0 },
-			).StakeContractConfig,
+				func(m *GenesisState) { m.SeedContracts.StakeContractConfig.MinBond = 0 },
+			).SeedContracts.StakeContractConfig,
 			expErr: true,
 		},
 		"tokens per weight empty": {
 			src: *GenesisStateFixture(
-				func(m *GenesisState) { m.StakeContractConfig.TokensPerPoint = 0 },
-			).StakeContractConfig,
+				func(m *GenesisState) { m.SeedContracts.StakeContractConfig.TokensPerPoint = 0 },
+			).SeedContracts.StakeContractConfig,
 			expErr: true,
 		},
 		"unbonding period empty": {
 			src: *GenesisStateFixture(
-				func(m *GenesisState) { m.StakeContractConfig.UnbondingPeriod = 0 },
-			).StakeContractConfig,
+				func(m *GenesisState) { m.SeedContracts.StakeContractConfig.UnbondingPeriod = 0 },
+			).SeedContracts.StakeContractConfig,
 			expErr: true,
 		},
 		"unbonding period below min": {
 			src: *GenesisStateFixture(
-				func(m *GenesisState) { m.StakeContractConfig.UnbondingPeriod = time.Second - time.Nanosecond },
-			).StakeContractConfig,
+				func(m *GenesisState) {
+					m.SeedContracts.StakeContractConfig.UnbondingPeriod = time.Second - time.Nanosecond
+				},
+			).SeedContracts.StakeContractConfig,
 			expErr: true,
 		},
 		"not convertable to seconds": {
 			src: *GenesisStateFixture(
-				func(m *GenesisState) { m.StakeContractConfig.UnbondingPeriod = time.Second + time.Nanosecond },
-			).StakeContractConfig,
+				func(m *GenesisState) {
+					m.SeedContracts.StakeContractConfig.UnbondingPeriod = time.Second + time.Nanosecond
+				},
+			).SeedContracts.StakeContractConfig,
 			expErr: true,
 		},
 	}
@@ -491,36 +495,36 @@ func TestValidateOversightCommitteeContractConfig(t *testing.T) {
 		expErr bool
 	}{
 		"default": {
-			src: *DefaultGenesisState().OversightCommitteeContractConfig,
+			src: *DefaultGenesisState().SeedContracts.OversightCommitteeContractConfig,
 		},
 		"name empty": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.Name = ""
-			}).OversightCommitteeContractConfig,
+				m.SeedContracts.OversightCommitteeContractConfig.Name = ""
+			}).SeedContracts.OversightCommitteeContractConfig,
 			expErr: true,
 		},
 		"name too long": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.Name = strings.Repeat("a", 101)
-			}).OversightCommitteeContractConfig,
+				m.SeedContracts.OversightCommitteeContractConfig.Name = strings.Repeat("a", 101)
+			}).SeedContracts.OversightCommitteeContractConfig,
 			expErr: true,
 		},
 		"escrow amount too low": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.EscrowAmount = sdk.NewCoin(DefaultBondDenom, sdk.NewInt(999_999))
-			}).OversightCommitteeContractConfig,
+				m.SeedContracts.OversightCommitteeContractConfig.EscrowAmount = sdk.NewCoin(DefaultBondDenom, sdk.NewInt(999_999))
+			}).SeedContracts.OversightCommitteeContractConfig,
 			expErr: true,
 		},
 		"voting rules invalid": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.VotingPeriod = 0
-			}).OversightCommitteeContractConfig,
+				m.SeedContracts.OversightCommitteeContractConfig.VotingRules.VotingPeriod = 0
+			}).SeedContracts.OversightCommitteeContractConfig,
 			expErr: true,
 		},
 		"deny contract address not an address": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.DenyListContractAddress = "not-an-address"
-			}).OversightCommitteeContractConfig,
+				m.SeedContracts.OversightCommitteeContractConfig.DenyListContractAddress = "not-an-address"
+			}).SeedContracts.OversightCommitteeContractConfig,
 			expErr: true,
 		},
 	}
@@ -542,74 +546,74 @@ func TestValidateVotingRules(t *testing.T) {
 		expErr bool
 	}{
 		"default oc": {
-			src: DefaultGenesisState().OversightCommitteeContractConfig.VotingRules,
+			src: DefaultGenesisState().SeedContracts.OversightCommitteeContractConfig.VotingRules,
 		},
 		"default community pool": {
-			src: DefaultGenesisState().CommunityPoolContractConfig.VotingRules,
+			src: DefaultGenesisState().SeedContracts.CommunityPoolContractConfig.VotingRules,
 		},
 		"default validator voting": {
-			src: DefaultGenesisState().ValidatorVotingContractConfig.VotingRules,
+			src: DefaultGenesisState().SeedContracts.ValidatorVotingContractConfig.VotingRules,
 		},
 		"voting period empty": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.VotingPeriod = 0
-			}).OversightCommitteeContractConfig.VotingRules,
+				m.SeedContracts.OversightCommitteeContractConfig.VotingRules.VotingPeriod = 0
+			}).SeedContracts.OversightCommitteeContractConfig.VotingRules,
 			expErr: true,
 		},
 		"quorum empty": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.Dec{}
-			}).OversightCommitteeContractConfig.VotingRules,
+				m.SeedContracts.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.Dec{}
+			}).SeedContracts.OversightCommitteeContractConfig.VotingRules,
 			expErr: true,
 		},
 		"quorum at min": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.OneDec()
-			}).OversightCommitteeContractConfig.VotingRules,
+				m.SeedContracts.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.OneDec()
+			}).SeedContracts.OversightCommitteeContractConfig.VotingRules,
 		},
 		"quorum less than min": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.ZeroDec()
-			}).OversightCommitteeContractConfig.VotingRules,
+				m.SeedContracts.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.ZeroDec()
+			}).SeedContracts.OversightCommitteeContractConfig.VotingRules,
 			expErr: true,
 		},
 		"quorum at max": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.NewDec(100)
-			}).OversightCommitteeContractConfig.VotingRules,
+				m.SeedContracts.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.NewDec(100)
+			}).SeedContracts.OversightCommitteeContractConfig.VotingRules,
 		},
 		"quorum greater max": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.NewDec(101)
-			}).OversightCommitteeContractConfig.VotingRules,
+				m.SeedContracts.OversightCommitteeContractConfig.VotingRules.Quorum = sdk.NewDec(101)
+			}).SeedContracts.OversightCommitteeContractConfig.VotingRules,
 			expErr: true,
 		},
 		"threshold empty": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.Dec{}
-			}).OversightCommitteeContractConfig.VotingRules,
+				m.SeedContracts.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.Dec{}
+			}).SeedContracts.OversightCommitteeContractConfig.VotingRules,
 			expErr: true,
 		},
 		"threshold at min": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(50)
-			}).OversightCommitteeContractConfig.VotingRules,
+				m.SeedContracts.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(50)
+			}).SeedContracts.OversightCommitteeContractConfig.VotingRules,
 		},
 		"threshold lower min": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(49)
-			}).OversightCommitteeContractConfig.VotingRules,
+				m.SeedContracts.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(49)
+			}).SeedContracts.OversightCommitteeContractConfig.VotingRules,
 			expErr: true,
 		},
 		"threshold at max": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(100)
-			}).OversightCommitteeContractConfig.VotingRules,
+				m.SeedContracts.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(100)
+			}).SeedContracts.OversightCommitteeContractConfig.VotingRules,
 		},
 		"threshold greater max": {
 			src: GenesisStateFixture(func(m *GenesisState) {
-				m.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(101)
-			}).OversightCommitteeContractConfig.VotingRules,
+				m.SeedContracts.OversightCommitteeContractConfig.VotingRules.Threshold = sdk.NewDec(101)
+			}).SeedContracts.OversightCommitteeContractConfig.VotingRules,
 			expErr: true,
 		},
 	}
@@ -632,42 +636,42 @@ func TestValidateArbiterPoolContractConfig(t *testing.T) {
 		expErr bool
 	}{
 		"default": {
-			src: *DefaultGenesisState().ArbiterPoolContractConfig,
+			src: *DefaultGenesisState().SeedContracts.ArbiterPoolContractConfig,
 		},
 		"name empty": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.ArbiterPoolContractConfig.Name = ""
-			}).ArbiterPoolContractConfig,
+				m.SeedContracts.ArbiterPoolContractConfig.Name = ""
+			}).SeedContracts.ArbiterPoolContractConfig,
 			expErr: true,
 		},
 		"name too long": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.ArbiterPoolContractConfig.Name = strings.Repeat("a", 101)
-			}).ArbiterPoolContractConfig,
+				m.SeedContracts.ArbiterPoolContractConfig.Name = strings.Repeat("a", 101)
+			}).SeedContracts.ArbiterPoolContractConfig,
 			expErr: true,
 		},
 		"escrow amount too low": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.ArbiterPoolContractConfig.EscrowAmount = sdk.NewCoin(DefaultBondDenom, sdk.NewInt(999_999))
-			}).ArbiterPoolContractConfig,
+				m.SeedContracts.ArbiterPoolContractConfig.EscrowAmount = sdk.NewCoin(DefaultBondDenom, sdk.NewInt(999_999))
+			}).SeedContracts.ArbiterPoolContractConfig,
 			expErr: true,
 		},
 		"voting rules invalid": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.ArbiterPoolContractConfig.VotingRules.VotingPeriod = 0
-			}).ArbiterPoolContractConfig,
+				m.SeedContracts.ArbiterPoolContractConfig.VotingRules.VotingPeriod = 0
+			}).SeedContracts.ArbiterPoolContractConfig,
 			expErr: true,
 		},
 		"deny contract address not an address": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.ArbiterPoolContractConfig.DenyListContractAddress = "not-an-address"
-			}).ArbiterPoolContractConfig,
+				m.SeedContracts.ArbiterPoolContractConfig.DenyListContractAddress = "not-an-address"
+			}).SeedContracts.ArbiterPoolContractConfig,
 			expErr: true,
 		},
 		"not convertible to seconds": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.ArbiterPoolContractConfig.WaitingPeriod = time.Second + time.Nanosecond
-			}).ArbiterPoolContractConfig,
+				m.SeedContracts.ArbiterPoolContractConfig.WaitingPeriod = time.Second + time.Nanosecond
+			}).SeedContracts.ArbiterPoolContractConfig,
 			expErr: true,
 		},
 	}

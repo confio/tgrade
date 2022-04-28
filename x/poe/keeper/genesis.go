@@ -35,10 +35,12 @@ func InitGenesis(
 		keeper.SetPoEContractAddress(ctx, v.ContractType, addr)
 	}
 	keeper.setParams(ctx, genesisState.Params)
-	if len(genesisState.GenTxs) > 0 {
-		if err := DeliverGenTxs(genesisState.GenTxs, deliverTx, txEncodingConfig); err != nil {
-			return sdkerrors.Wrap(err, "deliver gentx")
-		}
+	if genesisState.SeedContracts == nil {
+		return nil
+	}
+	// seed mode
+	if err := DeliverGenTxs(genesisState.SeedContracts.GenTxs, deliverTx, txEncodingConfig); err != nil {
+		return sdkerrors.Wrap(err, "deliver gentx")
 	}
 	return nil
 }
@@ -70,9 +72,7 @@ func DeliverGenTxs(genTxs []json.RawMessage, deliverTx DeliverTxFn, txEncodingCo
 // ExportGenesis returns a GenesisState for a given context and keeper.
 func ExportGenesis(ctx sdk.Context, keeper Keeper) *types.GenesisState {
 	genState := types.GenesisState{
-		Params:        keeper.GetParams(ctx),
-		SeedContracts: false,
-		BondDenom:     keeper.GetBondDenom(ctx),
+		Params: keeper.GetParams(ctx),
 	}
 	keeper.IteratePoEContracts(ctx, func(Ctype types.PoEContractType, addr sdk.AccAddress) bool {
 		genState.Contracts = append(genState.Contracts, types.PoEContract{

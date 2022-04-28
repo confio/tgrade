@@ -408,14 +408,14 @@ func initGenFiles(
 	appGenState[banktypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&bankGenState)
 	poeGenesisState := poetypes.GetGenesisStateFromAppState(clientCtx.Codec, appGenState)
 	for i, addr := range genAccounts {
-		poeGenesisState.Engagement = append(poeGenesisState.Engagement, poetypes.TG4Member{
+		poeGenesisState.SeedContracts.Engagement = append(poeGenesisState.SeedContracts.Engagement, poetypes.TG4Member{
 			Address: addr.GetAddress().String(),
 			Points:  uint64(len(genAccounts) - i), // unique weight
 		})
 	}
-	poeGenesisState.SystemAdminAddress = admin.String()
-	poeGenesisState.OversightCommunityMembers = ocMemberAddrs
-	poeGenesisState.ArbiterPoolMembers = apMemberAddrs
+	poeGenesisState.SeedContracts.SystemAdminAddress = admin.String()
+	poeGenesisState.SeedContracts.OversightCommunityMembers = ocMemberAddrs
+	poeGenesisState.SeedContracts.ArbiterPoolMembers = apMemberAddrs
 	poetypes.SetGenesisStateInAppState(clientCtx.Codec, appGenState, poeGenesisState)
 
 	appGenStateJSON, err := json.MarshalIndent(appGenState, "", "  ")

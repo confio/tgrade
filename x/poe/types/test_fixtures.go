@@ -35,13 +35,13 @@ func MsgUpdateValidatorFixture(mutators ...func(m *MsgUpdateValidator)) *MsgUpda
 
 func GenesisStateFixture(mutators ...func(m *GenesisState)) GenesisState {
 	r := DefaultGenesisState()
-	r.Engagement = []TG4Member{{
+	r.SeedContracts.Engagement = []TG4Member{{
 		Address: RandomAccAddress().String(),
 		Points:  10,
 	}}
 
-	r.OversightCommunityMembers = []string{RandomAccAddress().String(), RandomAccAddress().String()}
-	r.ArbiterPoolMembers = []string{RandomAccAddress().String(), RandomAccAddress().String()}
+	r.SeedContracts.OversightCommunityMembers = []string{RandomAccAddress().String(), RandomAccAddress().String()}
+	r.SeedContracts.ArbiterPoolMembers = []string{RandomAccAddress().String(), RandomAccAddress().String()}
 
 	for _, m := range mutators {
 		m(&r)
@@ -56,7 +56,7 @@ func SetGenesisOCMembersMutator(members ...sdk.AccAddress) func(m *GenesisState)
 		for i, v := range members {
 			oc[i] = v.String()
 		}
-		m.OversightCommunityMembers = oc
+		m.SeedContracts.OversightCommunityMembers = oc
 	}
 }
 

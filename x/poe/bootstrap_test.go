@@ -261,10 +261,10 @@ func TestBootstrapPoEContracts(t *testing.T) {
 	// when
 	ctx := sdk.Context{}.WithLogger(log.TestingLogger())
 	genesis := types.GenesisStateFixture(func(m *types.GenesisState) {
-		m.SystemAdminAddress = mySystemAdmin
-		m.Engagement = []types.TG4Member{{Address: myUser, Points: 10}, {Address: myOtherUser, Points: 11}}
+		m.SeedContracts.SystemAdminAddress = mySystemAdmin
+		m.SeedContracts.Engagement = []types.TG4Member{{Address: myUser, Points: 10}, {Address: myOtherUser, Points: 11}}
 	})
-	gotErr := BootstrapPoEContracts(ctx, cm, tm, pm, genesis)
+	gotErr := BootstrapPoEContracts(ctx, cm, tm, pm, *genesis.SeedContracts)
 
 	// then
 	require.NoError(t, gotErr)
@@ -355,7 +355,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 		"fee percentage with comma value": {
 			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
 				var err error
-				m.ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("50.1")
+				m.SeedContracts.ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("50.1")
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
@@ -378,7 +378,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 		"fee percentage with after comma value": {
 			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
 				var err error
-				m.ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("0.1")
+				m.SeedContracts.ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("0.1")
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
@@ -401,7 +401,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 		"fee percentage with min comma value": {
 			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
 				var err error
-				m.ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("0.0000000000000001")
+				m.SeedContracts.ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("0.0000000000000001")
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
@@ -424,7 +424,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			got := newValsetInitMsg(spec.genesis, systemAdmin, mixerContractAddr, engagementAddr, communityPoolAddr, engagementID)
+			got := newValsetInitMsg(*spec.genesis.SeedContracts, systemAdmin, mixerContractAddr, engagementAddr, communityPoolAddr, engagementID)
 			assert.Equal(t, spec.exp, got)
 		})
 	}

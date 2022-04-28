@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -164,12 +165,13 @@ func (am AppModule) EndBlock(ctx sdk.Context, block abci.RequestEndBlock) []abci
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
-	if len(genesisState.GenTxs) == 0 {
-		panic(sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty gentx"))
-	}
 
-	if genesisState.SeedContracts {
-		if err := BootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, genesisState); err != nil {
+	seedMode := genesisState.SeedContracts != nil
+	if seedMode {
+		if len(genesisState.SeedContracts.GenTxs) == 0 {
+			panic(sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty gentx"))
+		}
+		if err := BootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, *genesisState.SeedContracts); err != nil {
 			panic(fmt.Sprintf("bootstrap PoE contracts: %+v", err))
 		}
 	}
@@ -190,7 +192,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	switch diff, err := contract.CallEndBlockWithValidatorUpdate(ctx, addr, am.twasmKeeper); {
 	case err != nil:
 		panic(fmt.Sprintf("poe sudo call: %s", err))
-	case len(diff) == 0:
+	case seedMode && len(diff) == 0:
 		panic("initial valset must not be empty")
 	default:
 		return diff
