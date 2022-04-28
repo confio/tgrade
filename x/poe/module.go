@@ -178,7 +178,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	}
 
 	// verify PoE setup
-	if err := verifyPoEContracts(ctx, am.twasmKeeper, am.poeKeeper); err != nil {
+	if err := VerifyPoEContracts(ctx, am.twasmKeeper, am.poeKeeper); err != nil {
 		panic(fmt.Sprintf("verify PoE bootstrap contracts: %+v", err))
 	}
 

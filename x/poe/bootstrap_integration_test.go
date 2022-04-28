@@ -5,6 +5,9 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/types/address"
+	"github.com/tendermint/tendermint/libs/rand"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -118,6 +121,61 @@ func TestIntegrationBootstrapPoEContracts(t *testing.T) {
 	}
 }
 
+func TestVerifyPoEContracts(t *testing.T) {
+	// setup contracts and seed some data
+	parentCtx, example, _ := setupPoEContracts(t)
+	specs := map[string]struct {
+		alterState func(t *testing.T, ctx sdk.Context)
+		expErr     bool
+	}{
+		"all good": {
+			alterState: func(t *testing.T, ctx sdk.Context) {}, //  noop
+		},
+		"poe contract not pinned": {
+			alterState: func(t *testing.T, ctx sdk.Context) {
+				require.NoError(t, example.TWasmKeeper.GetContractKeeper().UnpinCode(ctx, 1))
+			},
+			expErr: true,
+		},
+		"poe contract without correct migrator": {
+			alterState: func(t *testing.T, ctx sdk.Context) {
+				contractAddr, _ := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+				valVotingAddr, _ := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValidatorVoting)
+				otherAddr := rand.Bytes(address.Len)
+				require.NoError(t, example.TWasmKeeper.GetContractKeeper().UpdateContractAdmin(ctx, contractAddr, valVotingAddr, otherAddr))
+			},
+			expErr: true,
+		},
+		"without validator update privilege set": {
+			alterState: func(t *testing.T, ctx sdk.Context) {
+				otherContract, _ := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
+				example.PoEKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeValset, otherContract)
+			},
+			expErr: true,
+		},
+		"without delegator privilege set": {
+			alterState: func(t *testing.T, ctx sdk.Context) {
+				otherContract, _ := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
+				example.PoEKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeStaking, otherContract)
+			},
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			ctx, _ := parentCtx.CacheContext()
+			spec.alterState(t, ctx)
+
+			gotErr := poe.VerifyPoEContracts(ctx, example.TWasmKeeper, example.PoEKeeper)
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+		})
+	}
+}
+
 func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, types.GenesisState) {
 	t.Helper()
 	ctx, example := keeper.CreateDefaultTestInput(t)
@@ -157,7 +215,6 @@ func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k keeper.Keeper, con
 		msg := msgs[0].(*types.MsgCreateValidator)
 		_, err = h(ctx, msg)
 		require.NoError(t, err)
-		t.Logf("+++ create validator: %s\n", msg.OperatorAddress)
 		return abci.ResponseDeliverTx{}
 	}
 }

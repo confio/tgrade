@@ -468,8 +468,8 @@ func newValsetInitMsg(
 	}
 }
 
-// verifyPoEContracts verifies all PoE contracts are setup as expected
-func verifyPoEContracts(ctx sdk.Context, tk twasmKeeper, poeKeeper poeKeeper) error {
+// VerifyPoEContracts sanity check that verifies all PoE contracts are setup as expected
+func VerifyPoEContracts(ctx sdk.Context, tk twasmKeeper, poeKeeper poeKeeper) error {
 	valVotingContractAddr, err := poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValidatorVoting)
 	if err != nil {
 		return sdkerrors.Wrap(err, "validator voting address")
