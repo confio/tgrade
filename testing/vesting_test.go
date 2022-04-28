@@ -61,7 +61,7 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	// when create validator
 	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=0utgd",
 		fmt.Sprintf("--vesting-amount=%dutgd", stakedVestingAmount),
-		"--pubkey="+string(pubKeyEncoded), "--from=vesting1", "--gas=290000")
+		"--pubkey="+string(pubKeyEncoded), "--from=vesting1", "--gas=300000")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
