@@ -73,6 +73,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		types.PoEContractTypeOversightCommunity: {
 			expInitMsg: contract.TrustedCircleInitMsg{
 				Name:                      "Oversight Community",
+				Denom:                     "utgd",
 				EscrowAmount:              sdk.NewInt(1_000_000),
 				VotingPeriod:              30,
 				Quorum:                    sdk.NewDecWithPrec(51, 2),

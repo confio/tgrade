@@ -364,6 +364,7 @@ func newOCInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
 	cfg := gs.OversightCommitteeContractConfig
 	return contract.TrustedCircleInitMsg{
 		Name:                      cfg.Name,
+		Denom:                     cfg.EscrowAmount.Denom,
 		EscrowAmount:              cfg.EscrowAmount.Amount,
 		VotingPeriod:              cfg.VotingRules.VotingPeriod,
 		Quorum:                    *contract.DecimalFromPercentage(cfg.VotingRules.Quorum),
@@ -392,6 +393,7 @@ func newAPTrustedCircleInitMsg(gs types.GenesisState) contract.TrustedCircleInit
 	cfg := gs.ArbiterPoolContractConfig
 	return contract.TrustedCircleInitMsg{
 		Name:                      cfg.Name,
+		Denom:                     cfg.EscrowAmount.Denom,
 		EscrowAmount:              cfg.EscrowAmount.Amount,
 		VotingPeriod:              cfg.VotingRules.VotingPeriod,
 		Quorum:                    *contract.DecimalFromPercentage(cfg.VotingRules.Quorum),
