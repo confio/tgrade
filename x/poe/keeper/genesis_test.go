@@ -2,6 +2,8 @@ package keeper
 
 import (
 	"encoding/json"
+	"github.com/cosmos/cosmos-sdk/types/address"
+	"github.com/tendermint/tendermint/libs/rand"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -123,6 +125,35 @@ func TestDeliverGenTxs(t *testing.T) {
 			assert.Len(t, capturedTxs, spec.expDeliveredCount)
 		})
 	}
+}
+
+func TestExportGenesis(t *testing.T) {
+	ctx, example := CreateDefaultTestInput(t)
+	k := example.PoEKeeper
+
+	storedAddr := make(map[types.PoEContractType]sdk.AccAddress)
+	types.IteratePoEContractTypes(func(tp types.PoEContractType) bool {
+		var addr sdk.AccAddress = rand.Bytes(address.Len)
+		k.SetPoEContractAddress(ctx, tp, addr)
+		storedAddr[tp] = addr
+		return false
+	})
+
+	// when
+	gs := ExportGenesis(ctx, k)
+
+	// then
+	require.NotNil(t, gs)
+	expParams := types.DefaultParams()
+	expParams.MinDelegationAmounts = nil
+	assert.Equal(t, expParams, gs.Params)
+	require.Len(t, gs.Contracts, len(storedAddr))
+	for _, v := range gs.Contracts {
+		assert.Equal(t, storedAddr[v.ContractType].String(), v.Address)
+		delete(storedAddr, v.ContractType)
+	}
+	// ensure no duplicates
+	assert.Empty(t, storedAddr)
 }
 
 func initBech32Prefixes() {
