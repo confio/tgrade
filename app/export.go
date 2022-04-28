@@ -78,7 +78,7 @@ func activeValidatorSet(app *TgradeApp, ctx sdk.Context, err error) ([]tmtypes.G
 			moniker = meta.GetMoniker()
 		}
 		result = append(result, tmtypes.GenesisValidator{
-			Address: tmtypes.Address(opAddr),
+			Address: tmPk.Address(),
 			PubKey:  tmPk,
 			Power:   int64(c.Power),
 			Name:    moniker,
