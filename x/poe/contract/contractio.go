@@ -303,6 +303,14 @@ type Paginator struct {
 	Limit      uint64           `json:"limit,omitempty"`
 }
 
+// ToQuery converts to poe contract query format
+func (p *Paginator) ToQuery() (string, int) {
+	if p == nil {
+		return "", 0
+	}
+	return string(p.StartAfter), int(p.Limit)
+}
+
 // NewPaginator constructor
 func NewPaginator(pag *query.PageRequest) (*Paginator, error) {
 	if pag == nil {

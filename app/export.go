@@ -84,6 +84,6 @@ func activeValidatorSet(app *TgradeApp, ctx sdk.Context, err error) ([]tmtypes.G
 			Name:    moniker,
 		})
 		return false
-	})
+	}, nil)
 	return result, err
 }

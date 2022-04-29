@@ -27,7 +27,7 @@ type ValsetContract interface {
 	ListValidatorSlashing(ctx sdk.Context, opAddr sdk.AccAddress) ([]contract.ValidatorSlashing, error)
 	QueryConfig(ctx sdk.Context) (*contract.ValsetConfigResponse, error)
 	UpdateAdmin(ctx sdk.Context, new sdk.AccAddress, sender sdk.AccAddress) error
-	IterateActiveValidators(ctx sdk.Context, callback func(c contract.ValidatorInfo) bool) error
+	IterateActiveValidators(ctx sdk.Context, callback func(c contract.ValidatorInfo) bool, pagination *contract.Paginator) error
 	Address() (sdk.AccAddress, error)
 }
 

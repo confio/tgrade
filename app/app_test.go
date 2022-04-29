@@ -75,7 +75,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	var bankGenState banktypes.GenesisState
 	marshaler.MustUnmarshalJSON(genesisState[banktypes.ModuleName], &bankGenState)
 
-	coins := sdk.Coins{sdk.NewCoin(poetypes.DefaultBondDenom, sdk.NewInt(1000000000))}.Sort()
+	coins := sdk.Coins{sdk.NewCoin(poetypes.DefaultBondDenom, sdk.NewInt(1000000000))}
 	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: myAddr.String(), Coins: coins})
 	bankGenState.Supply = bankGenState.Supply.Add(coins...)
 	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: systemAdminAddr.String(), Coins: coins})
@@ -92,10 +92,10 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 		return genAddr
 	}
 	// add 3 oc members
-	ocMembers := genAddrAndUpdateBalance(3, coins.Sort())
+	ocMembers := genAddrAndUpdateBalance(3, coins)
 
 	// add 2 ap members
-	apMembers := genAddrAndUpdateBalance(2, coins.Sort())
+	apMembers := genAddrAndUpdateBalance(2, coins)
 
 	genesisState[banktypes.ModuleName] = marshaler.MustMarshalJSON(&bankGenState)
 

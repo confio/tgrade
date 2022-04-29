@@ -290,15 +290,26 @@ func TestJailUnjail(t *testing.T) {
 
 func TestIterateActiveValidators(t *testing.T) {
 	specs := map[string]struct {
-		valCount int
+		paginator *contract.Paginator
+		valCount  int
 	}{
 		"list single pages": {
-			valCount: 30,
+			paginator: &contract.Paginator{Limit: 30},
+			valCount:  30,
 		},
 		"list two pages": {
-			valCount: 31,
+			paginator: &contract.Paginator{Limit: 30},
+			valCount:  31,
 		},
 		"list all actives": {
+			paginator: &contract.Paginator{Limit: 30},
+			valCount:  100, // set as max active in default genesis
+		},
+		"list all actives with high limit": {
+			paginator: &contract.Paginator{Limit: 130},
+			valCount:  100,
+		},
+		"list all actives without paginator initialized": {
 			valCount: 100,
 		},
 	}
@@ -307,10 +318,11 @@ func TestIterateActiveValidators(t *testing.T) {
 			ctx, example, genesisValidators, _ := setupPoEContractsNVal(t, spec.valCount)
 			assert.Equal(t, spec.valCount, len(genesisValidators))
 			var gotVals []contract.ValidatorInfo
-			gotErr := example.PoEKeeper.ValsetContract(ctx).IterateActiveValidators(ctx, func(c contract.ValidatorInfo) bool {
+			cb := func(c contract.ValidatorInfo) bool {
 				gotVals = append(gotVals, c)
 				return false
-			})
+			}
+			gotErr := example.PoEKeeper.ValsetContract(ctx).IterateActiveValidators(ctx, cb, spec.paginator)
 			require.NoError(t, gotErr)
 			assert.Equal(t, spec.valCount, len(gotVals))
 		})

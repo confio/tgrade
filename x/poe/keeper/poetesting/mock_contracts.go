@@ -38,15 +38,15 @@ type ValsetContractMock struct {
 	QueryConfigFn             func(ctx sdk.Context) (*contract.ValsetConfigResponse, error)
 	ListValidatorSlashingFn   func(ctx sdk.Context, opAddr sdk.AccAddress) ([]contract.ValidatorSlashing, error)
 	UpdateAdminFn             func(ctx sdk.Context, new sdk.AccAddress, sender sdk.AccAddress) error
-	IterateActiveValidatorsFn func(ctx sdk.Context, callback func(c contract.ValidatorInfo) bool) error
+	IterateActiveValidatorsFn func(ctx sdk.Context, callback func(c contract.ValidatorInfo) bool, pagination *contract.Paginator) error
 	AddressFn                 func() (sdk.AccAddress, error)
 }
 
-func (m ValsetContractMock) IterateActiveValidators(ctx sdk.Context, callback func(c contract.ValidatorInfo) bool) error {
+func (m ValsetContractMock) IterateActiveValidators(ctx sdk.Context, callback func(c contract.ValidatorInfo) bool, pagination *contract.Paginator) error {
 	if m.IterateActiveValidatorsFn == nil {
 		panic("not expected to be called")
 	}
-	return m.IterateActiveValidatorsFn(ctx, callback)
+	return m.IterateActiveValidatorsFn(ctx, callback, pagination)
 }
 
 func (m ValsetContractMock) UpdateAdmin(ctx sdk.Context, new sdk.AccAddress, sender sdk.AccAddress) error {

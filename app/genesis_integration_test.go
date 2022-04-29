@@ -2,9 +2,12 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 	"time"
+
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
 	poetypes "github.com/confio/tgrade/x/poe/types"
 
@@ -38,14 +41,36 @@ func TestTgradeGenesisExportImport(t *testing.T) {
 		gapp.Commit()
 	}
 	memDB := db.NewMemDB()
-	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), memDB, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)
-	initGenesis := NewDefaultGenesisState()
+	srcApp := NewTgradeApp(
+		log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
+		memDB,
+		nil,
+		true,
+		map[int64]bool{},
+		DefaultNodeHome,
+		0,
+		MakeEncodingConfig(),
+		EmptyBaseAppOptions{},
+		emptyWasmOpts,
+	)
+	doInitWithGenesis(srcApp, NewDefaultGenesisState())
 
-	doInitWithGenesis(gapp, initGenesis)
-	// Making a new app object with the db, so that initchain hasn't been called
-	newGapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), memDB, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)
+	now := time.Now().UTC()
+	for i := 0; i < 3; i++ { // add some blocks
+		header := tmproto.Header{
+			ChainID: "testing-1",
+			Height:  int64(2 + i),
+			Time:    now.Add(time.Duration(i+1) * time.Hour), // big step > epoch
+			AppHash: []byte(fmt.Sprintf("myAppHash%d", i)),
+		}
+		srcApp.BeginBlock(abci.RequestBeginBlock{Header: header})
+		srcApp.Commit()
+	}
 
-	exported, err := newGapp.ExportAppStateAndValidators(false, []string{})
+	// create a new instance to read state only from db. initchain was not called on this
+	srcApp = NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), memDB, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)
+
+	exported, err := srcApp.ExportAppStateAndValidators(false, []string{})
 	require.NoError(t, err, "ExportAppStateAndValidators should not have an error")
 
 	// then ensure that valset contract state is exported
@@ -53,7 +78,7 @@ func TestTgradeGenesisExportImport(t *testing.T) {
 	require.NoError(t, tmjson.Unmarshal(exported.AppState, &gs))
 	require.Contains(t, gs, twasm.ModuleName)
 	var twasmGs twasmtypes.GenesisState
-	require.NoError(t, newGapp.appCodec.UnmarshalJSON(gs[twasm.ModuleName], &twasmGs))
+	require.NoError(t, srcApp.appCodec.UnmarshalJSON(gs[twasm.ModuleName], &twasmGs))
 	// todo (Alex): enable require.NoError(t, twasmGs.ValidateBasic())
 
 	var customModelContractCount int
@@ -76,11 +101,22 @@ func TestTgradeGenesisExportImport(t *testing.T) {
 
 	// ensure poe is correct
 	var poeGs poetypes.GenesisState
-	require.NoError(t, newGapp.appCodec.UnmarshalJSON(gs[poetypes.ModuleName], &poeGs))
+	require.NoError(t, srcApp.appCodec.UnmarshalJSON(gs[poetypes.ModuleName], &poeGs))
 	require.NoError(t, poetypes.ValidateGenesis(poeGs, MakeEncodingConfig().TxConfig.TxJSONDecoder()))
 	t.Log(string(gs[twasm.ModuleName]))
 	// now import the state on a fresh DB
 	memDB = db.NewMemDB()
-	newApp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), memDB, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)
+	newApp := NewTgradeApp(
+		log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
+		memDB,
+		nil,
+		true,
+		map[int64]bool{},
+		DefaultNodeHome,
+		0,
+		MakeEncodingConfig(),
+		EmptyBaseAppOptions{},
+		emptyWasmOpts,
+	)
 	doInitWithGenesis(newApp, gs)
 }
