@@ -8,9 +8,11 @@ import (
 )
 
 type TrustedCircleInitMsg struct { //nolint:maligned
-	// Name of trusted circle
+	// Name Trusted circle name
 	Name string `json:"name"`
-	// EscrowAmount The required escrow amount, in the default denom (utgd)
+	// Denom Trusted circle denom
+	Denom string `json:"denom"`
+	// EscrowAmount The required escrow amount, in the Denom
 	EscrowAmount sdk.Int `json:"escrow_amount"`
 	// VotingPeriod Voting period in days
 	VotingPeriod uint32 `json:"voting_period"`
@@ -23,9 +25,9 @@ type TrustedCircleInitMsg struct { //nolint:maligned
 	AllowEndEarly bool `json:"allow_end_early"`
 	// InitialMembers is a list of non-voting members to be added to the TRUSTED_CIRCLE upon creation
 	InitialMembers []string `json:"initial_members"`
-	// DenyList is an optional cw4 contract with list of addresses denied to be part of TrustedCircle
+	// DenyList is an optional cw4 contract with list of addresses denied being part of the trusted circle
 	DenyList string `json:"deny_list,omitempty"`
-	// EditTrustedCircleDisabled If true, no further adjustments may happen.
+	// EditTrustedCircleDisabled If true, no further adjustments may happen
 	EditTrustedCircleDisabled bool `json:"edit_trusted_circle_disabled"`
 	// RewardDenom is the token denom we can distribute to the trusted circle
 	RewardDenom string `json:"reward_denom"`
@@ -75,7 +77,7 @@ func NewTrustedCircleContractAdapter(contractAddr sdk.AccAddress, twasmKeeper ty
 		)}
 }
 
-// AddVotingMembersProposal setup the proposal for adding voting members
+// AddVotingMembersProposal set up the proposal for adding voting members
 func (a TrustedCircleContractAdapter) AddVotingMembersProposal(ctx sdk.Context, members []string, sender sdk.AccAddress) error {
 	msg := TrustedCircleExecute{
 		Propose: &ProposeMsg{

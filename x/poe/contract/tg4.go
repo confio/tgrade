@@ -12,8 +12,9 @@ import (
 )
 
 type TG4Member struct {
-	Addr   string `json:"addr"`
-	Points uint64 `json:"points"`
+	Addr        string `json:"addr"`
+	Points      uint64 `json:"points"`
+	StartHeight uint64 `json:"start_height,omitempty"`
 }
 
 func SortByWeightDesc(s []TG4Member) []TG4Member {
@@ -59,6 +60,8 @@ type TG4MemberListResponse struct {
 type TG4MemberResponse struct {
 	// Points nil means not a member, 0 means member with no voting power... this can be a very important distinction
 	Points *int `json:"points"`
+	// Optional field indicating the start height the member gained membership
+	StartHeight uint64 `json:"start_height,omitempty"`
 }
 
 type TG4TotalPointsResponse struct {

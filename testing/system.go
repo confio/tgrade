@@ -145,7 +145,7 @@ func (s *SystemUnderTest) StartChain(t *testing.T, xargs ...string) {
 			return true
 		}),
 	)
-	s.AwaitNextBlock(t)
+	s.AwaitNextBlock(t, 4e9)
 }
 
 // MarkDirty whole chain will be reset when marked dirty

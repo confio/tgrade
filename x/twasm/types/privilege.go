@@ -38,6 +38,9 @@ var (
 
 	// PrivilegeDelegator is a permission to let accounts send tokens via delegation to this contract. Can be used by vesting accounts
 	PrivilegeDelegator = registerCallbackType(0x7, "delegator", false)
+
+	// PrivilegeStateExporterImporter is a permission to allow contracts to export / import their state
+	PrivilegeStateExporterImporter = registerCallbackType(0x8, "state_exporter_importer", false)
 )
 
 var (

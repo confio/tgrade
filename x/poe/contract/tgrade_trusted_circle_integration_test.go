@@ -27,6 +27,7 @@ func TestInitTrustedCircle(t *testing.T) {
 
 	init := contract.TrustedCircleInitMsg{
 		Name:                      "foo",
+		Denom:                     depositAmount.Denom,
 		EscrowAmount:              sdk.NewInt(10_000_000),
 		VotingPeriod:              1,
 		Quorum:                    sdk.NewDecWithPrec(1, 1),
