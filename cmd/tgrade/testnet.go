@@ -6,12 +6,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	authvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	authvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
