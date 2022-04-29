@@ -8,9 +8,9 @@ import (
 )
 
 type TrustedCircleInitMsg struct { //nolint:maligned
-	// Trusted circle name
+	// Name Trusted circle name
 	Name string `json:"name"`
-	// Trusted circle denom. Defaults to "utgd" if empty
+	// Denom Trusted circle denom
 	Denom string `json:"denom"`
 	// EscrowAmount The required escrow amount, in the Denom
 	EscrowAmount sdk.Int `json:"escrow_amount"`
