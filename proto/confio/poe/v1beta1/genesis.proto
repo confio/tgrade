@@ -15,20 +15,29 @@ message GenesisState {
   // params defines all the parameter of the module
   Params params = 1 [ (gogoproto.nullable) = false ];
 
-  // Contracts Poe contract addresses and types when used with state dump in non
-  // seed mode.
-  repeated PoEContract contracts = 3 [
+  // SetupMode defines which scenario to apply on a genesis import.
+  // Either it is a fresh chain that needs PoE contracts bootstrapped or
+  // the module state has to be restored from a previous state dump.
+  oneof setup_mode {
+    // SeedContracts stores and instantiates the Proof of Engagement
+    // contracts on the chain.
+    SeedContracts seed_contracts = 2;
+    // ImportDump restores the state from an exported state genesis
+    ImportDump import_dump = 3;
+  }
+}
+
+// ImportDump has all module data for non seed mode.
+message ImportDump {
+  // Contracts PoE contract addresses and types
+  repeated PoEContract contracts = 1 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "contracts,omitempty"
   ];
-
-  // SeedContracts when enabled stores and instantiates the Proof of Engagement
-  // contracts on the chain.
-  SeedContracts seed_contracts = 2;
 }
 
-// SeedContracts contains the seed configuration to setup all PoE contracts on
-// chain.
+// SeedContracts contains the contract configuration and group members to setup
+// all PoE contracts on chain.
 message SeedContracts {
 
   // GenTxs defines the genesis transactions to create a validator.

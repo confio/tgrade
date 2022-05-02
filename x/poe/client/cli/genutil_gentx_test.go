@@ -151,13 +151,13 @@ func setupSystem(t *testing.T, workDir string, encodingConfig appparams.Encoding
 
 	// with PoE setup
 	state := types.GetGenesisStateFromAppState(encodingConfig.Codec, gs)
-	state.SeedContracts.BondDenom = bondDenum
-	state.SeedContracts.Engagement = append(state.SeedContracts.Engagement, types.TG4Member{
+	state.GetSeedContracts().BondDenom = bondDenum
+	state.GetSeedContracts().Engagement = append(state.GetSeedContracts().Engagement, types.TG4Member{
 		Address: addr.String(),
 		Points:  1,
 	})
-	state.SeedContracts.OversightCommunityMembers = []string{types.RandomAccAddress().String()}
-	state.SeedContracts.ArbiterPoolMembers = []string{types.RandomAccAddress().String()}
+	state.GetSeedContracts().OversightCommunityMembers = []string{types.RandomAccAddress().String()}
+	state.GetSeedContracts().ArbiterPoolMembers = []string{types.RandomAccAddress().String()}
 
 	types.SetGenesisStateInAppState(encodingConfig.Codec, gs, state)
 	// with bank setup

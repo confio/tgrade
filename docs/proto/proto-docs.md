@@ -24,6 +24,7 @@
     - [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig)
     - [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig)
     - [GenesisState](#confio.poe.v1beta1.GenesisState)
+    - [ImportDump](#confio.poe.v1beta1.ImportDump)
     - [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig)
     - [PoEContract](#confio.poe.v1beta1.PoEContract)
     - [SeedContracts](#confio.poe.v1beta1.SeedContracts)
@@ -305,8 +306,23 @@ GenesisState - initial state of module
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `params` | [Params](#confio.poe.v1beta1.Params) |  | params defines all the parameter of the module |
-| `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated | Contracts Poe contract addresses and types when used with state dump in non seed mode. |
-| `seed_contracts` | [SeedContracts](#confio.poe.v1beta1.SeedContracts) |  | SeedContracts when enabled stores and instantiates the Proof of Engagement contracts on the chain. |
+| `seed_contracts` | [SeedContracts](#confio.poe.v1beta1.SeedContracts) |  | SeedContracts stores and instantiates the Proof of Engagement contracts on the chain. |
+| `import_dump` | [ImportDump](#confio.poe.v1beta1.ImportDump) |  | ImportDump restores the state from an exported state genesis |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.ImportDump"></a>
+
+### ImportDump
+ImportDump has all module data for non seed mode.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated | Contracts PoE contract addresses and types |
 
 
 
@@ -350,8 +366,8 @@ PoEContract address and type information
 <a name="confio.poe.v1beta1.SeedContracts"></a>
 
 ### SeedContracts
-SeedContracts contains the seed configuration to setup all PoE contracts on
-chain.
+SeedContracts contains the contract configuration and group members to setup
+all PoE contracts on chain.
 
 
 | Field | Type | Label | Description |

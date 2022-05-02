@@ -27,20 +27,20 @@ func InitGenesis(
 	genesisState types.GenesisState,
 	txEncodingConfig client.TxEncodingConfig,
 ) error {
-	for _, v := range genesisState.Contracts {
-		addr, err := sdk.AccAddressFromBech32(v.Address)
-		if err != nil {
-			return sdkerrors.Wrapf(err, "decode address: %s", v.Address)
-		}
-		keeper.SetPoEContractAddress(ctx, v.ContractType, addr)
-	}
 	keeper.setParams(ctx, genesisState.Params)
-	if genesisState.SeedContracts == nil {
-		return nil
-	}
-	// seed mode
-	if err := DeliverGenTxs(genesisState.SeedContracts.GenTxs, deliverTx, txEncodingConfig); err != nil {
-		return sdkerrors.Wrap(err, "deliver gentx")
+	if genesisState.GetImportDump() != nil {
+		for _, v := range genesisState.GetImportDump().Contracts {
+			addr, err := sdk.AccAddressFromBech32(v.Address)
+			if err != nil {
+				return sdkerrors.Wrapf(err, "decode address: %s", v.Address)
+			}
+			keeper.SetPoEContractAddress(ctx, v.ContractType, addr)
+		}
+	} else if genesisState.GetSeedContracts() != nil {
+		// seed mode
+		if err := DeliverGenTxs(genesisState.GetSeedContracts().GenTxs, deliverTx, txEncodingConfig); err != nil {
+			return sdkerrors.Wrap(err, "deliver gentx")
+		}
 	}
 	return nil
 }
@@ -72,10 +72,11 @@ func DeliverGenTxs(genTxs []json.RawMessage, deliverTx DeliverTxFn, txEncodingCo
 // ExportGenesis returns a GenesisState for a given context and keeper.
 func ExportGenesis(ctx sdk.Context, keeper Keeper) *types.GenesisState {
 	genState := types.GenesisState{
-		Params: keeper.GetParams(ctx),
+		Params:    keeper.GetParams(ctx),
+		SetupMode: &types.GenesisState_ImportDump{ImportDump: &types.ImportDump{}},
 	}
 	keeper.IteratePoEContracts(ctx, func(Ctype types.PoEContractType, addr sdk.AccAddress) bool {
-		genState.Contracts = append(genState.Contracts, types.PoEContract{
+		genState.GetImportDump().Contracts = append(genState.GetImportDump().Contracts, types.PoEContract{
 			ContractType: Ctype,
 			Address:      addr.String(),
 		})

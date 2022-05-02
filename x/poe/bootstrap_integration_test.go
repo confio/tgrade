@@ -113,9 +113,9 @@ func TestIntegrationBootstrapPoEContracts(t *testing.T) {
 
 			switch tc.contractType {
 			case types.PoEContractTypeOversightCommunity:
-				membersAreAllVotingMembers(t, ctx, gs.SeedContracts.OversightCommunityMembers, contractAddr, example.TWasmKeeper)
+				membersAreAllVotingMembers(t, ctx, gs.GetSeedContracts().OversightCommunityMembers, contractAddr, example.TWasmKeeper)
 			case types.PoEContractTypeArbiterPool:
-				membersAreAllVotingMembers(t, ctx, gs.SeedContracts.ArbiterPoolMembers, contractAddr, example.TWasmKeeper)
+				membersAreAllVotingMembers(t, ctx, gs.GetSeedContracts().ArbiterPoolMembers, contractAddr, example.TWasmKeeper)
 			}
 		})
 	}
@@ -184,7 +184,7 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 
 	mutator, _ := withRandomValidators(t, ctx, example, 3)
 	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
-	adminAddress, _ := sdk.AccAddressFromBech32(gs.SeedContracts.SystemAdminAddress)
+	adminAddress, _ := sdk.AccAddressFromBech32(gs.GetSeedContracts().SystemAdminAddress)
 	example.Faucet.Fund(ctx, adminAddress, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
 
 	fundMembers := func(members []string, coins sdk.Int) {
@@ -195,12 +195,12 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 		}
 	}
 
-	fundMembers(gs.SeedContracts.OversightCommunityMembers, sdk.NewInt(1_000_000))
-	fundMembers(gs.SeedContracts.ArbiterPoolMembers, sdk.NewInt(1_000_000))
+	fundMembers(gs.GetSeedContracts().OversightCommunityMembers, sdk.NewInt(1_000_000))
+	fundMembers(gs.GetSeedContracts().ArbiterPoolMembers, sdk.NewInt(1_000_000))
 
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
+	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-	return ctx, example, gs
+	return ctx, example, *gs
 }
 
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
@@ -224,8 +224,8 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 	collectValidators := make([]stakingtypes.Validator, numValidators)
 	return func(m *types.GenesisState) {
 		f := fuzz.New()
-		m.SeedContracts.GenTxs = make([]json.RawMessage, numValidators)
-		m.SeedContracts.Engagement = make([]types.TG4Member, numValidators)
+		m.GetSeedContracts().GenTxs = make([]json.RawMessage, numValidators)
+		m.GetSeedContracts().Engagement = make([]types.TG4Member, numValidators)
 		for i := 0; i < numValidators; i++ {
 			var ( // power * engagement must be less than 10^18 (constraint is in the contract)
 				desc stakingtypes.Description
@@ -252,8 +252,8 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 				m.DelegatorShares = sdk.OneDec()
 			})
 
-			m.SeedContracts.GenTxs[i] = genTx
-			m.SeedContracts.Engagement[i] = types.TG4Member{Address: opAddr.String(), Points: uint64(engagement)}
+			m.GetSeedContracts().GenTxs[i] = genTx
+			m.GetSeedContracts().Engagement[i] = types.TG4Member{Address: opAddr.String(), Points: uint64(engagement)}
 			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
 			example.Faucet.Fund(ctx, opAddr, sdk.NewCoin(types.DefaultBondDenom, stakedAmount))
 		}

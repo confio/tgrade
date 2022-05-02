@@ -57,8 +57,7 @@ func (b AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) 
 // DefaultGenesis returns default genesis state as raw bytes for the genutil
 // module.
 func (b AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-	gs := types.DefaultGenesisState()
-	return cdc.MustMarshalJSON(&gs)
+	return cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the genutil module.
@@ -166,12 +165,12 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 
-	seedMode := genesisState.SeedContracts != nil
+	seedMode := genesisState.GetSeedContracts() != nil
 	if seedMode {
-		if len(genesisState.SeedContracts.GenTxs) == 0 {
+		if len(genesisState.GetSeedContracts().GenTxs) == 0 {
 			panic(sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty gentx"))
 		}
-		if err := BootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, *genesisState.SeedContracts); err != nil {
+		if err := BootstrapPoEContracts(ctx, am.contractKeeper, am.twasmKeeper, am.poeKeeper, *genesisState.GetSeedContracts()); err != nil {
 			panic(fmt.Sprintf("bootstrap PoE contracts: %+v", err))
 		}
 	}
@@ -188,15 +187,35 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	if err != nil {
 		panic(fmt.Sprintf("valset addr: %s", err))
 	}
-	// query validators from PoE for initial abci set
-	switch diff, err := contract.CallEndBlockWithValidatorUpdate(ctx, addr, am.twasmKeeper); {
-	case err != nil:
-		panic(fmt.Sprintf("poe sudo call: %s", err))
-	case seedMode && len(diff) == 0:
-		panic("initial valset must not be empty")
-	default:
-		return diff
+	if seedMode {
+		// query validators from PoE for initial abci set
+		switch initialSet, err := contract.CallEndBlockWithValidatorUpdate(ctx, addr, am.twasmKeeper); {
+		case err != nil:
+			panic(fmt.Sprintf("poe sudo call: %s", err))
+		case len(initialSet) == 0:
+			panic("initial valset must not be empty")
+		default:
+			return initialSet
+		}
 	}
+	// in dump import mode
+	// query and return the active validator set
+	var activeSet []abci.ValidatorUpdate
+	am.poeKeeper.ValsetContract(ctx).IterateActiveValidators(ctx, func(c contract.ValidatorInfo) bool {
+		pub, err := contract.ConvertToTendermintPubKey(c.ValidatorPubkey)
+		if err != nil {
+			panic(fmt.Sprintf("convert pubkey for %s", c.Operator))
+		}
+		activeSet = append(activeSet, abci.ValidatorUpdate{
+			PubKey: pub,
+			Power:  int64(c.Power),
+		})
+		return false
+	})
+	if len(activeSet) == 0 { // fal fast
+		panic("active valset must not be empty")
+	}
+	return activeSet
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the genutil

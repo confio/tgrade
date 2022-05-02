@@ -35,10 +35,10 @@ func SetGenTxsInAppGenesisState(
 		genTxsBz = append(genTxsBz, txBz)
 	}
 
-	if genesisState.SeedContracts == nil {
+	if genesisState.GetSeedContracts() == nil {
 		return nil, sdkerrors.ErrNotSupported.Wrap("in state dump import mode")
 	}
-	genesisState.SeedContracts.GenTxs = genTxsBz
+	genesisState.GetSeedContracts().GenTxs = genTxsBz
 	return SetGenesisStateInAppState(cdc, appGenesisState, genesisState), nil
 }
 

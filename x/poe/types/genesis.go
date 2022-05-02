@@ -14,10 +14,10 @@ import (
 const DefaultBondDenom = "utgd"
 
 // DefaultGenesisState default values
-func DefaultGenesisState() GenesisState {
-	return GenesisState{
+func DefaultGenesisState() *GenesisState {
+	return &GenesisState{
 		Params: DefaultParams(),
-		SeedContracts: &SeedContracts{
+		SetupMode: &GenesisState_SeedContracts{&SeedContracts{
 			BondDenom: DefaultBondDenom,
 			StakeContractConfig: &StakeContractConfig{
 				MinBond:              1,
@@ -81,6 +81,7 @@ func DefaultGenesisState() GenesisState {
 			},
 			SystemAdminAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 		},
+		},
 	}
 }
 
@@ -89,32 +90,19 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 	if err := g.Params.Validate(); err != nil {
 		return sdkerrors.Wrap(err, "params")
 	}
-	if g.SeedContracts != nil {
-		// seed genesis
-		if len(g.Contracts) != 0 {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "seed enabled but PoE contracts addresses provided")
-		}
-		if err := validateSeedContracts(g.SeedContracts, txJSONDecoder); err != nil {
+	switch {
+	case g.GetSeedContracts() != nil && g.GetImportDump() != nil:
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "both seed and import data setup")
+	case g.GetSeedContracts() == nil && g.GetImportDump() == nil:
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "neither seed or import data setup")
+	case g.GetSeedContracts() != nil:
+		if err := validateSeedContracts(g.GetSeedContracts(), txJSONDecoder); err != nil {
 			return sdkerrors.Wrap(err, "seed contracts")
 		}
-		return nil
-	}
-	// dump import genesis
-	if len(g.Contracts) == 0 {
-		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "no PoE contract addresses provided")
-	}
-	uniqueContractTypes := make(map[PoEContractType]struct{}, len(g.Contracts))
-	for i, v := range g.Contracts {
-		if err := v.ValidateBasic(); err != nil {
-			return sdkerrors.Wrapf(err, "contract %d", i)
+	case g.GetImportDump() != nil:
+		if err := g.GetImportDump().ValidateBasic(); err != nil {
+			return sdkerrors.Wrap(err, "import dump")
 		}
-		if _, exists := uniqueContractTypes[v.ContractType]; exists {
-			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "contract type %s", v.ContractType.String())
-		}
-		uniqueContractTypes[v.ContractType] = struct{}{}
-	}
-	if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
-		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
 	}
 	return nil
 }
@@ -418,6 +406,24 @@ func (c ArbiterPoolContractConfig) ValidateBasic() error {
 	}
 	if time.Duration(uint64(c.WaitingPeriod.Seconds()))*time.Second != c.WaitingPeriod {
 		return sdkerrors.Wrap(ErrInvalid, "waiting period not convertible to seconds")
+	}
+	return nil
+}
+
+// ValidateBasic ensure basic constraints
+func (g ImportDump) ValidateBasic() error {
+	uniqueContractTypes := make(map[PoEContractType]struct{}, len(g.Contracts))
+	for i, v := range g.Contracts {
+		if err := v.ValidateBasic(); err != nil {
+			return sdkerrors.Wrapf(err, "contract %d", i)
+		}
+		if _, exists := uniqueContractTypes[v.ContractType]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "contract type %s", v.ContractType.String())
+		}
+		uniqueContractTypes[v.ContractType] = struct{}{}
+	}
+	if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
 	}
 	return nil
 }
