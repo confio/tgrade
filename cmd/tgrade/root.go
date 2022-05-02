@@ -28,6 +28,7 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
+	tmcmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
@@ -294,7 +295,7 @@ func (ac appCreator) appExport(
 
 // extendUnsafeResetAllCmd - also clear wasm dir
 func extendUnsafeResetAllCmd(rootCmd *cobra.Command) {
-	unsafeResetCmd := server.UnsafeResetAllCmd().Use
+	unsafeResetCmd := tmcmd.ResetAllCmd.Use
 	for _, cmd := range rootCmd.Commands() {
 		if cmd.Use == unsafeResetCmd {
 			serverRunE := cmd.RunE
