@@ -211,7 +211,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 			Power:  int64(c.Power),
 		})
 		return false
-	})
+	}, nil)
 	if len(activeSet) == 0 { // fal fast
 		panic("active valset must not be empty")
 	}

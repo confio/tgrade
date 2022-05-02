@@ -25,8 +25,6 @@ import (
 
 func TestTgradeGenesisExportImport(t *testing.T) {
 	doInitWithGenesis := func(gapp *TgradeApp, genesisState GenesisState) {
-		setupWithSingleValidatorGenTX(t, genesisState)
-
 		stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
 		require.NoError(t, err)
 
@@ -53,7 +51,10 @@ func TestTgradeGenesisExportImport(t *testing.T) {
 		EmptyBaseAppOptions{},
 		emptyWasmOpts,
 	)
-	doInitWithGenesis(srcApp, NewDefaultGenesisState())
+
+	init := NewDefaultGenesisState()
+	setupWithSingleValidatorGenTX(t, init)
+	doInitWithGenesis(srcApp, init)
 
 	now := time.Now().UTC()
 	for i := 0; i < 3; i++ { // add some blocks
@@ -103,7 +104,6 @@ func TestTgradeGenesisExportImport(t *testing.T) {
 	var poeGs poetypes.GenesisState
 	require.NoError(t, srcApp.appCodec.UnmarshalJSON(gs[poetypes.ModuleName], &poeGs))
 	require.NoError(t, poetypes.ValidateGenesis(poeGs, MakeEncodingConfig().TxConfig.TxJSONDecoder()))
-	t.Log(string(gs[twasm.ModuleName]))
 	// now import the state on a fresh DB
 	memDB = db.NewMemDB()
 	newApp := NewTgradeApp(
