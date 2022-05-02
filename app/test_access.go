@@ -7,8 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	ibctransferkeeper "github.com/cosmos/ibc-go/v2/modules/apps/transfer/keeper"
-	ibckeeper "github.com/cosmos/ibc-go/v2/modules/core/keeper"
+	ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
+	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 )
 
 type TestSupport struct {

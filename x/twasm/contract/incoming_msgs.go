@@ -14,7 +14,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 
 	"github.com/confio/tgrade/x/twasm/types"
 )
