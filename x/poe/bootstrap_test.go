@@ -261,7 +261,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 	// when
 	ctx := sdk.Context{}.WithLogger(log.TestingLogger())
 	genesis := types.GenesisStateFixture(func(m *types.GenesisState) {
-		m.SystemAdminAddress = mySystemAdmin
+		m.BootStrapAddress = mySystemAdmin
 		m.Engagement = []types.TG4Member{{Address: myUser, Points: 10}, {Address: myOtherUser, Points: 11}}
 	})
 	gotErr := BootstrapPoEContracts(ctx, cm, tm, pm, genesis)

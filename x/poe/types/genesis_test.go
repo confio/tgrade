@@ -75,13 +75,13 @@ func TestValidateGenesis(t *testing.T) {
 		},
 		"empty system admin": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.SystemAdminAddress = ""
+				m.BootStrapAddress = ""
 			}),
 			expErr: true,
 		},
 		"invalid system admin": {
 			source: GenesisStateFixture(func(m *GenesisState) {
-				m.SystemAdminAddress = "invalid"
+				m.BootStrapAddress = "invalid"
 			}),
 			expErr: true,
 		},

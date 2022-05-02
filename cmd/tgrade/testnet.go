@@ -413,7 +413,7 @@ func initGenFiles(
 			Points:  uint64(len(genAccounts) - i), // unique weight
 		})
 	}
-	poeGenesisState.SystemAdminAddress = admin.String()
+	poeGenesisState.BootStrapAddress = admin.String()
 	poeGenesisState.OversightCommunityMembers = ocMemberAddrs
 	poeGenesisState.ArbiterPoolMembers = apMemberAddrs
 	poetypes.SetGenesisStateInAppState(clientCtx.Codec, appGenState, poeGenesisState)
