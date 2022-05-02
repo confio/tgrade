@@ -43,10 +43,10 @@ func SetGlobalMinFee(t *testing.T, fees ...sdk.DecCoin) GenesisMutator {
 // SetAllEngagementPoints set the given value for all members of the engagement group (default = validators)
 func SetAllEngagementPoints(t *testing.T, points int) GenesisMutator {
 	return func(raw []byte) []byte {
-		group := gjson.GetBytes(raw, "app_state.poe.engagement").Array()
+		group := gjson.GetBytes(raw, "app_state.poe.seed_contracts.engagement").Array()
 		for i := range group {
 			var err error
-			raw, err = sjson.SetRawBytes(raw, fmt.Sprintf("app_state.poe.engagement.%d.points", i), []byte(fmt.Sprintf(`"%d"`, points)))
+			raw, err = sjson.SetRawBytes(raw, fmt.Sprintf("app_state.poe.seed_contracts.engagement.%d.points", i), []byte(fmt.Sprintf(`"%d"`, points)))
 			require.NoError(t, err)
 		}
 		return raw
@@ -57,7 +57,7 @@ func SetAllEngagementPoints(t *testing.T, points int) GenesisMutator {
 func SetEpochLength(t *testing.T, epoch time.Duration) GenesisMutator {
 	return func(genesis []byte) []byte {
 		t.Helper()
-		state, err := sjson.SetRawBytes(genesis, "app_state.poe.valset_contract_config.epoch_length", []byte(fmt.Sprintf("%q", epoch)))
+		state, err := sjson.SetRawBytes(genesis, "app_state.poe.seed_contracts.valset_contract_config.epoch_length", []byte(fmt.Sprintf("%q", epoch)))
 		require.NoError(t, err)
 		return state
 	}
@@ -67,7 +67,7 @@ func SetEpochLength(t *testing.T, epoch time.Duration) GenesisMutator {
 func SetUnbondingPeriod(t *testing.T, unbonding time.Duration) GenesisMutator {
 	return func(genesis []byte) []byte {
 		t.Helper()
-		state, err := sjson.SetRawBytes(genesis, "app_state.poe.stake_contract_config.unbonding_period", []byte(fmt.Sprintf("%q", unbonding)))
+		state, err := sjson.SetRawBytes(genesis, "app_state.poe.seed_contracts.stake_contract_config.unbonding_period", []byte(fmt.Sprintf("%q", unbonding)))
 		require.NoError(t, err)
 		return state
 	}
@@ -79,7 +79,7 @@ func SetBlockRewards(t *testing.T, amount sdk.Coin) GenesisMutator {
 		t.Helper()
 		bz, err := json.Marshal(amount)
 		require.NoError(t, err)
-		state, err := sjson.SetRawBytes(genesis, "app_state.poe.valset_contract_config.epoch_reward", bz)
+		state, err := sjson.SetRawBytes(genesis, "app_state.poe.seed_contracts.valset_contract_config.epoch_reward", bz)
 		require.NoError(t, err)
 		return state
 	}
