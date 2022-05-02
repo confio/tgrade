@@ -59,6 +59,10 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	// - enough funds on the bank
 	// - membership in engagement group
 	marshaler := MakeEncodingConfig().Codec
+	poeGS := poetypes.GetGenesisStateFromAppState(marshaler, genesisState)
+	if poeGS.GetSeedContracts() == nil {
+		panic("not in seed mode")
+	}
 
 	systemAdminAddr := sdk.AccAddress(rand.Bytes(address.Len))
 	myGenTx, myAddr, _ := poetypes.RandomGenTX(t, 100)
@@ -100,13 +104,12 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	genesisState[banktypes.ModuleName] = marshaler.MustMarshalJSON(&bankGenState)
 
 	// add system admin to not fail poe on validation
-	poeGS := poetypes.GetGenesisStateFromAppState(marshaler, genesisState)
-	poeGS.BondDenom = poetypes.DefaultBondDenom
-	poeGS.GenTxs = []json.RawMessage{myGenTx}
-	poeGS.Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Points: 10}}
-	poeGS.SystemAdminAddress = systemAdminAddr.String()
-	poeGS.OversightCommunityMembers = ocMembers
-	poeGS.ArbiterPoolMembers = apMembers
+	poeGS.GetSeedContracts().BondDenom = poetypes.DefaultBondDenom
+	poeGS.GetSeedContracts().GenTxs = []json.RawMessage{myGenTx}
+	poeGS.GetSeedContracts().Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Points: 10}}
+	poeGS.GetSeedContracts().SystemAdminAddress = systemAdminAddr.String()
+	poeGS.GetSeedContracts().OversightCommunityMembers = ocMembers
+	poeGS.GetSeedContracts().ArbiterPoolMembers = apMembers
 	genesisState = poetypes.SetGenesisStateInAppState(marshaler, genesisState, poeGS)
 }
 

@@ -14,242 +14,232 @@ import (
 const DefaultBondDenom = "utgd"
 
 // DefaultGenesisState default values
-func DefaultGenesisState() GenesisState {
-	return GenesisState{
-		SeedContracts: true,
-		BondDenom:     DefaultBondDenom,
-		StakeContractConfig: &StakeContractConfig{
-			MinBond:              1,
-			TokensPerPoint:       1,
-			UnbondingPeriod:      time.Hour * 21 * 24,
-			ClaimAutoreturnLimit: 20,
-		},
-		ValsetContractConfig: &ValsetContractConfig{
-			MinPoints:                1,
-			MaxValidators:            100,
-			EpochLength:              60 * time.Second,
-			EpochReward:              sdk.NewCoin(DefaultBondDenom, sdk.NewInt(100_000)),
-			Scaling:                  1,
-			FeePercentage:            sdk.NewDec(50),
-			AutoUnjail:               false,
-			DoubleSignSlashRatio:     sdk.NewDec(50),
-			ValidatorRewardRatio:     sdk.MustNewDecFromStr("47.5"),
-			EngagementRewardRatio:    sdk.MustNewDecFromStr("47.5"),
-			CommunityPoolRewardRatio: sdk.MustNewDecFromStr("5"),
-			VerifyValidators:         true,
-		},
-		EngagementContractConfig: &EngagementContractConfig{
-			Halflife: 180 * 24 * time.Hour,
-		},
-		OversightCommitteeContractConfig: &OversightCommitteeContractConfig{
-			Name:         "Oversight Community",
-			EscrowAmount: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
-			VotingRules: VotingRules{
-				VotingPeriod:  30,
-				Quorum:        sdk.NewDec(51),
-				Threshold:     sdk.NewDec(55),
-				AllowEndEarly: true,
+func DefaultGenesisState() *GenesisState {
+	return &GenesisState{
+		Params: DefaultParams(),
+		SetupMode: &GenesisState_SeedContracts{&SeedContracts{
+			BondDenom: DefaultBondDenom,
+			StakeContractConfig: &StakeContractConfig{
+				MinBond:              1,
+				TokensPerPoint:       1,
+				UnbondingPeriod:      time.Hour * 21 * 24,
+				ClaimAutoreturnLimit: 20,
 			},
-		},
-		CommunityPoolContractConfig: &CommunityPoolContractConfig{
-			VotingRules: VotingRules{
-				VotingPeriod:  21,
-				Quorum:        sdk.NewDec(10),
-				Threshold:     sdk.NewDec(60),
-				AllowEndEarly: true,
+			ValsetContractConfig: &ValsetContractConfig{
+				MinPoints:                1,
+				MaxValidators:            100,
+				EpochLength:              60 * time.Second,
+				EpochReward:              sdk.NewCoin(DefaultBondDenom, sdk.NewInt(100_000)),
+				Scaling:                  1,
+				FeePercentage:            sdk.NewDec(50),
+				AutoUnjail:               false,
+				DoubleSignSlashRatio:     sdk.NewDec(50),
+				ValidatorRewardRatio:     sdk.MustNewDecFromStr("47.5"),
+				EngagementRewardRatio:    sdk.MustNewDecFromStr("47.5"),
+				CommunityPoolRewardRatio: sdk.MustNewDecFromStr("5"),
+				VerifyValidators:         true,
 			},
-		},
-		ValidatorVotingContractConfig: &ValidatorVotingContractConfig{
-			VotingRules: VotingRules{
-				VotingPeriod:  14,
-				Quorum:        sdk.NewDec(40),
-				Threshold:     sdk.NewDec(66),
-				AllowEndEarly: true,
+			EngagementContractConfig: &EngagementContractConfig{
+				Halflife: 180 * 24 * time.Hour,
 			},
-		},
-		ArbiterPoolContractConfig: &ArbiterPoolContractConfig{
-			Name:         "Arbiter Pool",
-			EscrowAmount: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
-			VotingRules: VotingRules{
-				VotingPeriod:  30,
-				Quorum:        sdk.NewDec(51),
-				Threshold:     sdk.NewDec(55),
-				AllowEndEarly: true,
+			OversightCommitteeContractConfig: &OversightCommitteeContractConfig{
+				Name:         "Oversight Community",
+				EscrowAmount: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+				VotingRules: VotingRules{
+					VotingPeriod:  30,
+					Quorum:        sdk.NewDec(51),
+					Threshold:     sdk.NewDec(55),
+					AllowEndEarly: true,
+				},
 			},
-			DisputeCost: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+			CommunityPoolContractConfig: &CommunityPoolContractConfig{
+				VotingRules: VotingRules{
+					VotingPeriod:  21,
+					Quorum:        sdk.NewDec(10),
+					Threshold:     sdk.NewDec(60),
+					AllowEndEarly: true,
+				},
+			},
+			ValidatorVotingContractConfig: &ValidatorVotingContractConfig{
+				VotingRules: VotingRules{
+					VotingPeriod:  14,
+					Quorum:        sdk.NewDec(40),
+					Threshold:     sdk.NewDec(66),
+					AllowEndEarly: true,
+				},
+			},
+			ArbiterPoolContractConfig: &ArbiterPoolContractConfig{
+				Name:         "Arbiter Pool",
+				EscrowAmount: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+				VotingRules: VotingRules{
+					VotingPeriod:  30,
+					Quorum:        sdk.NewDec(51),
+					Threshold:     sdk.NewDec(55),
+					AllowEndEarly: true,
+				},
+				DisputeCost: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+			},
+			SystemAdminAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 		},
-		SystemAdminAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
-		Params:             DefaultParams(),
+		},
 	}
 }
 
+// ValidateGenesis validates genesis for PoE module
 func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
-	if g.SeedContracts {
-		if len(g.Contracts) != 0 {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "seed enabled but PoE contracts addresses provided")
+	if err := g.Params.Validate(); err != nil {
+		return sdkerrors.Wrap(err, "params")
+	}
+	switch {
+	case g.GetSeedContracts() != nil && g.GetImportDump() != nil:
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "both seed and import data setup")
+	case g.GetSeedContracts() == nil && g.GetImportDump() == nil:
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "neither seed or import data setup")
+	case g.GetSeedContracts() != nil:
+		if err := validateSeedContracts(g.GetSeedContracts(), txJSONDecoder); err != nil {
+			return sdkerrors.Wrap(err, "seed contracts")
 		}
-		if len(g.Engagement) == 0 {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty engagement group")
+	case g.GetImportDump() != nil:
+		if err := g.GetImportDump().ValidateBasic(); err != nil {
+			return sdkerrors.Wrap(err, "import dump")
 		}
-		if g.EngagementContractConfig == nil {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty engagement contract config")
-		}
-		if err := g.EngagementContractConfig.ValidateBasic(); err != nil {
-			return sdkerrors.Wrap(err, "engagement contract config")
-		}
-		if err := sdk.ValidateDenom(g.BondDenom); err != nil {
-			return sdkerrors.Wrap(err, "bond denom")
-		}
+	}
+	return nil
+}
 
-		if g.ValsetContractConfig == nil {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty valset contract config")
-		}
-		if err := g.ValsetContractConfig.ValidateBasic(); err != nil {
-			return sdkerrors.Wrap(err, "valset contract config")
-		}
-
-		if g.StakeContractConfig == nil {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty stake contract config")
-		}
-		if err := g.StakeContractConfig.ValidateBasic(); err != nil {
-			return sdkerrors.Wrap(err, "stake contract config")
-		}
-		if g.ValsetContractConfig.EpochReward.Denom != g.BondDenom {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "rewards not in bonded denom")
-		}
-
-		if g.OversightCommitteeContractConfig == nil {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty oversight committee contract config")
-		}
-		if err := g.OversightCommitteeContractConfig.ValidateBasic(); err != nil {
-			return sdkerrors.Wrap(err, "oversight committee config")
-		}
-		if g.ArbiterPoolContractConfig == nil {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty arbiter pool contract config")
-		}
-		if err := g.ArbiterPoolContractConfig.ValidateBasic(); err != nil {
-			return sdkerrors.Wrap(err, "arbiter pool config")
-		}
-		if g.OversightCommitteeContractConfig.EscrowAmount.Denom != g.BondDenom {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "escrow not in bonded denom")
-		}
-		if g.CommunityPoolContractConfig == nil {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty community pool contract config")
-		}
-		if err := g.CommunityPoolContractConfig.ValidateBasic(); err != nil {
-			return sdkerrors.Wrap(err, "community pool config")
-		}
-		if g.ValidatorVotingContractConfig == nil {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty validator voting contract config")
-		}
-		if err := g.ValidatorVotingContractConfig.ValidateBasic(); err != nil {
-			return sdkerrors.Wrap(err, "validator voting config")
-		}
-
-		if _, err := sdk.AccAddressFromBech32(g.SystemAdminAddress); err != nil {
-			return sdkerrors.Wrap(err, "system admin address")
-		}
-
-		uniqueEngagementMembers := make(map[string]struct{}, len(g.Engagement))
-		for i, v := range g.Engagement {
-			if err := v.ValidateBasic(); err != nil {
-				return sdkerrors.Wrapf(err, "contract %d", i)
-			}
-			if _, exists := uniqueEngagementMembers[v.Address]; exists {
-				return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "member: %s", v.Address)
-			}
-			uniqueEngagementMembers[v.Address] = struct{}{}
-		}
-		uniqueOperators := make(map[string]struct{}, len(g.GenTxs))
-		uniquePubKeys := make(map[string]struct{}, len(g.GenTxs))
-		for i, v := range g.GenTxs {
-			genTx, err := txJSONDecoder(v)
-			if err != nil {
-				return sdkerrors.Wrapf(err, "gentx %d", i)
-			}
-			msgs := genTx.GetMsgs()
-			if len(msgs) != 1 {
-				return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "tx with single message required")
-			}
-			msg := msgs[0].(*MsgCreateValidator)
-			if err := msg.ValidateBasic(); err != nil {
-				return sdkerrors.Wrapf(err, "gentx %d", i)
-			}
-			if _, ok := uniqueEngagementMembers[msg.OperatorAddress]; !ok {
-				return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator not in engagement group: %q, gentx: %d", msg.OperatorAddress, i)
-			}
-			if _, exists := uniqueOperators[msg.OperatorAddress]; exists {
-				return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator used already with another gen tx: %q, gentx: %d", msg.OperatorAddress, i)
-			}
-			uniqueOperators[msg.OperatorAddress] = struct{}{}
-
-			pk := msg.Pubkey.String()
-			if _, exists := uniquePubKeys[pk]; exists {
-				return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx public key used already with another gen tx: %q, gentx: %d", pk, i)
-			}
-			uniquePubKeys[pk] = struct{}{}
-		}
-
-		if len(g.OversightCommunityMembers) == 0 {
-			return sdkerrors.Wrapf(wasmtypes.ErrEmpty, "oversight community members")
-		}
-
-		uniqueOCMembers := make(map[string]struct{}, len(g.OversightCommunityMembers))
-		for _, member := range g.OversightCommunityMembers {
-			if _, err := sdk.AccAddressFromBech32(member); err != nil {
-				return sdkerrors.Wrap(err, "oc member address")
-			}
-			if _, exists := uniqueOCMembers[member]; exists {
-				return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "oc member: %s", member)
-			}
-			uniqueOCMembers[member] = struct{}{}
-		}
-
-		if len(g.ArbiterPoolMembers) == 0 {
-			return sdkerrors.Wrapf(wasmtypes.ErrEmpty, "arbiter pool members")
-		}
-
-		uniqueAPMembers := make(map[string]struct{}, len(g.ArbiterPoolMembers))
-		for _, member := range g.ArbiterPoolMembers {
-			if _, err := sdk.AccAddressFromBech32(member); err != nil {
-				return sdkerrors.Wrap(err, "ap member address")
-			}
-			if _, exists := uniqueAPMembers[member]; exists {
-				return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "ap member: %s", member)
-			}
-			uniqueAPMembers[member] = struct{}{}
-		}
-	} else {
-		if len(g.Contracts) == 0 {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "no PoE contract addresses provided")
-		}
-		if len(g.Engagement) != 0 {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "updates to the engagement group not supported")
-		}
-		if len(g.ArbiterPoolMembers) != 0 {
-			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "updates to the arbiter pool members not supported")
-		}
-		if g.SystemAdminAddress != "" {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "system admin address only required in seed mode")
-		}
-
-		uniqueContractTypes := make(map[PoEContractType]struct{}, len(g.Contracts))
-		for i, v := range g.Contracts {
-			if err := v.ValidateBasic(); err != nil {
-				return sdkerrors.Wrapf(err, "contract %d", i)
-			}
-			if _, exists := uniqueContractTypes[v.ContractType]; exists {
-				return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "contract type %s", v.ContractType.String())
-			}
-			uniqueContractTypes[v.ContractType] = struct{}{}
-		}
-		if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
-			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
-		}
-
-		// todo: ensure gentx is correct
+// validate SeedContract genesis type only
+func validateSeedContracts(g *SeedContracts, txJSONDecoder sdk.TxDecoder) error {
+	if len(g.Engagement) == 0 {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty engagement group")
+	}
+	if g.EngagementContractConfig == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty engagement contract config")
+	}
+	if err := g.EngagementContractConfig.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "engagement contract config")
+	}
+	if err := sdk.ValidateDenom(g.BondDenom); err != nil {
+		return sdkerrors.Wrap(err, "bond denom")
 	}
 
+	if g.ValsetContractConfig == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty valset contract config")
+	}
+	if err := g.ValsetContractConfig.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "valset contract config")
+	}
+
+	if g.StakeContractConfig == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty stake contract config")
+	}
+	if err := g.StakeContractConfig.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "stake contract config")
+	}
+	if g.ValsetContractConfig.EpochReward.Denom != g.BondDenom {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "rewards not in bonded denom")
+	}
+
+	if g.OversightCommitteeContractConfig == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty oversight committee contract config")
+	}
+	if err := g.OversightCommitteeContractConfig.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "oversight committee config")
+	}
+	if g.ArbiterPoolContractConfig == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty arbiter pool contract config")
+	}
+	if err := g.ArbiterPoolContractConfig.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "arbiter pool config")
+	}
+	if g.OversightCommitteeContractConfig.EscrowAmount.Denom != g.BondDenom {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "escrow not in bonded denom")
+	}
+	if g.CommunityPoolContractConfig == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty community pool contract config")
+	}
+	if err := g.CommunityPoolContractConfig.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "community pool config")
+	}
+	if g.ValidatorVotingContractConfig == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty validator voting contract config")
+	}
+	if err := g.ValidatorVotingContractConfig.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "validator voting config")
+	}
+
+	if _, err := sdk.AccAddressFromBech32(g.SystemAdminAddress); err != nil {
+		return sdkerrors.Wrap(err, "system admin address")
+	}
+
+	uniqueEngagementMembers := make(map[string]struct{}, len(g.Engagement))
+	for i, v := range g.Engagement {
+		if err := v.ValidateBasic(); err != nil {
+			return sdkerrors.Wrapf(err, "contract %d", i)
+		}
+		if _, exists := uniqueEngagementMembers[v.Address]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "member: %s", v.Address)
+		}
+		uniqueEngagementMembers[v.Address] = struct{}{}
+	}
+	uniqueOperators := make(map[string]struct{}, len(g.GenTxs))
+	uniquePubKeys := make(map[string]struct{}, len(g.GenTxs))
+	for i, v := range g.GenTxs {
+		genTx, err := txJSONDecoder(v)
+		if err != nil {
+			return sdkerrors.Wrapf(err, "gentx %d", i)
+		}
+		msgs := genTx.GetMsgs()
+		if len(msgs) != 1 {
+			return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "tx with single message required")
+		}
+		msg := msgs[0].(*MsgCreateValidator)
+		if err := msg.ValidateBasic(); err != nil {
+			return sdkerrors.Wrapf(err, "gentx %d", i)
+		}
+		if _, ok := uniqueEngagementMembers[msg.OperatorAddress]; !ok {
+			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator not in engagement group: %q, gentx: %d", msg.OperatorAddress, i)
+		}
+		if _, exists := uniqueOperators[msg.OperatorAddress]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx delegator used already with another gen tx: %q, gentx: %d", msg.OperatorAddress, i)
+		}
+		uniqueOperators[msg.OperatorAddress] = struct{}{}
+
+		pk := msg.Pubkey.String()
+		if _, exists := uniquePubKeys[pk]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "gen tx public key used already with another gen tx: %q, gentx: %d", pk, i)
+		}
+		uniquePubKeys[pk] = struct{}{}
+	}
+
+	if len(g.OversightCommunityMembers) == 0 {
+		return sdkerrors.Wrapf(wasmtypes.ErrEmpty, "oversight community members")
+	}
+
+	uniqueOCMembers := make(map[string]struct{}, len(g.OversightCommunityMembers))
+	for _, member := range g.OversightCommunityMembers {
+		if _, err := sdk.AccAddressFromBech32(member); err != nil {
+			return sdkerrors.Wrap(err, "oc member address")
+		}
+		if _, exists := uniqueOCMembers[member]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "oc member: %s", member)
+		}
+		uniqueOCMembers[member] = struct{}{}
+	}
+
+	if len(g.ArbiterPoolMembers) == 0 {
+		return sdkerrors.Wrapf(wasmtypes.ErrEmpty, "arbiter pool members")
+	}
+
+	uniqueAPMembers := make(map[string]struct{}, len(g.ArbiterPoolMembers))
+	for _, member := range g.ArbiterPoolMembers {
+		if _, err := sdk.AccAddressFromBech32(member); err != nil {
+			return sdkerrors.Wrap(err, "ap member address")
+		}
+		if _, exists := uniqueAPMembers[member]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "ap member: %s", member)
+		}
+		uniqueAPMembers[member] = struct{}{}
+	}
 	return nil
 }
 
@@ -416,6 +406,24 @@ func (c ArbiterPoolContractConfig) ValidateBasic() error {
 	}
 	if time.Duration(uint64(c.WaitingPeriod.Seconds()))*time.Second != c.WaitingPeriod {
 		return sdkerrors.Wrap(ErrInvalid, "waiting period not convertible to seconds")
+	}
+	return nil
+}
+
+// ValidateBasic ensure basic constraints
+func (g ImportDump) ValidateBasic() error {
+	uniqueContractTypes := make(map[PoEContractType]struct{}, len(g.Contracts))
+	for i, v := range g.Contracts {
+		if err := v.ValidateBasic(); err != nil {
+			return sdkerrors.Wrapf(err, "contract %d", i)
+		}
+		if _, exists := uniqueContractTypes[v.ContractType]; exists {
+			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "contract type %s", v.ContractType.String())
+		}
+		uniqueContractTypes[v.ContractType] = struct{}{}
+	}
+	if len(uniqueContractTypes) != len(PoEContractType_name)-1 {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
 	}
 	return nil
 }

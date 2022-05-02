@@ -32,7 +32,7 @@ func setupPoEContractsNVal(t *testing.T, n int, mutators ...func(m *types.Genesi
 
 	mutator, expValidators := withRandomValidators(t, ctx, example, n)
 	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
-	adminAddress, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
+	adminAddress, _ := sdk.AccAddressFromBech32(gs.GetSeedContracts().SystemAdminAddress)
 	example.Faucet.Fund(ctx, adminAddress, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
 	fundMembers := func(members []string, coins sdk.Int) {
 		for _, member := range members {
@@ -42,12 +42,12 @@ func setupPoEContractsNVal(t *testing.T, n int, mutators ...func(m *types.Genesi
 		}
 	}
 
-	fundMembers(gs.OversightCommunityMembers, sdk.NewInt(1_000_000))
-	fundMembers(gs.ArbiterPoolMembers, sdk.NewInt(1_000_000))
+	fundMembers(gs.GetSeedContracts().OversightCommunityMembers, sdk.NewInt(1_000_000))
+	fundMembers(gs.GetSeedContracts().ArbiterPoolMembers, sdk.NewInt(1_000_000))
 
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
+	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-	return ctx, example, expValidators, gs.Engagement
+	return ctx, example, expValidators, gs.GetSeedContracts().Engagement
 }
 
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
@@ -71,8 +71,8 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 	collectValidators := make([]stakingtypes.Validator, numValidators)
 	return func(m *types.GenesisState) {
 		f := fuzz.New()
-		m.GenTxs = make([]json.RawMessage, numValidators)
-		m.Engagement = make([]types.TG4Member, numValidators)
+		m.GetSeedContracts().GenTxs = make([]json.RawMessage, numValidators)
+		m.GetSeedContracts().Engagement = make([]types.TG4Member, numValidators)
 		for i := 0; i < numValidators; i++ {
 			var ( // power * engagement must be less than 10^18 (constraint is in the contract)
 				desc stakingtypes.Description
@@ -99,8 +99,8 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 				m.DelegatorShares = sdk.OneDec()
 			})
 
-			m.GenTxs[i] = genTx
-			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Points: uint64(engagement)}
+			m.GetSeedContracts().GenTxs[i] = genTx
+			m.GetSeedContracts().Engagement[i] = types.TG4Member{Address: opAddr.String(), Points: uint64(engagement)}
 			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
 			example.Faucet.Fund(ctx, opAddr, sdk.NewCoin(types.DefaultBondDenom, stakedAmount))
 		}

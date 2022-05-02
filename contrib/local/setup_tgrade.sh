@@ -43,13 +43,13 @@ done
 # set systemadmin address (temporary)
 
 # set engagement points
-content=$(cat "$HOME"/.tgrade/config/genesis.json | jq  ".app_state.poe.engagement |= . + [{\"address\":\"$(echo "$PASSWORD" | tgrade keys show -a validator)\",\"points\":\"100\"}]")
+content=$(cat "$HOME"/.tgrade/config/genesis.json | jq  ".app_state.poe.seed_contracts.engagement |= . + [{\"address\":\"$(echo "$PASSWORD" | tgrade keys show -a validator)\",\"points\":\"100\"}]")
 # set oversight community
-content=$(echo "$content" | jq  ".app_state.poe.oversightCommunityMembers |= . + [\"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"]")
-# set arbiter pool
-content=$(echo "$content" | jq  ".app_state.poe.arbiterPoolMembers |= . + [\"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"]")
+content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.oversightCommunityMembers |= . + [\"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"]")
+# set arbiter
+content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.arbiterPoolMembers |= . + [\"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"]")
 # set system admin
-content=$(echo "$content" | jq  ".app_state.poe.system_admin_address |= \"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"")
+content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.system_admin_address |= \"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"")
 # set min fee
 content=$(echo "$content" | jq  ".app_state.globalfee.params.minimum_gas_prices |= [{\"denom\":\"$STAKE\",\"amount\":\"0.001\"}]")
 

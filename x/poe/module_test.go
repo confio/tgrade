@@ -37,7 +37,7 @@ func TestInitGenesis(t *testing.T) {
 	const numValidators = 15
 	mutator, myValidators := withRandomValidators(t, ctx, example, numValidators)
 	gs := types.GenesisStateFixture(mutator)
-	adminAddr, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
+	adminAddr, _ := sdk.AccAddressFromBech32(gs.GetSeedContracts().SystemAdminAddress)
 	example.Faucet.Fund(ctx, adminAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
 
 	fundMembers := func(members []string, coins sdk.Int) {
@@ -48,11 +48,11 @@ func TestInitGenesis(t *testing.T) {
 		}
 	}
 
-	fundMembers(gs.OversightCommunityMembers, sdk.NewInt(1_000_000))
-	fundMembers(gs.ArbiterPoolMembers, sdk.NewInt(1_000_000))
+	fundMembers(gs.GetSeedContracts().OversightCommunityMembers, sdk.NewInt(1_000_000))
+	fundMembers(gs.GetSeedContracts().ArbiterPoolMembers, sdk.NewInt(1_000_000))
 
 	// when
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
+	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(gs)
 	gotValset := app.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
 
 	// then valset diff matches
@@ -168,8 +168,8 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 	collectValidators := make(validators, numValidators)
 	return func(m *types.GenesisState) {
 		f := fuzz.New()
-		m.GenTxs = make([]json.RawMessage, numValidators)
-		m.Engagement = make([]types.TG4Member, numValidators)
+		m.GetSeedContracts().GenTxs = make([]json.RawMessage, numValidators)
+		m.GetSeedContracts().Engagement = make([]types.TG4Member, numValidators)
 		for i := 0; i < numValidators; i++ {
 			var ( // power * engagement must be less than 10^18 (constraint is in the contract)
 				power      uint16
@@ -186,8 +186,8 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 				stakedAmount: stakedAmount,
 				engagement:   uint64(engagement),
 			}
-			m.GenTxs[i] = genTx
-			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Points: uint64(engagement)}
+			m.GetSeedContracts().GenTxs[i] = genTx
+			m.GetSeedContracts().Engagement[i] = types.TG4Member{Address: opAddr.String(), Points: uint64(engagement)}
 			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
 			example.Faucet.Fund(ctx, opAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewIntFromUint64(stakedAmount)))
 		}

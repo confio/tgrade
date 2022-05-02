@@ -24,8 +24,10 @@
     - [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig)
     - [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig)
     - [GenesisState](#confio.poe.v1beta1.GenesisState)
+    - [ImportDump](#confio.poe.v1beta1.ImportDump)
     - [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig)
     - [PoEContract](#confio.poe.v1beta1.PoEContract)
+    - [SeedContracts](#confio.poe.v1beta1.SeedContracts)
     - [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig)
     - [TG4Member](#confio.poe.v1beta1.TG4Member)
     - [ValidatorVotingContractConfig](#confio.poe.v1beta1.ValidatorVotingContractConfig)
@@ -304,21 +306,23 @@ GenesisState - initial state of module
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `params` | [Params](#confio.poe.v1beta1.Params) |  | params defines all the parameter of the module |
-| `seed_contracts` | [bool](#bool) |  | SeedContracts when enabled stores and instantiates the Proof of Engagement contracts on the chain. |
-| `gen_txs` | [bytes](#bytes) | repeated | GenTxs defines the genesis transactions to create a validator. |
-| `system_admin_address` | [string](#string) |  | SystemAdminAddress single address that is set as admin for the PoE contracts in seed mode. |
-| `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated | Contracts Poe contract addresses and types when used with state dump in non seed mode. |
-| `engagement` | [TG4Member](#confio.poe.v1beta1.TG4Member) | repeated | Engagement weighted members of the engagement group. Validators should be in here. |
-| `stake_contract_config` | [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig) |  |  |
-| `valset_contract_config` | [ValsetContractConfig](#confio.poe.v1beta1.ValsetContractConfig) |  |  |
-| `engagement_contract_config` | [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig) |  |  |
-| `bond_denom` | [string](#string) |  | BondDenom defines the bondable coin denomination. |
-| `oversight_committee_contract_config` | [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig) |  |  |
-| `community_pool_contract_config` | [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig) |  |  |
-| `validator_voting_contract_config` | [ValidatorVotingContractConfig](#confio.poe.v1beta1.ValidatorVotingContractConfig) |  |  |
-| `oversightCommunityMembers` | [string](#string) | repeated |  |
-| `arbiterPoolMembers` | [string](#string) | repeated |  |
-| `arbiter_pool_contract_config` | [ArbiterPoolContractConfig](#confio.poe.v1beta1.ArbiterPoolContractConfig) |  |  |
+| `seed_contracts` | [SeedContracts](#confio.poe.v1beta1.SeedContracts) |  | SeedContracts stores and instantiates the Proof of Engagement contracts on the chain. |
+| `import_dump` | [ImportDump](#confio.poe.v1beta1.ImportDump) |  | ImportDump restores the state from an exported state genesis |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.ImportDump"></a>
+
+### ImportDump
+ImportDump has all module data for non seed mode.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated | Contracts PoE contract addresses and types |
 
 
 
@@ -353,6 +357,34 @@ PoEContract address and type information
 | ----- | ---- | ----- | ----------- |
 | `contract_type` | [PoEContractType](#confio.poe.v1beta1.PoEContractType) |  | ContractType type. |
 | `address` | [string](#string) |  | Address is the bech32 address string |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.SeedContracts"></a>
+
+### SeedContracts
+SeedContracts contains the contract configuration and group members to setup
+all PoE contracts on chain.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `gen_txs` | [bytes](#bytes) | repeated | GenTxs defines the genesis transactions to create a validator. |
+| `system_admin_address` | [string](#string) |  | SystemAdminAddress single address that is set as admin for the PoE contracts in seed mode. |
+| `engagement` | [TG4Member](#confio.poe.v1beta1.TG4Member) | repeated | Engagement weighted members of the engagement group. Validators should be in here. |
+| `stake_contract_config` | [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig) |  |  |
+| `valset_contract_config` | [ValsetContractConfig](#confio.poe.v1beta1.ValsetContractConfig) |  |  |
+| `engagement_contract_config` | [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig) |  |  |
+| `bond_denom` | [string](#string) |  | BondDenom defines the bondable coin denomination. |
+| `oversight_committee_contract_config` | [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig) |  |  |
+| `community_pool_contract_config` | [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig) |  |  |
+| `validator_voting_contract_config` | [ValidatorVotingContractConfig](#confio.poe.v1beta1.ValidatorVotingContractConfig) |  |  |
+| `oversightCommunityMembers` | [string](#string) | repeated |  |
+| `arbiterPoolMembers` | [string](#string) | repeated |  |
+| `arbiter_pool_contract_config` | [ArbiterPoolContractConfig](#confio.poe.v1beta1.ArbiterPoolContractConfig) |  |  |
 
 
 

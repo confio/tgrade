@@ -61,7 +61,7 @@ type poeKeeper interface {
 
 // BootstrapPoEContracts stores and instantiates all PoE contracts:
 // See https://github.com/confio/tgrade-contracts/blob/main/docs/Architecture.md#multi-level-governance for an overview
-func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
+func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.SeedContracts) error {
 	systemAdminAddr, err := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	if err != nil {
 		return sdkerrors.Wrap(err, "system admin")
@@ -351,7 +351,7 @@ func setAllPoEContractsInstanceMigrators(ctx sdk.Context, k wasmtypes.ContractOp
 }
 
 // build instantiate message for the trusted circle contract that contains the oversight committee
-func newOCInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
+func newOCInitMsg(gs types.SeedContracts) contract.TrustedCircleInitMsg {
 	cfg := gs.OversightCommitteeContractConfig
 	return contract.TrustedCircleInitMsg{
 		Name:                      cfg.Name,
@@ -369,7 +369,7 @@ func newOCInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
 }
 
 // build instantiate message for OC Proposals contract
-func newOCGovProposalsInitMsg(gs types.GenesisState, ocContract, engagementContract, valsetContract sdk.AccAddress) contract.OCProposalsInitMsg {
+func newOCGovProposalsInitMsg(gs types.SeedContracts, ocContract, engagementContract, valsetContract sdk.AccAddress) contract.OCProposalsInitMsg {
 	cfg := gs.OversightCommitteeContractConfig
 	return contract.OCProposalsInitMsg{
 		GroupContractAddress:      ocContract.String(),
@@ -380,7 +380,7 @@ func newOCGovProposalsInitMsg(gs types.GenesisState, ocContract, engagementContr
 }
 
 // build instantiate message for the trusted circle contract that contains the arbiter pool
-func newAPTrustedCircleInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
+func newAPTrustedCircleInitMsg(gs types.SeedContracts) contract.TrustedCircleInitMsg {
 	cfg := gs.ArbiterPoolContractConfig
 	return contract.TrustedCircleInitMsg{
 		Name:                      cfg.Name,
@@ -398,7 +398,7 @@ func newAPTrustedCircleInitMsg(gs types.GenesisState) contract.TrustedCircleInit
 }
 
 // build instantiate message for AP contract
-func newArbiterPoolVotingInitMsg(gs types.GenesisState, apContract sdk.AccAddress) contract.APVotingInitMsg {
+func newArbiterPoolVotingInitMsg(gs types.SeedContracts, apContract sdk.AccAddress) contract.APVotingInitMsg {
 	cfg := gs.ArbiterPoolContractConfig
 	return contract.APVotingInitMsg{
 		GroupContractAddress: apContract.String(),
@@ -408,7 +408,7 @@ func newArbiterPoolVotingInitMsg(gs types.GenesisState, apContract sdk.AccAddres
 	}
 }
 
-func newEngagementInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.TG4EngagementInitMsg {
+func newEngagementInitMsg(gs types.SeedContracts, adminAddr sdk.AccAddress) contract.TG4EngagementInitMsg {
 	tg4EngagementInitMsg := contract.TG4EngagementInitMsg{
 		Admin:            adminAddr.String(),
 		Members:          make([]contract.TG4Member, len(gs.Engagement)),
@@ -426,7 +426,7 @@ func newEngagementInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contr
 	return tg4EngagementInitMsg
 }
 
-func newStakeInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.TG4StakeInitMsg {
+func newStakeInitMsg(gs types.SeedContracts, adminAddr sdk.AccAddress) contract.TG4StakeInitMsg {
 	var claimLimit = uint64(gs.StakeContractConfig.ClaimAutoreturnLimit)
 	return contract.TG4StakeInitMsg{
 		Admin:            adminAddr.String(),
@@ -441,7 +441,7 @@ func newStakeInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.T
 }
 
 func newValsetInitMsg(
-	gs types.GenesisState,
+	gs types.SeedContracts,
 	admin sdk.AccAddress,
 	mixerContractAddr sdk.AccAddress,
 	engagementAddr sdk.AccAddress,
