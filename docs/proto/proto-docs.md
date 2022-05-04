@@ -905,7 +905,7 @@ Contract struct encompasses ContractAddress, ContractInfo, and ContractState
 <a name="confio.twasm.v1beta1.CustomModel"></a>
 
 ### CustomModel
-CustomModel contains the raw json data for a contract to seed it's state on
+CustomModel contains the raw json data for a contract to seed its state on
 import
 
 

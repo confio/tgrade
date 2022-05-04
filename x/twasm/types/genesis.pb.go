@@ -276,7 +276,7 @@ func (m *KVModel) GetModels() []types.Model {
 	return nil
 }
 
-// CustomModel contains the raw json data for a contract to seed it's state on
+// CustomModel contains the raw json data for a contract to seed its state on
 // import
 type CustomModel struct {
 	// Msg json encoded message to be passed to the contract on import
