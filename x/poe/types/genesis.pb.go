@@ -41,9 +41,9 @@ type GenesisState struct {
 	SeedContracts bool `protobuf:"varint,2,opt,name=seed_contracts,json=seedContracts,proto3" json:"seed_contracts,omitempty"`
 	// GenTxs defines the genesis transactions to create a validator.
 	GenTxs []encoding_json.RawMessage `protobuf:"bytes,3,rep,name=gen_txs,json=genTxs,proto3,casttype=encoding/json.RawMessage" json:"gentxs" yaml:"gentxs"`
-	// BootStrapAddress single address that is set as admin for the PoE
+	// BootstrapAddress single address that is set as admin for the PoE
 	// contracts in seed mode.
-	BootStrapAddress string `protobuf:"bytes,4,opt,name=system_admin_address,json=bootstrapAccountAddress,proto3" json:"bootstrap_account_address,omitempty"`
+	BootstrapAddress string `protobuf:"bytes,4,opt,name=system_admin_address,json=bootstrapAccountAddress,proto3" json:"bootstrap_account_address,omitempty"`
 	// Contracts Poe contract addresses and types when used with state dump in non
 	// seed mode.
 	Contracts []PoEContract `protobuf:"bytes,5,rep,name=contracts,proto3" json:"contracts,omitempty"`
@@ -119,7 +119,7 @@ func (m *GenesisState) GetGenTxs() []encoding_json.RawMessage {
 
 func (m *GenesisState) GetBootStrapAccountAddress() string {
 	if m != nil {
-		return m.BootStrapAddress
+		return m.BootstrapAddress
 	}
 	return ""
 }
@@ -1129,10 +1129,10 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x2a
 		}
 	}
-	if len(m.BootStrapAddress) > 0 {
-		i -= len(m.BootStrapAddress)
-		copy(dAtA[i:], m.BootStrapAddress)
-		i = encodeVarintGenesis(dAtA, i, uint64(len(m.BootStrapAddress)))
+	if len(m.BootstrapAddress) > 0 {
+		i -= len(m.BootstrapAddress)
+		copy(dAtA[i:], m.BootstrapAddress)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.BootstrapAddress)))
 		i--
 		dAtA[i] = 0x22
 	}
@@ -1715,7 +1715,7 @@ func (m *GenesisState) Size() (n int) {
 			n += 1 + l + sovGenesis(uint64(l))
 		}
 	}
-	l = len(m.BootStrapAddress)
+	l = len(m.BootstrapAddress)
 	if l > 0 {
 		n += 1 + l + sovGenesis(uint64(l))
 	}
@@ -2085,7 +2085,7 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BootStrapAddress", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field BootstrapAddress", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2113,7 +2113,7 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.BootStrapAddress = string(dAtA[iNdEx:postIndex])
+			m.BootstrapAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {

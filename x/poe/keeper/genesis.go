@@ -70,7 +70,7 @@ func ExportGenesis(ctx sdk.Context, keeper Keeper) *types.GenesisState {
 	// todo (Alex): implement proper
 	//genState := types.GenesisState{
 	//	SeedContracts:      false,
-	//	BootStrapAddress: keeper.GetPoEBootstrapAccountAddress(ctx).String(),
+	//	BootstrapAddress: keeper.GetPoEBootstrapAccountAddress(ctx).String(),
 	//	Contracts:          make([]types.PoEContract, 0),
 	// todo:add other fields
 	//}

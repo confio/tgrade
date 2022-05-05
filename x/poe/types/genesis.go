@@ -78,7 +78,7 @@ func DefaultGenesisState() GenesisState {
 			},
 			DisputeCost: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
 		},
-		BootStrapAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
+		BootstrapAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 		Params:           DefaultParams(),
 	}
 }
@@ -169,7 +169,7 @@ func ValidateGenesis(g GenesisState, txJSONDecoder sdk.TxDecoder) error {
 		//	return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "PoE contract(s) missing")
 		//}
 	}
-	if _, err := sdk.AccAddressFromBech32(g.BootStrapAddress); err != nil {
+	if _, err := sdk.AccAddressFromBech32(g.BootstrapAddress); err != nil {
 		return sdkerrors.Wrap(err, "system admin address")
 	}
 
