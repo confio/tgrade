@@ -40,7 +40,7 @@ func TestConvertToTendermintPubKey(t *testing.T) {
 		}}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			gotRes, gotErr := convertToTendermintPubKey(spec.src)
+			gotRes, gotErr := ConvertToTendermintPubKey(spec.src)
 			if spec.expErr {
 				require.Error(t, gotErr)
 				return

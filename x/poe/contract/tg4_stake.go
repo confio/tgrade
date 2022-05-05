@@ -183,3 +183,7 @@ func (v StakeContractAdapter) QueryStakingUnbonding(ctx sdk.Context, opAddr sdk.
 	}
 	return unbodings, nil
 }
+
+func (v StakeContractAdapter) Address() (sdk.AccAddress, error) {
+	return v.contractAddr, v.addressLookupErr
+}

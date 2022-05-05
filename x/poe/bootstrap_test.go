@@ -261,10 +261,10 @@ func TestBootstrapPoEContracts(t *testing.T) {
 	// when
 	ctx := sdk.Context{}.WithLogger(log.TestingLogger())
 	genesis := types.GenesisStateFixture(func(m *types.GenesisState) {
-		m.SystemAdminAddress = mySystemAdmin
-		m.Engagement = []types.TG4Member{{Address: myUser, Points: 10}, {Address: myOtherUser, Points: 11}}
+		m.GetSeedContracts().SystemAdminAddress = mySystemAdmin
+		m.GetSeedContracts().Engagement = []types.TG4Member{{Address: myUser, Points: 10}, {Address: myOtherUser, Points: 11}}
 	})
-	gotErr := BootstrapPoEContracts(ctx, cm, tm, pm, genesis)
+	gotErr := BootstrapPoEContracts(ctx, cm, tm, pm, *genesis.GetSeedContracts())
 
 	// then
 	require.NoError(t, gotErr)
@@ -330,7 +330,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 	systemAdmin := types.RandomAccAddress()
 
 	specs := map[string]struct {
-		genesis types.GenesisState
+		genesis *types.GenesisState
 		exp     contract.ValsetInitMsg
 	}{
 		"default": {
@@ -355,7 +355,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 		"fee percentage with comma value": {
 			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
 				var err error
-				m.ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("50.1")
+				m.GetSeedContracts().ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("50.1")
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
@@ -378,7 +378,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 		"fee percentage with after comma value": {
 			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
 				var err error
-				m.ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("0.1")
+				m.GetSeedContracts().ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("0.1")
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
@@ -401,7 +401,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 		"fee percentage with min comma value": {
 			genesis: types.GenesisStateFixture(func(m *types.GenesisState) {
 				var err error
-				m.ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("0.0000000000000001")
+				m.GetSeedContracts().ValsetContractConfig.FeePercentage, err = sdk.NewDecFromStr("0.0000000000000001")
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
@@ -424,7 +424,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			got := newValsetInitMsg(spec.genesis, systemAdmin, mixerContractAddr, engagementAddr, communityPoolAddr, engagementID)
+			got := newValsetInitMsg(*spec.genesis.GetSeedContracts(), systemAdmin, mixerContractAddr, engagementAddr, communityPoolAddr, engagementID)
 			assert.Equal(t, spec.exp, got)
 		})
 	}
@@ -437,6 +437,8 @@ type twasmKeeperMock struct {
 	SudoFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
 	SetPrivilegedFn         func(ctx sdk.Context, contractAddr sdk.AccAddress) error
 	HasPrivilegedContractFn func(ctx sdk.Context, contractAddr sdk.AccAddress, privilegeType twasmtypes.PrivilegeType) (bool, error)
+	IsPinnedCodeFn          func(ctx sdk.Context, codeID uint64) bool
+	GetContractInfoFn       func(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo
 }
 
 func (m twasmKeeperMock) GetContractKeeper() wasmtypes.ContractOpsKeeper {
@@ -492,4 +494,18 @@ func CaptureHasPrivilegedContractFn(r *[]sdk.AccAddress) func(ctx sdk.Context, c
 		}
 		return false, nil
 	}
+}
+
+func (m twasmKeeperMock) IsPinnedCode(ctx sdk.Context, codeID uint64) bool {
+	if m.IsPinnedCodeFn == nil {
+		panic("not expected to be called")
+	}
+	return m.IsPinnedCodeFn(ctx, codeID)
+}
+
+func (m twasmKeeperMock) GetContractInfo(ctx sdk.Context, contractAddress sdk.AccAddress) *wasmtypes.ContractInfo {
+	if m.GetContractInfoFn == nil {
+		panic("not expected to be called")
+	}
+	return m.GetContractInfoFn(ctx, contractAddress)
 }

@@ -24,8 +24,10 @@
     - [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig)
     - [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig)
     - [GenesisState](#confio.poe.v1beta1.GenesisState)
+    - [ImportDump](#confio.poe.v1beta1.ImportDump)
     - [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig)
     - [PoEContract](#confio.poe.v1beta1.PoEContract)
+    - [SeedContracts](#confio.poe.v1beta1.SeedContracts)
     - [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig)
     - [TG4Member](#confio.poe.v1beta1.TG4Member)
     - [ValidatorVotingContractConfig](#confio.poe.v1beta1.ValidatorVotingContractConfig)
@@ -63,7 +65,10 @@
     - [TgradeContractDetails](#confio.twasm.v1beta1.TgradeContractDetails)
   
 - [confio/twasm/v1beta1/genesis.proto](#confio/twasm/v1beta1/genesis.proto)
+    - [Contract](#confio.twasm.v1beta1.Contract)
+    - [CustomModel](#confio.twasm.v1beta1.CustomModel)
     - [GenesisState](#confio.twasm.v1beta1.GenesisState)
+    - [KVModel](#confio.twasm.v1beta1.KVModel)
   
 - [confio/twasm/v1beta1/proposal.proto](#confio/twasm/v1beta1/proposal.proto)
     - [DemotePrivilegedContractProposal](#confio.twasm.v1beta1.DemotePrivilegedContractProposal)
@@ -301,21 +306,23 @@ GenesisState - initial state of module
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `params` | [Params](#confio.poe.v1beta1.Params) |  | params defines all the parameter of the module |
-| `seed_contracts` | [bool](#bool) |  | SeedContracts when enabled stores and instantiates the Proof of Engagement contracts on the chain. |
-| `gen_txs` | [bytes](#bytes) | repeated | GenTxs defines the genesis transactions to create a validator. |
-| `system_admin_address` | [string](#string) |  | SystemAdminAddress single address that is set as admin for the PoE contracts in seed mode. |
-| `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated | Contracts Poe contract addresses and types when used with state dump in non seed mode. |
-| `engagement` | [TG4Member](#confio.poe.v1beta1.TG4Member) | repeated | Engagement weighted members of the engagement group. Validators should be in here. |
-| `stake_contract_config` | [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig) |  |  |
-| `valset_contract_config` | [ValsetContractConfig](#confio.poe.v1beta1.ValsetContractConfig) |  |  |
-| `engagement_contract_config` | [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig) |  |  |
-| `bond_denom` | [string](#string) |  | BondDenom defines the bondable coin denomination. |
-| `oversight_committee_contract_config` | [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig) |  |  |
-| `community_pool_contract_config` | [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig) |  |  |
-| `validator_voting_contract_config` | [ValidatorVotingContractConfig](#confio.poe.v1beta1.ValidatorVotingContractConfig) |  |  |
-| `oversightCommunityMembers` | [string](#string) | repeated |  |
-| `arbiterPoolMembers` | [string](#string) | repeated |  |
-| `arbiter_pool_contract_config` | [ArbiterPoolContractConfig](#confio.poe.v1beta1.ArbiterPoolContractConfig) |  |  |
+| `seed_contracts` | [SeedContracts](#confio.poe.v1beta1.SeedContracts) |  | SeedContracts stores and instantiates the Proof of Engagement contracts on the chain. |
+| `import_dump` | [ImportDump](#confio.poe.v1beta1.ImportDump) |  | ImportDump restores the state from an exported state genesis |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.ImportDump"></a>
+
+### ImportDump
+ImportDump has all module data for non seed mode.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `contracts` | [PoEContract](#confio.poe.v1beta1.PoEContract) | repeated | Contracts PoE contract addresses and types |
 
 
 
@@ -350,6 +357,34 @@ PoEContract address and type information
 | ----- | ---- | ----- | ----------- |
 | `contract_type` | [PoEContractType](#confio.poe.v1beta1.PoEContractType) |  | ContractType type. |
 | `address` | [string](#string) |  | Address is the bech32 address string |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.SeedContracts"></a>
+
+### SeedContracts
+SeedContracts contains the contract configuration and group members to setup
+all PoE contracts on chain.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `gen_txs` | [bytes](#bytes) | repeated | GenTxs defines the genesis transactions to create a validator. |
+| `system_admin_address` | [string](#string) |  | SystemAdminAddress single address that is set as admin for the PoE contracts in seed mode. |
+| `engagement` | [TG4Member](#confio.poe.v1beta1.TG4Member) | repeated | Engagement weighted members of the engagement group. Validators should be in here. |
+| `stake_contract_config` | [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig) |  |  |
+| `valset_contract_config` | [ValsetContractConfig](#confio.poe.v1beta1.ValsetContractConfig) |  |  |
+| `engagement_contract_config` | [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig) |  |  |
+| `bond_denom` | [string](#string) |  | BondDenom defines the bondable coin denomination. |
+| `oversight_committee_contract_config` | [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig) |  |  |
+| `community_pool_contract_config` | [CommunityPoolContractConfig](#confio.poe.v1beta1.CommunityPoolContractConfig) |  |  |
+| `validator_voting_contract_config` | [ValidatorVotingContractConfig](#confio.poe.v1beta1.ValidatorVotingContractConfig) |  |  |
+| `oversightCommunityMembers` | [string](#string) | repeated |  |
+| `arbiterPoolMembers` | [string](#string) | repeated |  |
+| `arbiter_pool_contract_config` | [ArbiterPoolContractConfig](#confio.poe.v1beta1.ArbiterPoolContractConfig) |  |  |
 
 
 
@@ -424,6 +459,9 @@ ValsetContractConfig initial setup config
 | `validator_reward_ratio` | [string](#string) |  | ValidatorRewardRation in percentage for all |
 | `auto_unjail` | [bool](#bool) |  | AutoUnjail if set to true, we will auto-unjail any validator after their jailtime is over. |
 | `double_sign_slash_ratio` | [string](#string) |  | DoubleSignSlashRatio Validators who are caught double signing are jailed forever and their bonded tokens are slashed based on this value. |
+| `verify_validators` | [bool](#bool) |  | When a validator joins the valset, verify they sign the first block since joining or jail them for a period otherwise.
+
+The verification happens every time the validator becomes an active validator, including when they are unjailed or when they just gain enough power to participate. |
 
 
 
@@ -846,6 +884,40 @@ TgradeContractDetails is a custom extension to the wasmd ContractInfo
 
 
 
+<a name="confio.twasm.v1beta1.Contract"></a>
+
+### Contract
+Contract struct encompasses ContractAddress, ContractInfo, and ContractState
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `contract_address` | [string](#string) |  |  |
+| `contract_info` | [cosmwasm.wasm.v1.ContractInfo](#cosmwasm.wasm.v1.ContractInfo) |  |  |
+| `kv_model` | [KVModel](#confio.twasm.v1beta1.KVModel) |  |  |
+| `custom_model` | [CustomModel](#confio.twasm.v1beta1.CustomModel) |  |  |
+
+
+
+
+
+
+<a name="confio.twasm.v1beta1.CustomModel"></a>
+
+### CustomModel
+CustomModel contains the raw json data for a contract to seed its state on
+import
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `msg` | [bytes](#bytes) |  | Msg json encoded message to be passed to the contract on import |
+
+
+
+
+
+
 <a name="confio.twasm.v1beta1.GenesisState"></a>
 
 ### GenesisState
@@ -854,9 +926,28 @@ TgradeContractDetails is a custom extension to the wasmd ContractInfo
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `wasm` | [cosmwasm.wasm.v1.GenesisState](#cosmwasm.wasm.v1.GenesisState) |  |  |
-| `privileged_contract_addresses` | [string](#string) | repeated |  |
-| `pinned_code_ids` | [uint64](#uint64) | repeated |  |
+| `params` | [cosmwasm.wasm.v1.Params](#cosmwasm.wasm.v1.Params) |  | Params sdk type Params for wasmd |
+| `codes` | [cosmwasm.wasm.v1.Code](#cosmwasm.wasm.v1.Code) | repeated | Codes has all stored wasm codes and metadata |
+| `contracts` | [Contract](#confio.twasm.v1beta1.Contract) | repeated | Contracts contains all instantiated contracts, state and metadata |
+| `sequences` | [cosmwasm.wasm.v1.Sequence](#cosmwasm.wasm.v1.Sequence) | repeated | Sequences names and values |
+| `gen_msgs` | [cosmwasm.wasm.v1.GenesisState.GenMsgs](#cosmwasm.wasm.v1.GenesisState.GenMsgs) | repeated | GenMsgs has wasmd sdk type messages to execute in the genesis phase |
+| `privileged_contract_addresses` | [string](#string) | repeated | PrivilegedContractAddresses is a list of contract addresses that can have special permissions |
+| `pinned_code_ids` | [uint64](#uint64) | repeated | PinnedCodeIDs has codeInfo ids for wasm codes that are pinned in cache |
+
+
+
+
+
+
+<a name="confio.twasm.v1beta1.KVModel"></a>
+
+### KVModel
+KVModel is a wrapper around the wasmd default key value model.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `models` | [cosmwasm.wasm.v1.Model](#cosmwasm.wasm.v1.Model) | repeated |  |
 
 
 

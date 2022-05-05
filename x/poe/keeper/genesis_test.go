@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/types/address"
+	"github.com/tendermint/tendermint/libs/rand"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +21,7 @@ func TestInitGenesis(t *testing.T) {
 	txConfig := types.MakeEncodingConfig(t).TxConfig
 
 	specs := map[string]struct {
-		src                    types.GenesisState
+		src                    *types.GenesisState
 		respCode               uint32
 		expErr                 bool
 		expDeliveredGenTxCount int
@@ -27,7 +30,7 @@ func TestInitGenesis(t *testing.T) {
 	}{
 		"all good": {
 			src: types.GenesisStateFixture(func(m *types.GenesisState) {
-				m.GenTxs = []json.RawMessage{[]byte(`{"body":{"messages":[{"@type":"/confio.poe.v1beta1.MsgCreateValidator","description":{"moniker":"moniker-0","identity":"","website":"","security_contact":"","details":""},"operator_address":"tgrade18katt8evmwr7g0w545g9kgrn2s6z9a0ky27gdp","pubkey":{"@type":"/cosmos.crypto.ed25519.PubKey","key":"P4qRtdI2pfl5IZN4cv28uuFhsRhSc/CBzrlB2/+ATQs="},"amount":{"denom":"utgd","amount":"100000000"},"vesting_amount":{"denom":"utgd","amount":"0"}}],"memo":"7973f9800a585f9a5e730ee18e4abab9a06214f5@192.168.178.24:16656","timeout_height":"0","extension_options":[],"non_critical_extension_options":[]},"auth_info":{"signer_infos":[{"public_key":{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"AlOUwEtcgY5rV6cJHCJJntNdrY9Kpe057pY6yewFbhxW"},"mode_info":{"single":{"mode":"SIGN_MODE_DIRECT"}},"sequence":"0"}],"fee":{"amount":[],"gas_limit":"0","payer":"","granter":""}},"signatures":["cJnG18yHwWsgxjh1Kqf3j/MFv7OpX69c7VLQz1MX1qtndFIylSNPVbkXOMu2i+Ufy52nXH3yujOKsMIVLP62pg=="]}`)}
+				m.GetSeedContracts().GenTxs = []json.RawMessage{[]byte(`{"body":{"messages":[{"@type":"/confio.poe.v1beta1.MsgCreateValidator","description":{"moniker":"moniker-0","identity":"","website":"","security_contact":"","details":""},"operator_address":"tgrade18katt8evmwr7g0w545g9kgrn2s6z9a0ky27gdp","pubkey":{"@type":"/cosmos.crypto.ed25519.PubKey","key":"P4qRtdI2pfl5IZN4cv28uuFhsRhSc/CBzrlB2/+ATQs="},"amount":{"denom":"utgd","amount":"100000000"},"vesting_amount":{"denom":"utgd","amount":"0"}}],"memo":"7973f9800a585f9a5e730ee18e4abab9a06214f5@192.168.178.24:16656","timeout_height":"0","extension_options":[],"non_critical_extension_options":[]},"auth_info":{"signer_infos":[{"public_key":{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"AlOUwEtcgY5rV6cJHCJJntNdrY9Kpe057pY6yewFbhxW"},"mode_info":{"single":{"mode":"SIGN_MODE_DIRECT"}},"sequence":"0"}],"fee":{"amount":[],"gas_limit":"0","payer":"","granter":""}},"signatures":["cJnG18yHwWsgxjh1Kqf3j/MFv7OpX69c7VLQz1MX1qtndFIylSNPVbkXOMu2i+Ufy52nXH3yujOKsMIVLP62pg=="]}`)}
 			},
 			),
 			expDeliveredGenTxCount: 1,
@@ -35,7 +38,7 @@ func TestInitGenesis(t *testing.T) {
 		},
 		"deliver genTX failed": {
 			src: types.GenesisStateFixture(func(m *types.GenesisState) {
-				m.GenTxs = []json.RawMessage{[]byte(`{}`)}
+				m.GetSeedContracts().GenTxs = []json.RawMessage{[]byte(`{}`)}
 			}),
 			expErr:                 true,
 			expDeliveredGenTxCount: 1,
@@ -57,7 +60,7 @@ func TestInitGenesis(t *testing.T) {
 					capaturedParams = params
 				},
 			}
-			gotErr := InitGenesis(ctx, m, captureTx, spec.src, txConfig)
+			gotErr := InitGenesis(ctx, m, captureTx, *spec.src, txConfig)
 			if spec.expErr {
 				require.Error(t, gotErr)
 				return
@@ -123,6 +126,35 @@ func TestDeliverGenTxs(t *testing.T) {
 			assert.Len(t, capturedTxs, spec.expDeliveredCount)
 		})
 	}
+}
+
+func TestExportGenesis(t *testing.T) {
+	ctx, example := CreateDefaultTestInput(t)
+	k := example.PoEKeeper
+
+	storedAddr := make(map[types.PoEContractType]sdk.AccAddress)
+	types.IteratePoEContractTypes(func(tp types.PoEContractType) bool {
+		var addr sdk.AccAddress = rand.Bytes(address.Len)
+		k.SetPoEContractAddress(ctx, tp, addr)
+		storedAddr[tp] = addr
+		return false
+	})
+
+	// when
+	gs := ExportGenesis(ctx, k)
+
+	// then
+	require.NotNil(t, gs)
+	expParams := types.DefaultParams()
+	expParams.MinDelegationAmounts = nil
+	assert.Equal(t, expParams, gs.Params)
+	require.Len(t, gs.GetImportDump().Contracts, len(storedAddr))
+	for _, v := range gs.GetImportDump().Contracts {
+		assert.Equal(t, storedAddr[v.ContractType].String(), v.Address)
+		delete(storedAddr, v.ContractType)
+	}
+	// ensure no duplicates
+	assert.Empty(t, storedAddr)
 }
 
 func initBech32Prefixes() {

@@ -7,7 +7,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-//AddRegisteredPrivilege add privilege type to list
+// AddRegisteredPrivilege add privilege type to list
 func (d *TgradeContractDetails) AddRegisteredPrivilege(t PrivilegeType, pos uint8) {
 	d.RegisteredPrivileges = append(d.RegisteredPrivileges, RegisteredPrivilege{
 		PrivilegeType: t.String(),
@@ -28,7 +28,7 @@ func (d *TgradeContractDetails) RemoveRegisteredPrivilege(t PrivilegeType, pos u
 	}
 }
 
-// HasRegisteredPrivilege returs true when given type was registered by this contract
+// HasRegisteredPrivilege returns true when given type was registered by this contract
 func (d *TgradeContractDetails) HasRegisteredPrivilege(c PrivilegeType) bool {
 	for _, v := range d.RegisteredPrivileges {
 		if v.PrivilegeType == c.String() {

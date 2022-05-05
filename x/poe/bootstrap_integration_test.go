@@ -5,6 +5,9 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/types/address"
+	"github.com/tendermint/tendermint/libs/rand"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -110,10 +113,65 @@ func TestIntegrationBootstrapPoEContracts(t *testing.T) {
 
 			switch tc.contractType {
 			case types.PoEContractTypeOversightCommunity:
-				membersAreAllVotingMembers(t, ctx, gs.OversightCommunityMembers, contractAddr, example.TWasmKeeper)
+				membersAreAllVotingMembers(t, ctx, gs.GetSeedContracts().OversightCommunityMembers, contractAddr, example.TWasmKeeper)
 			case types.PoEContractTypeArbiterPool:
-				membersAreAllVotingMembers(t, ctx, gs.ArbiterPoolMembers, contractAddr, example.TWasmKeeper)
+				membersAreAllVotingMembers(t, ctx, gs.GetSeedContracts().ArbiterPoolMembers, contractAddr, example.TWasmKeeper)
 			}
+		})
+	}
+}
+
+func TestVerifyPoEContracts(t *testing.T) {
+	// setup contracts and seed some data
+	parentCtx, example, _ := setupPoEContracts(t)
+	specs := map[string]struct {
+		alterState func(t *testing.T, ctx sdk.Context)
+		expErr     bool
+	}{
+		"all good": {
+			alterState: func(t *testing.T, ctx sdk.Context) {}, //  noop
+		},
+		"poe contract not pinned": {
+			alterState: func(t *testing.T, ctx sdk.Context) {
+				require.NoError(t, example.TWasmKeeper.GetContractKeeper().UnpinCode(ctx, 1))
+			},
+			expErr: true,
+		},
+		"poe contract without correct migrator": {
+			alterState: func(t *testing.T, ctx sdk.Context) {
+				contractAddr, _ := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+				valVotingAddr, _ := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValidatorVoting)
+				otherAddr := rand.Bytes(address.Len)
+				require.NoError(t, example.TWasmKeeper.GetContractKeeper().UpdateContractAdmin(ctx, contractAddr, valVotingAddr, otherAddr))
+			},
+			expErr: true,
+		},
+		"without validator update privilege set": {
+			alterState: func(t *testing.T, ctx sdk.Context) {
+				otherContract, _ := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
+				example.PoEKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeValset, otherContract)
+			},
+			expErr: true,
+		},
+		"without delegator privilege set": {
+			alterState: func(t *testing.T, ctx sdk.Context) {
+				otherContract, _ := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
+				example.PoEKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeStaking, otherContract)
+			},
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			ctx, _ := parentCtx.CacheContext()
+			spec.alterState(t, ctx)
+
+			gotErr := poe.VerifyPoEContracts(ctx, example.TWasmKeeper, example.PoEKeeper)
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
 		})
 	}
 }
@@ -126,7 +184,7 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 
 	mutator, _ := withRandomValidators(t, ctx, example, 3)
 	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
-	adminAddress, _ := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
+	adminAddress, _ := sdk.AccAddressFromBech32(gs.GetSeedContracts().SystemAdminAddress)
 	example.Faucet.Fund(ctx, adminAddress, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
 
 	fundMembers := func(members []string, coins sdk.Int) {
@@ -137,12 +195,12 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 		}
 	}
 
-	fundMembers(gs.OversightCommunityMembers, sdk.NewInt(1_000_000))
-	fundMembers(gs.ArbiterPoolMembers, sdk.NewInt(1_000_000))
+	fundMembers(gs.GetSeedContracts().OversightCommunityMembers, sdk.NewInt(1_000_000))
+	fundMembers(gs.GetSeedContracts().ArbiterPoolMembers, sdk.NewInt(1_000_000))
 
-	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(&gs)
+	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-	return ctx, example, gs
+	return ctx, example, *gs
 }
 
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
@@ -157,7 +215,6 @@ func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k keeper.Keeper, con
 		msg := msgs[0].(*types.MsgCreateValidator)
 		_, err = h(ctx, msg)
 		require.NoError(t, err)
-		t.Logf("+++ create validator: %s\n", msg.OperatorAddress)
 		return abci.ResponseDeliverTx{}
 	}
 }
@@ -167,8 +224,8 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 	collectValidators := make([]stakingtypes.Validator, numValidators)
 	return func(m *types.GenesisState) {
 		f := fuzz.New()
-		m.GenTxs = make([]json.RawMessage, numValidators)
-		m.Engagement = make([]types.TG4Member, numValidators)
+		m.GetSeedContracts().GenTxs = make([]json.RawMessage, numValidators)
+		m.GetSeedContracts().Engagement = make([]types.TG4Member, numValidators)
 		for i := 0; i < numValidators; i++ {
 			var ( // power * engagement must be less than 10^18 (constraint is in the contract)
 				desc stakingtypes.Description
@@ -195,8 +252,8 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 				m.DelegatorShares = sdk.OneDec()
 			})
 
-			m.GenTxs[i] = genTx
-			m.Engagement[i] = types.TG4Member{Address: opAddr.String(), Points: uint64(engagement)}
+			m.GetSeedContracts().GenTxs[i] = genTx
+			m.GetSeedContracts().Engagement[i] = types.TG4Member{Address: opAddr.String(), Points: uint64(engagement)}
 			example.AccountKeeper.NewAccountWithAddress(ctx, opAddr)
 			example.Faucet.Fund(ctx, opAddr, sdk.NewCoin(types.DefaultBondDenom, stakedAmount))
 		}

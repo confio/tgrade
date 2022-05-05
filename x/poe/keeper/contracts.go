@@ -13,6 +13,7 @@ import (
 type DistributionContract interface {
 	// ValidatorOutstandingReward returns amount or 0 for an unknown address
 	ValidatorOutstandingReward(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error)
+	Address() (sdk.AccAddress, error)
 }
 
 func (k Keeper) DistributionContract(ctx sdk.Context) DistributionContract {
@@ -26,6 +27,8 @@ type ValsetContract interface {
 	ListValidatorSlashing(ctx sdk.Context, opAddr sdk.AccAddress) ([]contract.ValidatorSlashing, error)
 	QueryConfig(ctx sdk.Context) (*contract.ValsetConfigResponse, error)
 	UpdateAdmin(ctx sdk.Context, new sdk.AccAddress, sender sdk.AccAddress) error
+	IterateActiveValidators(ctx sdk.Context, callback func(c contract.ValidatorInfo) bool, pagination *contract.Paginator) error
+	Address() (sdk.AccAddress, error)
 }
 
 func (k Keeper) ValsetContract(ctx sdk.Context) ValsetContract {
@@ -39,6 +42,7 @@ type StakeContract interface {
 	QueryStakingUnbondingPeriod(ctx sdk.Context) (time.Duration, error)
 	// QueryStakingUnbonding returns the unbondings or empty list for an unknown address
 	QueryStakingUnbonding(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error)
+	Address() (sdk.AccAddress, error)
 }
 
 func (k Keeper) StakeContract(ctx sdk.Context) StakeContract {
@@ -49,6 +53,7 @@ func (k Keeper) StakeContract(ctx sdk.Context) StakeContract {
 type EngagementContract interface {
 	UpdateAdmin(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error
 	QueryDelegated(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error)
+	Address() (sdk.AccAddress, error)
 }
 
 func (k Keeper) EngagementContract(ctx sdk.Context) EngagementContract {

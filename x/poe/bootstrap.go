@@ -3,7 +3,6 @@ package poe
 import (
 	_ "embed"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -62,7 +61,7 @@ type poeKeeper interface {
 
 // BootstrapPoEContracts stores and instantiates all PoE contracts:
 // See https://github.com/confio/tgrade-contracts/blob/main/docs/Architecture.md#multi-level-governance for an overview
-func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
+func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.SeedContracts) error {
 	systemAdminAddr, err := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
 	if err != nil {
 		return sdkerrors.Wrap(err, "system admin")
@@ -303,14 +302,6 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "set new instance admin")
 	}
 
-	// ensure setup constraints
-	ok, err := tk.HasPrivilegedContract(ctx, stakeContractAddr, twasmtypes.PrivilegeDelegator)
-	if err != nil {
-		panic(err)
-	}
-	if !ok {
-		panic("no contract with delegator privileges")
-	}
 	return nil
 }
 
@@ -360,7 +351,7 @@ func setAllPoEContractsInstanceMigrators(ctx sdk.Context, k wasmtypes.ContractOp
 }
 
 // build instantiate message for the trusted circle contract that contains the oversight committee
-func newOCInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
+func newOCInitMsg(gs types.SeedContracts) contract.TrustedCircleInitMsg {
 	cfg := gs.OversightCommitteeContractConfig
 	return contract.TrustedCircleInitMsg{
 		Name:                      cfg.Name,
@@ -378,7 +369,7 @@ func newOCInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
 }
 
 // build instantiate message for OC Proposals contract
-func newOCGovProposalsInitMsg(gs types.GenesisState, ocContract, engagementContract, valsetContract sdk.AccAddress) contract.OCProposalsInitMsg {
+func newOCGovProposalsInitMsg(gs types.SeedContracts, ocContract, engagementContract, valsetContract sdk.AccAddress) contract.OCProposalsInitMsg {
 	cfg := gs.OversightCommitteeContractConfig
 	return contract.OCProposalsInitMsg{
 		GroupContractAddress:      ocContract.String(),
@@ -389,7 +380,7 @@ func newOCGovProposalsInitMsg(gs types.GenesisState, ocContract, engagementContr
 }
 
 // build instantiate message for the trusted circle contract that contains the arbiter pool
-func newAPTrustedCircleInitMsg(gs types.GenesisState) contract.TrustedCircleInitMsg {
+func newAPTrustedCircleInitMsg(gs types.SeedContracts) contract.TrustedCircleInitMsg {
 	cfg := gs.ArbiterPoolContractConfig
 	return contract.TrustedCircleInitMsg{
 		Name:                      cfg.Name,
@@ -407,7 +398,7 @@ func newAPTrustedCircleInitMsg(gs types.GenesisState) contract.TrustedCircleInit
 }
 
 // build instantiate message for AP contract
-func newArbiterPoolVotingInitMsg(gs types.GenesisState, apContract sdk.AccAddress) contract.APVotingInitMsg {
+func newArbiterPoolVotingInitMsg(gs types.SeedContracts, apContract sdk.AccAddress) contract.APVotingInitMsg {
 	cfg := gs.ArbiterPoolContractConfig
 	return contract.APVotingInitMsg{
 		GroupContractAddress: apContract.String(),
@@ -417,7 +408,7 @@ func newArbiterPoolVotingInitMsg(gs types.GenesisState, apContract sdk.AccAddres
 	}
 }
 
-func newEngagementInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.TG4EngagementInitMsg {
+func newEngagementInitMsg(gs types.SeedContracts, adminAddr sdk.AccAddress) contract.TG4EngagementInitMsg {
 	tg4EngagementInitMsg := contract.TG4EngagementInitMsg{
 		Admin:            adminAddr.String(),
 		Members:          make([]contract.TG4Member, len(gs.Engagement)),
@@ -435,7 +426,7 @@ func newEngagementInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contr
 	return tg4EngagementInitMsg
 }
 
-func newStakeInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.TG4StakeInitMsg {
+func newStakeInitMsg(gs types.SeedContracts, adminAddr sdk.AccAddress) contract.TG4StakeInitMsg {
 	var claimLimit = uint64(gs.StakeContractConfig.ClaimAutoreturnLimit)
 	return contract.TG4StakeInitMsg{
 		Admin:            adminAddr.String(),
@@ -450,7 +441,7 @@ func newStakeInitMsg(gs types.GenesisState, adminAddr sdk.AccAddress) contract.T
 }
 
 func newValsetInitMsg(
-	gs types.GenesisState,
+	gs types.SeedContracts,
 	admin sdk.AccAddress,
 	mixerContractAddr sdk.AccAddress,
 	engagementAddr sdk.AccAddress,
@@ -477,13 +468,62 @@ func newValsetInitMsg(
 	}
 }
 
-// verifyPoEContracts verifies all PoE contracts are setup as expected
-func verifyPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.GenesisState) error {
-	return errors.New("not supported, yet")
-	// all poe contracts pinned
-	// valset privileged
-	// valset has registered for endblock valset update privilege
-	// admin set matches genesis system admin address for engagement and staking contract
+// VerifyPoEContracts sanity check that verifies all PoE contracts are setup as expected
+func VerifyPoEContracts(ctx sdk.Context, tk twasmKeeper, poeKeeper poeKeeper) error {
+	valVotingContractAddr, err := poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValidatorVoting)
+	if err != nil {
+		return sdkerrors.Wrap(err, "validator voting address")
+	}
+	types.IteratePoEContractTypes(func(tp types.PoEContractType) bool {
+		var addr sdk.AccAddress
+		addr, err = poeKeeper.GetPoEContractAddress(ctx, tp)
+		if err != nil {
+			return true
+		}
+		// migrator set to validator voting contract address
+		c := tk.GetContractInfo(ctx, addr)
+		if c == nil {
+			err = sdkerrors.Wrapf(types.ErrInvalid, "unknown contract: %s", addr)
+			return true
+		}
+		if c.Admin != valVotingContractAddr.String() {
+			err = sdkerrors.Wrapf(types.ErrInvalid, "admin address: %s", c.Admin)
+			return true
+		}
+		// all poe contracts pinned
+		if !tk.IsPinnedCode(ctx, c.CodeID) {
+			err = sdkerrors.Wrapf(types.ErrInvalid, "code not pinned for :%s", tp.String())
+			return true
+		}
+		return false
+	})
+	if err != nil { // return any error from within the iteration
+		return err
+	}
+	// verify PoE setup
+	addr, err := poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
+	if err != nil {
+		return sdkerrors.Wrap(err, "valset addr")
+	}
+	switch ok, err := tk.HasPrivilegedContract(ctx, addr, twasmtypes.PrivilegeTypeValidatorSetUpdate); {
+	case err != nil:
+		return sdkerrors.Wrap(err, "valset contract")
+	case !ok:
+		return sdkerrors.Wrap(types.ErrInvalid, "valset contract not registered for validator updates")
+	}
+	// staking contract must be 	privileged and registered for delegations
+	stakeContractAddr, err := poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+	if err != nil {
+		return sdkerrors.Wrap(err, "validator voting address")
+	}
+	ok, err := tk.HasPrivilegedContract(ctx, stakeContractAddr, twasmtypes.PrivilegeDelegator)
+	if err != nil {
+		return sdkerrors.Wrap(err, "staking contract")
+	}
+	if !ok {
+		return sdkerrors.Wrap(types.ErrInvalid, "no contract with delegator privileges")
+	}
+	return nil
 }
 
 // mustMarshalJson with stdlib json

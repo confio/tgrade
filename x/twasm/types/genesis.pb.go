@@ -9,6 +9,7 @@ import (
 	math "math"
 	math_bits "math/bits"
 
+	github_com_CosmWasm_wasmd_x_wasm_types "github.com/CosmWasm/wasmd/x/wasm/types"
 	types "github.com/CosmWasm/wasmd/x/wasm/types"
 	_ "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/gogo/protobuf/gogoproto"
@@ -27,9 +28,21 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type GenesisState struct {
-	Wasm                        types.GenesisState `protobuf:"bytes,1,opt,name=wasm,proto3" json:"wasm_genesis,omitempty"`
-	PrivilegedContractAddresses []string           `protobuf:"bytes,2,rep,name=privileged_contract_addresses,json=privilegedContractAddresses,proto3" json:"privileged_contract_addresses,omitempty"`
-	PinnedCodeIDs               []uint64           `protobuf:"varint,3,rep,packed,name=pinned_code_ids,json=pinnedCodeIds,proto3" json:"pinned_code_ids,omitempty"`
+	// Params sdk type Params for wasmd
+	Params types.Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
+	// Codes has all stored wasm codes and metadata
+	Codes []types.Code `protobuf:"bytes,2,rep,name=codes,proto3" json:"codes,omitempty"`
+	// Contracts contains all instantiated contracts, state and metadata
+	Contracts []Contract `protobuf:"bytes,3,rep,name=contracts,proto3" json:"contracts,omitempty"`
+	// Sequences names and values
+	Sequences []types.Sequence `protobuf:"bytes,4,rep,name=sequences,proto3" json:"sequences,omitempty"`
+	// GenMsgs has wasmd sdk type messages to execute in the genesis phase
+	GenMsgs []types.GenesisState_GenMsgs `protobuf:"bytes,5,rep,name=gen_msgs,json=genMsgs,proto3" json:"gen_msgs,omitempty"`
+	// PrivilegedContractAddresses is a list of contract addresses that can have
+	// special permissions
+	PrivilegedContractAddresses []string `protobuf:"bytes,6,rep,name=privileged_contract_addresses,json=privilegedContractAddresses,proto3" json:"privileged_contract_addresses,omitempty"`
+	// PinnedCodeIDs has codeInfo ids for wasm codes that are pinned in cache
+	PinnedCodeIDs []uint64 `protobuf:"varint,7,rep,packed,name=pinned_code_ids,json=pinnedCodeIds,proto3" json:"pinned_code_ids,omitempty"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
@@ -65,11 +78,39 @@ func (m *GenesisState) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GenesisState proto.InternalMessageInfo
 
-func (m *GenesisState) GetWasm() types.GenesisState {
+func (m *GenesisState) GetParams() types.Params {
 	if m != nil {
-		return m.Wasm
+		return m.Params
 	}
-	return types.GenesisState{}
+	return types.Params{}
+}
+
+func (m *GenesisState) GetCodes() []types.Code {
+	if m != nil {
+		return m.Codes
+	}
+	return nil
+}
+
+func (m *GenesisState) GetContracts() []Contract {
+	if m != nil {
+		return m.Contracts
+	}
+	return nil
+}
+
+func (m *GenesisState) GetSequences() []types.Sequence {
+	if m != nil {
+		return m.Sequences
+	}
+	return nil
+}
+
+func (m *GenesisState) GetGenMsgs() []types.GenesisState_GenMsgs {
+	if m != nil {
+		return m.GenMsgs
+	}
+	return nil
 }
 
 func (m *GenesisState) GetPrivilegedContractAddresses() []string {
@@ -86,8 +127,207 @@ func (m *GenesisState) GetPinnedCodeIDs() []uint64 {
 	return nil
 }
 
+// Contract struct encompasses ContractAddress, ContractInfo, and ContractState
+type Contract struct {
+	ContractAddress string             `protobuf:"bytes,1,opt,name=contract_address,json=contractAddress,proto3" json:"contract_address,omitempty"`
+	ContractInfo    types.ContractInfo `protobuf:"bytes,2,opt,name=contract_info,json=contractInfo,proto3" json:"contract_info"`
+	// ContractSate is one of default wasmd Model or custom state model
+	//
+	// Types that are valid to be assigned to ContractState:
+	//	*Contract_KvModel
+	//	*Contract_CustomModel
+	ContractState isContract_ContractState `protobuf_oneof:"contract_state"`
+}
+
+func (m *Contract) Reset()         { *m = Contract{} }
+func (m *Contract) String() string { return proto.CompactTextString(m) }
+func (*Contract) ProtoMessage()    {}
+func (*Contract) Descriptor() ([]byte, []int) {
+	return fileDescriptor_89c4cd47eb0533ed, []int{1}
+}
+func (m *Contract) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Contract) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Contract.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Contract) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Contract.Merge(m, src)
+}
+func (m *Contract) XXX_Size() int {
+	return m.Size()
+}
+func (m *Contract) XXX_DiscardUnknown() {
+	xxx_messageInfo_Contract.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Contract proto.InternalMessageInfo
+
+type isContract_ContractState interface {
+	isContract_ContractState()
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type Contract_KvModel struct {
+	KvModel *KVModel `protobuf:"bytes,3,opt,name=kv_model,json=kvModel,proto3,oneof" json:"kv_model,omitempty"`
+}
+type Contract_CustomModel struct {
+	CustomModel *CustomModel `protobuf:"bytes,4,opt,name=custom_model,json=customModel,proto3,oneof" json:"custom_model,omitempty"`
+}
+
+func (*Contract_KvModel) isContract_ContractState()     {}
+func (*Contract_CustomModel) isContract_ContractState() {}
+
+func (m *Contract) GetContractState() isContract_ContractState {
+	if m != nil {
+		return m.ContractState
+	}
+	return nil
+}
+
+func (m *Contract) GetContractAddress() string {
+	if m != nil {
+		return m.ContractAddress
+	}
+	return ""
+}
+
+func (m *Contract) GetContractInfo() types.ContractInfo {
+	if m != nil {
+		return m.ContractInfo
+	}
+	return types.ContractInfo{}
+}
+
+func (m *Contract) GetKvModel() *KVModel {
+	if x, ok := m.GetContractState().(*Contract_KvModel); ok {
+		return x.KvModel
+	}
+	return nil
+}
+
+func (m *Contract) GetCustomModel() *CustomModel {
+	if x, ok := m.GetContractState().(*Contract_CustomModel); ok {
+		return x.CustomModel
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Contract) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*Contract_KvModel)(nil),
+		(*Contract_CustomModel)(nil),
+	}
+}
+
+// KVModel is a wrapper around the wasmd default key value model.
+type KVModel struct {
+	Models []types.Model `protobuf:"bytes,1,rep,name=models,proto3" json:"models"`
+}
+
+func (m *KVModel) Reset()         { *m = KVModel{} }
+func (m *KVModel) String() string { return proto.CompactTextString(m) }
+func (*KVModel) ProtoMessage()    {}
+func (*KVModel) Descriptor() ([]byte, []int) {
+	return fileDescriptor_89c4cd47eb0533ed, []int{2}
+}
+func (m *KVModel) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *KVModel) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_KVModel.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *KVModel) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_KVModel.Merge(m, src)
+}
+func (m *KVModel) XXX_Size() int {
+	return m.Size()
+}
+func (m *KVModel) XXX_DiscardUnknown() {
+	xxx_messageInfo_KVModel.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_KVModel proto.InternalMessageInfo
+
+func (m *KVModel) GetModels() []types.Model {
+	if m != nil {
+		return m.Models
+	}
+	return nil
+}
+
+// CustomModel contains the raw json data for a contract to seed its state on
+// import
+type CustomModel struct {
+	// Msg json encoded message to be passed to the contract on import
+	Msg github_com_CosmWasm_wasmd_x_wasm_types.RawContractMessage `protobuf:"bytes,5,opt,name=msg,proto3,casttype=github.com/CosmWasm/wasmd/x/wasm/types.RawContractMessage" json:"msg,omitempty"`
+}
+
+func (m *CustomModel) Reset()         { *m = CustomModel{} }
+func (m *CustomModel) String() string { return proto.CompactTextString(m) }
+func (*CustomModel) ProtoMessage()    {}
+func (*CustomModel) Descriptor() ([]byte, []int) {
+	return fileDescriptor_89c4cd47eb0533ed, []int{3}
+}
+func (m *CustomModel) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CustomModel) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CustomModel.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *CustomModel) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CustomModel.Merge(m, src)
+}
+func (m *CustomModel) XXX_Size() int {
+	return m.Size()
+}
+func (m *CustomModel) XXX_DiscardUnknown() {
+	xxx_messageInfo_CustomModel.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CustomModel proto.InternalMessageInfo
+
+func (m *CustomModel) GetMsg() github_com_CosmWasm_wasmd_x_wasm_types.RawContractMessage {
+	if m != nil {
+		return m.Msg
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*GenesisState)(nil), "confio.twasm.v1beta1.GenesisState")
+	proto.RegisterType((*Contract)(nil), "confio.twasm.v1beta1.Contract")
+	proto.RegisterType((*KVModel)(nil), "confio.twasm.v1beta1.KVModel")
+	proto.RegisterType((*CustomModel)(nil), "confio.twasm.v1beta1.CustomModel")
 }
 
 func init() {
@@ -95,29 +335,49 @@ func init() {
 }
 
 var fileDescriptor_89c4cd47eb0533ed = []byte{
-	// 340 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0xd1, 0x41, 0x4a, 0xf3, 0x40,
-	0x14, 0x07, 0xf0, 0xa4, 0x2d, 0x1f, 0x7c, 0xd1, 0x22, 0x84, 0x22, 0xb5, 0xe2, 0xa4, 0x74, 0xa1,
-	0x05, 0x65, 0x42, 0xf5, 0x02, 0x9a, 0x0a, 0xe2, 0x4e, 0x2a, 0xb8, 0x70, 0x13, 0x26, 0x99, 0x67,
-	0x1c, 0x30, 0x79, 0x21, 0x33, 0x56, 0x7b, 0x0b, 0xef, 0xe1, 0x45, 0xba, 0xec, 0xd2, 0x55, 0x90,
-	0x74, 0xd7, 0x53, 0x48, 0xa7, 0xa9, 0x8d, 0x2e, 0xdc, 0x85, 0xbc, 0xdf, 0xfc, 0xff, 0xc3, 0x3c,
-	0xab, 0x17, 0x62, 0xf2, 0x20, 0xd0, 0x55, 0x2f, 0x4c, 0xc6, 0xee, 0x78, 0x10, 0x80, 0x62, 0x03,
-	0x37, 0x82, 0x04, 0xa4, 0x90, 0x34, 0xcd, 0x50, 0xa1, 0xdd, 0x5a, 0x19, 0xaa, 0x0d, 0x2d, 0x4d,
-	0xa7, 0x15, 0x61, 0x84, 0x1a, 0xb8, 0xcb, 0xaf, 0x95, 0xed, 0x90, 0x10, 0x65, 0x8c, 0xd2, 0x0d,
-	0x98, 0x84, 0xef, 0xb8, 0x10, 0x45, 0x52, 0x9d, 0xeb, 0xae, 0xb2, 0xf0, 0x67, 0x57, 0xef, 0xbd,
-	0x66, 0x6d, 0x5f, 0xad, 0xfe, 0xdc, 0x2a, 0xa6, 0xc0, 0x1e, 0x59, 0x8d, 0xa5, 0x6c, 0x9b, 0x5d,
-	0xb3, 0xbf, 0x75, 0x4a, 0xe8, 0xfa, 0x3c, 0x2d, 0x2f, 0x43, 0xab, 0xda, 0x23, 0xd3, 0xdc, 0x31,
-	0x16, 0xb9, 0xb3, 0xbb, 0x9c, 0xfa, 0x65, 0xf4, 0x09, 0xc6, 0x42, 0x41, 0x9c, 0xaa, 0xc9, 0x48,
-	0x67, 0xd9, 0x68, 0x1d, 0xa4, 0x99, 0x18, 0x8b, 0x27, 0x88, 0x80, 0xfb, 0x21, 0x26, 0x2a, 0x63,
-	0xa1, 0xf2, 0x19, 0xe7, 0x19, 0x48, 0x09, 0xb2, 0x5d, 0xeb, 0xd6, 0xfb, 0xff, 0xbd, 0xe3, 0x45,
-	0xee, 0x1c, 0xfd, 0x09, 0x2b, 0xc9, 0xfb, 0x1b, 0x38, 0x2c, 0xdd, 0xc5, 0x9a, 0xd9, 0x77, 0xd6,
-	0x4e, 0x2a, 0x92, 0x44, 0x67, 0x70, 0xf0, 0x05, 0x97, 0xed, 0x7a, 0xb7, 0xde, 0x6f, 0x78, 0xb4,
-	0xc8, 0x9d, 0xe6, 0x8d, 0x1e, 0x0d, 0x91, 0xc3, 0xf5, 0xa5, 0x5c, 0xe4, 0xce, 0xde, 0x2f, 0x5b,
-	0x69, 0x69, 0xa6, 0x1b, 0xcb, 0xa5, 0x77, 0x3e, 0x2d, 0x88, 0x39, 0x2b, 0x88, 0xf9, 0x59, 0x10,
-	0xf3, 0x6d, 0x4e, 0x8c, 0xd9, 0x9c, 0x18, 0x1f, 0x73, 0x62, 0xdc, 0x1f, 0x46, 0x42, 0x3d, 0x3e,
-	0x07, 0x34, 0xc4, 0xd8, 0x5d, 0xaf, 0x38, 0xca, 0x18, 0x07, 0xf7, 0xb5, 0xdc, 0xb5, 0x9a, 0xa4,
-	0x20, 0x83, 0x7f, 0xfa, 0xd9, 0xcf, 0xbe, 0x02, 0x00, 0x00, 0xff, 0xff, 0x76, 0x2e, 0x7e, 0x8e,
-	0x08, 0x02, 0x00, 0x00,
+	// 659 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x94, 0x5f, 0x4f, 0xd3, 0x50,
+	0x14, 0xc0, 0x37, 0x36, 0x36, 0x76, 0x37, 0x84, 0x5c, 0x89, 0x94, 0x21, 0xdd, 0xdc, 0x03, 0xce,
+	0x68, 0xda, 0x80, 0xd1, 0x44, 0x13, 0x13, 0x2c, 0xfe, 0x23, 0x86, 0x48, 0x46, 0xc4, 0x68, 0xa2,
+	0x4b, 0x77, 0x7b, 0xb9, 0x36, 0xd0, 0xde, 0xba, 0x73, 0x19, 0xf0, 0x2d, 0x7c, 0xf2, 0x33, 0xf1,
+	0xc8, 0xa3, 0x4f, 0x8b, 0x19, 0x0f, 0x26, 0x7c, 0x04, 0x9f, 0x4c, 0x6f, 0x6f, 0xbb, 0x42, 0xa7,
+	0x6f, 0x6d, 0xcf, 0xef, 0xfc, 0xce, 0xbd, 0x67, 0x67, 0x07, 0xb5, 0x08, 0xf7, 0xf7, 0x5d, 0x6e,
+	0x8a, 0x63, 0x1b, 0x3c, 0x73, 0xb0, 0xd6, 0xa3, 0xc2, 0x5e, 0x33, 0x19, 0xf5, 0x29, 0xb8, 0x60,
+	0x04, 0x7d, 0x2e, 0x38, 0x5e, 0x88, 0x18, 0x43, 0x32, 0x86, 0x62, 0xea, 0x0b, 0x8c, 0x33, 0x2e,
+	0x01, 0x33, 0x7c, 0x8a, 0xd8, 0xba, 0x4e, 0x38, 0x78, 0x1c, 0xcc, 0x9e, 0x0d, 0x34, 0xd1, 0x11,
+	0xee, 0xfa, 0xe9, 0xb8, 0xac, 0xa5, 0x0a, 0x5e, 0xad, 0x55, 0xbf, 0x9d, 0x89, 0x8b, 0xd3, 0x80,
+	0xc6, 0xd1, 0xa5, 0x6c, 0xf4, 0x24, 0x0a, 0xb5, 0x7e, 0x17, 0x51, 0xed, 0x75, 0xa4, 0xda, 0x15,
+	0xb6, 0xa0, 0xf8, 0x31, 0x2a, 0x05, 0x76, 0xdf, 0xf6, 0x40, 0xcb, 0x37, 0xf3, 0xed, 0xea, 0xba,
+	0x66, 0xc4, 0xc9, 0x86, 0xba, 0x87, 0xb1, 0x23, 0xe3, 0x56, 0xf1, 0x6c, 0xd8, 0xc8, 0x75, 0x14,
+	0x8d, 0x5f, 0xa2, 0x69, 0xc2, 0x1d, 0x0a, 0xda, 0x54, 0xb3, 0xd0, 0xae, 0xae, 0xdf, 0xca, 0xa6,
+	0x6d, 0x72, 0x87, 0x5a, 0x8b, 0x61, 0xd2, 0xe5, 0xb0, 0x31, 0x27, 0xe1, 0x07, 0xdc, 0x73, 0x05,
+	0xf5, 0x02, 0x71, 0xda, 0x89, 0xb2, 0xf1, 0x47, 0x54, 0x21, 0xdc, 0x17, 0x7d, 0x9b, 0x08, 0xd0,
+	0x0a, 0x52, 0xa5, 0x1b, 0x93, 0x1a, 0x69, 0x6c, 0x2a, 0xcc, 0x5a, 0x56, 0xca, 0x9b, 0x49, 0x62,
+	0x4a, 0x3b, 0xb6, 0xe1, 0xf7, 0xa8, 0x02, 0xf4, 0xdb, 0x11, 0xf5, 0x09, 0x05, 0xad, 0x28, 0xd5,
+	0xf5, 0xec, 0x29, 0x77, 0x15, 0x32, 0xd6, 0x26, 0x49, 0x69, 0x6d, 0xf2, 0x11, 0x7f, 0x46, 0x33,
+	0x8c, 0xfa, 0x5d, 0x0f, 0x18, 0x68, 0xd3, 0xd2, 0xba, 0x9a, 0xb5, 0xa6, 0x5b, 0x1c, 0xbe, 0x6c,
+	0x03, 0x03, 0xab, 0xae, 0x2a, 0xe0, 0x38, 0x3f, 0x55, 0xa0, 0xcc, 0x22, 0x08, 0x73, 0xb4, 0x12,
+	0xf4, 0xdd, 0x81, 0x7b, 0x48, 0x19, 0x75, 0xba, 0xf1, 0x6d, 0xba, 0xb6, 0xe3, 0xf4, 0x29, 0x00,
+	0x05, 0xad, 0xd4, 0x2c, 0xb4, 0x2b, 0xd6, 0xfd, 0xcb, 0x61, 0xe3, 0xee, 0x7f, 0xc1, 0x94, 0x7c,
+	0x79, 0x0c, 0xc6, 0x5d, 0x7c, 0x1e, 0x63, 0x78, 0x0f, 0xcd, 0x05, 0xae, 0xef, 0x4b, 0x87, 0x43,
+	0xbb, 0xae, 0x03, 0x5a, 0xb9, 0x59, 0x68, 0x17, 0x2d, 0x63, 0x34, 0x6c, 0xcc, 0xee, 0xc8, 0x50,
+	0xf8, 0x53, 0x6e, 0xbd, 0x80, 0xcb, 0x61, 0x63, 0xe9, 0x1a, 0x9b, 0xaa, 0x32, 0x1b, 0x8c, 0x59,
+	0x07, 0x5a, 0x3f, 0xa6, 0xd0, 0x4c, 0x5c, 0x0d, 0xdf, 0x43, 0xf3, 0xd7, 0x4f, 0x28, 0xe7, 0xad,
+	0xd2, 0x99, 0x23, 0x57, 0x4f, 0x84, 0xb7, 0xd0, 0x6c, 0x82, 0xba, 0xfe, 0x3e, 0xd7, 0xa6, 0xe4,
+	0x5c, 0xea, 0x93, 0x06, 0x2c, 0xc2, 0xb6, 0xfc, 0x7d, 0xae, 0xa6, 0xb3, 0x46, 0x52, 0xdf, 0xf0,
+	0x53, 0x34, 0x73, 0x30, 0xe8, 0x7a, 0xdc, 0xa1, 0x87, 0x5a, 0x41, 0x5a, 0x56, 0x26, 0xcf, 0xd6,
+	0xdb, 0xbd, 0xed, 0x10, 0x7a, 0x93, 0xeb, 0x94, 0x0f, 0x06, 0xf2, 0x11, 0xbf, 0x42, 0x35, 0x72,
+	0x04, 0x82, 0x7b, 0x2a, 0xbf, 0x28, 0xf3, 0xef, 0xfc, 0x63, 0x36, 0x25, 0x19, 0x3b, 0xaa, 0x64,
+	0xfc, 0x6a, 0xcd, 0xa3, 0x1b, 0xc9, 0x75, 0x20, 0x1c, 0x87, 0xd6, 0x06, 0x2a, 0xab, 0x7a, 0xf8,
+	0x11, 0x2a, 0x49, 0x7b, 0xd8, 0x8c, 0x70, 0x92, 0x16, 0xb3, 0x97, 0x8c, 0x2c, 0xea, 0xbf, 0x17,
+	0xc1, 0xad, 0x2f, 0xa8, 0x9a, 0xaa, 0x88, 0xdf, 0xa1, 0x82, 0x07, 0x4c, 0x9b, 0x6e, 0xe6, 0xdb,
+	0x35, 0xeb, 0xd9, 0x9f, 0x61, 0xe3, 0x09, 0x73, 0xc5, 0xd7, 0xa3, 0x9e, 0x41, 0xb8, 0x67, 0x6e,
+	0x72, 0xf0, 0x3e, 0xc4, 0xab, 0xc0, 0x31, 0x4f, 0xa2, 0x95, 0x10, 0x6d, 0x8b, 0x8e, 0x7d, 0x1c,
+	0xf7, 0x70, 0x9b, 0x02, 0xd8, 0x8c, 0x76, 0x42, 0x93, 0xb5, 0x71, 0x36, 0xd2, 0xf3, 0xe7, 0x23,
+	0x3d, 0xff, 0x6b, 0xa4, 0xe7, 0xbf, 0x5f, 0xe8, 0xb9, 0xf3, 0x0b, 0x3d, 0xf7, 0xf3, 0x42, 0xcf,
+	0x7d, 0x5a, 0x4d, 0x99, 0xe3, 0x95, 0xc8, 0xfa, 0xb6, 0x43, 0xcd, 0x13, 0xb5, 0x1b, 0xa5, 0xb9,
+	0x57, 0x92, 0xdb, 0xe6, 0xe1, 0xdf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x74, 0x37, 0x09, 0x76, 0x38,
+	0x05, 0x00, 0x00,
 }
 
 func (m *GenesisState) Marshal() (dAtA []byte, err error) {
@@ -156,7 +416,7 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		copy(dAtA[i:], dAtA2[:j1])
 		i = encodeVarintGenesis(dAtA, i, uint64(j1))
 		i--
-		dAtA[i] = 0x1a
+		dAtA[i] = 0x3a
 	}
 	if len(m.PrivilegedContractAddresses) > 0 {
 		for iNdEx := len(m.PrivilegedContractAddresses) - 1; iNdEx >= 0; iNdEx-- {
@@ -164,11 +424,67 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			copy(dAtA[i:], m.PrivilegedContractAddresses[iNdEx])
 			i = encodeVarintGenesis(dAtA, i, uint64(len(m.PrivilegedContractAddresses[iNdEx])))
 			i--
+			dAtA[i] = 0x32
+		}
+	}
+	if len(m.GenMsgs) > 0 {
+		for iNdEx := len(m.GenMsgs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.GenMsgs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.Sequences) > 0 {
+		for iNdEx := len(m.Sequences) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Sequences[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if len(m.Contracts) > 0 {
+		for iNdEx := len(m.Contracts) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Contracts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Codes) > 0 {
+		for iNdEx := len(m.Codes) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Codes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
 			dAtA[i] = 0x12
 		}
 	}
 	{
-		size, err := m.Wasm.MarshalToSizedBuffer(dAtA[:i])
+		size, err := m.Params.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
 			return 0, err
 		}
@@ -177,6 +493,164 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *Contract) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Contract) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Contract) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ContractState != nil {
+		{
+			size := m.ContractState.Size()
+			i -= size
+			if _, err := m.ContractState.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	{
+		size, err := m.ContractInfo.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenesis(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	if len(m.ContractAddress) > 0 {
+		i -= len(m.ContractAddress)
+		copy(dAtA[i:], m.ContractAddress)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ContractAddress)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Contract_KvModel) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Contract_KvModel) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.KvModel != nil {
+		{
+			size, err := m.KvModel.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenesis(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	return len(dAtA) - i, nil
+}
+func (m *Contract_CustomModel) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Contract_CustomModel) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.CustomModel != nil {
+		{
+			size, err := m.CustomModel.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenesis(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
+	return len(dAtA) - i, nil
+}
+func (m *KVModel) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *KVModel) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *KVModel) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Models) > 0 {
+		for iNdEx := len(m.Models) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Models[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CustomModel) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CustomModel) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CustomModel) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Msg) > 0 {
+		i -= len(m.Msg)
+		copy(dAtA[i:], m.Msg)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.Msg)))
+		i--
+		dAtA[i] = 0x2a
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -197,8 +671,32 @@ func (m *GenesisState) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = m.Wasm.Size()
+	l = m.Params.Size()
 	n += 1 + l + sovGenesis(uint64(l))
+	if len(m.Codes) > 0 {
+		for _, e := range m.Codes {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.Contracts) > 0 {
+		for _, e := range m.Contracts {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.Sequences) > 0 {
+		for _, e := range m.Sequences {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.GenMsgs) > 0 {
+		for _, e := range m.GenMsgs {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
 	if len(m.PrivilegedContractAddresses) > 0 {
 		for _, s := range m.PrivilegedContractAddresses {
 			l = len(s)
@@ -211,6 +709,76 @@ func (m *GenesisState) Size() (n int) {
 			l += sovGenesis(uint64(e))
 		}
 		n += 1 + sovGenesis(uint64(l)) + l
+	}
+	return n
+}
+
+func (m *Contract) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ContractAddress)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = m.ContractInfo.Size()
+	n += 1 + l + sovGenesis(uint64(l))
+	if m.ContractState != nil {
+		n += m.ContractState.Size()
+	}
+	return n
+}
+
+func (m *Contract_KvModel) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.KvModel != nil {
+		l = m.KvModel.Size()
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	return n
+}
+func (m *Contract_CustomModel) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.CustomModel != nil {
+		l = m.CustomModel.Size()
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	return n
+}
+func (m *KVModel) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Models) > 0 {
+		for _, e := range m.Models {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *CustomModel) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Msg)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
 	}
 	return n
 }
@@ -252,7 +820,7 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Wasm", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Params", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -279,11 +847,147 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.Wasm.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Params.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Codes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Codes = append(m.Codes, types.Code{})
+			if err := m.Codes[len(m.Codes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Contracts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Contracts = append(m.Contracts, Contract{})
+			if err := m.Contracts[len(m.Contracts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sequences", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Sequences = append(m.Sequences, types.Sequence{})
+			if err := m.Sequences[len(m.Sequences)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GenMsgs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.GenMsgs = append(m.GenMsgs, types.GenesisState_GenMsgs{})
+			if err := m.GenMsgs[len(m.GenMsgs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PrivilegedContractAddresses", wireType)
 			}
@@ -315,7 +1019,7 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			}
 			m.PrivilegedContractAddresses = append(m.PrivilegedContractAddresses, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
-		case 3:
+		case 7:
 			if wireType == 0 {
 				var v uint64
 				for shift := uint(0); ; shift += 7 {
@@ -391,6 +1095,359 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field PinnedCodeIDs", wireType)
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Contract) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Contract: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Contract: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ContractAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ContractAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ContractInfo", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ContractInfo.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field KvModel", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &KVModel{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.ContractState = &Contract_KvModel{v}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CustomModel", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &CustomModel{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.ContractState = &Contract_CustomModel{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *KVModel) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: KVModel: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: KVModel: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Models", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Models = append(m.Models, types.Model{})
+			if err := m.Models[len(m.Models)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CustomModel) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CustomModel: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CustomModel: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Msg", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Msg = append(m.Msg[:0], dAtA[iNdEx:postIndex]...)
+			if m.Msg == nil {
+				m.Msg = []byte{}
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenesis(dAtA[iNdEx:])

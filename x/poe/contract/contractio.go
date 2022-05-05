@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"bytes"
 	"encoding/json"
 	"strconv"
 	"time"
@@ -84,7 +85,7 @@ func CallEndBlockWithValidatorUpdate(ctx sdk.Context, contractAddr sdk.AccAddres
 
 	result := make([]abci.ValidatorUpdate, len(contractResult.Diffs))
 	for i, v := range contractResult.Diffs {
-		pub, err := convertToTendermintPubKey(v.PubKey)
+		pub, err := ConvertToTendermintPubKey(v.PubKey)
 		if err != nil {
 			return nil, err
 		}
@@ -180,7 +181,7 @@ func SetEngagementPoints(ctx sdk.Context, contractAddr sdk.AccAddress, k types.S
 	return sdkerrors.Wrap(err, "sudo")
 }
 
-func convertToTendermintPubKey(key ValidatorPubkey) (crypto.PublicKey, error) {
+func ConvertToTendermintPubKey(key ValidatorPubkey) (crypto.PublicKey, error) {
 	switch {
 	case key.Ed25519 != nil:
 		return crypto.PublicKey{
@@ -226,7 +227,8 @@ func (a ContractAdapter) doExecute(ctx sdk.Context, msg interface{}, sender sdk.
 
 // PageableResult is a query response where the cursor is a subset of the raw last element.
 type PageableResult interface {
-	PaginationCursor() PaginationCursor
+	// PaginationCursor pagination cursor
+	PaginationCursor(raw []byte) (PaginationCursor, error)
 }
 
 // execute a smart query with the contract that returns multiple elements
@@ -243,17 +245,16 @@ func (a ContractAdapter) doPageableQuery(ctx sdk.Context, query interface{}, res
 	if err != nil {
 		return nil, err
 	}
-
 	if err := json.Unmarshal(res, result); err != nil {
 		return nil, sdkerrors.Wrap(err, "unmarshal result")
 	}
-
-	var cursor PaginationCursor
 	switch p := result.(type) {
 	case PageableResult:
-		cursor = p.PaginationCursor()
+		// has cursor value
+		return p.PaginationCursor(res)
 	}
-	return cursor, nil
+	// no pagination support (in tgrade, yet)
+	return nil, nil
 }
 
 // execute a smart query with the contract
@@ -272,12 +273,42 @@ func (a ContractAdapter) doQuery(ctx sdk.Context, query interface{}, result inte
 	return json.Unmarshal(res, result)
 }
 
+// Address returns contract address
+func (a ContractAdapter) Address() (sdk.AccAddress, error) {
+	return a.contractAddr, a.addressLookupErr
+}
+
 // PaginationCursor is the contracts "last element" as raw data that can be used to navigate through the result set.
 type PaginationCursor []byte
+
+// Empty is nil or zero size
+func (p PaginationCursor) Empty() bool {
+	return len(p) == 0
+}
+
+// String convert to string representation
+func (p PaginationCursor) String() string {
+	if p.Empty() {
+		return ""
+	}
+	return string(p)
+}
+
+func (p PaginationCursor) Equal(o PaginationCursor) bool {
+	return bytes.Equal(p, o)
+}
 
 type Paginator struct {
 	StartAfter PaginationCursor `json:"start_after,omitempty"`
 	Limit      uint64           `json:"limit,omitempty"`
+}
+
+// ToQuery converts to poe contract query format
+func (p *Paginator) ToQuery() (string, int) {
+	if p == nil {
+		return "", 0
+	}
+	return string(p.StartAfter), int(p.Limit)
 }
 
 // NewPaginator constructor

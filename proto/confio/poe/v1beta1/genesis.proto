@@ -15,12 +15,33 @@ message GenesisState {
   // params defines all the parameter of the module
   Params params = 1 [ (gogoproto.nullable) = false ];
 
-  // SeedContracts when enabled stores and instantiates the Proof of Engagement
-  // contracts on the chain.
-  bool seed_contracts = 2;
+  // SetupMode defines which scenario to apply on a genesis import.
+  // Either it is a fresh chain that needs PoE contracts bootstrapped or
+  // the module state has to be restored from a previous state dump.
+  oneof setup_mode {
+    // SeedContracts stores and instantiates the Proof of Engagement
+    // contracts on the chain.
+    SeedContracts seed_contracts = 2;
+    // ImportDump restores the state from an exported state genesis
+    ImportDump import_dump = 3;
+  }
+}
+
+// ImportDump has all module data for non seed mode.
+message ImportDump {
+  // Contracts PoE contract addresses and types
+  repeated PoEContract contracts = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "contracts,omitempty"
+  ];
+}
+
+// SeedContracts contains the contract configuration and group members to setup
+// all PoE contracts on chain.
+message SeedContracts {
 
   // GenTxs defines the genesis transactions to create a validator.
-  repeated bytes gen_txs = 3 [
+  repeated bytes gen_txs = 1 [
     (gogoproto.casttype) = "encoding/json.RawMessage",
     (gogoproto.jsontag) = "gentxs",
     (gogoproto.moretags) = "yaml:\"gentxs\""
@@ -28,45 +49,43 @@ message GenesisState {
 
   // SystemAdminAddress single address that is set as admin for the PoE
   // contracts in seed mode.
-  string system_admin_address = 4;
-
-  // Contracts Poe contract addresses and types when used with state dump in non
-  // seed mode.
-  repeated PoEContract contracts = 5 [
-    (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "contracts,omitempty"
-  ];
+  string system_admin_address = 2;
 
   // Engagement weighted members of the engagement group. Validators should be
   // in here.
-  repeated TG4Member engagement = 6 [
+  repeated TG4Member engagement = 3 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "engagement,omitempty"
   ];
 
-  StakeContractConfig stake_contract_config = 7
+  StakeContractConfig stake_contract_config = 4
       [ (gogoproto.jsontag) = "stake_contract_config,omitempty" ];
 
-  ValsetContractConfig valset_contract_config = 8
+  ValsetContractConfig valset_contract_config = 5
       [ (gogoproto.jsontag) = "valset_contract_config,omitempty" ];
-  EngagementContractConfig engagement_contract_config = 9
+
+  EngagementContractConfig engagement_contract_config = 6
       [ (gogoproto.jsontag) = "engagement_contract_config,omitempty" ];
+
   // BondDenom defines the bondable coin denomination.
-  string bond_denom = 10 [ (gogoproto.moretags) = "yaml:\"bond_denom\"" ];
-  OversightCommitteeContractConfig oversight_committee_contract_config = 11
+  string bond_denom = 7 [ (gogoproto.moretags) = "yaml:\"bond_denom\"" ];
+
+  OversightCommitteeContractConfig oversight_committee_contract_config = 8
       [ (gogoproto.jsontag) = "oversight_committee_contract_config,omitempty" ];
-  CommunityPoolContractConfig community_pool_contract_config = 12
+
+  CommunityPoolContractConfig community_pool_contract_config = 9
       [ (gogoproto.jsontag) = "community_pool_contract_config,omitempty" ];
-  ValidatorVotingContractConfig validator_voting_contract_config = 13
+
+  ValidatorVotingContractConfig validator_voting_contract_config = 10
       [ (gogoproto.jsontag) = "validator_voting_contract_config,omitempty" ];
 
-  repeated string oversightCommunityMembers = 14
+  repeated string oversightCommunityMembers = 11
       [ (gogoproto.jsontag) = "oversight_community_members,omitempty" ];
 
-  repeated string arbiterPoolMembers = 15
+  repeated string arbiterPoolMembers = 12
       [ (gogoproto.jsontag) = "arbiter_pool_members,omitempty" ];
 
-  ArbiterPoolContractConfig arbiter_pool_contract_config = 16
+  ArbiterPoolContractConfig arbiter_pool_contract_config = 13
       [ (gogoproto.jsontag) = "arbiter_pool_contract_config,omitempty" ];
 }
 
@@ -122,6 +141,14 @@ message ValsetContractConfig {
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
   ];
+
+  // When a validator joins the valset, verify they sign the first block since
+  // joining or jail them for a period otherwise.
+  //
+  // The verification happens every time the validator becomes an active
+  // validator, including when they are unjailed or when they just gain enough
+  // power to participate.
+  bool verify_validators = 12;
 }
 
 // EngagementContractConfig initial setup config

@@ -34,7 +34,13 @@ func NewGenesisIO() *GenesisIO {
 // and marshals the modified state back into the genesis file
 func (x GenesisIO) AlterWasmModuleState(cmd *cobra.Command, callback func(state *wasmtypes.GenesisState, appState map[string]json.RawMessage) error) error {
 	return x.AlterTWasmModuleState(cmd, func(state *types.GenesisState, appState map[string]json.RawMessage) error {
-		return callback(&state.Wasm, appState)
+		wasmState := state.RawWasmState()
+		if err := callback(&wasmState, appState); err != nil {
+			return err
+		}
+		// update genesis messages as they can be modified
+		state.GenMsgs = wasmState.GenMsgs
+		return nil
 	})
 }
 
@@ -98,12 +104,13 @@ func (d GenesisReader) ReadTWasmGenesis(cmd *cobra.Command) (*TWasmGenesisData, 
 		clientCtx := client.GetClientContextFromCmd(cmd)
 		clientCtx.Codec.MustUnmarshalJSON(appState[types.ModuleName], &twasmGenesisState)
 	}
+	wasmState := twasmGenesisState.RawWasmState()
 	return &TWasmGenesisData{
 		GenesisData: wasmcli.NewGenesisData(
 			genFile,
 			genDoc,
 			appState,
-			&twasmGenesisState.Wasm,
+			&wasmState,
 		),
 		twasmModuleState: twasmGenesisState,
 	}, nil

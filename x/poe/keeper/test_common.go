@@ -238,6 +238,7 @@ func createTestInput(
 		&twasmKeeper,
 		accountKeeper,
 	)
+	poeKeeper.setParams(ctx, types.DefaultParams())
 
 	ibcKeeper := ibckeeper.NewKeeper(
 		appCodec,

@@ -4,21 +4,73 @@ package confio.twasm.v1beta1;
 import "gogoproto/gogo.proto";
 import "cosmos/base/v1beta1/coin.proto";
 import "cosmwasm/wasm/v1/genesis.proto";
+import "cosmwasm/wasm/v1/types.proto";
+import "cosmwasm/wasm/v1/tx.proto";
 
 option go_package = "github.com/confio/tgrade/x/twasm/types";
 
 message GenesisState {
 
-  cosmwasm.wasm.v1.GenesisState wasm = 1 [
+  // Params sdk type Params for wasmd
+  cosmwasm.wasm.v1.Params params = 1 [ (gogoproto.nullable) = false ];
+
+  // Codes has all stored wasm codes and metadata
+  repeated cosmwasm.wasm.v1.Code codes = 2
+      [ (gogoproto.nullable) = false, (gogoproto.jsontag) = "codes,omitempty" ];
+
+  // Contracts contains all instantiated contracts, state and metadata
+  repeated Contract contracts = 3 [
     (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "wasm_genesis,omitempty"
+    (gogoproto.jsontag) = "contracts,omitempty"
   ];
 
-  repeated string privileged_contract_addresses = 2
+  // Sequences names and values
+  repeated cosmwasm.wasm.v1.Sequence sequences = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "sequences,omitempty"
+  ];
+
+  // GenMsgs has wasmd sdk type messages to execute in the genesis phase
+  repeated cosmwasm.wasm.v1.GenesisState.GenMsgs gen_msgs = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag) = "gen_msgs,omitempty"
+  ];
+
+  // PrivilegedContractAddresses is a list of contract addresses that can have
+  // special permissions
+  repeated string privileged_contract_addresses = 6
       [ (gogoproto.jsontag) = "privileged_contract_addresses,omitempty" ];
 
-  repeated uint64 pinned_code_ids = 3 [
+  // PinnedCodeIDs has codeInfo ids for wasm codes that are pinned in cache
+  repeated uint64 pinned_code_ids = 7 [
     (gogoproto.jsontag) = "pinned_code_ids,omitempty",
     (gogoproto.customname) = "PinnedCodeIDs"
   ];
+}
+
+// Contract struct encompasses ContractAddress, ContractInfo, and ContractState
+message Contract {
+  string contract_address = 1;
+  cosmwasm.wasm.v1.ContractInfo contract_info = 2
+      [ (gogoproto.nullable) = false ];
+
+  // ContractSate is one of default wasmd Model or custom state model
+  oneof contract_state {
+    KVModel kv_model = 3;
+    CustomModel custom_model = 4;
+  }
+}
+
+// KVModel is a wrapper around the wasmd default key value model.
+message KVModel {
+  repeated cosmwasm.wasm.v1.Model models = 1 [ (gogoproto.nullable) = false ];
+}
+
+// CustomModel contains the raw json data for a contract to seed its state on
+// import
+message CustomModel {
+  // Msg json encoded message to be passed to the contract on import
+  bytes msg = 5
+      [ (gogoproto.casttype) =
+            "github.com/CosmWasm/wasmd/x/wasm/types.RawContractMessage" ];
 }

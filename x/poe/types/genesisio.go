@@ -3,6 +3,8 @@ package types
 import (
 	"encoding/json"
 
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -33,7 +35,10 @@ func SetGenTxsInAppGenesisState(
 		genTxsBz = append(genTxsBz, txBz)
 	}
 
-	genesisState.GenTxs = genTxsBz
+	if genesisState.GetSeedContracts() == nil {
+		return nil, sdkerrors.ErrNotSupported.Wrap("in state dump import mode")
+	}
+	genesisState.GetSeedContracts().GenTxs = genTxsBz
 	return SetGenesisStateInAppState(cdc, appGenesisState, genesisState), nil
 }
 

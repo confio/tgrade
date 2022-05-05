@@ -299,15 +299,23 @@ type ListValidatorsResponse struct {
 	Validators []OperatorResponse `json:"validators"`
 }
 
-func (l ListValidatorsResponse) PaginationCursor() PaginationCursor {
+// PaginationCursor implements PageableResult.PaginationCursor with a custom key which is implemented in the contract.
+func (l ListValidatorsResponse) PaginationCursor(_ []byte) (PaginationCursor, error) {
 	if len(l.Validators) == 0 {
-		return nil
+		return nil, nil
 	}
-	return PaginationCursor(l.Validators[len(l.Validators)-1].Operator)
+	return PaginationCursor(l.Validators[len(l.Validators)-1].Operator), nil
 }
 
 type ListActiveValidatorsResponse struct {
 	Validators []ValidatorInfo `json:"validators"`
+}
+
+func (l ListActiveValidatorsResponse) PaginationCursor(_ []byte) (PaginationCursor, error) {
+	if len(l.Validators) == 0 {
+		return nil, nil
+	}
+	return PaginationCursor(l.Validators[len(l.Validators)-1].Operator), nil
 }
 
 type ListValidatorSlashingResponse struct {
@@ -327,15 +335,6 @@ func QueryValsetEpoch(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddre
 	var response ValsetEpochResponse
 	err := doQuery(ctx, k, valset, query, &response)
 	return &response, err
-}
-
-// TODO: add pagination support
-func ListActiveValidators(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress) ([]ValidatorInfo, error) {
-	// TODO: this is just a placeholder trying to get 100
-	query := ValsetQuery{ListActiveValidators: &ListValidatorsQuery{Limit: 100}}
-	var response ListActiveValidatorsResponse
-	err := doQuery(ctx, k, valset, query, &response)
-	return response.Validators, err
 }
 
 func SimulateActiveValidators(ctx sdk.Context, k types.SmartQuerier, valset sdk.AccAddress) ([]ValidatorInfo, error) {
@@ -384,12 +383,7 @@ func (v ValsetContractAdapter) QueryRawValidator(ctx sdk.Context, opAddr sdk.Acc
 
 // ListValidators query all validators
 func (v ValsetContractAdapter) ListValidators(ctx sdk.Context, pagination *Paginator) ([]stakingtypes.Validator, PaginationCursor, error) {
-	var startAfter string
-	var limit int
-	if pagination != nil {
-		startAfter = string(pagination.StartAfter)
-		limit = int(pagination.Limit)
-	}
+	startAfter, limit := pagination.ToQuery()
 	query := ValsetQuery{ListValidators: &ListValidatorsQuery{StartAfter: startAfter, Limit: limit}}
 	var rsp ListValidatorsResponse
 	cursor, err := v.doPageableQuery(ctx, query, &rsp)
@@ -407,6 +401,29 @@ func (v ValsetContractAdapter) ListValidators(ctx sdk.Context, pagination *Pagin
 	// a simple len(res.validators) < limit check to clear the cursor would not work because
 	// the contract also has a max limit that may be < our limit
 	return vals, cursor, nil
+}
+
+// IterateActiveValidators iterate through the active validator set.
+func (v ValsetContractAdapter) IterateActiveValidators(ctx sdk.Context, callback func(ValidatorInfo) bool, pagination *Paginator) error {
+	startAfter, limit := pagination.ToQuery()
+	var rsp ListActiveValidatorsResponse
+	cursor, err := v.doPageableQuery(ctx, ValsetQuery{ListActiveValidators: &ListValidatorsQuery{StartAfter: startAfter, Limit: limit}}, &rsp)
+	if err != nil {
+		return err
+	}
+	for !cursor.Empty() {
+		for _, v := range rsp.Validators {
+			if callback(v) {
+				return nil
+			}
+		}
+		newCursor, err := v.doPageableQuery(ctx, ValsetQuery{ListActiveValidators: &ListValidatorsQuery{StartAfter: cursor.String()}}, &rsp)
+		if err != nil {
+			return err
+		}
+		cursor = newCursor
+	}
+	return nil
 }
 
 func (v ValsetContractAdapter) ListValidatorSlashing(ctx sdk.Context, opAddr sdk.AccAddress) ([]ValidatorSlashing, error) {

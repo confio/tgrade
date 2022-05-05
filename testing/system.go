@@ -100,7 +100,7 @@ func (s *SystemUnderTest) SetupChain() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to load genesis: %s", err))
 	}
-	genesisBz, err = sjson.SetRawBytes(genesisBz, "app_state.poe.valset_contract_config.epoch_length", []byte(fmt.Sprintf(`%q`, sutEpochDuration.String())))
+	genesisBz, err = sjson.SetRawBytes(genesisBz, "app_state.poe.seed_contracts.valset_contract_config.epoch_length", []byte(fmt.Sprintf(`%q`, sutEpochDuration.String())))
 	if err != nil {
 		panic(fmt.Sprintf("failed set epoche length: %s", err))
 	}

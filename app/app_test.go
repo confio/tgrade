@@ -27,8 +27,6 @@ import (
 var emptyWasmOpts []wasm.Option = nil
 
 func TestTgradeExport(t *testing.T) {
-	t.Skip("Alex, export is not implemented")
-
 	db := db.NewMemDB()
 	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)
 	genesisState := NewDefaultGenesisState()
@@ -37,7 +35,6 @@ func TestTgradeExport(t *testing.T) {
 
 	stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
 	require.NoError(t, err)
-
 	// Initialize the chain
 	gapp.InitChain(
 		abci.RequestInitChain{
@@ -62,6 +59,10 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	// - enough funds on the bank
 	// - membership in engagement group
 	marshaler := MakeEncodingConfig().Codec
+	poeGS := poetypes.GetGenesisStateFromAppState(marshaler, genesisState)
+	if poeGS.GetSeedContracts() == nil {
+		panic("not in seed mode")
+	}
 
 	systemAdminAddr := sdk.AccAddress(rand.Bytes(address.Len))
 	myGenTx, myAddr, _ := poetypes.RandomGenTX(t, 100)
@@ -79,8 +80,10 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	marshaler.MustUnmarshalJSON(genesisState[banktypes.ModuleName], &bankGenState)
 
 	coins := sdk.Coins{sdk.NewCoin(poetypes.DefaultBondDenom, sdk.NewInt(1000000000))}
-	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: myAddr.String(), Coins: coins.Sort()})
-	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: systemAdminAddr.String(), Coins: coins.Sort()})
+	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: myAddr.String(), Coins: coins})
+	bankGenState.Supply = bankGenState.Supply.Add(coins...)
+	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: systemAdminAddr.String(), Coins: coins})
+	bankGenState.Supply = bankGenState.Supply.Add(coins...)
 
 	genAddrAndUpdateBalance := func(numAddr int, balance sdk.Coins) []string {
 		genAddr := make([]string, numAddr)
@@ -88,25 +91,25 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 			addr := poetypes.RandomAccAddress().String()
 			bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: addr, Coins: balance})
 			genAddr[i] = addr
+			bankGenState.Supply = bankGenState.Supply.Add(balance...)
 		}
 		return genAddr
 	}
 	// add 3 oc members
-	ocMembers := genAddrAndUpdateBalance(3, coins.Sort())
+	ocMembers := genAddrAndUpdateBalance(3, coins)
 
 	// add 2 ap members
-	apMembers := genAddrAndUpdateBalance(2, coins.Sort())
+	apMembers := genAddrAndUpdateBalance(2, coins)
 
 	genesisState[banktypes.ModuleName] = marshaler.MustMarshalJSON(&bankGenState)
 
 	// add system admin to not fail poe on validation
-	poeGS := poetypes.GetGenesisStateFromAppState(marshaler, genesisState)
-	poeGS.BondDenom = poetypes.DefaultBondDenom
-	poeGS.GenTxs = []json.RawMessage{myGenTx}
-	poeGS.Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Points: 10}}
-	poeGS.SystemAdminAddress = systemAdminAddr.String()
-	poeGS.OversightCommunityMembers = ocMembers
-	poeGS.ArbiterPoolMembers = apMembers
+	poeGS.GetSeedContracts().BondDenom = poetypes.DefaultBondDenom
+	poeGS.GetSeedContracts().GenTxs = []json.RawMessage{myGenTx}
+	poeGS.GetSeedContracts().Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Points: 10}}
+	poeGS.GetSeedContracts().SystemAdminAddress = systemAdminAddr.String()
+	poeGS.GetSeedContracts().OversightCommunityMembers = ocMembers
+	poeGS.GetSeedContracts().ArbiterPoolMembers = apMembers
 	genesisState = poetypes.SetGenesisStateInAppState(marshaler, genesisState, poeGS)
 }
 

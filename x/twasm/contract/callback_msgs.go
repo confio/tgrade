@@ -1,5 +1,9 @@
 package contract
 
+import (
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+)
+
 // TgradeSudoMsg callback message sent to a contract.
 // See https://github.com/confio/tgrade-contracts/blob/main/packages/bindings/src/sudo.rs
 type TgradeSudoMsg struct {
@@ -7,11 +11,16 @@ type TgradeSudoMsg struct {
 
 	BeginBlock *BeginBlock `json:"begin_block,omitempty"`
 	// This will be delivered every block if the contract is currently registered for End Block
-	/// Block height and time is already in Env
+	// Block height and time is already in Env
 	EndBlock *struct{} `json:"end_block,omitempty"`
-	/// This will be delivered after everything.
-	/// The data in the Response is (JSON?) encoded diff to the validator set
+	// This will be delivered after everything.
+	// The data in the Response is (JSON?) encoded diff to the validator set
 	EndWithValidatorUpdate *struct{} `json:"end_with_validator_update,omitempty"`
+
+	// Export dump state for genesis export
+	Export *struct{} `json:"export,omitempty"`
+	// Import genesis state
+	Import *wasmtypes.RawContractMessage `json:"import,omitempty"`
 }
 
 // PrivilegeChangeMsg is called on a contract when it is made privileged or demoted
