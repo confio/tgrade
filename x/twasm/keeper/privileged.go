@@ -86,7 +86,7 @@ func (k Keeper) UnsetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) er
 	if isUniqueContractInstance {
 		// remove from cache
 		if err := k.contractKeeper.UnpinCode(ctx, contractInfo.CodeID); err != nil {
-			return sdkerrors.Wrapf(err, "unpin")
+			return sdkerrors.Wrap(err, "unpin")
 		}
 	}
 
