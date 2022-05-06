@@ -74,9 +74,20 @@ func (k Keeper) UnsetPrivileged(ctx sdk.Context, contractAddr sdk.AccAddress) er
 		return sdkerrors.Wrap(wasmtypes.ErrNotFound, "contractAddr")
 	}
 
-	// remove from cache
-	if err := k.contractKeeper.UnpinCode(ctx, contractInfo.CodeID); err != nil {
-		return sdkerrors.Wrapf(err, "unpin")
+	isUniqueContractInstance := true
+	k.Keeper.IterateContractsByCode(ctx, contractInfo.CodeID, func(address sdk.AccAddress) bool {
+		if !contractAddr.Equals(address) {
+			isUniqueContractInstance = false
+			return true
+		}
+		return false
+	})
+
+	if isUniqueContractInstance {
+		// remove from cache
+		if err := k.contractKeeper.UnpinCode(ctx, contractInfo.CodeID); err != nil {
+			return sdkerrors.Wrap(err, "unpin")
+		}
 	}
 
 	// remove privileged flag
