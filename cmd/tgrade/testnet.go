@@ -413,7 +413,7 @@ func initGenFiles(
 			Points:  uint64(len(genAccounts) - i), // unique weight
 		})
 	}
-	poeGenesisState.GetSeedContracts().SystemAdminAddress = admin.String()
+	poeGenesisState.GetSeedContracts().BootstrapAccountAddress = admin.String()
 	poeGenesisState.GetSeedContracts().OversightCommunityMembers = ocMemberAddrs
 	poeGenesisState.GetSeedContracts().ArbiterPoolMembers = apMemberAddrs
 	poetypes.SetGenesisStateInAppState(clientCtx.Codec, appGenState, poeGenesisState)

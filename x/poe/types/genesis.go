@@ -79,7 +79,7 @@ func DefaultGenesisState() *GenesisState {
 				},
 				DisputeCost: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
 			},
-			SystemAdminAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
+			BootstrapAccountAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 		},
 		},
 	}
@@ -167,7 +167,7 @@ func validateSeedContracts(g *SeedContracts, txJSONDecoder sdk.TxDecoder) error 
 		return sdkerrors.Wrap(err, "validator voting config")
 	}
 
-	if _, err := sdk.AccAddressFromBech32(g.SystemAdminAddress); err != nil {
+	if _, err := sdk.AccAddressFromBech32(g.BootstrapAccountAddress); err != nil {
 		return sdkerrors.Wrap(err, "system admin address")
 	}
 

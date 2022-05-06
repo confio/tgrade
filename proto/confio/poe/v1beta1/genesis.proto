@@ -47,9 +47,9 @@ message SeedContracts {
     (gogoproto.moretags) = "yaml:\"gentxs\""
   ];
 
-  // SystemAdminAddress single address that is set as admin for the PoE
+  // BootstrapAccountAddress single address that is set as bootstrap-account for the PoE
   // contracts in seed mode.
-  string system_admin_address = 2;
+  string bootstrap_account_address = 2;
 
   // Engagement weighted members of the engagement group. Validators should be
   // in here.

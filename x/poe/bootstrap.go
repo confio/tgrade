@@ -62,7 +62,7 @@ type poeKeeper interface {
 // BootstrapPoEContracts stores and instantiates all PoE contracts:
 // See https://github.com/confio/tgrade-contracts/blob/main/docs/Architecture.md#multi-level-governance for an overview
 func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk twasmKeeper, poeKeeper poeKeeper, gs types.SeedContracts) error {
-	systemAdminAddr, err := sdk.AccAddressFromBech32(gs.SystemAdminAddress)
+	systemAdminAddr, err := sdk.AccAddressFromBech32(gs.BootstrapAccountAddress)
 	if err != nil {
 		return sdkerrors.Wrap(err, "system admin")
 	}

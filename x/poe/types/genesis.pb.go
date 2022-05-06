@@ -182,9 +182,9 @@ func (m *ImportDump) GetContracts() []PoEContract {
 type SeedContracts struct {
 	// GenTxs defines the genesis transactions to create a validator.
 	GenTxs []encoding_json.RawMessage `protobuf:"bytes,1,rep,name=gen_txs,json=genTxs,proto3,casttype=encoding/json.RawMessage" json:"gentxs" yaml:"gentxs"`
-	// SystemAdminAddress single address that is set as admin for the PoE
+	// BootstrapAccountAddress single address that is set as bootstrap-account for the PoE
 	// contracts in seed mode.
-	SystemAdminAddress string `protobuf:"bytes,2,opt,name=system_admin_address,json=systemAdminAddress,proto3" json:"system_admin_address,omitempty"`
+	BootstrapAccountAddress string `protobuf:"bytes,2,opt,name=bootstrap_account_address,json=bootstrapAccountAddress,proto3" json:"bootstrap_account_address,omitempty"`
 	// Engagement weighted members of the engagement group. Validators should be
 	// in here.
 	Engagement               []TG4Member               `protobuf:"bytes,3,rep,name=engagement,proto3" json:"engagement,omitempty"`
@@ -241,9 +241,9 @@ func (m *SeedContracts) GetGenTxs() []encoding_json.RawMessage {
 	return nil
 }
 
-func (m *SeedContracts) GetSystemAdminAddress() string {
+func (m *SeedContracts) GetBootstrapAccountAddress() string {
 	if m != nil {
-		return m.SystemAdminAddress
+		return m.BootstrapAccountAddress
 	}
 	return ""
 }
@@ -1372,10 +1372,10 @@ func (m *SeedContracts) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x1a
 		}
 	}
-	if len(m.SystemAdminAddress) > 0 {
-		i -= len(m.SystemAdminAddress)
-		copy(dAtA[i:], m.SystemAdminAddress)
-		i = encodeVarintGenesis(dAtA, i, uint64(len(m.SystemAdminAddress)))
+	if len(m.BootstrapAccountAddress) > 0 {
+		i -= len(m.BootstrapAccountAddress)
+		copy(dAtA[i:], m.BootstrapAccountAddress)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.BootstrapAccountAddress)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -1996,7 +1996,7 @@ func (m *SeedContracts) Size() (n int) {
 			n += 1 + l + sovGenesis(uint64(l))
 		}
 	}
-	l = len(m.SystemAdminAddress)
+	l = len(m.BootstrapAccountAddress)
 	if l > 0 {
 		n += 1 + l + sovGenesis(uint64(l))
 	}
@@ -2547,7 +2547,7 @@ func (m *SeedContracts) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SystemAdminAddress", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field BootstrapAccountAddress", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2575,7 +2575,7 @@ func (m *SeedContracts) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SystemAdminAddress = string(dAtA[iNdEx:postIndex])
+			m.BootstrapAccountAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {

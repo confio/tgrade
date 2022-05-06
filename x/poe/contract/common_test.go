@@ -32,7 +32,7 @@ func setupPoEContractsNVal(t *testing.T, n int, mutators ...func(m *types.Genesi
 
 	mutator, expValidators := withRandomValidators(t, ctx, example, n)
 	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
-	adminAddress, _ := sdk.AccAddressFromBech32(gs.GetSeedContracts().SystemAdminAddress)
+	adminAddress, _ := sdk.AccAddressFromBech32(gs.GetSeedContracts().BootstrapAccountAddress)
 	example.Faucet.Fund(ctx, adminAddress, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
 	fundMembers := func(members []string, coins sdk.Int) {
 		for _, member := range members {
