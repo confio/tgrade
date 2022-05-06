@@ -10,13 +10,11 @@ import (
 // RandomizedGenState  generates a random GenesisState for wasm
 func RandomizedGenState(simstate *module.SimulationState) {
 	twasmGenesis := types.GenesisState{
-		Wasm: wasmtypes.GenesisState{
-			Params:    wasmtypes.DefaultParams(),
-			Codes:     nil,
-			Contracts: nil,
-			Sequences: nil,
-			GenMsgs:   nil,
-		},
+		Params:                      wasmtypes.DefaultParams(),
+		Codes:                       nil,
+		Contracts:                   nil,
+		Sequences:                   nil,
+		GenMsgs:                     nil,
 		PrivilegedContractAddresses: nil,
 		PinnedCodeIDs:               nil,
 	}
