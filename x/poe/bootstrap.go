@@ -408,9 +408,9 @@ func newArbiterPoolVotingInitMsg(gs types.SeedContracts, apContract sdk.AccAddre
 	}
 }
 
-func newEngagementInitMsg(gs types.SeedContracts, adminAddr sdk.AccAddress) contract.TG4EngagementInitMsg {
+func newEngagementInitMsg(gs types.SeedContracts, bootstrapAccountAddr sdk.AccAddress) contract.TG4EngagementInitMsg {
 	tg4EngagementInitMsg := contract.TG4EngagementInitMsg{
-		Admin:            adminAddr.String(),
+		Admin:            bootstrapAccountAddr.String(),
 		Members:          make([]contract.TG4Member, len(gs.Engagement)),
 		PreAuthsHooks:    1,
 		PreAuthsSlashing: 1,
