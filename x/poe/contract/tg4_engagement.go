@@ -77,7 +77,7 @@ func NewEngagementContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types
 	}
 }
 
-func (a EngagementContractAdapter) UpdateAdmin(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
+func (a EngagementContractAdapter) UpdateBootstrapAccountAddress(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
 	bech32AdminAddr := newAdmin.String()
 	msg := TG4EngagementExecute{
 		UpdateAdmin: &TG4UpdateAdminMsg{NewAdmin: &bech32AdminAddr},

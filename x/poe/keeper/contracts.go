@@ -26,7 +26,7 @@ type ValsetContract interface {
 	QueryValidator(ctx sdk.Context, opAddr sdk.AccAddress) (*stakingtypes.Validator, error)
 	ListValidatorSlashing(ctx sdk.Context, opAddr sdk.AccAddress) ([]contract.ValidatorSlashing, error)
 	QueryConfig(ctx sdk.Context) (*contract.ValsetConfigResponse, error)
-	UpdateAdmin(ctx sdk.Context, new sdk.AccAddress, sender sdk.AccAddress) error
+	UpdateBootstrapAccountAddress(ctx sdk.Context, new sdk.AccAddress, sender sdk.AccAddress) error
 	IterateActiveValidators(ctx sdk.Context, callback func(c contract.ValidatorInfo) bool, pagination *contract.Paginator) error
 	Address() (sdk.AccAddress, error)
 }
@@ -51,7 +51,7 @@ func (k Keeper) StakeContract(ctx sdk.Context) StakeContract {
 }
 
 type EngagementContract interface {
-	UpdateAdmin(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error
+	UpdateBootstrapAccountAddress(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error
 	QueryDelegated(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error)
 	Address() (sdk.AccAddress, error)
 }

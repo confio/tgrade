@@ -168,7 +168,7 @@ func validateSeedContracts(g *SeedContracts, txJSONDecoder sdk.TxDecoder) error 
 	}
 
 	if _, err := sdk.AccAddressFromBech32(g.BootstrapAccountAddress); err != nil {
-		return sdkerrors.Wrap(err, "system admin address")
+		return sdkerrors.Wrap(err, "bootstrap account address")
 	}
 
 	uniqueEngagementMembers := make(map[string]struct{}, len(g.Engagement))

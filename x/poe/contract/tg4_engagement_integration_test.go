@@ -32,7 +32,7 @@ func TestEngagementUpdateAdmin(t *testing.T) {
 	tg4EngagementInitMsg := contract.TG4EngagementInitMsg{
 		Admin: bootstarpAccountAddr.String(),
 		Members: []contract.TG4Member{{
-			Addr:   newAddress.String(), // test only passes with new admin address in the group
+			Addr:   newAddress.String(), // test only passes with new bootstrap account address in the group
 			Points: 1,
 		}},
 		PreAuthsHooks:    1,
@@ -48,7 +48,7 @@ func TestEngagementUpdateAdmin(t *testing.T) {
 	engagementContract := contract.NewEngagementContractAdapter(engagementContractAddr, example.TWasmKeeper, nil)
 
 	// when
-	gotErr := engagementContract.UpdateAdmin(ctx, newAddress, bootstarpAccountAddr)
+	gotErr := engagementContract.UpdateBootstrapAccountAddress(ctx, newAddress, bootstarpAccountAddr)
 	require.NoError(t, gotErr)
 }
 
