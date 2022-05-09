@@ -244,7 +244,7 @@ func InitTestnet(
 		seeds["secret"] = secret // for sdk backward compatibility
 		if i == 0 {              // generate new key for system admin in node0 keychain. This keychain is used by system tests
 			// PoE setup
-			adminAddr, secret, err = server.GenerateSaveCoinKey(kb, "systemadmin", true, algo)
+			adminAddr, secret, err = server.GenerateSaveCoinKey(kb, "bootstrap-account", true, algo)
 			if err != nil {
 				_ = os.RemoveAll(outputDir)
 				return err
