@@ -65,15 +65,15 @@ func (k Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractTy
 	}
 
 	// try to get addr from cache
-	cachedAddr, ok := k.contractAddrCache.Load(ctype)
-	addr, ok := cachedAddr.(sdk.AccAddress)
-	if ok {
-		return addr, nil
+	if cachedAddr, ok := k.contractAddrCache.Load(ctype); ok {
+		if addr, ok := cachedAddr.(sdk.AccAddress); ok {
+			return addr, nil
+		}
 	}
 
 	// if not in cache, try to get addr from store
 	store := ctx.KVStore(k.storeKey)
-	addr = store.Get(poeContractAddressKey(ctype))
+	addr := store.Get(poeContractAddressKey(ctype))
 	if len(addr) == 0 {
 		return nil, wasmtypes.ErrNotFound
 	}
