@@ -159,7 +159,6 @@ func (v StakeContractAdapter) QueryStakedAmount(ctx sdk.Context, opAddr sdk.AccA
 }
 
 // QueryStakingUnbonding query PoE staking contract for unbonded self delegations
-// TODO: add pagination support here!
 func (v StakeContractAdapter) QueryStakingUnbonding(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
 	if v.addressLookupErr != nil {
 		return nil, v.addressLookupErr

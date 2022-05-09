@@ -191,9 +191,6 @@ type ValsetEpochResponse struct {
 	LastUpdateTime uint64 `json:"last_update_time"`
 	// The last time we updated the validator set - block height
 	LastUpdateHeight uint64 `json:"last_update_height"`
-	// TODO: add this if you want it, not in current code
-	// Seconds (UTC UNIX time) of next timestamp that will trigger a validator recalculation
-	// NextUpdateTime int `json:"next_update_time"`
 }
 
 type OperatorResponse struct {

@@ -26,7 +26,7 @@ func (app *TgradeApp) ExportAppStateAndValidators(
 	}
 	// as if they could withdraw from the start of the next block
 	ctx := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()}).
-		WithBlockTime(time.Now().UTC()) // todo (Alex): check if there is any way to get the last block time
+		WithBlockTime(time.Now().UTC())
 
 	// We export at last height + 1, because that's the height at which
 	// Tendermint will start InitChain.

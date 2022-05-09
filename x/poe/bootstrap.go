@@ -140,9 +140,6 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		LeftGroup:        engagementContractAddr.String(),
 		RightGroup:       stakeContractAddr.String(),
 		PreAuthsSlashing: 1,
-		// TODO: allow to configure the other types.
-		// We need to analyze benchmarks and discuss first.
-		// This maintains same behavior
 		FunctionType: contract.MixerFunction{
 			GeometricMean: &struct{}{},
 		},

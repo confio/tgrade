@@ -135,9 +135,6 @@ func (p *ExecuteGovProposal) unpackInterfaces(unpacker codectypes.AnyUnpacker) e
 		if p.Proposal.RegisterUpgrade.UpgradedClientState != nil {
 			return sdkerrors.ErrInvalidRequest.Wrap("upgrade logic for IBC has been moved to the IBC module")
 		}
-		// todo (Alex): check how a client update is done now. this also needs to go into the contracts
-		// case p.Proposal.IBCClientUpdate != nil:
-		//	return p.Proposal.IBCClientUpdate.UnpackInterfaces(unpacker)
 	}
 	return err
 }
@@ -181,7 +178,6 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 			}
 			result.IBCClientUpdate = &ibcclienttypes.ClientUpdateProposal{
 				SubjectClientId: proxy.ClientId,
-				// todo (Alex): SubstituteClientId: proxy.ClientId,
 			}
 			return nil
 		},
@@ -202,7 +198,7 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 			return nil
 		},
 		"migrate_contract": func(b []byte) error {
-			proxy := struct { // todo: better use wasmvmtypes.MigrateMsg when names match
+			proxy := struct { // custom type as not name compatible with wasmvmtypes.MigrateMsg
 				Contract string `json:"contract"`
 				CodeID   uint64 `json:"code_id"`
 				Msg      []byte `json:"migrate_msg"`
