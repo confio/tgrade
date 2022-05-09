@@ -451,7 +451,7 @@ func (v ValsetContractAdapter) QueryConfig(ctx sdk.Context) (*ValsetConfigRespon
 }
 
 // UpdateAdmin sets a new admin address
-func (v ValsetContractAdapter) UpdateBootstrapAccountAddress(ctx sdk.Context, newAdmin sdk.AccAddress, sender sdk.AccAddress) error {
+func (v ValsetContractAdapter) UpdateAdmin(ctx sdk.Context, newAdmin sdk.AccAddress, sender sdk.AccAddress) error {
 	bech32AdminAddr := newAdmin.String()
 	msg := TG4ValsetExecute{
 		UpdateAdmin: &TG4UpdateAdminMsg{NewAdmin: &bech32AdminAddr},

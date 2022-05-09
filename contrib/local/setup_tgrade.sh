@@ -49,7 +49,7 @@ content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.oversightCommunit
 # set arbiter
 content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.arbiterPoolMembers |= . + [\"$(echo "$PASSWORD" | tgrade keys show -a bootstrap-account)\"]")
 # set system admin
-content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.system_admin_address |= \"$(echo "$PASSWORD" | tgrade keys show -a bootstrap-account)\"")
+content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.bootstrap_account_address |= \"$(echo "$PASSWORD" | tgrade keys show -a bootstrap-account)\"")
 # set min fee
 content=$(echo "$content" | jq  ".app_state.globalfee.params.minimum_gas_prices |= [{\"denom\":\"$STAKE\",\"amount\":\"0.001\"}]")
 

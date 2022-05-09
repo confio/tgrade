@@ -231,12 +231,12 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 	logger.Info("oversight community gov proposal contract", "address", ocGovProposalsContractAddr, "code_id", ocGovCodeID)
 
-	err = poeKeeper.EngagementContract(ctx).UpdateBootstrapAccountAddress(ctx, ocGovProposalsContractAddr, bootstrapAccountAddr)
+	err = poeKeeper.EngagementContract(ctx).UpdateAdmin(ctx, ocGovProposalsContractAddr, bootstrapAccountAddr)
 	if err != nil {
 		return sdkerrors.Wrap(err, "set new engagement contract admin")
 	}
 
-	err = poeKeeper.ValsetContract(ctx).UpdateBootstrapAccountAddress(ctx, ocGovProposalsContractAddr, bootstrapAccountAddr)
+	err = poeKeeper.ValsetContract(ctx).UpdateAdmin(ctx, ocGovProposalsContractAddr, bootstrapAccountAddr)
 	if err != nil {
 		return sdkerrors.Wrap(err, "set new valset contract admin")
 	}

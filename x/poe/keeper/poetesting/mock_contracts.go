@@ -49,7 +49,7 @@ func (m ValsetContractMock) IterateActiveValidators(ctx sdk.Context, callback fu
 	return m.IterateActiveValidatorsFn(ctx, callback, pagination)
 }
 
-func (m ValsetContractMock) UpdateBootstrapAccountAddress(ctx sdk.Context, new sdk.AccAddress, sender sdk.AccAddress) error {
+func (m ValsetContractMock) UpdateAdmin(ctx sdk.Context, new sdk.AccAddress, sender sdk.AccAddress) error {
 	if m.UpdateAdminFn == nil {
 		panic("not expected to be called")
 	}
@@ -134,7 +134,7 @@ type EngagementContractMock struct {
 	AddressFn        func() (sdk.AccAddress, error)
 }
 
-func (m EngagementContractMock) UpdateBootstrapAccountAddress(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
+func (m EngagementContractMock) UpdateAdmin(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
 	if m.UpdateAdminFn == nil {
 		panic("not expected to be called")
 	}
