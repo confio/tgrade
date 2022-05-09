@@ -21,16 +21,16 @@ var tg4Engagement []byte
 
 func TestEngagementUpdateAdmin(t *testing.T) {
 	ctx, example := keeper.CreateDefaultTestInput(t)
-	var systemAdminAddr sdk.AccAddress = rand.Bytes(address.Len)
+	var bootstarpAccountAddr sdk.AccAddress = rand.Bytes(address.Len)
 
 	k := example.TWasmKeeper.GetContractKeeper()
-	codeID, err := k.Create(ctx, systemAdminAddr, tg4Engagement, nil)
+	codeID, err := k.Create(ctx, bootstarpAccountAddr, tg4Engagement, nil)
 	require.NoError(t, err)
 
 	var newAddress sdk.AccAddress = rand.Bytes(address.Len)
 
 	tg4EngagementInitMsg := contract.TG4EngagementInitMsg{
-		Admin: systemAdminAddr.String(),
+		Admin: bootstarpAccountAddr.String(),
 		Members: []contract.TG4Member{{
 			Addr:   newAddress.String(), // test only passes with new admin address in the group
 			Points: 1,
@@ -42,13 +42,13 @@ func TestEngagementUpdateAdmin(t *testing.T) {
 	}
 	initMsgBz, err := json.Marshal(&tg4EngagementInitMsg)
 	require.NoError(t, err)
-	engagementContractAddr, _, err := k.Instantiate(ctx, codeID, systemAdminAddr, systemAdminAddr, initMsgBz, "engagement", nil)
+	engagementContractAddr, _, err := k.Instantiate(ctx, codeID, bootstarpAccountAddr, bootstarpAccountAddr, initMsgBz, "engagement", nil)
 	require.NoError(t, err)
 
 	engagementContract := contract.NewEngagementContractAdapter(engagementContractAddr, example.TWasmKeeper, nil)
 
 	// when
-	gotErr := engagementContract.UpdateAdmin(ctx, newAddress, systemAdminAddr)
+	gotErr := engagementContract.UpdateAdmin(ctx, newAddress, bootstarpAccountAddr)
 	require.NoError(t, gotErr)
 }
 
