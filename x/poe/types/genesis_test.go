@@ -73,13 +73,13 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
-		"empty system admin": {
+		"empty bootstrap account": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.GetSeedContracts().BootstrapAccountAddress = ""
 			}),
 			expErr: true,
 		},
-		"invalid system admin": {
+		"invalid bootstrap account": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.GetSeedContracts().BootstrapAccountAddress = "invalid"
 			}),
