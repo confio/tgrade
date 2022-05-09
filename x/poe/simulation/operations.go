@@ -146,9 +146,12 @@ func SimulateMsgUpdateValidator(bk types.XBankKeeper, ak types.AccountKeeper, k 
 		}
 
 		val := validators[rand.Intn(len(validators))]
-		address := val.GetOperator()
+		accAddr, err := sdk.AccAddressFromBech32(val.OperatorAddress) // plain string to not run into bech32 prefix issues with valoper
+		if err != nil {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUpdateValidator, "validator address is not valid"), nil, err
+		}
 
-		simAccount, found := simtypes.FindAccount(accs, sdk.AccAddress(val.GetOperator()))
+		simAccount, found := simtypes.FindAccount(accs, accAddr)
 		if !found {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUpdateValidator, "unable to find account"), nil, fmt.Errorf("validator %s not found", val.GetOperator())
 		}
@@ -163,10 +166,6 @@ func SimulateMsgUpdateValidator(bk types.XBankKeeper, ak types.AccountKeeper, k 
 			simtypes.RandStringOfLength(r, 10),
 		)
 
-		accAddr, err := sdk.AccAddressFromBech32(address.String())
-		if err != nil {
-			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUpdateValidator, "validator address is not valid"), nil, err
-		}
 		msg := types.NewMsgUpdateValidator(accAddr, description)
 
 		txCtx := simulation.OperationInput{
