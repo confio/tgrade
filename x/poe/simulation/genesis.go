@@ -75,8 +75,11 @@ func RandomizedGenState(simState *module.SimulationState) {
 
 	if len(simState.Accounts)-int(simState.NumBonded) == 0 {
 		// fail fast as no account has enough tokens to pay deposit for OC or AP
-		panic("all accounts are bonded")
+		//panic("all accounts are bonded")
+		// todo: find a proper solution to this hack
+		simState.NumBonded = 1 + simState.Rand.Int63n(simState.NumBonded-1)
 	}
+
 	// add some random oversight community members
 	var ocMembers []string
 	opMembersCount := math.MinInt(simState.Rand.Int()+1, len(simState.Accounts)-int(simState.NumBonded))
