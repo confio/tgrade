@@ -11,7 +11,7 @@ tgrade init --chain-id "$CHAIN_ID" "$MONIKER"
 # staking/governance token is hardcoded in config, change this
 ## OSX requires: -i.
 sed -i. "s/\"stake\"/\"$STAKE\"/" "$HOME"/.tgrade/config/genesis.json
-for x in validator systemadmin; do
+for x in validator bootstrap-account; do
   if ! tgrade keys show $x; then
     (
       echo "$PASSWORD"
@@ -29,7 +29,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 # hardcode the account for this instance
-echo "$PASSWORD" | tgrade add-genesis-account systemadmin "1000000000$STAKE"
+echo "$PASSWORD" | tgrade add-genesis-account bootstrap-account "1000000000$STAKE"
 echo "$PASSWORD" | tgrade add-genesis-account validator "1001000000$STAKE" --vesting-amount="1000000000$STAKE" --vesting-end-time="$end_time"
 
 
@@ -40,16 +40,16 @@ for addr in "$@"; do
 done
 
 ## POE setup
-# set systemadmin address (temporary)
+# set bootstrap-account address (temporary)
 
 # set engagement points
 content=$(cat "$HOME"/.tgrade/config/genesis.json | jq  ".app_state.poe.seed_contracts.engagement |= . + [{\"address\":\"$(echo "$PASSWORD" | tgrade keys show -a validator)\",\"points\":\"100\"}]")
 # set oversight community
-content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.oversightCommunityMembers |= . + [\"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"]")
+content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.oversightCommunityMembers |= . + [\"$(echo "$PASSWORD" | tgrade keys show -a bootstrap-account)\"]")
 # set arbiter
-content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.arbiterPoolMembers |= . + [\"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"]")
+content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.arbiterPoolMembers |= . + [\"$(echo "$PASSWORD" | tgrade keys show -a bootstrap-account)\"]")
 # set system admin
-content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.system_admin_address |= \"$(echo "$PASSWORD" | tgrade keys show -a systemadmin)\"")
+content=$(echo "$content" | jq  ".app_state.poe.seed_contracts.bootstrap_account_address |= \"$(echo "$PASSWORD" | tgrade keys show -a bootstrap-account)\"")
 # set min fee
 content=$(echo "$content" | jq  ".app_state.globalfee.params.minimum_gas_prices |= [{\"denom\":\"$STAKE\",\"amount\":\"0.001\"}]")
 

@@ -37,8 +37,8 @@ func TestInitGenesis(t *testing.T) {
 	const numValidators = 15
 	mutator, myValidators := withRandomValidators(t, ctx, example, numValidators)
 	gs := types.GenesisStateFixture(mutator)
-	adminAddr, _ := sdk.AccAddressFromBech32(gs.GetSeedContracts().SystemAdminAddress)
-	example.Faucet.Fund(ctx, adminAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
+	bootstrapAccountAddr, _ := sdk.AccAddressFromBech32(gs.GetSeedContracts().BootstrapAccountAddress)
+	example.Faucet.Fund(ctx, bootstrapAccountAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
 
 	fundMembers := func(members []string, coins sdk.Int) {
 		for _, member := range members {

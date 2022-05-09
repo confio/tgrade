@@ -64,13 +64,13 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 		panic("not in seed mode")
 	}
 
-	systemAdminAddr := sdk.AccAddress(rand.Bytes(address.Len))
+	bootstrapAccountAddr := sdk.AccAddress(rand.Bytes(address.Len))
 	myGenTx, myAddr, _ := poetypes.RandomGenTX(t, 100)
 	var authGenState authtypes.GenesisState
 	marshaler.MustUnmarshalJSON(genesisState[authtypes.ModuleName], &authGenState)
 	genAccounts := []authtypes.GenesisAccount{
 		authtypes.NewBaseAccount(myAddr, nil, 0, 0),
-		authtypes.NewBaseAccount(systemAdminAddr, nil, 0, 0)}
+		authtypes.NewBaseAccount(bootstrapAccountAddr, nil, 0, 0)}
 	accounts, err := authtypes.PackAccounts(genAccounts)
 	require.NoError(t, err)
 	authGenState.Accounts = accounts
@@ -82,7 +82,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	coins := sdk.Coins{sdk.NewCoin(poetypes.DefaultBondDenom, sdk.NewInt(1000000000))}
 	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: myAddr.String(), Coins: coins})
 	bankGenState.Supply = bankGenState.Supply.Add(coins...)
-	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: systemAdminAddr.String(), Coins: coins})
+	bankGenState.Balances = append(bankGenState.Balances, banktypes.Balance{Address: bootstrapAccountAddr.String(), Coins: coins})
 	bankGenState.Supply = bankGenState.Supply.Add(coins...)
 
 	genAddrAndUpdateBalance := func(numAddr int, balance sdk.Coins) []string {
@@ -107,7 +107,7 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	poeGS.GetSeedContracts().BondDenom = poetypes.DefaultBondDenom
 	poeGS.GetSeedContracts().GenTxs = []json.RawMessage{myGenTx}
 	poeGS.GetSeedContracts().Engagement = []poetypes.TG4Member{{Address: myAddr.String(), Points: 10}}
-	poeGS.GetSeedContracts().SystemAdminAddress = systemAdminAddr.String()
+	poeGS.GetSeedContracts().BootstrapAccountAddress = bootstrapAccountAddr.String()
 	poeGS.GetSeedContracts().OversightCommunityMembers = ocMembers
 	poeGS.GetSeedContracts().ArbiterPoolMembers = apMembers
 	genesisState = poetypes.SetGenesisStateInAppState(marshaler, genesisState, poeGS)

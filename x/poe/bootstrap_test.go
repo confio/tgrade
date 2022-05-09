@@ -40,11 +40,11 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		valVotingContractAddr     = wasmkeeper.BuildContractAddress(8, 8)
 	)
 	var (
-		defaultLimit     uint64 = 20
-		expFeePercentage        = contract.DecimalFromProMille(500)
-		mySystemAdmin           = types.RandomAccAddress().String()
-		myUser                  = types.RandomAccAddress().String()
-		myOtherUser             = types.RandomAccAddress().String()
+		defaultLimit       uint64 = 20
+		expFeePercentage          = contract.DecimalFromProMille(500)
+		myBootstrapAccount        = types.RandomAccAddress().String()
+		myUser                    = types.RandomAccAddress().String()
+		myOtherUser               = types.RandomAccAddress().String()
 	)
 
 	type contractSetup struct {
@@ -58,7 +58,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 	allContracts := map[types.PoEContractType]contractSetup{
 		types.PoEContractTypeEngagement: {
 			expInitMsg: contract.TG4EngagementInitMsg{
-				Admin:            mySystemAdmin, // updated later
+				Admin:            myBootstrapAccount, // updated later
 				PreAuthsHooks:    1,
 				PreAuthsSlashing: 1,
 				Members:          []contract.TG4Member{{Addr: myUser, Points: 10}, {Addr: myOtherUser, Points: 11}},
@@ -91,7 +91,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		},
 		types.PoEContractTypeStaking: {
 			expInitMsg: contract.TG4StakeInitMsg{
-				Admin:            mySystemAdmin,
+				Admin:            myBootstrapAccount,
 				Denom:            "utgd",
 				MinBond:          1,
 				TokensPerPoint:   1,
@@ -121,7 +121,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 		},
 		types.PoEContractTypeValset: {
 			expInitMsg: contract.ValsetInitMsg{
-				Admin:                mySystemAdmin,
+				Admin:                myBootstrapAccount,
 				Membership:           mixerContractAddr.String(),
 				MinPoints:            1,
 				MaxValidators:        100,
@@ -238,7 +238,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				},
 				UpdateAdminFn: func(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
 					assert.Equal(t, ocGovProposalContractAddr, newAdmin)
-					assert.Equal(t, mySystemAdmin, sender.String())
+					assert.Equal(t, myBootstrapAccount, sender.String())
 					return nil
 				},
 			}
@@ -247,7 +247,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 			return poetesting.EngagementContractMock{
 				UpdateAdminFn: func(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
 					assert.Equal(t, ocGovProposalContractAddr, newAdmin)
-					assert.Equal(t, mySystemAdmin, sender.String())
+					assert.Equal(t, myBootstrapAccount, sender.String())
 					return nil
 				},
 			}
@@ -261,7 +261,7 @@ func TestBootstrapPoEContracts(t *testing.T) {
 	// when
 	ctx := sdk.Context{}.WithLogger(log.TestingLogger())
 	genesis := types.GenesisStateFixture(func(m *types.GenesisState) {
-		m.GetSeedContracts().SystemAdminAddress = mySystemAdmin
+		m.GetSeedContracts().BootstrapAccountAddress = myBootstrapAccount
 		m.GetSeedContracts().Engagement = []types.TG4Member{{Address: myUser, Points: 10}, {Address: myOtherUser, Points: 11}}
 	})
 	gotErr := BootstrapPoEContracts(ctx, cm, tm, pm, *genesis.GetSeedContracts())
@@ -327,7 +327,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 	minDecimal := sdk.NewDec(1).QuoInt64(1_000_000_000_000_000_000)
 	engagementID := uint64(7)
 	engagementAddr := types.RandomAccAddress()
-	systemAdmin := types.RandomAccAddress()
+	bootstrapAccountAddr := types.RandomAccAddress()
 
 	specs := map[string]struct {
 		genesis *types.GenesisState
@@ -336,7 +336,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 		"default": {
 			genesis: types.DefaultGenesisState(),
 			exp: contract.ValsetInitMsg{
-				Admin:                systemAdmin.String(),
+				Admin:                bootstrapAccountAddr.String(),
 				Membership:           mixerContractAddr.String(),
 				MinPoints:            1,
 				MaxValidators:        100,
@@ -359,7 +359,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Admin:                systemAdmin.String(),
+				Admin:                bootstrapAccountAddr.String(),
 				Membership:           mixerContractAddr.String(),
 				MinPoints:            1,
 				MaxValidators:        100,
@@ -382,7 +382,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Admin:                systemAdmin.String(),
+				Admin:                bootstrapAccountAddr.String(),
 				Membership:           mixerContractAddr.String(),
 				MinPoints:            1,
 				MaxValidators:        100,
@@ -405,7 +405,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				require.NoError(t, err)
 			}),
 			exp: contract.ValsetInitMsg{
-				Admin:                systemAdmin.String(),
+				Admin:                bootstrapAccountAddr.String(),
 				Membership:           mixerContractAddr.String(),
 				MinPoints:            1,
 				MaxValidators:        100,
@@ -424,7 +424,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			got := newValsetInitMsg(*spec.genesis.GetSeedContracts(), systemAdmin, mixerContractAddr, engagementAddr, communityPoolAddr, engagementID)
+			got := newValsetInitMsg(*spec.genesis.GetSeedContracts(), bootstrapAccountAddr, mixerContractAddr, engagementAddr, communityPoolAddr, engagementID)
 			assert.Equal(t, spec.exp, got)
 		})
 	}

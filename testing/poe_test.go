@@ -36,7 +36,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	// contract addresses are deterministic. You can get a list of all contracts in genesis via
 	// `tgrade wasm-genesis-message list-contracts --home ./testnet/node0/tgrade`
 	var (
-		tg4AdminAddr = cli.GetKeyAddr("systemadmin")
+		tg4BootstrapAccountAddr = cli.GetKeyAddr("bootstrap-account")
 	)
 	engagementGroup := make([]poecontracts.TG4Member, sut.nodesCount)
 	stakedAmounts := make([]uint64, sut.nodesCount)
@@ -81,7 +81,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	engagementUpdateMsg := poecontracts.UpdateMembersMsg{
 		Remove: []string{sortedMember[0].Addr},
 	}
-	eResult := cli.Execute(engagementGroupAddr, engagementUpdateMsg.Json(t), tg4AdminAddr)
+	eResult := cli.Execute(engagementGroupAddr, engagementUpdateMsg.Json(t), tg4BootstrapAccountAddr)
 	RequireTxSuccess(t, eResult)
 	t.Log("got execution result", eResult)
 	// wait for msg execution

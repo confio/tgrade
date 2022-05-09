@@ -101,8 +101,7 @@ jobs:
             - go-mod-v1-{{ checksum "go.sum" }}
       - run:
           name: Build and run system tests
-          command: |
-            make test-system
+          command: make test-system
       - store_artifacts:
           path: /go/src/github.com/confio/tgrade/testnet/node0.out
       - store_artifacts:

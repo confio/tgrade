@@ -181,7 +181,7 @@ func InitTestnet(
 	}
 
 	inBuf := bufio.NewReader(cmd.InOrStdin())
-	var adminAddr sdk.AccAddress
+	var bootstrapAccountAddr sdk.AccAddress
 	// generate private keys, node IDs, and initial transactions
 	for i := 0; i < numValidators; i++ {
 		var portOffset int
@@ -244,14 +244,14 @@ func InitTestnet(
 		seeds["secret"] = secret // for sdk backward compatibility
 		if i == 0 {              // generate new key for system admin in node0 keychain. This keychain is used by system tests
 			// PoE setup
-			adminAddr, secret, err = server.GenerateSaveCoinKey(kb, "systemadmin", true, algo)
+			bootstrapAccountAddr, secret, err = server.GenerateSaveCoinKey(kb, "bootstrap-account", true, algo)
 			if err != nil {
 				_ = os.RemoveAll(outputDir)
 				return err
 			}
-			seeds[adminAddr.String()] = secret
+			seeds[bootstrapAccountAddr.String()] = secret
 
-			addGenAccount(adminAddr, sdk.NewCoin(stakingToken, sdk.NewInt(100_000_000_000)))
+			addGenAccount(bootstrapAccountAddr, sdk.NewCoin(stakingToken, sdk.NewInt(100_000_000_000)))
 			// add a number of OC members
 			for i := 0; i < 3; i++ {
 				memberAddr, secret, err := server.GenerateSaveCoinKey(kb, fmt.Sprintf("oc-member-%d", i+1), true, algo)
@@ -350,7 +350,7 @@ func InitTestnet(
 
 		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appConfig)
 	}
-	if err := initGenFiles(clientCtx, mbm, chainID, genAccounts, genBalances, genFiles, numValidators, adminAddr, genOCMemberAddrs, genAPMemberAddrs); err != nil {
+	if err := initGenFiles(clientCtx, mbm, chainID, genAccounts, genBalances, genFiles, numValidators, bootstrapAccountAddr, genOCMemberAddrs, genAPMemberAddrs); err != nil {
 		return err
 	}
 
@@ -413,7 +413,7 @@ func initGenFiles(
 			Points:  uint64(len(genAccounts) - i), // unique weight
 		})
 	}
-	poeGenesisState.GetSeedContracts().SystemAdminAddress = admin.String()
+	poeGenesisState.GetSeedContracts().BootstrapAccountAddress = admin.String()
 	poeGenesisState.GetSeedContracts().OversightCommunityMembers = ocMemberAddrs
 	poeGenesisState.GetSeedContracts().ArbiterPoolMembers = apMemberAddrs
 	poetypes.SetGenesisStateInAppState(clientCtx.Codec, appGenState, poeGenesisState)
