@@ -105,26 +105,29 @@ func TestUnsetPrivileged(t *testing.T) {
 		capturedSudoChecksum  *cosmwasm.Checksum
 		capturedSudoMsg       []byte
 	)
+	captureSudoFn := func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
+		capturedSudoChecksum = &codeID
+		capturedSudoMsg = sudoMsg
+		return &wasmvmtypes.Response{}, 0, nil
+	}
 
 	specs := map[string]struct {
-		setup  func(*wasmtesting.MockWasmer)
-		expErr bool
+		setup    func(t *testing.T, ctx sdk.Context, keepers TestKeepers, mock *wasmtesting.MockWasmer)
+		expErr   bool
+		expUnpin bool
 	}{
 		"all good": {
-			setup: func(mock *wasmtesting.MockWasmer) {
+			setup: func(t *testing.T, ctx sdk.Context, keepers TestKeepers, mock *wasmtesting.MockWasmer) {
 				mock.UnpinFn = func(checksum cosmwasm.Checksum) error {
 					capturedUnpinChecksum = &checksum
 					return nil
 				}
-				mock.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
-					capturedSudoChecksum = &codeID
-					capturedSudoMsg = sudoMsg
-					return &wasmvmtypes.Response{}, 0, nil
-				}
+				mock.SudoFn = captureSudoFn
 			},
+			expUnpin: true,
 		},
 		"unpin failed": {
-			setup: func(mock *wasmtesting.MockWasmer) {
+			setup: func(t *testing.T, ctx sdk.Context, keepers TestKeepers, mock *wasmtesting.MockWasmer) {
 				mock.UnpinFn = func(checksum cosmwasm.Checksum) error {
 					return errors.New("test, ignore")
 				}
@@ -135,23 +138,35 @@ func TestUnsetPrivileged(t *testing.T) {
 			expErr: true,
 		},
 		"sudo failed": {
-			setup: func(mock *wasmtesting.MockWasmer) {
+			setup: func(t *testing.T, ctx sdk.Context, keepers TestKeepers, mock *wasmtesting.MockWasmer) {
 				mock.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 					return nil, 0, errors.New("test, ignore")
 				}
 			},
 			expErr: true,
 		},
+		"do not unpin with instances": {
+			setup: func(t *testing.T, ctx sdk.Context, keepers TestKeepers, mock *wasmtesting.MockWasmer) {
+				mock.SudoFn = captureSudoFn
+				mock.UnpinFn = func(checksum cosmwasm.Checksum) error {
+					panic("not expected to be call")
+				}
+				// add another instance for same code id
+				creatorAddr := sdk.AccAddress(rand.Bytes(address.Len))
+				_, _, err := keepers.TWasmKeeper.GetContractKeeper().Instantiate(ctx, 1, creatorAddr, creatorAddr, nil, "", nil)
+				require.NoError(t, err)
+			},
+			expUnpin: false,
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 			capturedUnpinChecksum, capturedSudoMsg, capturedSudoMsg = nil, nil, nil
 			mock := NewWasmVMMock()
-			spec.setup(mock)
-
 			ctx, keepers := CreateDefaultTestInput(t, wasmkeeper.WithWasmEngine(mock))
 			k := keepers.TWasmKeeper
 			codeID, contractAddr := seedTestContract(t, ctx, k)
+			spec.setup(t, ctx, keepers, mock)
 
 			h := NewTgradeHandler(nil, k, nil, nil, nil)
 			// and privileged with a type
@@ -177,8 +192,10 @@ func TestUnsetPrivileged(t *testing.T) {
 
 			var expChecksum cosmwasm.Checksum = k.GetCodeInfo(ctx, codeID).CodeHash
 
-			// then expect unpinned from cache
-			assert.Equal(t, expChecksum, *capturedUnpinChecksum)
+			if spec.expUnpin {
+				// then expect unpinned from cache
+				assert.Equal(t, expChecksum, *capturedUnpinChecksum)
+			}
 			// and flag not set
 			assert.False(t, k.IsPrivileged(ctx, contractAddr))
 			// and privileges removed
