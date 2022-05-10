@@ -80,7 +80,7 @@ func TestTgradeGenesisExportImport(t *testing.T) {
 	require.Contains(t, gs, twasm.ModuleName)
 	var twasmGs twasmtypes.GenesisState
 	require.NoError(t, srcApp.appCodec.UnmarshalJSON(gs[twasm.ModuleName], &twasmGs))
-	// todo (Alex): enable require.NoError(t, twasmGs.ValidateBasic())
+	require.NoError(t, twasmGs.ValidateBasic())
 
 	var customModelContractCount int
 	for _, v := range twasmGs.Contracts {
