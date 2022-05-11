@@ -15,7 +15,6 @@ import (
 // 			 trigger gov proposal to unset privileges
 //			 then verify that callback permission was removed
 func TestGovProposal(t *testing.T) {
-
 	cli := NewTgradeCli(t, sut, verbose)
 	myKey := cli.GetKeyAddr("node0")
 	require.NotEmpty(t, myKey)

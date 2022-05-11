@@ -74,7 +74,8 @@ func NewTrustedCircleContractAdapter(contractAddr sdk.AccAddress, twasmKeeper ty
 			contractAddr,
 			twasmKeeper,
 			addressLookupErr,
-		)}
+		),
+	}
 }
 
 // AddVotingMembersProposal set up the proposal for adding voting members

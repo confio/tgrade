@@ -15,8 +15,7 @@ import (
 	"github.com/confio/tgrade/x/twasm/types"
 )
 
-type noopValsetUpdater struct {
-}
+type noopValsetUpdater struct{}
 
 func (n noopValsetUpdater) ApplyAndReturnValidatorSetUpdates(context sdk.Context) (updates []abci.ValidatorUpdate, err error) {
 	return nil, nil

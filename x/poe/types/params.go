@@ -78,6 +78,7 @@ func validateUint64(i interface{}) error {
 	}
 	return nil
 }
+
 func validateUint32(i interface{}) error {
 	_, ok := i.(uint32)
 	if !ok {

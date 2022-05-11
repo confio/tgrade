@@ -223,7 +223,6 @@ $ %s query poe historical-info 5
 
 			params := &stakingtypes.QueryHistoricalInfoRequest{Height: height}
 			res, err := queryClient.HistoricalInfo(context.Background(), params)
-
 			if err != nil {
 				return err
 			}

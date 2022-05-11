@@ -176,7 +176,8 @@ func createTestInput(
 		ibchost.ModuleName,
 		govtypes.ModuleName,
 		twasmtypes.ModuleName,
-		types.ModuleName} {
+		types.ModuleName,
+	} {
 		paramsKeeper.Subspace(m)
 	}
 	subspace := func(m string) paramstypes.Subspace {
@@ -339,7 +340,6 @@ func NewWasmVMMock(mutators ...func(*wasmtesting.MockWasmer)) *wasmtesting.MockW
 		m(mock)
 	}
 	return mock
-
 }
 
 func RandomAddress(_ *testing.T) sdk.AccAddress {

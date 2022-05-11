@@ -349,5 +349,4 @@ func TestConsensusParamsUpdateValidation(t *testing.T) {
 			require.True(t, spec.expErr.Is(gotErr), "expected %v but got %#+v", spec.expErr, gotErr)
 		})
 	}
-
 }

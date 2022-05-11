@@ -61,6 +61,7 @@ func (c TgradeCli) WithRunErrorMatcher(f RunErrorAssert) TgradeCli {
 		assertErrorFn: f,
 	}
 }
+
 func (c TgradeCli) WithNodeAddress(addr string) TgradeCli {
 	return TgradeCli{
 		t:             c.t,

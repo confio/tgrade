@@ -227,9 +227,8 @@ func withRandomValidators(t *testing.T, ctx sdk.Context, example keeper.TestKeep
 		m.GetSeedContracts().GenTxs = make([]json.RawMessage, numValidators)
 		m.GetSeedContracts().Engagement = make([]types.TG4Member, numValidators)
 		for i := 0; i < numValidators; i++ {
-			var ( // power * engagement must be less than 10^18 (constraint is in the contract)
-				desc stakingtypes.Description
-			)
+			// power * engagement must be less than 10^18 (constraint is in the contract)
+			var desc stakingtypes.Description
 			power := i*75 + 100 // with 3 nodes : 525 total power: 1+2 power < 350 consensus
 			engagement := i*100 + 1000
 

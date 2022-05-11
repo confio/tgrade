@@ -113,12 +113,14 @@ func (m StakeContractMock) QueryStakingUnbondingPeriod(ctx sdk.Context) (time.Du
 	}
 	return m.QueryStakingUnbondingPeriodFn(ctx)
 }
+
 func (m StakeContractMock) QueryStakingUnbonding(ctx sdk.Context, opAddr sdk.AccAddress) ([]stakingtypes.UnbondingDelegationEntry, error) {
 	if m.QueryStakingUnbondingFn == nil {
 		panic("not expected to be called")
 	}
 	return m.QueryStakingUnbondingFn(ctx, opAddr)
 }
+
 func (m StakeContractMock) Address() (sdk.AccAddress, error) {
 	if m.AddressFn == nil {
 		panic("not expected to be called")

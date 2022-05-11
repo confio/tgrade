@@ -54,7 +54,7 @@ func RandomGenTX(t *testing.T, power uint32, mutators ...func(*MsgCreateValidato
 	nodeConfig.NodeKey = "key.json"
 	_, valPubKey, err := genutil.InitializeNodeValidatorFiles(nodeConfig)
 	require.NoError(t, err)
-	//setup keyring
+	// setup keyring
 	kb, err := keyring.New(sdk.KeyringServiceName(), keyring.BackendTest, t.TempDir(), nil)
 	require.NoError(t, err)
 	keyringAlgos, _ := kb.SupportedAlgorithms()

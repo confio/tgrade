@@ -173,5 +173,6 @@ func (q legacyDistributionGRPCQuerier) Params(c context.Context, req *distributi
 			BaseProposerReward:  sdk.ZeroDec(),
 			BonusProposerReward: sdk.ZeroDec(),
 			WithdrawAddrEnabled: false,
-		}}, nil
+		},
+	}, nil
 }

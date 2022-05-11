@@ -33,7 +33,6 @@ func AddGenTxsToGenesisFile(
 	genDoc tmtypes.GenesisDoc,
 	genBalIterator genutiltypes.GenesisBalancesIterator,
 ) (json.RawMessage, error) {
-
 	// process genesis transactions, else create default genesis.json
 	appGenTxs, persistentPeers, err := collectTxs(
 		cdc, txEncodingConfig.TxJSONDecoder(), config.Moniker, initCfg.GenTxsDir, genDoc, genBalIterator,

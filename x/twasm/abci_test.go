@@ -52,7 +52,8 @@ func TestBeginBlock(t *testing.T) {
 			},
 			expSudoCalls: []tuple{
 				{addr: myAddr, msg: []byte(`{"begin_block":{"evidence":[]}}`)},
-				{addr: myOtherAddr, msg: []byte(`{"begin_block":{"evidence":[]}}`)}},
+				{addr: myOtherAddr, msg: []byte(`{"begin_block":{"evidence":[]}}`)},
+			},
 			expCommitted: []bool{true, true},
 		},
 		"no callback": {
@@ -66,13 +67,14 @@ func TestBeginBlock(t *testing.T) {
 				m.IteratePrivilegedContractsByTypeFn = iterateContractsFn(t, types.PrivilegeTypeBeginBlock, myAddr)
 			},
 			src: abci.RequestBeginBlock{
-				ByzantineValidators: []abci.Evidence{{
-					Type:             abci.EvidenceType_LIGHT_CLIENT_ATTACK,
-					Validator:        abci.Validator{Address: myOtherAddr, Power: 1},
-					Height:           1,
-					Time:             myTime,
-					TotalVotingPower: 1,
-				},
+				ByzantineValidators: []abci.Evidence{
+					{
+						Type:             abci.EvidenceType_LIGHT_CLIENT_ATTACK,
+						Validator:        abci.Validator{Address: myOtherAddr, Power: 1},
+						Height:           1,
+						Time:             myTime,
+						TotalVotingPower: 1,
+					},
 				},
 			},
 			expSudoCalls: []tuple{{
@@ -87,13 +89,14 @@ func TestBeginBlock(t *testing.T) {
 				m.IteratePrivilegedContractsByTypeFn = iterateContractsFn(t, types.PrivilegeTypeBeginBlock, myAddr)
 			},
 			src: abci.RequestBeginBlock{
-				ByzantineValidators: []abci.Evidence{{
-					Type:             abci.EvidenceType_DUPLICATE_VOTE,
-					Validator:        abci.Validator{Address: myOtherAddr, Power: 1},
-					Height:           1,
-					Time:             myTime,
-					TotalVotingPower: 1,
-				},
+				ByzantineValidators: []abci.Evidence{
+					{
+						Type:             abci.EvidenceType_DUPLICATE_VOTE,
+						Validator:        abci.Validator{Address: myOtherAddr, Power: 1},
+						Height:           1,
+						Time:             myTime,
+						TotalVotingPower: 1,
+					},
 				},
 			},
 			expSudoCalls: []tuple{{
@@ -108,9 +111,10 @@ func TestBeginBlock(t *testing.T) {
 				m.IteratePrivilegedContractsByTypeFn = iterateContractsFn(t, types.PrivilegeTypeBeginBlock, myAddr)
 			},
 			src: abci.RequestBeginBlock{
-				ByzantineValidators: []abci.Evidence{{
-					Type: abci.EvidenceType_UNKNOWN,
-				},
+				ByzantineValidators: []abci.Evidence{
+					{
+						Type: abci.EvidenceType_UNKNOWN,
+					},
 				},
 			},
 			expPanic: true,
@@ -203,7 +207,8 @@ func TestEndBlock(t *testing.T) {
 			},
 			expSudoCalls: []tuple{
 				{addr: myAddr, msg: []byte(`{"end_block":{}}`)},
-				{addr: myOtherAddr, msg: []byte(`{"end_block":{}}`)}},
+				{addr: myOtherAddr, msg: []byte(`{"end_block":{}}`)},
+			},
 			expCommitted: []bool{true, true},
 		},
 		"no callback": {

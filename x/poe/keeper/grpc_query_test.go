@@ -225,7 +225,6 @@ func TestQueryValidator(t *testing.T) {
 }
 
 func TestQueryUnbondingPeriod(t *testing.T) {
-
 	specs := map[string]struct {
 		src    *types.QueryUnbondingPeriodRequest
 		mock   poetesting.StakeContractMock
@@ -290,7 +289,7 @@ func TestValidatorDelegation(t *testing.T) {
 		"delegation": {
 			src: &types.QueryValidatorDelegationRequest{ValidatorAddr: myOperatorAddr.String()},
 			mock: poetesting.StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
-				var amount = sdk.NewInt(10)
+				amount := sdk.NewInt(10)
 				return &amount, nil
 			}},
 			exp: &types.QueryValidatorDelegationResponse{
@@ -329,7 +328,6 @@ func TestValidatorDelegation(t *testing.T) {
 			}
 			require.NoError(t, gotErr)
 			assert.Equal(t, spec.exp, gotRes)
-
 		})
 	}
 }
@@ -408,7 +406,6 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 			}
 			require.NoError(t, gotErr)
 			assert.Equal(t, spec.exp, gotRes)
-
 		})
 	}
 }

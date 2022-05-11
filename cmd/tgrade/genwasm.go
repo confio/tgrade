@@ -26,8 +26,8 @@ func AddGenesisWasmMsgCmd(defaultNodeHome string) *cobra.Command {
 		wasmcli.GenesisListCodesCmd(defaultNodeHome, genIO),
 	)
 	return txCmd
-
 }
+
 func GenesisWasmFlagsCmd(defaultNodeHome string) *cobra.Command {
 	txCmd := &cobra.Command{
 		Use:                        "wasm-genesis-flags",
@@ -42,5 +42,4 @@ func GenesisWasmFlagsCmd(defaultNodeHome string) *cobra.Command {
 		cli.GenesisSetPinned(defaultNodeHome, genIO),
 	)
 	return txCmd
-
 }

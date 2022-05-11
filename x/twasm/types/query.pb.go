@@ -23,8 +23,11 @@ import (
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
-var _ = fmt.Errorf
-var _ = math.Inf
+
+var (
+	_ = fmt.Errorf
+	_ = math.Inf
+)
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -34,8 +37,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // QueryPrivilegedContractsResponse is the request type for the
 // Query/PrivilegedContracts RPC method
-type QueryPrivilegedContractsRequest struct {
-}
+type QueryPrivilegedContractsRequest struct{}
 
 func (m *QueryPrivilegedContractsRequest) Reset()         { *m = QueryPrivilegedContractsRequest{} }
 func (m *QueryPrivilegedContractsRequest) String() string { return proto.CompactTextString(m) }
@@ -43,9 +45,11 @@ func (*QueryPrivilegedContractsRequest) ProtoMessage()    {}
 func (*QueryPrivilegedContractsRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1dcfe179625ad95e, []int{0}
 }
+
 func (m *QueryPrivilegedContractsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *QueryPrivilegedContractsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_QueryPrivilegedContractsRequest.Marshal(b, m, deterministic)
@@ -58,12 +62,15 @@ func (m *QueryPrivilegedContractsRequest) XXX_Marshal(b []byte, deterministic bo
 		return b[:n], nil
 	}
 }
+
 func (m *QueryPrivilegedContractsRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryPrivilegedContractsRequest.Merge(m, src)
 }
+
 func (m *QueryPrivilegedContractsRequest) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *QueryPrivilegedContractsRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryPrivilegedContractsRequest.DiscardUnknown(m)
 }
@@ -83,9 +90,11 @@ func (*QueryPrivilegedContractsResponse) ProtoMessage()    {}
 func (*QueryPrivilegedContractsResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1dcfe179625ad95e, []int{1}
 }
+
 func (m *QueryPrivilegedContractsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *QueryPrivilegedContractsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_QueryPrivilegedContractsResponse.Marshal(b, m, deterministic)
@@ -98,12 +107,15 @@ func (m *QueryPrivilegedContractsResponse) XXX_Marshal(b []byte, deterministic b
 		return b[:n], nil
 	}
 }
+
 func (m *QueryPrivilegedContractsResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryPrivilegedContractsResponse.Merge(m, src)
 }
+
 func (m *QueryPrivilegedContractsResponse) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *QueryPrivilegedContractsResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryPrivilegedContractsResponse.DiscardUnknown(m)
 }
@@ -129,9 +141,11 @@ func (*QueryContractsByPrivilegeTypeRequest) ProtoMessage()    {}
 func (*QueryContractsByPrivilegeTypeRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1dcfe179625ad95e, []int{2}
 }
+
 func (m *QueryContractsByPrivilegeTypeRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *QueryContractsByPrivilegeTypeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_QueryContractsByPrivilegeTypeRequest.Marshal(b, m, deterministic)
@@ -144,12 +158,15 @@ func (m *QueryContractsByPrivilegeTypeRequest) XXX_Marshal(b []byte, determinist
 		return b[:n], nil
 	}
 }
+
 func (m *QueryContractsByPrivilegeTypeRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryContractsByPrivilegeTypeRequest.Merge(m, src)
 }
+
 func (m *QueryContractsByPrivilegeTypeRequest) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *QueryContractsByPrivilegeTypeRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryContractsByPrivilegeTypeRequest.DiscardUnknown(m)
 }
@@ -176,9 +193,11 @@ func (*QueryContractsByPrivilegeTypeResponse) ProtoMessage()    {}
 func (*QueryContractsByPrivilegeTypeResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_1dcfe179625ad95e, []int{3}
 }
+
 func (m *QueryContractsByPrivilegeTypeResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
+
 func (m *QueryContractsByPrivilegeTypeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
 		return xxx_messageInfo_QueryContractsByPrivilegeTypeResponse.Marshal(b, m, deterministic)
@@ -191,12 +210,15 @@ func (m *QueryContractsByPrivilegeTypeResponse) XXX_Marshal(b []byte, determinis
 		return b[:n], nil
 	}
 }
+
 func (m *QueryContractsByPrivilegeTypeResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_QueryContractsByPrivilegeTypeResponse.Merge(m, src)
 }
+
 func (m *QueryContractsByPrivilegeTypeResponse) XXX_Size() int {
 	return m.Size()
 }
+
 func (m *QueryContractsByPrivilegeTypeResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_QueryContractsByPrivilegeTypeResponse.DiscardUnknown(m)
 }
@@ -304,12 +326,12 @@ type QueryServer interface {
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
-type UnimplementedQueryServer struct {
-}
+type UnimplementedQueryServer struct{}
 
 func (*UnimplementedQueryServer) PrivilegedContracts(ctx context.Context, req *QueryPrivilegedContractsRequest) (*QueryPrivilegedContractsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PrivilegedContracts not implemented")
 }
+
 func (*UnimplementedQueryServer) ContractsByPrivilegeType(ctx context.Context, req *QueryContractsByPrivilegeTypeRequest) (*QueryContractsByPrivilegeTypeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ContractsByPrivilegeType not implemented")
 }
@@ -499,6 +521,7 @@ func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+
 func (m *QueryPrivilegedContractsRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -554,9 +577,11 @@ func (m *QueryContractsByPrivilegeTypeResponse) Size() (n int) {
 func sovQuery(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
+
 func sozQuery(x uint64) (n int) {
 	return sovQuery(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+
 func (m *QueryPrivilegedContractsRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -607,6 +632,7 @@ func (m *QueryPrivilegedContractsRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *QueryPrivilegedContractsResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -689,6 +715,7 @@ func (m *QueryPrivilegedContractsResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *QueryContractsByPrivilegeTypeRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -771,6 +798,7 @@ func (m *QueryContractsByPrivilegeTypeRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func (m *QueryContractsByPrivilegeTypeResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -853,6 +881,7 @@ func (m *QueryContractsByPrivilegeTypeResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+
 func skipQuery(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0

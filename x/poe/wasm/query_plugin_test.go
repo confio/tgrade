@@ -109,17 +109,19 @@ func TestStakingQuerier(t *testing.T) {
 		},
 		"all delegations": {
 			src: wasmvmtypes.StakingQuery{AllDelegations: &wasmvmtypes.AllDelegationsQuery{Delegator: "cosmos1yq8zt83jznmp94jkj65yvfz9n52akmxt52ehm3"}},
-			mock: ViewKeeperMock{StakeContractFn: func(ctx sdk.Context) keeper.StakeContract {
-				return poetesting.StakeContractMock{
-					QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
-						myValue := sdk.OneInt()
-						return &myValue, nil
-					},
-				}
-			},
+			mock: ViewKeeperMock{
+				StakeContractFn: func(ctx sdk.Context) keeper.StakeContract {
+					return poetesting.StakeContractMock{
+						QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
+							myValue := sdk.OneInt()
+							return &myValue, nil
+						},
+					}
+				},
 				GetBondDenomFn: func(ctx sdk.Context) string {
 					return "alx"
-				}},
+				},
+			},
 			expJson: `{"delegations":[{"delegator":"cosmos1yq8zt83jznmp94jkj65yvfz9n52akmxt52ehm3","validator":"cosmos1yq8zt83jznmp94jkj65yvfz9n52akmxt52ehm3","amount":{"denom":"alx","amount":"1"}}]}`,
 		},
 		"all delegations - unknown address": {
@@ -284,7 +286,8 @@ func TestCustomQuerier(t *testing.T) {
 						return sdk.AccAddress("staking_addr"), nil
 					}
 					return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract type")
-				}},
+				},
+			},
 			expJSON: `{"address": "` + sdk.AccAddress("staking_addr").String() + `"}`,
 		},
 		"empty query": {
@@ -315,7 +318,8 @@ func TestCustomQuerier(t *testing.T) {
 						return sdk.AccAddress("staking_addr"), nil
 					}
 					return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract type")
-				}},
+				},
+			},
 			expErr: true,
 		},
 		"undefined contract type (UNDEFINED)": {
@@ -329,7 +333,8 @@ func TestCustomQuerier(t *testing.T) {
 						return nil, sdkerrors.Wrap(wasmtypes.ErrInvalid, "contract type")
 					}
 					return nil, sdkerrors.Wrap(wasmtypes.ErrNotFound, "contract type")
-				}},
+				},
+			},
 			expErr: true,
 		},
 	}

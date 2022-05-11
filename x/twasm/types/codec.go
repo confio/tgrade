@@ -14,7 +14,6 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&PromoteToPrivilegedContractProposal{}, "twasm/PromoteToPrivilegedContractProposal", nil)
 	cdc.RegisterConcrete(&DemotePrivilegedContractProposal{}, "twasm/DemotePrivilegedContractProposal", nil)
 	cdc.RegisterConcrete(&TgradeContractDetails{}, "twasm/TgradeContractDetails", nil)
-
 }
 
 func RegisterInterfaces(registry types.InterfaceRegistry) {

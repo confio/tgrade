@@ -17,7 +17,8 @@ func NewOCProposalsContractAdapter(contractAddr sdk.AccAddress, twasmKeeper type
 			contractAddr,
 			twasmKeeper,
 			addressLookupErr,
-		)}
+		),
+	}
 }
 
 // ProposeSlash creates a proposal to slash this account

@@ -137,7 +137,8 @@ func NewVotingContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWa
 			contractAddr,
 			twasmKeeper,
 			addressLookupErr,
-		)}
+		),
+	}
 }
 
 // LatestProposal gets info on the last proposal made, easy way to get the ProposalID

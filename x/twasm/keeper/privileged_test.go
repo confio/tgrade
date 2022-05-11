@@ -255,8 +255,8 @@ func TestIteratePrivileged(t *testing.T) {
 			assert.Equal(t, spec.exp, captured)
 		})
 	}
-
 }
+
 func TestAppendToPrivilegedContracts(t *testing.T) {
 	var (
 		addr1 = sdk.AccAddress(bytes.Repeat([]byte{1}, address.Len))

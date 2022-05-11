@@ -66,7 +66,6 @@ func TestGenTxCmd(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-
 			dir := t.TempDir()
 			encodingConfig := twasmkeeper.MakeEncodingConfig(t)
 			addr, clientCtx, moduleManager := setupSystem(t, dir, encodingConfig)
@@ -129,7 +128,7 @@ func setupSystem(t *testing.T, workDir string, encodingConfig appparams.Encoding
 	nodeConfig := cfg.TestConfig()
 	nodeConfig.RootDir = t.TempDir()
 	nodeConfig.NodeKey = "key.json"
-	require.NoError(t, os.MkdirAll(filepath.Join(workDir, "config"), 0755))
+	require.NoError(t, os.MkdirAll(filepath.Join(workDir, "config"), 0o755))
 
 	// create node key file
 	_, _, err := genutil.InitializeNodeValidatorFiles(nodeConfig)

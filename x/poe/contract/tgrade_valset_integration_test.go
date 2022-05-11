@@ -242,7 +242,8 @@ func TestJailUnjail(t *testing.T) {
 			expJailingPeriod: contract.JailingPeriod{
 				Start: ctx.BlockTime().UTC(),
 				End: contract.JailingEnd{
-					Until: ctx.BlockTime().Add(nextBlockDuration).UTC()},
+					Until: ctx.BlockTime().Add(nextBlockDuration).UTC(),
+				},
 			},
 			expErrUnjail: true,
 		},
@@ -252,7 +253,8 @@ func TestJailUnjail(t *testing.T) {
 			expJailingPeriod: contract.JailingPeriod{
 				Start: ctx.BlockTime().UTC(),
 				End: contract.JailingEnd{
-					Forever: true},
+					Forever: true,
+				},
 			},
 			expErrUnjail: false,
 		},

@@ -26,8 +26,10 @@ import (
 	"github.com/confio/tgrade/app"
 )
 
-var sut *SystemUnderTest
-var verbose bool
+var (
+	sut     *SystemUnderTest
+	verbose bool
+)
 
 func init() {
 	config := sdk.GetConfig()
@@ -37,7 +39,6 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
-
 	rebuild := flag.Bool("rebuild", false, "rebuild artifacts")
 	waitTime := flag.Duration("wait-time", defaultWaitTime, "time to wait for chain events")
 	nodesCount := flag.Int("nodes-count", 4, "number of nodes in the cluster")
