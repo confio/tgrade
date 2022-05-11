@@ -7,9 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	poetypes "github.com/confio/tgrade/x/poe/types"
-
 	"github.com/CosmWasm/wasmd/x/wasm"
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
@@ -58,15 +57,20 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/cosmos/ibc-go/v2/modules/apps/transfer"
-	ibctransferkeeper "github.com/cosmos/ibc-go/v2/modules/apps/transfer/keeper"
-	ibctransfertypes "github.com/cosmos/ibc-go/v2/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v2/modules/core"
-	ibcclient "github.com/cosmos/ibc-go/v2/modules/core/02-client"
-	ibcclienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
-	porttypes "github.com/cosmos/ibc-go/v2/modules/core/05-port/types"
-	ibchost "github.com/cosmos/ibc-go/v2/modules/core/24-host"
-	ibckeeper "github.com/cosmos/ibc-go/v2/modules/core/keeper"
+	ica "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts"
+	icahost "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host"
+	icahostkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/keeper"
+	icahosttypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host/types"
+	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
+	transfer "github.com/cosmos/ibc-go/v3/modules/apps/transfer"
+	ibctransferkeeper "github.com/cosmos/ibc-go/v3/modules/apps/transfer/keeper"
+	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v3/modules/core"
+	ibcclient "github.com/cosmos/ibc-go/v3/modules/core/02-client"
+	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
+	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
@@ -82,6 +86,7 @@ import (
 	"github.com/confio/tgrade/x/poe"
 	poekeeper "github.com/confio/tgrade/x/poe/keeper"
 	poestakingadapter "github.com/confio/tgrade/x/poe/stakingadapter"
+	poetypes "github.com/confio/tgrade/x/poe/types"
 	"github.com/confio/tgrade/x/twasm"
 	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
 
@@ -137,11 +142,13 @@ var (
 		vesting.AppModuleBasic{},
 		twasm.AppModuleBasic{},
 		globalfee.AppModuleBasic{},
+		ica.AppModuleBasic{},
 	)
 
 	// module account permissions
 	maccPerms = map[string][]string{
 		ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
+		icatypes.ModuleName:         nil,
 		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
 		poetypes.BondedPoolName:     {authtypes.Burner, authtypes.Staking},
 	}
@@ -179,12 +186,14 @@ type TgradeApp struct {
 	ibcKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
 	evidenceKeeper   evidencekeeper.Keeper
 	transferKeeper   ibctransferkeeper.Keeper
+	icaHostKeeper    icahostkeeper.Keeper
 	feeGrantKeeper   feegrantkeeper.Keeper
 	authzKeeper      authzkeeper.Keeper
 	twasmKeeper      twasmkeeper.Keeper
 	poeKeeper        poekeeper.Keeper
 
 	scopedIBCKeeper      capabilitykeeper.ScopedKeeper
+	scopedICAHostKeeper  capabilitykeeper.ScopedKeeper
 	scopedTransferKeeper capabilitykeeper.ScopedKeeper
 	scopedWasmKeeper     capabilitykeeper.ScopedKeeper
 
@@ -225,7 +234,7 @@ func NewTgradeApp(
 		authtypes.StoreKey, banktypes.StoreKey,
 		paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
-		feegrant.StoreKey, authzkeeper.StoreKey, wasm.StoreKey, poe.StoreKey,
+		feegrant.StoreKey, authzkeeper.StoreKey, wasm.StoreKey, poe.StoreKey, icahosttypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -258,6 +267,7 @@ func NewTgradeApp(
 		memKeys[capabilitytypes.MemStoreKey],
 	)
 	scopedIBCKeeper := app.capabilityKeeper.ScopeToModule(ibchost.ModuleName)
+	scopedICAHostKeeper := app.capabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
 	scopedTransferKeeper := app.capabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedWasmKeeper := app.capabilityKeeper.ScopeToModule(twasm.ModuleName)
 	app.capabilityKeeper.Seal()
@@ -327,16 +337,27 @@ func NewTgradeApp(
 		keys[ibctransfertypes.StoreKey],
 		app.getSubspace(ibctransfertypes.ModuleName),
 		app.ibcKeeper.ChannelKeeper,
+		app.ibcKeeper.ChannelKeeper,
 		&app.ibcKeeper.PortKeeper,
 		app.accountKeeper,
 		app.bankKeeper,
 		scopedTransferKeeper,
 	)
 	transferModule := transfer.NewAppModule(app.transferKeeper)
+	transferIBCModule := transfer.NewIBCModule(app.transferKeeper)
 
-	// create static IBC router, add transfer route, then set and seal it
-	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferModule)
+	app.icaHostKeeper = icahostkeeper.NewKeeper(
+		appCodec,
+		keys[icahosttypes.StoreKey],
+		app.getSubspace(icahosttypes.SubModuleName),
+		app.ibcKeeper.ChannelKeeper,
+		&app.ibcKeeper.PortKeeper,
+		app.accountKeeper,
+		scopedICAHostKeeper,
+		app.MsgServiceRouter(),
+	)
+	icaModule := ica.NewAppModule(nil, &app.icaHostKeeper)
+	icaHostIBCModule := icahost.NewIBCModule(app.icaHostKeeper)
 
 	slashingAdapter := poestakingadapter.SlashingAdapter{}
 	// create evidence keeper with router
@@ -383,7 +404,13 @@ func NewTgradeApp(
 	)
 
 	govRouter.AddRoute(twasm.RouterKey, twasmkeeper.NewProposalHandler(app.twasmKeeper))
-	ibcRouter.AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.twasmKeeper, app.ibcKeeper.ChannelKeeper))
+
+	// Create static IBC router, add app routes, then set and seal it
+	ibcRouter := porttypes.NewRouter()
+	ibcRouter.
+		AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.twasmKeeper, app.ibcKeeper.ChannelKeeper)).
+		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
+		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule)
 	app.ibcKeeper.SetRouter(ibcRouter)
 
 	app.poeKeeper = poekeeper.NewKeeper(
@@ -422,6 +449,7 @@ func NewTgradeApp(
 		params.NewAppModule(app.paramsKeeper),
 		transferModule,
 		globalfee.NewAppModule(app.getSubspace(globalfee.ModuleName)),
+		icaModule,
 		crisis.NewAppModule(&app.crisisKeeper, skipGenesisInvariants),
 	)
 
@@ -443,6 +471,8 @@ func NewTgradeApp(
 		// additional non simd modules
 		ibchost.ModuleName,
 		ibctransfertypes.ModuleName,
+		ibchost.ModuleName,
+		icatypes.ModuleName,
 		poe.ModuleName,
 		twasm.ModuleName,
 		globalfee.ModuleName,
@@ -459,8 +489,9 @@ func NewTgradeApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		// additional non simd modules
-		ibchost.ModuleName,
 		ibctransfertypes.ModuleName,
+		ibchost.ModuleName,
+		icatypes.ModuleName,
 		globalfee.ModuleName,
 		twasm.ModuleName,
 		poe.ModuleName, // poe after twasm to have valset update at the end
@@ -485,8 +516,9 @@ func NewTgradeApp(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		// additional non simd modules
-		ibchost.ModuleName,
 		ibctransfertypes.ModuleName,
+		ibchost.ModuleName,
+		icatypes.ModuleName,
 		// wasm after ibc transfer
 		twasm.ModuleName,
 		// poe after wasm contract instantiation
@@ -534,7 +566,7 @@ func NewTgradeApp(
 			FeegrantKeeper:    app.feeGrantKeeper,
 			SignModeHandler:   encodingConfig.TxConfig.SignModeHandler(),
 			SigGasConsumer:    ante.DefaultSigVerificationGasConsumer,
-			IBCChannelkeeper:  app.ibcKeeper.ChannelKeeper,
+			IBCCoreKeeper:     app.ibcKeeper,
 			WasmConfig:        &twasmConfig.WasmConfig,
 			TXCounterStoreKey: keys[twasm.StoreKey],
 			GlobalFeeSubspace: app.getSubspace(globalfee.ModuleName),
@@ -550,6 +582,23 @@ func NewTgradeApp(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
+	// must be before Loading version
+	// requires the snapshot store to be created and registered as a BaseAppOption
+	// see cmd/wasmd/root.go: 206 - 214 approx
+	if manager := app.SnapshotManager(); manager != nil {
+		err := manager.RegisterExtensions(
+			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.twasmKeeper.Keeper),
+		)
+		if err != nil {
+			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
+		}
+	}
+
+	app.scopedIBCKeeper = scopedIBCKeeper
+	app.scopedTransferKeeper = scopedTransferKeeper
+	app.scopedWasmKeeper = scopedWasmKeeper
+	app.scopedICAHostKeeper = scopedICAHostKeeper
+
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
 			tmos.Exit(fmt.Sprintf("failed to load latest version: %s", err))
@@ -562,9 +611,6 @@ func NewTgradeApp(
 		}
 	}
 
-	app.scopedIBCKeeper = scopedIBCKeeper
-	app.scopedTransferKeeper = scopedTransferKeeper
-	app.scopedWasmKeeper = scopedWasmKeeper
 	return app
 }
 
@@ -694,6 +740,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(crisistypes.ModuleName)
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
+	paramsKeeper.Subspace(icahosttypes.SubModuleName)
 	paramsKeeper.Subspace(twasm.ModuleName)
 	paramsKeeper.Subspace(globalfee.ModuleName)
 	paramsKeeper.Subspace(poe.ModuleName)

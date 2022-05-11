@@ -28,6 +28,7 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
+	tmcmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
@@ -294,18 +295,23 @@ func (ac appCreator) appExport(
 
 // extendUnsafeResetAllCmd - also clear wasm dir
 func extendUnsafeResetAllCmd(rootCmd *cobra.Command) {
-	unsafeResetCmd := server.UnsafeResetAllCmd().Use
-	for _, cmd := range rootCmd.Commands() {
-		if cmd.Use == unsafeResetCmd {
-			serverRunE := cmd.RunE
-			cmd.RunE = func(cmd *cobra.Command, args []string) error {
-				if err := serverRunE(cmd, args); err != nil {
-					return nil
+	unsafeResetCmd := tmcmd.ResetAllCmd.Use
+	for _, branchCmd := range rootCmd.Commands() {
+		if branchCmd.Use != "tendermint" {
+			continue
+		}
+		for _, cmd := range branchCmd.Commands() {
+			if cmd.Use == unsafeResetCmd {
+				serverRunE := cmd.RunE
+				cmd.RunE = func(cmd *cobra.Command, args []string) error {
+					if err := serverRunE(cmd, args); err != nil {
+						return nil
+					}
+					serverCtx := server.GetServerContextFromCmd(cmd)
+					return os.RemoveAll(filepath.Join(serverCtx.Config.RootDir, "wasm"))
 				}
-				serverCtx := server.GetServerContextFromCmd(cmd)
-				return os.RemoveAll(filepath.Join(serverCtx.Config.RootDir, "wasm"))
+				return
 			}
-			return
 		}
 	}
 }

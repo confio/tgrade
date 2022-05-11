@@ -13,7 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -180,9 +180,9 @@ func TestIBCKeeperLazyInitialization(t *testing.T) {
 
 	// when
 	// https://github.com/cosmos/cosmos-sdk/blob/v0.42.9/x/ibc/core/02-client/keeper/keeper.go#L252
-	state, found := gapp.ibcKeeper.ClientKeeper.GetSelfConsensusState(ctx, height)
+	state, err := gapp.ibcKeeper.ClientKeeper.GetSelfConsensusState(ctx, height)
 	// then
-	require.True(t, found)
+	require.NoError(t, err)
 	assert.Equal(t, []byte("myAppHash"), state.GetRoot().GetHash())
 	assert.Equal(t, uint64(now.UnixNano()), state.GetTimestamp())
 }

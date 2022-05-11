@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	ibccoretypes "github.com/cosmos/ibc-go/v2/modules/core/02-client/types"
+	ibccoretypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 
 	"github.com/confio/tgrade/x/poe/types"
 )
