@@ -22,13 +22,15 @@ func TestToValidator(t *testing.T) {
 		"active validator": {
 			operatorResponse: contract.OperatorResponse{
 				Pubkey:          pk,
-				ActiveValidator: true},
+				ActiveValidator: true,
+			},
 			expStatus: stakingtypes.Bonded,
 		},
 		"unactive validator": {
 			operatorResponse: contract.OperatorResponse{
 				Pubkey:          pk,
-				ActiveValidator: false},
+				ActiveValidator: false,
+			},
 			expStatus: stakingtypes.Unbonded,
 		},
 	}

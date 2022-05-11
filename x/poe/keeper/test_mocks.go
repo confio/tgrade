@@ -12,8 +12,10 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-var _ PoEKeeper = PoEKeeperMock{}
-var _ stakingQuerierKeeper = &PoEKeeperMock{}
+var (
+	_ PoEKeeper            = PoEKeeperMock{}
+	_ stakingQuerierKeeper = &PoEKeeperMock{}
+)
 
 // PoEKeeperMock mocks Keeper methods
 type PoEKeeperMock struct {

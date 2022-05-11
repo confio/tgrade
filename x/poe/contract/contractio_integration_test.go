@@ -107,7 +107,6 @@ func TestBondDelegation(t *testing.T) {
 			assert.Equal(t, "utgd", gotRes.Vesting.Denom)
 		})
 	}
-
 }
 
 func TestUnbondDelegation(t *testing.T) {

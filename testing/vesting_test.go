@@ -116,7 +116,6 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	assert.Equal(t, operatorInitialBalance, operatortBalanceAfter, "operator balance")
 	poolBalanceAfter = cli.QueryBalance(poolAddr, "utgd")
 	assert.Equal(t, poolInitialBalance, poolBalanceAfter, "pool balance")
-
 }
 
 func TestVestingAccountExecutes(t *testing.T) {

@@ -34,8 +34,7 @@ var (
 )
 
 // AppModuleBasic defines the basic application module used by the genutil module.
-type AppModuleBasic struct {
-}
+type AppModuleBasic struct{}
 
 // Name returns the genutil module's name.
 func (AppModuleBasic) Name() string {

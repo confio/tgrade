@@ -162,7 +162,8 @@ func createTestInput(
 		keys[paramstypes.StoreKey],
 		tkeys[paramstypes.TStoreKey],
 	)
-	for _, m := range []string{authtypes.ModuleName,
+	for _, m := range []string{
+		authtypes.ModuleName,
 		banktypes.ModuleName,
 		stakingtypes.ModuleName,
 		minttypes.ModuleName,
@@ -173,7 +174,8 @@ func createTestInput(
 		capabilitytypes.ModuleName,
 		ibchost.ModuleName,
 		govtypes.ModuleName,
-		types.ModuleName} {
+		types.ModuleName,
+	} {
 		paramsKeeper.Subspace(m)
 	}
 	subspace := func(m string) paramstypes.Subspace {
@@ -317,7 +319,6 @@ func NewWasmVMMock(mutators ...func(*wasmtesting.MockWasmer)) *wasmtesting.MockW
 		m(mock)
 	}
 	return mock
-
 }
 
 func RandomAddress(_ *testing.T) sdk.AccAddress {

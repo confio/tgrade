@@ -419,7 +419,8 @@ func TestHandleGovProposalExecution(t *testing.T) {
 				Title:       "foo",
 				Description: "bar",
 				Changes: []proposaltypes.ParamChange{
-					{Subspace: "foo", Key: "bar", Value: `{"example": "value"}`}},
+					{Subspace: "foo", Key: "bar", Value: `{"example": "value"}`},
+				},
 			}},
 		},
 		"unauthorized contract": {
@@ -484,7 +485,6 @@ func TestHandleGovProposalExecution(t *testing.T) {
 			assert.Equal(t, spec.expCapturedGovContent, router.captured)
 		})
 	}
-
 }
 
 func TestHandleMintToken(t *testing.T) {

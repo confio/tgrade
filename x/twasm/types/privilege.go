@@ -109,8 +109,10 @@ func (t PrivilegeType) ValidateBasic() error {
 	return nil
 }
 
-var _ json.Unmarshaler = &PrivilegeTypeBeginBlock
-var _ json.Marshaler = &PrivilegeTypeBeginBlock
+var (
+	_ json.Unmarshaler = &PrivilegeTypeBeginBlock
+	_ json.Marshaler   = &PrivilegeTypeBeginBlock
+)
 
 func (t *PrivilegeType) UnmarshalJSON(raw []byte) error {
 	var src string

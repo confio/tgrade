@@ -22,7 +22,6 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 func SetGenTxsInAppGenesisState(
 	cdc codec.JSONCodec, txJSONEncoder sdk.TxEncoder, appGenesisState map[string]json.RawMessage, genTxs []sdk.Tx,
 ) (map[string]json.RawMessage, error) {
-
 	genesisState := GetGenesisStateFromAppState(cdc, appGenesisState)
 	genTxsBz := make([]json.RawMessage, 0, len(genTxs))
 
@@ -46,7 +45,6 @@ func SetGenTxsInAppGenesisState(
 func SetGenesisStateInAppState(
 	cdc codec.JSONCodec, appState map[string]json.RawMessage, genesisState *GenesisState,
 ) map[string]json.RawMessage {
-
 	genesisStateBz := cdc.MustMarshalJSON(genesisState)
 	appState[ModuleName] = genesisStateBz
 	return appState

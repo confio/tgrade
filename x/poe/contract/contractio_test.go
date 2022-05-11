@@ -37,7 +37,8 @@ func TestConvertToTendermintPubKey(t *testing.T) {
 		"unsupported": {
 			src:    ValidatorPubkey{},
 			expErr: true,
-		}}
+		},
+	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
 			gotRes, gotErr := ConvertToTendermintPubKey(spec.src)
@@ -49,5 +50,4 @@ func TestConvertToTendermintPubKey(t *testing.T) {
 			spec.assert(t, gotRes)
 		})
 	}
-
 }

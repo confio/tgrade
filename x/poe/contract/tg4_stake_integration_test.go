@@ -47,7 +47,7 @@ func TestQueryStakedAmount(t *testing.T) {
 	var myOperatorAddr sdk.AccAddress = rand.Bytes(address.Len)
 	example.Faucet.Fund(ctx, myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100)))
 
-	var oneInt = sdk.OneInt()
+	oneInt := sdk.OneInt()
 	specs := map[string]struct {
 		addr      sdk.AccAddress
 		expAmount *sdk.Int

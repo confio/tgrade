@@ -15,7 +15,7 @@ import (
 )
 
 func TestSetValidatorInitialEngagementPoints(t *testing.T) {
-	var myOpAddr = RandomAddress(t)
+	myOpAddr := RandomAddress(t)
 	ctx, _, k := createMinTestInput(t)
 	const initialPointsToGrant = 2
 	k.setParams(ctx, types.NewParams(0, initialPointsToGrant, sdk.NewCoins(sdk.NewCoin("ALX", sdk.NewInt(10)))))
@@ -53,7 +53,7 @@ func TestSetValidatorInitialEngagementPoints(t *testing.T) {
 			selfDelegation: sdk.NewCoin("ALX", sdk.NewInt(11)),
 			queryFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				require.Equal(t, engagementContractAddr, contractAddr)
-				var current = 1
+				current := 1
 				return json.Marshal(contract.TG4MemberResponse{Points: &current})
 			},
 			SudoFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, msg []byte) ([]byte, error) {
@@ -67,7 +67,7 @@ func TestSetValidatorInitialEngagementPoints(t *testing.T) {
 			selfDelegation: sdk.NewCoin("ALX", sdk.NewInt(11)),
 			queryFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				require.Equal(t, engagementContractAddr, contractAddr)
-				var current = initialPointsToGrant
+				current := initialPointsToGrant
 				return json.Marshal(contract.TG4MemberResponse{Points: &current})
 			},
 		},
@@ -75,7 +75,7 @@ func TestSetValidatorInitialEngagementPoints(t *testing.T) {
 			selfDelegation: sdk.NewCoin("ALX", sdk.NewInt(11)),
 			queryFn: func(ctx sdk.Context, contractAddr sdk.AccAddress, req []byte) ([]byte, error) {
 				require.Equal(t, engagementContractAddr, contractAddr)
-				var current = initialPointsToGrant + 1
+				current := initialPointsToGrant + 1
 				return json.Marshal(contract.TG4MemberResponse{Points: &current})
 			},
 		},

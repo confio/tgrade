@@ -35,9 +35,9 @@ func TestProofOfEngagementSetup(t *testing.T) {
 
 	// contract addresses are deterministic. You can get a list of all contracts in genesis via
 	// `tgrade wasm-genesis-message list-contracts --home ./testnet/node0/tgrade`
-	var (
-		tg4BootstrapAccountAddr = cli.GetKeyAddr("bootstrap-account")
-	)
+
+	tg4BootstrapAccountAddr := cli.GetKeyAddr("bootstrap-account")
+
 	engagementGroup := make([]poecontracts.TG4Member, sut.nodesCount)
 	stakedAmounts := make([]uint64, sut.nodesCount)
 	sut.withEachNodeHome(func(i int, home string) {
@@ -47,7 +47,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 			Addr:   addr,
 			Points: uint64(sut.nodesCount - i), // unique weight
 		}
-		initialStakedTokenAmount := sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction) //set via testnet command
+		initialStakedTokenAmount := sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction) // set via testnet command
 		stakedAmounts[i] = initialStakedTokenAmount.Uint64()
 	})
 

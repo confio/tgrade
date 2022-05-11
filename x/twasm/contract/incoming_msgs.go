@@ -136,7 +136,7 @@ func (p *ExecuteGovProposal) unpackInterfaces(unpacker codectypes.AnyUnpacker) e
 			return sdkerrors.ErrInvalidRequest.Wrap("upgrade logic for IBC has been moved to the IBC module")
 		}
 		// todo (Alex): check how a client update is done now. this also needs to go into the contracts
-		//case p.Proposal.IBCClientUpdate != nil:
+		// case p.Proposal.IBCClientUpdate != nil:
 		//	return p.Proposal.IBCClientUpdate.UnpackInterfaces(unpacker)
 	}
 	return err
@@ -170,9 +170,9 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 
 	// sdk protobuf Any types don't map back nicely to Go structs. So we do this manually
 	var result GovProposal
-	var customUnmarshalers = map[string]func(b []byte) error{
+	customUnmarshalers := map[string]func(b []byte) error{
 		"ibc_client_update": func(b []byte) error {
-			var proxy = struct {
+			proxy := struct {
 				ClientId string    `json:"client_id"`
 				Header   *ProtoAny `json:"header"`
 			}{}
@@ -186,7 +186,7 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 			return nil
 		},
 		"register_upgrade": func(b []byte) error {
-			var proxy = struct {
+			proxy := struct {
 				Name   string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 				Height int64  `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
 				Info   string `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
@@ -202,7 +202,7 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 			return nil
 		},
 		"migrate_contract": func(b []byte) error {
-			var proxy = struct { // todo: better use wasmvmtypes.MigrateMsg when names match
+			proxy := struct { // todo: better use wasmvmtypes.MigrateMsg when names match
 				Contract string `json:"contract"`
 				CodeID   uint64 `json:"code_id"`
 				Msg      []byte `json:"migrate_msg"`
@@ -217,7 +217,7 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 			}
 			return nil
 		}, "instantiate_contract": func(b []byte) error {
-			var proxy = wasmvmtypes.InstantiateMsg{}
+			proxy := wasmvmtypes.InstantiateMsg{}
 			if err := json.Unmarshal(b, &proxy); err != nil {
 				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 			}
@@ -226,7 +226,7 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 			}
 			result.InstantiateContract = &wasmtypes.InstantiateContractProposal{
-				//RunAs:       "",
+				// RunAs:       "",
 				Admin:  proxy.Admin,
 				CodeID: proxy.CodeID,
 				Label:  proxy.Label,

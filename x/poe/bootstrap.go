@@ -427,7 +427,7 @@ func newEngagementInitMsg(gs types.SeedContracts, bootstrapAccountAddr sdk.AccAd
 }
 
 func newStakeInitMsg(gs types.SeedContracts, adminAddr sdk.AccAddress) contract.TG4StakeInitMsg {
-	var claimLimit = uint64(gs.StakeContractConfig.ClaimAutoreturnLimit)
+	claimLimit := uint64(gs.StakeContractConfig.ClaimAutoreturnLimit)
 	return contract.TG4StakeInitMsg{
 		Admin:            adminAddr.String(),
 		Denom:            gs.BondDenom,

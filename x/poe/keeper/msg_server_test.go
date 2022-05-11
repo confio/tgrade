@@ -105,7 +105,8 @@ func TestCreateValidator(t *testing.T) {
 			}
 			em := sdk.NewEventManager()
 			ctx := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()).WithEventManager(em).WithConsensusParams(&abci.ConsensusParams{
-				Validator: &types1.ValidatorParams{PubKeyTypes: []string{"ed25519"}}}))
+				Validator: &types1.ValidatorParams{PubKeyTypes: []string{"ed25519"}},
+			}))
 
 			// when
 			s := NewMsgServerImpl(poeKeeperMock, km, nil)

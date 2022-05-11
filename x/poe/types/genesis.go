@@ -17,70 +17,71 @@ const DefaultBondDenom = "utgd"
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
 		Params: DefaultParams(),
-		SetupMode: &GenesisState_SeedContracts{&SeedContracts{
-			BondDenom: DefaultBondDenom,
-			StakeContractConfig: &StakeContractConfig{
-				MinBond:              1,
-				TokensPerPoint:       1,
-				UnbondingPeriod:      time.Hour * 21 * 24,
-				ClaimAutoreturnLimit: 20,
-			},
-			ValsetContractConfig: &ValsetContractConfig{
-				MinPoints:                1,
-				MaxValidators:            100,
-				EpochLength:              60 * time.Second,
-				EpochReward:              sdk.NewCoin(DefaultBondDenom, sdk.NewInt(100_000)),
-				Scaling:                  1,
-				FeePercentage:            sdk.NewDec(50),
-				AutoUnjail:               false,
-				DoubleSignSlashRatio:     sdk.NewDec(50),
-				ValidatorRewardRatio:     sdk.MustNewDecFromStr("47.5"),
-				EngagementRewardRatio:    sdk.MustNewDecFromStr("47.5"),
-				CommunityPoolRewardRatio: sdk.MustNewDecFromStr("5"),
-				VerifyValidators:         true,
-			},
-			EngagementContractConfig: &EngagementContractConfig{
-				Halflife: 180 * 24 * time.Hour,
-			},
-			OversightCommitteeContractConfig: &OversightCommitteeContractConfig{
-				Name:         "Oversight Community",
-				EscrowAmount: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
-				VotingRules: VotingRules{
-					VotingPeriod:  30,
-					Quorum:        sdk.NewDec(51),
-					Threshold:     sdk.NewDec(55),
-					AllowEndEarly: true,
+		SetupMode: &GenesisState_SeedContracts{
+			&SeedContracts{
+				BondDenom: DefaultBondDenom,
+				StakeContractConfig: &StakeContractConfig{
+					MinBond:              1,
+					TokensPerPoint:       1,
+					UnbondingPeriod:      time.Hour * 21 * 24,
+					ClaimAutoreturnLimit: 20,
 				},
-			},
-			CommunityPoolContractConfig: &CommunityPoolContractConfig{
-				VotingRules: VotingRules{
-					VotingPeriod:  21,
-					Quorum:        sdk.NewDec(10),
-					Threshold:     sdk.NewDec(60),
-					AllowEndEarly: true,
+				ValsetContractConfig: &ValsetContractConfig{
+					MinPoints:                1,
+					MaxValidators:            100,
+					EpochLength:              60 * time.Second,
+					EpochReward:              sdk.NewCoin(DefaultBondDenom, sdk.NewInt(100_000)),
+					Scaling:                  1,
+					FeePercentage:            sdk.NewDec(50),
+					AutoUnjail:               false,
+					DoubleSignSlashRatio:     sdk.NewDec(50),
+					ValidatorRewardRatio:     sdk.MustNewDecFromStr("47.5"),
+					EngagementRewardRatio:    sdk.MustNewDecFromStr("47.5"),
+					CommunityPoolRewardRatio: sdk.MustNewDecFromStr("5"),
+					VerifyValidators:         true,
 				},
-			},
-			ValidatorVotingContractConfig: &ValidatorVotingContractConfig{
-				VotingRules: VotingRules{
-					VotingPeriod:  14,
-					Quorum:        sdk.NewDec(40),
-					Threshold:     sdk.NewDec(66),
-					AllowEndEarly: true,
+				EngagementContractConfig: &EngagementContractConfig{
+					Halflife: 180 * 24 * time.Hour,
 				},
-			},
-			ArbiterPoolContractConfig: &ArbiterPoolContractConfig{
-				Name:         "Arbiter Pool",
-				EscrowAmount: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
-				VotingRules: VotingRules{
-					VotingPeriod:  30,
-					Quorum:        sdk.NewDec(51),
-					Threshold:     sdk.NewDec(55),
-					AllowEndEarly: true,
+				OversightCommitteeContractConfig: &OversightCommitteeContractConfig{
+					Name:         "Oversight Community",
+					EscrowAmount: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+					VotingRules: VotingRules{
+						VotingPeriod:  30,
+						Quorum:        sdk.NewDec(51),
+						Threshold:     sdk.NewDec(55),
+						AllowEndEarly: true,
+					},
 				},
-				DisputeCost: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+				CommunityPoolContractConfig: &CommunityPoolContractConfig{
+					VotingRules: VotingRules{
+						VotingPeriod:  21,
+						Quorum:        sdk.NewDec(10),
+						Threshold:     sdk.NewDec(60),
+						AllowEndEarly: true,
+					},
+				},
+				ValidatorVotingContractConfig: &ValidatorVotingContractConfig{
+					VotingRules: VotingRules{
+						VotingPeriod:  14,
+						Quorum:        sdk.NewDec(40),
+						Threshold:     sdk.NewDec(66),
+						AllowEndEarly: true,
+					},
+				},
+				ArbiterPoolContractConfig: &ArbiterPoolContractConfig{
+					Name:         "Arbiter Pool",
+					EscrowAmount: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+					VotingRules: VotingRules{
+						VotingPeriod:  30,
+						Quorum:        sdk.NewDec(51),
+						Threshold:     sdk.NewDec(55),
+						AllowEndEarly: true,
+					},
+					DisputeCost: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+				},
+				BootstrapAccountAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 			},
-			BootstrapAccountAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
-		},
 		},
 	}
 }

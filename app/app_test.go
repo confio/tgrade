@@ -70,7 +70,8 @@ func setupWithSingleValidatorGenTX(t *testing.T, genesisState GenesisState) {
 	marshaler.MustUnmarshalJSON(genesisState[authtypes.ModuleName], &authGenState)
 	genAccounts := []authtypes.GenesisAccount{
 		authtypes.NewBaseAccount(myAddr, nil, 0, 0),
-		authtypes.NewBaseAccount(bootstrapAccountAddr, nil, 0, 0)}
+		authtypes.NewBaseAccount(bootstrapAccountAddr, nil, 0, 0),
+	}
 	accounts, err := authtypes.PackAccounts(genAccounts)
 	require.NoError(t, err)
 	authGenState.Accounts = accounts

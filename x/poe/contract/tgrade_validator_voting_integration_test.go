@@ -112,7 +112,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				// Get baseline values
-				var expConsensusParams = wasmapp.DefaultConsensusParams
+				expConsensusParams := wasmapp.DefaultConsensusParams
 				// Define modifications
 				expConsensusParams.Block.MaxBytes = maxBytes
 
@@ -131,7 +131,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				// Get baseline values
-				var expConsensusParams = wasmapp.DefaultConsensusParams
+				expConsensusParams := wasmapp.DefaultConsensusParams
 				// Define modifications
 				expConsensusParams.Block = &abci.BlockParams{
 					MaxBytes: maxBytes,
@@ -152,7 +152,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				// Get baseline values
-				var expConsensusParams = wasmapp.DefaultConsensusParams
+				expConsensusParams := wasmapp.DefaultConsensusParams
 				// Define modifications
 				expConsensusParams.Evidence.MaxAgeNumBlocks = maxAge
 
@@ -172,7 +172,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {
 				// Get baseline values
-				var expConsensusParams = wasmapp.DefaultConsensusParams
+				expConsensusParams := wasmapp.DefaultConsensusParams
 				// Define modifications
 				expConsensusParams.Evidence = &tmproto.EvidenceParams{
 					MaxAgeNumBlocks: maxAge,

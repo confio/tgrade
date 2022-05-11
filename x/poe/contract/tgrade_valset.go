@@ -144,7 +144,6 @@ func (m ValidatorMetadata) ToDescription() stakingtypes.Description {
 		SecurityContact: m.SecurityContact,
 		Details:         m.Details,
 	}
-
 }
 
 // ValsetQuery will create many queries for the valset contract
@@ -194,7 +193,7 @@ type ValsetEpochResponse struct {
 	LastUpdateHeight uint64 `json:"last_update_height"`
 	// TODO: add this if you want it, not in current code
 	// Seconds (UTC UNIX time) of next timestamp that will trigger a validator recalculation
-	//NextUpdateTime int `json:"next_update_time"`
+	// NextUpdateTime int `json:"next_update_time"`
 }
 
 type OperatorResponse struct {
@@ -249,6 +248,7 @@ func (j *JailingPeriod) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
 func (v OperatorResponse) ToValidator() (stakingtypes.Validator, error) {
 	pubKey, err := toCosmosPubKey(v.Pubkey)
 	if err != nil {
@@ -355,7 +355,8 @@ func NewValsetContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWa
 			contractAddr,
 			twasmKeeper,
 			addressLookupErr,
-		)}
+		),
+	}
 }
 
 // QueryValidator query a single validator and map to the sdk type. returns nil when not found

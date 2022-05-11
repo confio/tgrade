@@ -134,7 +134,8 @@ func TestBootstrapPoEContracts(t *testing.T) {
 				DistributionContracts: []contract.DistributionContract{
 					{Address: engagementContractAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
 					{Address: communityPoolContractAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
-				}},
+				},
+			},
 			wasmFile:     "tgrade_valset.wasm",
 			contractAddr: valsetContractAddr,
 			codeID:       6,

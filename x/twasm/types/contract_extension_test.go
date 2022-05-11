@@ -72,5 +72,4 @@ func TestTgradeContractDetailsValidation(t *testing.T) {
 			assert.NoError(t, gotErr)
 		})
 	}
-
 }

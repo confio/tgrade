@@ -108,7 +108,6 @@ func (q legacyStakingGRPCQuerier) Delegation(c context.Context, req *stakingtype
 			codes.NotFound,
 			"delegation with delegator not found",
 		)
-
 	}
 	qr, err := q.ValidatorDelegations(c, &stakingtypes.QueryValidatorDelegationsRequest{ValidatorAddr: req.ValidatorAddr})
 	if err != nil {
@@ -144,7 +143,6 @@ func (q legacyStakingGRPCQuerier) UnbondingDelegation(c context.Context, req *st
 			codes.NotFound,
 			"delegation with delegator %s not found for validator %s",
 			req.DelegatorAddr, req.ValidatorAddr)
-
 	}
 	qr, err := q.ValidatorUnbondingDelegations(c, &stakingtypes.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: req.ValidatorAddr})
 	if err != nil {
@@ -197,7 +195,6 @@ func (q legacyStakingGRPCQuerier) DelegatorUnbondingDelegations(c context.Contex
 	return &stakingtypes.QueryDelegatorUnbondingDelegationsResponse{
 		UnbondingResponses: qr.UnbondingResponses,
 	}, nil
-
 }
 
 func (q legacyStakingGRPCQuerier) Redelegations(c context.Context, req *stakingtypes.QueryRedelegationsRequest) (*stakingtypes.QueryRedelegationsResponse, error) {
@@ -235,7 +232,6 @@ func (q legacyStakingGRPCQuerier) DelegatorValidator(c context.Context, req *sta
 	return &stakingtypes.QueryDelegatorValidatorResponse{
 		Validator: resp.Validator,
 	}, nil
-
 }
 
 // HistoricalInfo queries the historical info for given height

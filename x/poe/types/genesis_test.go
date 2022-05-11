@@ -12,7 +12,7 @@ import (
 )
 
 func TestValidateGenesis(t *testing.T) {
-	var anyAccAddr = RandomAccAddress()
+	anyAccAddr := RandomAccAddress()
 	myGenTx, myOperatorAddr, myPubKey := RandomGenTX(t, 100)
 	myPk, err := codectypes.NewAnyWithValue(myPubKey)
 	require.NoError(t, err)
@@ -228,7 +228,6 @@ func TestValidateGenesis(t *testing.T) {
 		"invalid oc members address": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.GetSeedContracts().OversightCommunityMembers = append(m.GetSeedContracts().OversightCommunityMembers, "invalid address")
-
 			}),
 			expErr: true,
 		},
@@ -247,7 +246,6 @@ func TestValidateGenesis(t *testing.T) {
 		"invalid ap members address": {
 			source: GenesisStateFixture(func(m *GenesisState) {
 				m.GetSeedContracts().ArbiterPoolMembers = append(m.GetSeedContracts().ArbiterPoolMembers, "invalid address")
-
 			}),
 			expErr: true,
 		},
@@ -434,6 +432,7 @@ func TestValidateValsetContractConfig(t *testing.T) {
 		})
 	}
 }
+
 func TestValidateStakeContractConfig(t *testing.T) {
 	specs := map[string]struct {
 		src    StakeContractConfig
@@ -619,7 +618,6 @@ func TestValidateVotingRules(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-
 			gotErr := spec.src.ValidateBasic()
 			if spec.expErr {
 				require.Error(t, gotErr)

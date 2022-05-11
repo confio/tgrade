@@ -34,7 +34,7 @@ func TestStakingValidatorDelegations(t *testing.T) {
 		"delegation": {
 			src: &stakingtypes.QueryValidatorDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
 			mock: poetesting.StakeContractMock{QueryStakedAmountFn: func(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
-				var amount = sdk.NewInt(10)
+				amount := sdk.NewInt(10)
 				return &amount, nil
 			}},
 			exp: &stakingtypes.QueryValidatorDelegationsResponse{DelegationResponses: stakingtypes.DelegationResponses{
@@ -81,7 +81,6 @@ func TestStakingValidatorDelegations(t *testing.T) {
 			}
 			require.NoError(t, gotErr)
 			assert.Equal(t, spec.exp, gotRes)
-
 		})
 	}
 }
@@ -116,7 +115,8 @@ func TestStakingValidatorUnbondingDelegations(t *testing.T) {
 							{CompletionTime: myTime, Balance: sdk.NewInt(10), InitialBalance: sdk.NewInt(10), CreationHeight: myHeight},
 						},
 					},
-				}},
+				},
+			},
 		},
 		"multiple delegations": {
 			src: &stakingtypes.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
@@ -136,7 +136,8 @@ func TestStakingValidatorUnbondingDelegations(t *testing.T) {
 							{CompletionTime: myTime.Add(time.Minute), Balance: sdk.NewInt(11), InitialBalance: sdk.NewInt(11), CreationHeight: myHeight + 1},
 						},
 					},
-				}},
+				},
+			},
 		},
 		"none": {
 			src: &stakingtypes.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
@@ -150,7 +151,8 @@ func TestStakingValidatorUnbondingDelegations(t *testing.T) {
 						ValidatorAddress: myOperatorAddr.String(),
 						Entries:          []stakingtypes.UnbondingDelegationEntry{},
 					},
-				}},
+				},
+			},
 		},
 		"error": {
 			src: &stakingtypes.QueryValidatorUnbondingDelegationsRequest{ValidatorAddr: myOperatorAddr.String()},
@@ -178,7 +180,6 @@ func TestStakingValidatorUnbondingDelegations(t *testing.T) {
 			}
 			require.NoError(t, gotErr)
 			assert.Equal(t, spec.exp, gotRes)
-
 		})
 	}
 }
@@ -218,5 +219,4 @@ func TestStakingParams(t *testing.T) {
 		},
 	}
 	assert.Equal(t, exp, gotRes)
-
 }

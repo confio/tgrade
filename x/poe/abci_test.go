@@ -62,7 +62,8 @@ func TestEndBlock(t *testing.T) {
 					bz, err := json.Marshal(&contract.EndWithValidatorUpdateResponse{
 						Diffs: []contract.ValidatorUpdate{
 							{PubKey: contract.ValidatorPubkey{Ed25519: []byte("my key")}, Power: 1},
-							{PubKey: contract.ValidatorPubkey{Ed25519: []byte("my other key")}, Power: 2}},
+							{PubKey: contract.ValidatorPubkey{Ed25519: []byte("my other key")}, Power: 2},
+						},
 					})
 					require.NoError(t, err)
 					return bz, err

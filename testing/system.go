@@ -301,7 +301,7 @@ func (s SystemUnderTest) BuildNewBinary() {
 // Returns the new height
 func (s *SystemUnderTest) AwaitNextBlock(t *testing.T, timeout ...time.Duration) int64 {
 	t.Helper()
-	var maxWaitTime = s.blockTime * 3
+	maxWaitTime := s.blockTime * 3
 	if len(timeout) != 0 { // optional argument to overwrite default timeout
 		maxWaitTime = timeout[0]
 	}
@@ -395,7 +395,6 @@ func (s *SystemUnderTest) ReadGenesisJSON(t *testing.T) string {
 
 // setGenesis copy genesis file to all nodes
 func (s *SystemUnderTest) setGenesis(t *testing.T, srcPath string) {
-
 	in, err := os.Open(srcPath)
 	require.NoError(t, err)
 	defer in.Close()
@@ -596,6 +595,7 @@ type Node struct {
 func (n Node) PeerAddr() string {
 	return fmt.Sprintf("%s@%s:%d", n.ID, n.IP, n.P2PPort)
 }
+
 func (n Node) RPCAddr() string {
 	return fmt.Sprintf("tcp://%s:%d", n.IP, n.RPCPort)
 }
@@ -777,7 +777,7 @@ func copyFile(src, dest string) (*os.File, error) {
 
 // copyFilesInDir copy files in src dir to dest path
 func copyFilesInDir(src, dest string) error {
-	err := os.MkdirAll(dest, 0755)
+	err := os.MkdirAll(dest, 0o755)
 	if err != nil {
 		return fmt.Errorf("mkdirs: %s", err)
 	}

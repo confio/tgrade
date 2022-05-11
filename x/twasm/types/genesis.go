@@ -30,7 +30,6 @@ func (g GenesisState) ValidateBasic() error {
 		}
 		if _, exists := uniqueAddr[a]; exists {
 			return sdkerrors.Wrapf(wasmtypes.ErrDuplicate, "privileged contract %s", a)
-
 		}
 		uniqueAddr[a] = struct{}{}
 	}

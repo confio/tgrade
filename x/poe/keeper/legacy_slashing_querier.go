@@ -54,5 +54,6 @@ func (g legacySlashingGRPCQuerier) Params(c context.Context, req *slashingtypes.
 			DowntimeJailDuration:    0,
 			SlashFractionDoubleSign: sdk.ZeroDec(),
 			SlashFractionDowntime:   sdk.ZeroDec(),
-		}}, nil
+		},
+	}, nil
 }
