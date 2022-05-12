@@ -2,13 +2,15 @@ package keeper
 
 import (
 	"fmt"
+	"sync"
 	"time"
+
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -16,10 +18,11 @@ import (
 )
 
 type Keeper struct {
-	codec       codec.Codec
-	storeKey    sdk.StoreKey
-	paramStore  paramtypes.Subspace
-	twasmKeeper types.TWasmKeeper
+	codec             codec.Codec
+	storeKey          sdk.StoreKey
+	paramStore        paramtypes.Subspace
+	twasmKeeper       types.TWasmKeeper
+	contractAddrCache sync.Map
 }
 
 // NewKeeper constructor
@@ -40,10 +43,11 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		codec:       marshaler,
-		storeKey:    key,
-		paramStore:  paramSpace,
-		twasmKeeper: twasmK,
+		codec:             marshaler,
+		storeKey:          key,
+		paramStore:        paramSpace,
+		twasmKeeper:       twasmK,
+		contractAddrCache: sync.Map{},
 	}
 }
 
@@ -51,6 +55,7 @@ func NewKeeper(
 func (k Keeper) SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(poeContractAddressKey(ctype), contractAddr.Bytes())
+	k.contractAddrCache.Store(ctype, contractAddr)
 }
 
 // GetPoEContractAddress get the stored contract address for the given type or returns an error when not exists (yet)
@@ -58,11 +63,21 @@ func (k Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractTy
 	if err := ctype.ValidateBasic(); err != nil {
 		return nil, sdkerrors.Wrap(err, "contract type")
 	}
+
+	// try to get addr from cache
+	if cachedAddr, ok := k.contractAddrCache.Load(ctype); ok {
+		if addr, ok := cachedAddr.(sdk.AccAddress); ok {
+			return addr, nil
+		}
+	}
+
+	// if not in cache, try to get addr from store
 	store := ctx.KVStore(k.storeKey)
 	addr := store.Get(poeContractAddressKey(ctype))
 	if len(addr) == 0 {
 		return nil, wasmtypes.ErrNotFound
 	}
+
 	return addr, nil
 }
 
