@@ -47,8 +47,8 @@ message SeedContracts {
     (gogoproto.moretags) = "yaml:\"gentxs\""
   ];
 
-  // BootstrapAccountAddress single address that is set as bootstrap-account for the PoE
-  // contracts in seed mode.
+  // BootstrapAccountAddress single address that is set as bootstrap-account for
+  // the PoE contracts in seed mode.
   string bootstrap_account_address = 2;
 
   // Engagement weighted members of the engagement group. Validators should be
@@ -79,10 +79,10 @@ message SeedContracts {
   ValidatorVotingContractConfig validator_voting_contract_config = 10
       [ (gogoproto.jsontag) = "validator_voting_contract_config,omitempty" ];
 
-  repeated string oversightCommunityMembers = 11
+  repeated string oversight_community_members = 11
       [ (gogoproto.jsontag) = "oversight_community_members,omitempty" ];
 
-  repeated string arbiterPoolMembers = 12
+  repeated string arbiter_pool_members = 12
       [ (gogoproto.jsontag) = "arbiter_pool_members,omitempty" ];
 
   ArbiterPoolContractConfig arbiter_pool_contract_config = 13
