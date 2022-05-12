@@ -32,7 +32,7 @@ func EndBlocker(parentCtx sdk.Context, k endBlockKeeper) []abci.ValidatorUpdate 
 		diff, err = contract.CallEndBlockWithValidatorUpdate(ctx, contractAddr, k)
 		if err != nil {
 			logger.Error("validator set update failed", "cause", err, "contract-address", contractAddr, "position", pos)
-			panic(err) // this breaks consensus
+			panic(err) // this will crash the node as panics are not recovered
 		}
 		commit()
 		if len(diff) != 0 {

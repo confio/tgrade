@@ -57,7 +57,7 @@ func BeginBlocker(parentCtx sdk.Context, k abciKeeper, b abci.RequestBeginBlock)
 
 	msgBz, err := json.Marshal(msg)
 	if err != nil {
-		panic(err) // todo (reviewer): this will break consensus
+		panic(err) // this will crash the node as panics are not recovered
 	}
 	logger := keeper.ModuleLogger(parentCtx)
 	k.IteratePrivilegedContractsByType(parentCtx, types.PrivilegeTypeBeginBlock, func(pos uint8, contractAddr sdk.AccAddress) bool {

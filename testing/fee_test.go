@@ -7,6 +7,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
+	poetypes "github.com/confio/tgrade/x/poe/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
@@ -46,7 +50,7 @@ func TestFeeDistribution(t *testing.T) {
 	sut.StartChain(t)
 
 	cli := NewTgradeCli(t, sut, verbose)
-	cli.FundAddress(cli.AddKey("myFatFingerKey"), "20000000utgd")
+	cli.FundAddress(cli.AddKey("myFatFingerKey"), "200000000utgd")
 	oldBalances := make([]int64, sut.nodesCount)
 	for i := 0; i < sut.nodesCount; i++ {
 		oldBalances[i] = cli.QueryBalance(cli.GetKeyAddr(fmt.Sprintf("node%d", i)), "utgd")
@@ -54,17 +58,27 @@ func TestFeeDistribution(t *testing.T) {
 
 	// when
 	const anyContract = "testing/contract/hackatom.wasm.gzip"
-	txResult := cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=myFatFingerKey", "--gas=1500000", "--fees=20000000utgd")
+	txResult := cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=myFatFingerKey", "--gas=1500000", "--fees=200000000utgd")
 	RequireTxSuccess(t, txResult)
 	AwaitValsetEpochCompleted(t) // so that fees are distributed
 
-	// TODO: no more fees are distributed. Rather they are held in a new contract to be withdrawn.
-	// DO proper fix in issue #156, so we can query the pending stake. For now I will disable
-	// then
-	//for i := 0; i < sut.nodesCount; i++ {
-	//	newBalance := cli.QueryBalance(cli.GetKeyAddr(fmt.Sprintf("node%d", i)), "utgd")
-	//	diff := newBalance - oldBalances[i]
-	//	t.Logf("Block rewards: %d\n", diff)
-	//	assert.LessOrEqualf(t, int64(20000000/sut.nodesCount), diff, "got diff: %d (before %d after %d)", diff, oldBalances[i], newBalance)
-	//}
+	// and rewards claimed
+	distAddr := cli.GetPoEContractAddress(poetypes.PoEContractTypeDistribution.String())
+	for i := 0; i < sut.nodesCount; i++ {
+		rsp := cli.Execute(distAddr, `{"withdraw_rewards":{}}`, fmt.Sprintf("node%d", i))
+		RequireTxSuccess(t, rsp)
+	}
+	engAddr := cli.GetPoEContractAddress(poetypes.PoEContractTypeEngagement.String())
+	for i := 0; i < sut.nodesCount; i++ {
+		rsp := cli.Execute(engAddr, `{"withdraw_rewards":{}}`, fmt.Sprintf("node%d", i))
+		RequireTxSuccess(t, rsp)
+	}
+	// then balance contains rewards
+	// 200000000 * 47.5% *(1/ 4 + 1/10) = 33250000 # 1/4 is reserved for all vals, 1/10 is reserved for all EPs
+	const expMinRevenue int64 = 33250000
+	for i := 0; i < sut.nodesCount; i++ {
+		newBalance := cli.QueryBalance(cli.GetKeyAddr(fmt.Sprintf("node%d", i)), "utgd")
+		diff := newBalance - oldBalances[i]
+		assert.LessOrEqualf(t, expMinRevenue, diff, "node %d got diff: %d (before %d after %d)", i, diff, oldBalances[i], newBalance)
+	}
 }

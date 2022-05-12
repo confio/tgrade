@@ -87,7 +87,6 @@ func TestGetProposalContent(t *testing.T) {
 				Title:           "foo",
 				Description:     "bar",
 				SubjectClientId: "myClientID",
-				// todo (Alex):fix also in contracts!!				SubstituteClientId:      ib,
 			},
 			skipValidateBasic: true,
 		},

@@ -65,8 +65,6 @@ func (b AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, txEncodingConfig cl
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
-	// todo: add PoE validation
-
 	return types.ValidateGenesis(data, txEncodingConfig.TxJSONDecoder())
 }
 
