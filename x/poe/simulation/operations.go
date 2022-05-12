@@ -157,23 +157,15 @@ func SimulateMsgUpdateValidator(bk types.XBankKeeper, ak types.AccountKeeper, k 
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
-		validators, _, err := k.ValsetContract(ctx).ListValidators(ctx, nil)
-		if len(validators) == 0 || err != nil {
-			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUpdateValidator, "numbers of validator equal zero"), nil, nil
-		}
-
-		val := validators[rand.Intn(len(validators))]
-		accAddr, err := sdk.AccAddressFromBech32(val.OperatorAddress) // plain string to not run into bech32 prefix issues with valoper
+		_, valAddr, err := getRandValidator(ctx, k)
 		if err != nil {
-			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUpdateValidator, "validator address is not valid"), nil, err
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUpdateValidator, "cannot fetch random validator"), nil, err
 		}
 
-		simAccount, found := simtypes.FindAccount(accs, accAddr)
+		simAccount, found := simtypes.FindAccount(accs, valAddr)
 		if !found {
-			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUpdateValidator, "unable to find account"), nil, fmt.Errorf("validator %s not found", val.GetOperator())
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUpdateValidator, "unable to find account"), nil, fmt.Errorf("validator %s not found", valAddr.String())
 		}
-
-		spendable := bk.SpendableCoins(ctx, simAccount.Address)
 
 		description := stakingtypes.NewDescription(
 			simtypes.RandStringOfLength(r, 10),
@@ -183,21 +175,20 @@ func SimulateMsgUpdateValidator(bk types.XBankKeeper, ak types.AccountKeeper, k 
 			simtypes.RandStringOfLength(r, 10),
 		)
 
-		msg := types.NewMsgUpdateValidator(accAddr, description)
+		msg := types.NewMsgUpdateValidator(valAddr, description)
 
 		txCtx := simulation.OperationInput{
-			R:               r,
-			App:             app,
-			TxGen:           simappparams.MakeTestEncodingConfig().TxConfig,
-			Cdc:             nil,
-			Msg:             msg,
-			MsgType:         msg.Type(),
-			Context:         ctx,
-			SimAccount:      simAccount,
-			AccountKeeper:   ak,
-			Bankkeeper:      bk,
-			ModuleName:      types.ModuleName,
-			CoinsSpentInMsg: spendable,
+			R:             r,
+			App:           app,
+			TxGen:         simappparams.MakeTestEncodingConfig().TxConfig,
+			Cdc:           nil,
+			Msg:           msg,
+			MsgType:       msg.Type(),
+			Context:       ctx,
+			SimAccount:    simAccount,
+			AccountKeeper: ak,
+			Bankkeeper:    bk,
+			ModuleName:    types.ModuleName,
 		}
 
 		return simulation.GenAndDeliverTxWithRandFees(txCtx)
@@ -209,13 +200,15 @@ func SimulateMsgDelegate(bk types.XBankKeeper, ak types.AccountKeeper, k keeper.
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
-
-		validators, _, err := k.ValsetContract(ctx).ListValidators(ctx, nil)
-		if len(validators) == 0 || err != nil {
-			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgDelegate, "numbers of validator equal zero"), nil, nil
+		_, valAddr, err := getRandValidator(ctx, k)
+		if err != nil {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgDelegate, "cannot fetch random validator"), nil, err
 		}
 
-		simAccount, _ := simtypes.RandomAcc(r, accs)
+		simAccount, found := simtypes.FindAccount(accs, valAddr)
+		if !found {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgDelegate, "unable to find account"), nil, fmt.Errorf("validator %s not found", valAddr.String())
+		}
 
 		denom := k.GetBondDenom(ctx)
 		balance := bk.GetBalance(ctx, simAccount.Address, denom)
@@ -267,16 +260,11 @@ func SimulateMsgUndelegate(bk types.XBankKeeper, ak types.AccountKeeper, k keepe
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
-		validators, _, err := k.ValsetContract(ctx).ListValidators(ctx, nil)
-		if len(validators) == 0 || err != nil {
-			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUndelegate, "numbers of validator equal zero"), nil, nil
+		val, valAddr, err := getRandValidator(ctx, k)
+		if err != nil {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUndelegate, "cannot fetch random validator"), nil, err
 		}
 
-		val := validators[rand.Intn(len(validators))]
-		valAddr, err := sdk.AccAddressFromBech32(val.OperatorAddress) // plain string to not run into bech32 prefix issues with valoper
-		if err != nil {
-			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUndelegate, "validator address is not valid"), nil, err
-		}
 		delegated, err := k.EngagementContract(ctx).QueryDelegated(ctx, valAddr)
 		if err != nil || delegated == nil {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUndelegate, "validator does not have any delegation entries"), nil, nil
@@ -296,44 +284,48 @@ func SimulateMsgUndelegate(bk types.XBankKeeper, ak types.AccountKeeper, k keepe
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUndelegate, "unbond amount is zero"), nil, nil
 		}
 
-		delAddr, err := sdk.AccAddressFromBech32(delegated.Delegated) // plain string to not run into bech32 prefix issues with valoper
-		if err != nil {
-			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUndelegate, "delegated address is not valid"), nil, err
-		}
 		msg := types.NewMsgUndelegate(
-			delAddr, sdk.NewCoin(k.GetBondDenom(ctx), unbondAmt),
+			valAddr, sdk.NewCoin(k.GetBondDenom(ctx), unbondAmt),
 		)
 
 		// need to retrieve the simulation account associated with delegation to retrieve PrivKey
-		var simAccount simtypes.Account
-
-		for _, simAcc := range accs {
-			if simAcc.Address.Equals(delAddr) {
-				simAccount = simAcc
-				break
-			}
+		simAccount, found := simtypes.FindAccount(accs, valAddr)
+		if !found {
+			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUndelegate, "unable to find account"), nil, fmt.Errorf("delegator %s not found", valAddr.String())
 		}
 		// if simaccount.PrivKey == nil, delegation address does not exist in accs. Return error
 		if simAccount.PrivKey == nil {
-			return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "account private key is nil"), nil, fmt.Errorf("delegation addr: %s does not exist in simulation accounts", delAddr)
+			return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "account private key is nil"), nil, fmt.Errorf("delegation addr: %s does not exist in simulation accounts", valAddr.String())
 		}
-		spendable := bk.SpendableCoins(ctx, delAddr)
 
 		txCtx := simulation.OperationInput{
-			R:               r,
-			App:             app,
-			TxGen:           simappparams.MakeTestEncodingConfig().TxConfig,
-			Cdc:             nil,
-			Msg:             msg,
-			MsgType:         msg.Type(),
-			Context:         ctx,
-			SimAccount:      simAccount,
-			AccountKeeper:   ak,
-			Bankkeeper:      bk,
-			ModuleName:      types.ModuleName,
-			CoinsSpentInMsg: spendable,
+			R:             r,
+			App:           app,
+			TxGen:         simappparams.MakeTestEncodingConfig().TxConfig,
+			Cdc:           nil,
+			Msg:           msg,
+			MsgType:       msg.Type(),
+			Context:       ctx,
+			SimAccount:    simAccount,
+			AccountKeeper: ak,
+			Bankkeeper:    bk,
+			ModuleName:    types.ModuleName,
 		}
 
 		return simulation.GenAndDeliverTxWithRandFees(txCtx)
 	}
+}
+
+func getRandValidator(ctx sdk.Context, k keeper.Keeper) (stakingtypes.Validator, sdk.AccAddress, error) {
+	validators, _, err := k.ValsetContract(ctx).ListValidators(ctx, nil)
+	if len(validators) == 0 || err != nil {
+		return stakingtypes.Validator{}, nil, fmt.Errorf("cannot fetch validator list: %s", err.Error())
+	}
+
+	val := validators[rand.Intn(len(validators))]
+	valAddr, err := sdk.AccAddressFromBech32(val.OperatorAddress) // plain string to not run into bech32 prefix issues with valoper
+	if err != nil {
+		return stakingtypes.Validator{}, nil, err
+	}
+	return val, valAddr, nil
 }

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"math/rand"
 
+	wasmsimulation "github.com/CosmWasm/wasmd/x/wasm/simulation"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmcli "github.com/CosmWasm/wasmd/x/wasm/client/cli"
 	wasmrest "github.com/CosmWasm/wasmd/x/wasm/client/rest"
@@ -18,6 +20,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	simKeeper "github.com/cosmos/cosmos-sdk/x/simulation"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
@@ -97,15 +100,25 @@ type AppModule struct {
 	cdc                codec.Codec
 	keeper             *keeper.Keeper
 	validatorSetSource wasmkeeper.ValidatorSetSource
+	accountKeeper      wasmtypes.AccountKeeper // for simulation
+	bankKeeper         simKeeper.BankKeeper
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(cdc codec.Codec, keeper *keeper.Keeper, validatorSetSource wasmkeeper.ValidatorSetSource) AppModule {
+func NewAppModule(
+	cdc codec.Codec,
+	keeper *keeper.Keeper,
+	validatorSetSource wasmkeeper.ValidatorSetSource,
+	ak wasmtypes.AccountKeeper,
+	bk simKeeper.BankKeeper,
+) AppModule {
 	return AppModule{
 		AppModuleBasic:     AppModuleBasic{},
 		cdc:                cdc,
 		keeper:             keeper,
 		validatorSetSource: validatorSetSource,
+		accountKeeper:      ak,
+		bankKeeper:         bk,
 	}
 }
 
@@ -179,8 +192,7 @@ func (AppModule) ProposalContents(simState module.SimulationState) []simtypes.We
 
 // RandomizedParams creates randomized bank param changes for the simulator.
 func (am AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
-	//return wasmsimuliation.ParamChanges(r, am.cdc)
-	return nil
+	return wasmsimulation.ParamChanges(r, am.cdc)
 }
 
 // RegisterStoreDecoder registers a decoder for supply module's types
@@ -189,7 +201,7 @@ func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
 
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
-	return nil
+	return simulation.WeightedOperations(&simState, am.accountKeeper, am.bankKeeper, am.keeper)
 }
 
 // ConsensusVersion is a sequence number for state-breaking change of the

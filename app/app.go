@@ -442,7 +442,7 @@ func NewTgradeApp(
 		bank.NewAppModule(appCodec, app.bankKeeper, app.accountKeeper),
 		capability.NewAppModule(appCodec, *app.capabilityKeeper),
 		upgrade.NewAppModule(app.upgradeKeeper),
-		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper),
+		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper, app.accountKeeper, app.bankKeeper),
 		evidence.NewAppModule(app.evidenceKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.accountKeeper, app.bankKeeper, app.feeGrantKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(appCodec, app.authzKeeper, app.accountKeeper, app.bankKeeper, app.interfaceRegistry),
@@ -547,7 +547,7 @@ func NewTgradeApp(
 		feegrantmodule.NewAppModule(appCodec, app.accountKeeper, app.bankKeeper, app.feeGrantKeeper, app.interfaceRegistry),
 		// has hard coded "stake" token: authzmodule.NewAppModule(appCodec, app.authzKeeper, app.accountKeeper, app.bankKeeper, app.interfaceRegistry),
 		params.NewAppModule(app.paramsKeeper),
-		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper),
+		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper, app.accountKeeper, app.bankKeeper),
 		poe.NewAppModule(
 			app.poeKeeper,
 			&app.twasmKeeper,

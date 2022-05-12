@@ -177,7 +177,7 @@ func RandomizedGenState(simState *module.SimulationState) {
 	//}
 	poeGenesis := types.DefaultGenesisState()
 	poeGenesis.GetSeedContracts().GenTxs = genTxs
-	poeGenesis.GetSeedContracts().SystemAdminAddress = simState.Accounts[len(simState.Accounts)-1].Address.String() // use a non validator account
+	poeGenesis.GetSeedContracts().BootstrapAccountAddress = simState.Accounts[len(simState.Accounts)-1].Address.String() // use a non validator account
 	poeGenesis.GetSeedContracts().Engagement = engagements
 	poeGenesis.GetSeedContracts().BondDenom = defaultDenom
 	poeGenesis.GetSeedContracts().OversightCommunityMembers = ocMembers
