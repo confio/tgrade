@@ -20,7 +20,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	simKeeper "github.com/cosmos/cosmos-sdk/x/simulation"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
@@ -101,7 +100,7 @@ type AppModule struct {
 	keeper             *keeper.Keeper
 	validatorSetSource wasmkeeper.ValidatorSetSource
 	accountKeeper      wasmtypes.AccountKeeper // for simulation
-	bankKeeper         simKeeper.BankKeeper
+	bankKeeper         simulation.BankKeeper
 }
 
 // NewAppModule creates a new AppModule object
@@ -110,7 +109,7 @@ func NewAppModule(
 	keeper *keeper.Keeper,
 	validatorSetSource wasmkeeper.ValidatorSetSource,
 	ak wasmtypes.AccountKeeper,
-	bk simKeeper.BankKeeper,
+	bk simulation.BankKeeper,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic:     AppModuleBasic{},

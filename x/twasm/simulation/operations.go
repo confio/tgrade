@@ -20,11 +20,16 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
+type BankKeeper interface {
+	simulation.BankKeeper
+	IsSendEnabledCoin(ctx sdk.Context, coin sdk.Coin) bool
+}
+
 // WeightedOperations returns all the operations from the module with their respective weights
 func WeightedOperations(
 	simstate *module.SimulationState,
 	ak wasmtypes.AccountKeeper,
-	bk simulation.BankKeeper,
+	bk BankKeeper,
 	wasmKeeper wasmsimulation.WasmKeeper,
 ) simulation.WeightedOperations {
 	var (
@@ -68,7 +73,6 @@ func WeightedOperations(
 	}
 }
 
-// Alex: this should go into wasmd again
 // SimulateMsgStoreCode generates a MsgStoreCode with random values
 func SimulateMsgStoreCode(ak wasmtypes.AccountKeeper, bk simulation.BankKeeper, wasmKeeper wasmsimulation.WasmKeeper, wasmBz []byte, gas uint64) simtypes.Operation {
 	return func(
@@ -79,18 +83,18 @@ func SimulateMsgStoreCode(ak wasmtypes.AccountKeeper, bk simulation.BankKeeper, 
 		chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		if wasmKeeper.GetParams(ctx).CodeUploadAccess.Permission != wasmtypes.AccessTypeEverybody {
-			return simtypes.NoOpMsg(wasmtypes.ModuleName, wasmtypes.MsgStoreCode{}.Type(), "no chain permission"), nil, nil
-		}
-
-		config := &wasmtypes.AccessConfig{
-			Permission: wasmtypes.AccessTypeEverybody,
+			return simtypes.NoOpMsg(twasmtypes.ModuleName, wasmtypes.MsgStoreCode{}.Type(), "no chain permission"), nil, nil
 		}
 
 		simAccount, _ := simtypes.RandomAcc(r, accs)
+
+		permission := wasmKeeper.GetParams(ctx).InstantiateDefaultPermission
+		config := permission.With(simAccount.Address)
+
 		msg := wasmtypes.MsgStoreCode{
 			Sender:                simAccount.Address.String(),
 			WASMByteCode:          wasmBz,
-			InstantiatePermission: config,
+			InstantiatePermission: &config,
 		}
 
 		txCtx := simulation.OperationInput{
@@ -111,26 +115,11 @@ func SimulateMsgStoreCode(ak wasmtypes.AccountKeeper, bk simulation.BankKeeper, 
 	}
 }
 
-// Alex: this would be the extension point in wasdm
-// SimulationCodeIdSelector returns code id to be used in simulations
-type SimulationCodeIdSelector = func(wasmKeeper wasmsimulation.WasmKeeper, ctx sdk.Context) uint64
+// CodeIDSelector returns code id to be used in simulations
+type CodeIDSelector = func(ctx sdk.Context, wasmKeeper wasmsimulation.WasmKeeper) uint64
 
-// Alex: add implementation to wasmd as existing selector that picks the first code id
-func DefaultSimulationCodeIdSelector(wasmKeeper wasmsimulation.WasmKeeper, ctx sdk.Context) uint64 {
-	var codeID uint64
-	wasmKeeper.IterateCodeInfos(ctx, func(u uint64, info wasmtypes.CodeInfo) bool {
-		if info.InstantiateConfig.Permission != wasmtypes.AccessTypeEverybody {
-			return false
-		}
-		codeID = u
-		return true
-	})
-	return codeID
-}
-
-// Alex: this should stay in wasmd
 // SimulateMsgInstantiateContract generates a MsgInstantiateContract with random values
-func SimulateMsgInstantiateContract(ak wasmtypes.AccountKeeper, bk simulation.BankKeeper, wasmKeeper wasmsimulation.WasmKeeper, codeSelector SimulationCodeIdSelector) simtypes.Operation {
+func SimulateMsgInstantiateContract(ak wasmtypes.AccountKeeper, bk BankKeeper, wasmKeeper wasmsimulation.WasmKeeper, codeSelector CodeIDSelector) simtypes.Operation {
 	return func(
 		r *rand.Rand,
 		app *baseapp.BaseApp,
@@ -140,12 +129,18 @@ func SimulateMsgInstantiateContract(ak wasmtypes.AccountKeeper, bk simulation.Ba
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
 		simAccount, _ := simtypes.RandomAcc(r, accs)
 
-		codeID := codeSelector(wasmKeeper, ctx)
+		codeID := codeSelector(ctx, wasmKeeper)
 		if codeID == 0 {
-			return simtypes.NoOpMsg(wasmtypes.ModuleName, wasmtypes.MsgInstantiateContract{}.Type(), "no codes with permission available"), nil, nil
+			return simtypes.NoOpMsg(twasmtypes.ModuleName, wasmtypes.MsgInstantiateContract{}.Type(), "no codes with permission available"), nil, nil
+		}
+		deposit := sdk.Coins{}
+		spendableCoins := bk.SpendableCoins(ctx, simAccount.Address)
+		for _, v := range spendableCoins {
+			if bk.IsSendEnabledCoin(ctx, v) {
+				deposit = deposit.Add(simtypes.RandSubsetCoins(r, sdk.NewCoins(v))...)
+			}
 		}
 
-		deposit := simtypes.RandSubsetCoins(r, bk.SpendableCoins(ctx, simAccount.Address))
 		msg := wasmtypes.MsgInstantiateContract{
 			Sender: simAccount.Address.String(),
 			Admin:  simtypes.RandomAccounts(r, 1)[0].Address.String(),
@@ -167,15 +162,14 @@ func SimulateMsgInstantiateContract(ak wasmtypes.AccountKeeper, bk simulation.Ba
 			AccountKeeper:   ak,
 			Bankkeeper:      bk,
 			ModuleName:      twasmtypes.ModuleName,
-			CoinsSpentInMsg: deposit, // Alex: this is important or the account will run out of funds
+			CoinsSpentInMsg: deposit,
 		}
 
 		return simulation.GenAndDeliverTxWithRandFees(txCtx)
 	}
 }
 
-// Alex: this one we need in this file
-func TgradeSimulationCodeIdSelector(wasmKeeper wasmsimulation.WasmKeeper, ctx sdk.Context) uint64 {
+func TgradeSimulationCodeIdSelector(ctx sdk.Context, wasmKeeper wasmsimulation.WasmKeeper) uint64 {
 	var codeID uint64
 	wasmKeeper.IterateCodeInfos(ctx, func(u uint64, info wasmtypes.CodeInfo) bool {
 		if info.InstantiateConfig.Permission != wasmtypes.AccessTypeEverybody ||
