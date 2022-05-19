@@ -65,7 +65,7 @@ func TestRecursiveSmartQuery(t *testing.T) {
 
 	// when
 	for _, n := range sut.AllNodes(t) {
-		cli.WithRunErrorMatcher(ErrOutOfGasMatcher).WithNodeAddress(n.RPCAddr()).
+		cli.WithRunErrorMatcher(ErrInvalidQuery).WithNodeAddress(n.RPCAddr()).
 			QuerySmart(maliciousContractAddr, msg)
 	}
 	sut.AwaitNextBlock(t)
