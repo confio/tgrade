@@ -3,8 +3,8 @@ module github.com/confio/tgrade
 go 1.17
 
 require (
-	github.com/CosmWasm/wasmd v0.27.0-rc0
-	github.com/CosmWasm/wasmvm v1.0.0-rc.0
+	github.com/CosmWasm/wasmd v0.27.0
+	github.com/CosmWasm/wasmvm v1.0.0
 	github.com/cosmos/cosmos-sdk v0.45.4
 	github.com/cosmos/ibc-go/v3 v3.0.0
 	github.com/gogo/protobuf v1.3.3
@@ -48,6 +48,7 @@ require (
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gorocksdb v1.2.0 // indirect
 	github.com/cosmos/iavl v0.17.3 // indirect
+	github.com/cosmos/interchain-accounts v0.1.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.11.1 // indirect
 	github.com/cosmos/ledger-go v0.9.2 // indirect
 	github.com/danieljoos/wincred v1.0.2 // indirect

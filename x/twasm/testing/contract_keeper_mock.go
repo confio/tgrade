@@ -21,6 +21,7 @@ type ContractOpsKeeperMock struct {
 	UnpinCodeFn                func(ctx sdk.Context, codeID uint64) error
 	SetContractInfoExtensionFn func(ctx sdk.Context, contract sdk.AccAddress, extra wasmtypes.ContractInfoExtension) error
 	SudoFn                     func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
+	SetAccessConfigFn          func(ctx sdk.Context, codeID uint64, config wasmtypes.AccessConfig) error
 }
 
 func (m ContractOpsKeeperMock) Create(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error) {
@@ -91,6 +92,13 @@ func (m ContractOpsKeeperMock) Sudo(ctx sdk.Context, contractAddress sdk.AccAddr
 		panic("not expected to be called")
 	}
 	return m.SudoFn(ctx, contractAddress, msg)
+}
+
+func (m ContractOpsKeeperMock) SetAccessConfig(ctx sdk.Context, codeID uint64, config wasmtypes.AccessConfig) error {
+	if m.SetAccessConfigFn == nil {
+		panic("not expected to be called")
+	}
+	return m.SetAccessConfigFn(ctx, codeID, config)
 }
 
 type CapturedCreateCalls struct {

@@ -316,6 +316,11 @@ var (
 		const expMsg = "post failed"
 		expErrWithMsg(t, err, args, expMsg)
 	}
+	// ErrInvalidQuery requires smart query request failed
+	ErrInvalidQuery RunErrorAssert = func(t require.TestingT, err error, args ...interface{}) {
+		const expMsg = "query wasm contract failed"
+		expErrWithMsg(t, err, args, expMsg)
+	}
 )
 
 func expErrWithMsg(t require.TestingT, err error, args []interface{}, expMsg string) {
