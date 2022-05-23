@@ -260,22 +260,17 @@ func SimulateMsgUndelegate(bk types.XBankKeeper, ak types.AccountKeeper, k keepe
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
-		val, valAddr, err := getRandValidator(ctx, k)
+		_, valAddr, err := getRandValidator(ctx, k)
 		if err != nil {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUndelegate, "cannot fetch random validator"), nil, err
 		}
 
-		delegated, err := k.EngagementContract(ctx).QueryDelegated(ctx, valAddr)
+		delegated, err := k.StakeContract(ctx).QueryStakedAmount(ctx, valAddr)
 		if err != nil || delegated == nil {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUndelegate, "validator does not have any delegation entries"), nil, nil
 		}
 
-		totalBond := val.DelegatorShares.TruncateInt()
-		if !totalBond.IsPositive() {
-			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUndelegate, "total bond is negative"), nil, nil
-		}
-
-		unbondAmt, err := simtypes.RandPositiveInt(r, totalBond)
+		unbondAmt, err := simtypes.RandPositiveInt(r, *delegated)
 		if err != nil {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUndelegate, "invalid unbond amount"), nil, err
 		}

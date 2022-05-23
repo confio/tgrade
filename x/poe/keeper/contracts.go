@@ -52,6 +52,7 @@ func (k Keeper) StakeContract(ctx sdk.Context) StakeContract {
 
 type EngagementContract interface {
 	UpdateAdmin(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error
+	// QueryDelegated returns withdrawal address when set
 	QueryDelegated(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error)
 	Address() (sdk.AccAddress, error)
 }

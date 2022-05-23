@@ -236,8 +236,8 @@ func TestFullAppSimulation(t *testing.T) {
 	)
 	// TODO: enable again when export works
 	// export state and simParams before the simulation error is checked
-	//err = simapp.CheckExportSimulation(app, config, simParams)
-	//require.NoError(t, err)
+	// err = simapp.CheckExportSimulation(app, config, simParams)
+	// require.NoError(t, err)
 	t.Logf("++ Sim params: %#v\n", simParams)
 	require.NoError(t, simErr)
 
