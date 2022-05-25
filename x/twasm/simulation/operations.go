@@ -352,7 +352,7 @@ func TgradeSimulationCodeIdSelector(ctx sdk.Context, wasmKeeper WasmKeeper) uint
 func TgradeSimulationExecuteContractSelector(ctx sdk.Context, wasmKeeper WasmKeeper) sdk.AccAddress {
 	var r sdk.AccAddress
 	wasmKeeper.IterateContractInfo(ctx, func(address sdk.AccAddress, info wasmtypes.ContractInfo) bool {
-		if info.CodeID < uint64(len(poetypes.PoEContractType_name)) { // skip all PoE contracts
+		if info.CodeID < uint64(len(poetypes.PoEContractType_name)-1) { // skip all PoE contracts
 			return false
 		}
 		r = address
