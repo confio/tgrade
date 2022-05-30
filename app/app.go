@@ -560,6 +560,7 @@ func NewTgradeApp(
 		evidence.NewAppModule(app.evidenceKeeper),
 		ibc.NewAppModule(app.ibcKeeper),
 		transferModule,
+		globalfee.NewAppModule(app.getSubspace(globalfee.ModuleName)),
 	)
 
 	app.sm.RegisterStoreDecoders()

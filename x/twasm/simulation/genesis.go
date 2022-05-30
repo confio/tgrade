@@ -19,10 +19,5 @@ func RandomizedGenState(simstate *module.SimulationState) {
 		PinnedCodeIDs:               nil,
 	}
 
-	_, err := simstate.Cdc.MarshalJSON(&twasmGenesis)
-	if err != nil {
-		panic(err)
-	}
-
 	simstate.GenState[wasmtypes.ModuleName] = simstate.Cdc.MustMarshalJSON(&twasmGenesis)
 }
