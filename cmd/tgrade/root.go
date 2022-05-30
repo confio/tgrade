@@ -50,6 +50,8 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 	cfg.SetAddressVerifier(wasmtypes.VerifyAddressLen())
 	cfg.Seal()
 
+	registerDenoms()
+
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Codec).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
@@ -318,4 +320,17 @@ func extendUnsafeResetAllCmd(rootCmd *cobra.Command) {
 func addJsomOutputFlag(cmd *cobra.Command) *cobra.Command {
 	cmd.Flags().StringP(tmcli.OutputFlag, "o", "text", "Output format (text|json)")
 	return cmd
+}
+
+// registerDenoms registers human coin type
+// 1tgd = 1000000 utgd
+func registerDenoms() {
+	err := sdk.RegisterDenom(app.HumanCoinUnit, sdk.OneDec())
+	if err != nil {
+		panic(err)
+	}
+	err = sdk.RegisterDenom(app.BaseCoinUnit, sdk.NewDecWithPrec(1, app.TgdExponent))
+	if err != nil {
+		panic(err)
+	}
 }
