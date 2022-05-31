@@ -97,8 +97,11 @@ import (
 const appName = "tgrade"
 
 const (
-	NodeDir      = ".tgrade"
-	Bech32Prefix = "tgrade"
+	NodeDir       = ".tgrade"
+	Bech32Prefix  = "tgrade"
+	HumanCoinUnit = "tgd"
+	BaseCoinUnit  = "utgd"
+	TgdExponent   = 6
 )
 
 // These constants are derived from the above variables.

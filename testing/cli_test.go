@@ -12,8 +12,8 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/assert"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )
@@ -127,6 +127,27 @@ func TestVestingAccounts(t *testing.T) {
 	assert.Equal(t, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(100000000))), getGenesisBalance([]byte(raw), vest1Addr))
 	assert.Equal(t, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(100000001))), getGenesisBalance([]byte(raw), vest2Addr))
 	assert.Equal(t, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(200000002))), getGenesisBalance([]byte(raw), vest3Addr))
+}
+
+func TestVestingAccountsWithHumanCoinType(t *testing.T) {
+	sut.ResetChain(t)
+	cli := NewTgradeCli(t, sut, verbose)
+	vest1Addr := cli.AddKey("vesting1")
+	vest2Addr := cli.AddKey("vesting2")
+	vest3Addr := cli.AddKey("vesting3")
+	myStartTimestamp := time.Now().Add(time.Minute).Unix()
+	myEndTimestamp := time.Now().Add(time.Hour).Unix()
+	sut.ModifyGenesisCLI(t,
+		[]string{"add-genesis-account", vest1Addr, "5tgd", "--vesting-amount=3tgd", fmt.Sprintf("--vesting-start-time=%d", myStartTimestamp), fmt.Sprintf("--vesting-end-time=%d", myEndTimestamp)},
+		[]string{"add-genesis-account", vest2Addr, "500tgd", "--vesting-amount=10utgd", fmt.Sprintf("--vesting-start-time=%d", myStartTimestamp), fmt.Sprintf("--vesting-end-time=%d", myEndTimestamp)},
+		[]string{"add-genesis-account", vest3Addr, "0.3tgd", "--vesting-amount=0.2tgd", fmt.Sprintf("--vesting-start-time=%d", myStartTimestamp), fmt.Sprintf("--vesting-end-time=%d", myEndTimestamp)},
+	)
+
+	sut.StartChain(t)
+
+	assert.Equal(t, int64(5_000_000), cli.QueryBalance(vest1Addr, "utgd"))
+	assert.Equal(t, int64(500_000_000), cli.QueryBalance(vest2Addr, "utgd"))
+	assert.Equal(t, int64(300_000), cli.QueryBalance(vest3Addr, "utgd"))
 }
 
 func getGenesisBalance(raw []byte, addr string) sdk.Coins {
