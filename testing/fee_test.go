@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/confio/tgrade/app"
 	poetypes "github.com/confio/tgrade/x/poe/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -19,7 +18,7 @@ import (
 
 func TestGlobalFee(t *testing.T) {
 	sut.ModifyGenesisJSON(t, SetGlobalMinFee(t,
-		sdk.NewDecCoinFromDec(app.BaseCoinUnit, sdk.NewDecWithPrec(1, 3)),
+		sdk.NewDecCoinFromDec("utgd", sdk.NewDecWithPrec(1, 3)),
 		sdk.NewDecCoinFromDec("node0token", sdk.NewDecWithPrec(1, 4))),
 	)
 	sut.StartChain(t)
@@ -54,7 +53,7 @@ func TestFeeDistribution(t *testing.T) {
 	cli.FundAddress(cli.AddKey("myFatFingerKey"), "200000000utgd")
 	oldBalances := make([]int64, sut.nodesCount)
 	for i := 0; i < sut.nodesCount; i++ {
-		oldBalances[i] = cli.QueryBalance(cli.GetKeyAddr(fmt.Sprintf("node%d", i)), app.BaseCoinUnit)
+		oldBalances[i] = cli.QueryBalance(cli.GetKeyAddr(fmt.Sprintf("node%d", i)), "utgd")
 	}
 
 	// when
@@ -78,7 +77,7 @@ func TestFeeDistribution(t *testing.T) {
 	// 200000000 * 47.5% *(1/ 4 + 1/10) = 33250000 # 1/4 is reserved for all vals, 1/10 is reserved for all EPs
 	const expMinRevenue int64 = 33250000
 	for i := 0; i < sut.nodesCount; i++ {
-		newBalance := cli.QueryBalance(cli.GetKeyAddr(fmt.Sprintf("node%d", i)), app.BaseCoinUnit)
+		newBalance := cli.QueryBalance(cli.GetKeyAddr(fmt.Sprintf("node%d", i)), "utgd")
 		diff := newBalance - oldBalances[i]
 		assert.LessOrEqualf(t, expMinRevenue, diff, "node %d got diff: %d (before %d after %d)", i, diff, oldBalances[i], newBalance)
 	}
