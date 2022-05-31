@@ -73,9 +73,9 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	}
 	initialValBalances := make(map[string]int64, len(sortedMember))
 	for _, v := range sortedMember {
-		initialValBalances[v.Addr] = cli.QueryBalance(v.Addr, "utgd")
+		initialValBalances[v.Addr] = cli.QueryBalance(v.Addr, app.BaseCoinUnit)
 	}
-	initialSupply := cli.QueryTotalSupply("utgd")
+	initialSupply := cli.QueryTotalSupply(app.BaseCoinUnit)
 
 	// And when removed from **engagement** group
 	engagementUpdateMsg := poecontracts.UpdateMembersMsg{
@@ -95,12 +95,12 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	assertValidatorsUpdated(t, sortedMember, stakedAmounts, sut.nodesCount-1)
 
 	// and new tokens were minted
-	assert.Greater(t, cli.QueryTotalSupply("utgd"), initialSupply)
+	assert.Greater(t, cli.QueryTotalSupply(app.BaseCoinUnit), initialSupply)
 
 	// check rewards distributed
 	for _, v := range sortedMember {
 		reward := cli.QueryValidatorRewards(v.Addr)
-		assert.True(t, reward.IsGTE(sdk.NewDecCoinFromDec("utgd", sdk.OneDec())), "got %s for addr: %s", reward, v.Addr)
+		assert.True(t, reward.IsGTE(sdk.NewDecCoinFromDec(app.BaseCoinUnit, sdk.OneDec())), "got %s for addr: %s", reward, v.Addr)
 	}
 
 	// And when moniker updated
@@ -119,7 +119,7 @@ func TestPoEAddPostGenesisValidatorWithAutoEngagementPoints(t *testing.T) {
 	//    and: is added to the active validator set
 	cli := NewTgradeCli(t, sut, verbose)
 	sut.ModifyGenesisJSON(t,
-		SetPoEParamsMutator(t, poetypes.NewParams(100, 10, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(5))))),
+		SetPoEParamsMutator(t, poetypes.NewParams(100, 10, sdk.NewCoins(sdk.NewCoin(app.BaseCoinUnit, sdk.NewInt(5))))),
 	)
 	sut.StartChain(t)
 	newNode := sut.AddFullnode(t)
@@ -152,7 +152,7 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 	//   then: is added to the active validator set
 	cli := NewTgradeCli(t, sut, verbose)
 	sut.ModifyGenesisJSON(t,
-		SetPoEParamsMutator(t, poetypes.NewParams(100, 0, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(5))))),
+		SetPoEParamsMutator(t, poetypes.NewParams(100, 0, sdk.NewCoins(sdk.NewCoin(app.BaseCoinUnit, sdk.NewInt(5))))),
 	)
 	sut.StartChain(t)
 	engagementGroupAddr := gjson.Get(cli.CustomQuery("q", "poe", "contract-address", "ENGAGEMENT"), "address").String()
@@ -272,14 +272,14 @@ func TestPoEUndelegate(t *testing.T) {
 	// then claims got executed automatically
 
 	unbodingPeriod := 10 * time.Second // not too short so that claims not get auto unbonded
-	sut.ModifyGenesisJSON(t, SetUnbondingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin("utgd", sdk.ZeroInt())))
+	sut.ModifyGenesisJSON(t, SetUnbondingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin(app.BaseCoinUnit, sdk.ZeroInt())))
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
 
 	qRes := cli.CustomQuery("q", "poe", "self-delegation", cli.GetKeyAddr("node0"))
 	delegatedAmountBefore := gjson.Get(qRes, "balance.amount").Int()
 	powerBefore := queryTendermintValidatorPower(t, sut, 0)
-	balanceBefore := cli.QueryBalance(cli.GetKeyAddr("node0"), "utgd")
+	balanceBefore := cli.QueryBalance(cli.GetKeyAddr("node0"), app.BaseCoinUnit)
 
 	// when
 	txResult := cli.CustomCommand("tx", "poe", "unbond", "100000utgd", "--from=node0")
@@ -300,7 +300,7 @@ func TestPoEUndelegate(t *testing.T) {
 	assert.Less(t, powerAfter, powerBefore)
 
 	// account balance not increased, yet
-	balanceAfter := cli.QueryBalance(cli.GetKeyAddr("node0"), "utgd")
+	balanceAfter := cli.QueryBalance(cli.GetKeyAddr("node0"), app.BaseCoinUnit)
 	require.Equal(t, balanceBefore, balanceAfter)
 
 	// but unbonding delegations pending
@@ -317,7 +317,7 @@ func TestPoEUndelegate(t *testing.T) {
 	expBalance := balanceBefore + 100000 + 200000
 	balanceAfter = 0
 	for i := 0; i < int(unbodingPeriod/sut.blockTime); i++ {
-		balanceAfter = cli.QueryBalance(cli.GetKeyAddr("node0"), "utgd")
+		balanceAfter = cli.QueryBalance(cli.GetKeyAddr("node0"), app.BaseCoinUnit)
 		if balanceAfter == expBalance {
 			break
 		}

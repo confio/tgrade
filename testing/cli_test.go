@@ -98,7 +98,7 @@ func TestVestingAccounts(t *testing.T) {
 	assert.Equal(t, vest1Addr, gotAddr)
 	amounts := accounts[0].Get("base_vesting_account.original_vesting").Array()
 	require.Len(t, amounts, 1)
-	assert.Equal(t, "utgd", amounts[0].Get("denom").String())
+	assert.Equal(t, app.BaseCoinUnit, amounts[0].Get("denom").String())
 	assert.Equal(t, "100000000", amounts[0].Get("amount").String())
 	assert.Equal(t, myEndTimestamp, accounts[0].Get("base_vesting_account.end_time").Int())
 	assert.Equal(t, int64(0), accounts[0].Get("start_time").Int())
@@ -110,7 +110,7 @@ func TestVestingAccounts(t *testing.T) {
 	assert.Equal(t, vest2Addr, gotAddr)
 	amounts = accounts[0].Get("base_vesting_account.original_vesting").Array()
 	require.Len(t, amounts, 1)
-	assert.Equal(t, "utgd", amounts[0].Get("denom").String())
+	assert.Equal(t, app.BaseCoinUnit, amounts[0].Get("denom").String())
 	assert.Equal(t, "100000001", amounts[0].Get("amount").String())
 	assert.Equal(t, myEndTimestamp, accounts[0].Get("base_vesting_account.end_time").Int())
 	assert.Equal(t, myStartTimestamp, accounts[0].Get("start_time").Int())
@@ -119,15 +119,15 @@ func TestVestingAccounts(t *testing.T) {
 	assert.Equal(t, vest3Addr, gotAddr)
 	amounts = accounts[1].Get("base_vesting_account.original_vesting").Array()
 	require.Len(t, amounts, 1)
-	assert.Equal(t, "utgd", amounts[0].Get("denom").String())
+	assert.Equal(t, app.BaseCoinUnit, amounts[0].Get("denom").String())
 	assert.Equal(t, "100000002", amounts[0].Get("amount").String())
 	assert.Equal(t, myEndTimestamp, accounts[0].Get("base_vesting_account.end_time").Int())
 	assert.Equal(t, myStartTimestamp, accounts[0].Get("start_time").Int())
 
 	// check accounts have some balances
-	assert.Equal(t, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(100000000))), getGenesisBalance([]byte(raw), vest1Addr))
-	assert.Equal(t, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(100000001))), getGenesisBalance([]byte(raw), vest2Addr))
-	assert.Equal(t, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(200000002))), getGenesisBalance([]byte(raw), vest3Addr))
+	assert.Equal(t, sdk.NewCoins(sdk.NewCoin(app.BaseCoinUnit, sdk.NewInt(100000000))), getGenesisBalance([]byte(raw), vest1Addr))
+	assert.Equal(t, sdk.NewCoins(sdk.NewCoin(app.BaseCoinUnit, sdk.NewInt(100000001))), getGenesisBalance([]byte(raw), vest2Addr))
+	assert.Equal(t, sdk.NewCoins(sdk.NewCoin(app.BaseCoinUnit, sdk.NewInt(200000002))), getGenesisBalance([]byte(raw), vest3Addr))
 }
 
 func TestVestingAccountsWithHumanCoinType(t *testing.T) {

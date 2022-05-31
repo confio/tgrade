@@ -42,7 +42,7 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	)
 	sut.modifyGenesisJSON(t,
 		SetUnbondingPeriod(t, time.Second),
-		SetBlockRewards(t, sdk.NewCoin("utgd", sdk.NewInt(10_000_000))),
+		SetBlockRewards(t, sdk.NewCoin(app.BaseCoinUnit, sdk.NewInt(10_000_000))),
 	)
 	sut.StartChain(t)
 	newNode := sut.AddFullnode(t)
@@ -52,10 +52,10 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	require.NoError(t, err)
 	stakingContractAddr := cli.GetPoEContractAddress("STAKING")
 
-	contractInitialBalance := cli.QueryBalance(stakingContractAddr, "utgd")
-	operatorInitialBalance := cli.QueryBalance(vest1Addr, "utgd")
+	contractInitialBalance := cli.QueryBalance(stakingContractAddr, app.BaseCoinUnit)
+	operatorInitialBalance := cli.QueryBalance(vest1Addr, app.BaseCoinUnit)
 	poolAddr := authtypes.NewModuleAddress(poetypes.BondedPoolName).String()
-	poolInitialBalance := cli.QueryBalance(poolAddr, "utgd")
+	poolInitialBalance := cli.QueryBalance(poolAddr, app.BaseCoinUnit)
 
 	const stakedVestingAmount = 10_000
 	// when create validator
@@ -71,11 +71,11 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	valResult, found := cli.IsInTendermintValset(newPubKey)
 	assert.True(t, found, "not in validator set : %#v", valResult)
 	// and balances updated
-	contractBalanceAfter := cli.QueryBalance(stakingContractAddr, "utgd")
+	contractBalanceAfter := cli.QueryBalance(stakingContractAddr, app.BaseCoinUnit)
 	assert.Equal(t, contractInitialBalance+stakedVestingAmount, contractBalanceAfter, "contract balance")
-	operatortBalanceAfter := cli.QueryBalance(vest1Addr, "utgd")
+	operatortBalanceAfter := cli.QueryBalance(vest1Addr, app.BaseCoinUnit)
 	assert.Equal(t, operatorInitialBalance-stakedVestingAmount, operatortBalanceAfter, "operator balance")
-	poolBalanceAfter := cli.QueryBalance(poolAddr, "utgd")
+	poolBalanceAfter := cli.QueryBalance(poolAddr, app.BaseCoinUnit)
 	assert.Equal(t, poolInitialBalance, poolBalanceAfter, "pool balance")
 	AwaitValsetEpochCompleted(t)
 
@@ -83,11 +83,11 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	distrContractAddr := cli.GetPoEContractAddress("DISTRIBUTION")
 	execRsp := cli.Execute(distrContractAddr, `{"withdraw_rewards":{}}`, "vesting1")
 	RequireTxSuccess(t, execRsp)
-	contractBalanceAfter = cli.QueryBalance(stakingContractAddr, "utgd")
+	contractBalanceAfter = cli.QueryBalance(stakingContractAddr, app.BaseCoinUnit)
 	assert.Equal(t, contractInitialBalance+stakedVestingAmount, contractBalanceAfter, "contract balance")
-	operatortBalanceAfter = cli.QueryBalance(vest1Addr, "utgd")
+	operatortBalanceAfter = cli.QueryBalance(vest1Addr, app.BaseCoinUnit)
 	require.Greater(t, operatortBalanceAfter, operatorInitialBalance-stakedVestingAmount, "operator balance")
-	poolBalanceAfter = cli.QueryBalance(poolAddr, "utgd")
+	poolBalanceAfter = cli.QueryBalance(poolAddr, app.BaseCoinUnit)
 	require.Equal(t, poolInitialBalance, poolBalanceAfter, "pool balance")
 
 	// then they are transferable
@@ -95,8 +95,8 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	transferableAmount := operatortBalanceAfter - (operatorInitialBalance - stakedVestingAmount)
 	txResult = cli.CustomCommand("tx", "bank", "send", "vesting1", otherAddr, fmt.Sprintf("%dutgd", transferableAmount))
 	RequireTxSuccess(t, txResult)
-	require.Equal(t, transferableAmount, cli.QueryBalance(otherAddr, "utgd"))
-	operatortBalanceAfter = cli.QueryBalance(vest1Addr, "utgd")
+	require.Equal(t, transferableAmount, cli.QueryBalance(otherAddr, app.BaseCoinUnit))
+	operatortBalanceAfter = cli.QueryBalance(vest1Addr, app.BaseCoinUnit)
 	require.Equal(t, operatorInitialBalance-stakedVestingAmount, operatortBalanceAfter, "operator balance")
 
 	// AND when undelegate
@@ -110,11 +110,11 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	valResult, found = cli.IsInTendermintValset(newPubKey)
 	assert.False(t, found, "still in validator set : %#v", valResult)
 
-	contractBalanceAfter = cli.QueryBalance(stakingContractAddr, "utgd")
+	contractBalanceAfter = cli.QueryBalance(stakingContractAddr, app.BaseCoinUnit)
 	assert.Equal(t, contractInitialBalance, contractBalanceAfter, "contract balance")
-	operatortBalanceAfter = cli.QueryBalance(vest1Addr, "utgd")
+	operatortBalanceAfter = cli.QueryBalance(vest1Addr, app.BaseCoinUnit)
 	assert.Equal(t, operatorInitialBalance, operatortBalanceAfter, "operator balance")
-	poolBalanceAfter = cli.QueryBalance(poolAddr, "utgd")
+	poolBalanceAfter = cli.QueryBalance(poolAddr, app.BaseCoinUnit)
 	assert.Equal(t, poolInitialBalance, poolBalanceAfter, "pool balance")
 }
 
