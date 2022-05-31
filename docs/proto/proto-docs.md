@@ -230,6 +230,7 @@ PoEContractType type of PoE contract
 | VALIDATOR_VOTING | 9 |  |
 | ARBITER_POOL | 10 |  |
 | ARBITER_POOL_VOTING | 11 |  |
+| TRUSTED_CIRCLE_PAYMENTS | 12 |  |
 
 
  <!-- end enums -->
