@@ -3,6 +3,7 @@ package globalfee
 import (
 	"context"
 	"encoding/json"
+	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -10,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -131,4 +133,27 @@ func (a AppModule) EndBlock(context sdk.Context, block abci.RequestEndBlock) []a
 // should be set to 1.
 func (am AppModule) ConsensusVersion() uint64 {
 	return 1
+}
+
+// GenerateGenesisState genesis state for simulations only. Set to empty global fee
+func (a AppModule) GenerateGenesisState(simstate *module.SimulationState) {
+	twasmGenesis := types.GenesisState{
+		Params: types.DefaultParams(),
+	}
+	simstate.GenState[ModuleName] = simstate.Cdc.MustMarshalJSON(&twasmGenesis)
+}
+
+func (a AppModule) ProposalContents(simState module.SimulationState) []simtypes.WeightedProposalContent {
+	return nil
+}
+
+func (a AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
+	return nil
+}
+
+func (a AppModule) RegisterStoreDecoder(registry sdk.StoreDecoderRegistry) {
+}
+
+func (a AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
+	return nil
 }

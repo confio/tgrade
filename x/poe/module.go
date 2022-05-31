@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+
+	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -24,6 +27,7 @@ import (
 	"github.com/confio/tgrade/x/poe/client/cli"
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
+	"github.com/confio/tgrade/x/poe/simulation"
 	"github.com/confio/tgrade/x/poe/types"
 	twasmtypes "github.com/confio/tgrade/x/twasm/types"
 )
@@ -97,7 +101,9 @@ type AppModule struct {
 	txEncodingConfig client.TxEncodingConfig
 	twasmKeeper      twasmKeeper
 	contractKeeper   wasmtypes.ContractOpsKeeper
-	poeKeeper        keeper.Keeper
+	poeKeeper        *keeper.Keeper
+	bankKeeper       simulation.BankKeeper
+	accountKeeper    types.AccountKeeper
 }
 
 // twasmKeeper subset of keeper to decouple from twasm module
@@ -111,7 +117,7 @@ type twasmKeeper interface {
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(poeKeeper keeper.Keeper, twasmKeeper twasmKeeper, deliverTx DeliverTxfn, txEncodingConfig client.TxEncodingConfig, contractKeeper wasmtypes.ContractOpsKeeper) AppModule {
+func NewAppModule(poeKeeper *keeper.Keeper, twasmKeeper twasmKeeper, bankKeeper simulation.BankKeeper, accountKeeper types.AccountKeeper, deliverTx DeliverTxfn, txEncodingConfig client.TxEncodingConfig, contractKeeper wasmtypes.ContractOpsKeeper) AppModule {
 	return AppModule{
 		AppModuleBasic:   AppModuleBasic{},
 		twasmKeeper:      twasmKeeper,
@@ -119,6 +125,8 @@ func NewAppModule(poeKeeper keeper.Keeper, twasmKeeper twasmKeeper, deliverTx De
 		poeKeeper:        poeKeeper,
 		deliverTx:        deliverTx,
 		txEncodingConfig: txEncodingConfig,
+		bankKeeper:       bankKeeper, // used by simulations only
+		accountKeeper:    accountKeeper,
 	}
 }
 
@@ -228,4 +236,34 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 // should be set to 1.
 func (am AppModule) ConsensusVersion() uint64 {
 	return 1
+}
+
+// ____________________________________________________________________________
+
+// AppModuleSimulation functions
+
+// GenerateGenesisState creates a randomized GenState of the PoE module.
+func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
+	simulation.RandomizedGenState(simState)
+}
+
+// ProposalContents doesn't return any content functions for governance proposals.
+func (AppModule) ProposalContents(simState module.SimulationState) []simtypes.WeightedProposalContent {
+	return nil
+}
+
+// RandomizedParams creates randomized PoE param changes for the simulator.
+func (AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
+	return nil
+}
+
+// RegisterStoreDecoder registers a decoder for PoE module's types
+func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
+}
+
+// WeightedOperations returns the all the PoE module operations with their respective weights.
+func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
+	return simulation.WeightedOperations(
+		simState.AppParams, simState.Cdc, am.bankKeeper, am.accountKeeper, am.poeKeeper,
+	)
 }

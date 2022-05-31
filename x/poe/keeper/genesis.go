@@ -70,7 +70,7 @@ func DeliverGenTxs(genTxs []json.RawMessage, deliverTx DeliverTxFn, txEncodingCo
 }
 
 // ExportGenesis returns a GenesisState for a given context and keeper.
-func ExportGenesis(ctx sdk.Context, keeper Keeper) *types.GenesisState {
+func ExportGenesis(ctx sdk.Context, keeper *Keeper) *types.GenesisState {
 	genState := types.GenesisState{
 		Params:    keeper.GetParams(ctx),
 		SetupMode: &types.GenesisState_ImportDump{ImportDump: &types.ImportDump{}},

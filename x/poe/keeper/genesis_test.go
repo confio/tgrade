@@ -141,7 +141,7 @@ func TestExportGenesis(t *testing.T) {
 	})
 
 	// when
-	gs := ExportGenesis(ctx, k)
+	gs := ExportGenesis(ctx, &k)
 
 	// then
 	require.NotNil(t, gs)

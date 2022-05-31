@@ -432,8 +432,10 @@ func NewTgradeApp(
 	// must be passed by reference here.
 	app.mm = module.NewManager(
 		poe.NewAppModule(
-			app.poeKeeper,
+			&app.poeKeeper,
 			&app.twasmKeeper,
+			app.bankKeeper,
+			app.accountKeeper,
 			app.BaseApp.DeliverTx,
 			encodingConfig.TxConfig,
 			app.twasmKeeper.GetContractKeeper(),
@@ -443,7 +445,7 @@ func NewTgradeApp(
 		bank.NewAppModule(appCodec, app.bankKeeper, app.accountKeeper),
 		capability.NewAppModule(appCodec, *app.capabilityKeeper),
 		upgrade.NewAppModule(app.upgradeKeeper),
-		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper),
+		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper, app.accountKeeper, app.bankKeeper),
 		evidence.NewAppModule(app.evidenceKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.accountKeeper, app.bankKeeper, app.feeGrantKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(appCodec, app.authzKeeper, app.accountKeeper, app.bankKeeper, app.interfaceRegistry),
@@ -546,12 +548,22 @@ func NewTgradeApp(
 		bank.NewAppModule(appCodec, app.bankKeeper, app.accountKeeper),
 		capability.NewAppModule(appCodec, *app.capabilityKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.accountKeeper, app.bankKeeper, app.feeGrantKeeper, app.interfaceRegistry),
-		authzmodule.NewAppModule(appCodec, app.authzKeeper, app.accountKeeper, app.bankKeeper, app.interfaceRegistry),
+		// has hard coded "stake" token: authzmodule.NewAppModule(appCodec, app.authzKeeper, app.accountKeeper, app.bankKeeper, app.interfaceRegistry),
 		params.NewAppModule(app.paramsKeeper),
-		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper),
+		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper, app.accountKeeper, app.bankKeeper),
+		poe.NewAppModule(
+			&app.poeKeeper,
+			&app.twasmKeeper,
+			app.bankKeeper,
+			app.accountKeeper,
+			app.BaseApp.DeliverTx,
+			encodingConfig.TxConfig,
+			app.twasmKeeper.GetContractKeeper(),
+		),
 		evidence.NewAppModule(app.evidenceKeeper),
 		ibc.NewAppModule(app.ibcKeeper),
 		transferModule,
+		globalfee.NewAppModule(app.getSubspace(globalfee.ModuleName)),
 	)
 
 	app.sm.RegisterStoreDecoders()
@@ -572,7 +584,7 @@ func NewTgradeApp(
 			WasmConfig:        &twasmConfig.WasmConfig,
 			TXCounterStoreKey: keys[twasm.StoreKey],
 			GlobalFeeSubspace: app.getSubspace(globalfee.ModuleName),
-			ContractSource:    app.poeKeeper,
+			ContractSource:    &app.poeKeeper,
 		},
 	)
 	if err != nil {

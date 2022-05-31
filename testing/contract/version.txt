@@ -1,2 +1,1 @@
-hackatom alex-manual
-reflect v1.0.0-beta2
+v1.0.0

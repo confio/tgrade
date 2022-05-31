@@ -1,0 +1,193 @@
+package simulation
+
+// DONTCOVER
+
+import (
+	"encoding/json"
+	"fmt"
+	"math/rand"
+	"strings"
+	"time"
+
+	"github.com/tendermint/tendermint/libs/math"
+
+	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdkhelpers "github.com/cosmos/cosmos-sdk/simapp/helpers"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	"github.com/confio/tgrade/x/poe/types"
+)
+
+// Simulation parameter constants
+const (
+	unbondingTime     = "unbonding_time"
+	maxValidators     = "max_validators"
+	historicalEntries = "historical_entries"
+)
+
+const defaultDenom = "utgd"
+
+// GenUnbondingTime randomized UnbondingTime
+func genUnbondingTime(r *rand.Rand) (ubdTime time.Duration) {
+	return time.Duration(simulation.RandIntBetween(r, 60, 60*60*24*3*2)) * time.Second
+}
+
+// GenMaxValidators randomized MaxValidators
+func genMaxValidators(r *rand.Rand) (maxValidators uint32) {
+	return uint32(r.Intn(250) + 1)
+}
+
+// RandomizedGenState generates a random GenesisState
+func RandomizedGenState(simState *module.SimulationState) {
+	// tgrade-contracts do not support "stake" token
+	// quick and dirty hack to replace the default staking denom everywhere
+
+	for k, v := range simState.GenState {
+		if len(v) == 0 {
+			continue
+		}
+		simState.GenState[k] = []byte(strings.Replace(string(v), "\"stake\"", fmt.Sprintf("%q", defaultDenom), -1))
+	}
+
+	// ensure bank module state for PoE
+	var bankGenesis banktypes.GenesisState
+	rawBankState, ok := simState.GenState[banktypes.ModuleName]
+	if !ok {
+		panic("no bank genesis state")
+	}
+	simState.Cdc.MustUnmarshalJSON(rawBankState, &bankGenesis)
+	totalBound := sdk.ZeroInt()
+	for i := 0; i < int(simState.NumBonded); i++ {
+		availableBalance := bankGenesis.Balances[i].GetCoins().AmountOf(defaultDenom)
+		stakedAmount := sdk.MinInt(sdk.NewInt(simState.InitialStake), availableBalance)
+		if stakedAmount.IsZero() || !stakedAmount.Equal(sdk.NewInt(simState.InitialStake)) {
+			panic("not enough to stake on balance")
+		}
+		totalBound = totalBound.Add(sdk.NewInt(simState.InitialStake))
+	}
+
+	if len(simState.Accounts)-int(simState.NumBonded) == 0 {
+		// fail fast as no account has enough tokens to pay deposit for OC or AP
+		// panic("all accounts are bonded")
+		// todo: find a proper solution to this hack
+		simState.NumBonded = 1 + simState.Rand.Int63n(simState.NumBonded-1)
+	}
+
+	// add some random oversight community members
+	var ocMembers []string
+	opMembersCount := math.MinInt(simState.Rand.Int()+1, len(simState.Accounts)-int(simState.NumBonded))
+	for i := 0; i < opMembersCount; i++ {
+		ocMembers = append(ocMembers, simState.Accounts[int(simState.NumBonded)+i].Address.String())
+	}
+
+	// add some random arbiter pool members
+	var apMembers []string
+	apMembersCount := math.MinInt(simState.Rand.Int()+1, len(simState.Accounts)-int(simState.NumBonded))
+	for i := 0; i < apMembersCount; i++ {
+		apMembers = append(apMembers, simState.Accounts[int(simState.NumBonded)+i].Address.String())
+	}
+
+	txConfig := types.MakeEncodingConfig(nil).TxConfig
+
+	// prepare genTX
+	var genTxs []json.RawMessage
+	var engagements []types.TG4Member
+	for i := 1; i < int(simState.NumBonded); i++ {
+		acc := simState.Accounts[i]
+		if acc.Address.String() != bankGenesis.Balances[i].Address {
+			panic("all is broken when accounts do not match balances")
+		}
+		engagements = append(engagements, types.TG4Member{
+			Address: acc.Address.String(),
+			Points:  10,
+		})
+
+		privkeySeed := make([]byte, 15)
+		if _, err := simState.Rand.Read(privkeySeed); err != nil {
+			panic(err)
+		}
+
+		createValMsg, err := types.NewMsgCreateValidator(
+			acc.Address,
+			ed25519.GenPrivKeyFromSecret(privkeySeed).PubKey(),
+			sdk.NewCoin(defaultDenom, sdk.NewInt(simState.InitialStake)),
+			sdk.NewCoin(defaultDenom, sdk.ZeroInt()),
+			stakingtypes.NewDescription("testing", "", "", "", ""),
+		)
+		if err != nil {
+			panic(err)
+		}
+		txBuilder := txConfig.NewTxBuilder()
+		err = txBuilder.SetMsgs(createValMsg)
+		if err != nil {
+			panic(err)
+		}
+
+		// First round: we gather all the signer infos. We use the "set empty
+		// signature" hack to do that.
+		sigv2 := signing.SignatureV2{
+			PubKey: acc.PubKey,
+			Data: &signing.SingleSignatureData{
+				SignMode:  txConfig.SignModeHandler().DefaultMode(),
+				Signature: nil,
+			},
+			Sequence: 0,
+		}
+		err = txBuilder.SetSignatures(sigv2)
+		if err != nil {
+			panic(err)
+		}
+
+		// Second round: all signer infos are set, so each signer can sign.
+		var seq uint64 = 0
+		data := authsigning.SignerData{
+			ChainID:       sdkhelpers.SimAppChainID,
+			AccountNumber: 0, // in genesis
+			Sequence:      seq,
+		}
+		sigv2, err = tx.SignWithPrivKey(txConfig.SignModeHandler().DefaultMode(), data, txBuilder, acc.PrivKey, txConfig, seq)
+		if err != nil {
+			panic(err)
+		}
+		if err := txBuilder.SetSignatures(sigv2); err != nil {
+			panic(err)
+		}
+		txBz, err := txConfig.TxJSONEncoder()(txBuilder.GetTx())
+		if err != nil {
+			panic(err)
+		}
+		genTxs = append(genTxs, txBz)
+	}
+
+	poeGenesis := types.DefaultGenesisState()
+	poeGenesis.GetSeedContracts().GenTxs = genTxs
+	poeGenesis.GetSeedContracts().BootstrapAccountAddress = simState.Accounts[len(simState.Accounts)-1].Address.String() // use a non validator account
+	poeGenesis.GetSeedContracts().Engagement = engagements
+	poeGenesis.GetSeedContracts().BondDenom = defaultDenom
+	poeGenesis.GetSeedContracts().OversightCommunityMembers = ocMembers
+	poeGenesis.GetSeedContracts().ArbiterPoolMembers = apMembers
+	poeGenesis.GetSeedContracts().ArbiterPoolContractConfig.EscrowAmount.Denom = poeGenesis.GetSeedContracts().BondDenom
+	poeGenesis.GetSeedContracts().ArbiterPoolContractConfig.DisputeCost.Denom = poeGenesis.GetSeedContracts().BondDenom
+	poeGenesis.GetSeedContracts().ValsetContractConfig.EpochReward.Denom = poeGenesis.GetSeedContracts().BondDenom
+	poeGenesis.GetSeedContracts().OversightCommitteeContractConfig.EscrowAmount.Denom = poeGenesis.GetSeedContracts().BondDenom
+	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(poeGenesis)
+	if err := types.ValidateGenesis(*poeGenesis, txConfig.TxJSONDecoder()); err != nil {
+		panic(err)
+	}
+
+	// Bank module
+	// adjust supply or bank invariants will fail. Staking module did add the amount to the module account
+	fmt.Printf("total supply: %s bond tokens: %s", bankGenesis.Supply.String(), sdk.NewCoin(defaultDenom, totalBound).String())
+	bankGenesis.Supply = bankGenesis.Supply.Sub(sdk.NewCoins(sdk.NewCoin(defaultDenom, totalBound)))
+
+	// always have bank transfers enabled or we fail in PoE
+	bankGenesis.Params = bankGenesis.Params.SetSendEnabledParam(defaultDenom, true)
+	simState.GenState[banktypes.ModuleName] = simState.Cdc.MustMarshalJSON(&bankGenesis)
+}

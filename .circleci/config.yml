@@ -111,6 +111,19 @@ jobs:
       - store_artifacts:
           path: /go/src/github.com/confio/tgrade/testnet/node3.out
 
+  simulations:
+    executor: golang
+    parallelism: 1
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+          name: Run simulations
+          command: |
+            make test-sim-multi-seed-short
+      - store_artifacts:
+          path: /tmp
+
   upload-coverage:
     executor: golang
     steps:
@@ -238,5 +251,8 @@ workflows:
           requires:
             - setup-dependencies
       - gosec:
+          requires:
+            - setup-dependencies
+      - simulations:
           requires:
             - setup-dependencies

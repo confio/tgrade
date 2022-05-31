@@ -6,21 +6,17 @@ import (
 	"math/rand"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	"github.com/confio/tgrade/x/twasm/client/cli"
-	"github.com/confio/tgrade/x/twasm/keeper"
-
 	wasmcli "github.com/CosmWasm/wasmd/x/wasm/client/cli"
 	wasmrest "github.com/CosmWasm/wasmd/x/wasm/client/rest"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	wasmsimuliation "github.com/CosmWasm/wasmd/x/wasm/simulation"
+	wasmsimulation "github.com/CosmWasm/wasmd/x/wasm/simulation"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/gorilla/mux"
@@ -28,6 +24,9 @@ import (
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	"github.com/confio/tgrade/x/twasm/client/cli"
+	"github.com/confio/tgrade/x/twasm/keeper"
+	"github.com/confio/tgrade/x/twasm/simulation"
 	"github.com/confio/tgrade/x/twasm/types"
 )
 
@@ -99,15 +98,25 @@ type AppModule struct {
 	cdc                codec.Codec
 	keeper             *keeper.Keeper
 	validatorSetSource wasmkeeper.ValidatorSetSource
+	accountKeeper      wasmtypes.AccountKeeper // for simulation
+	bankKeeper         simulation.BankKeeper
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(cdc codec.Codec, keeper *keeper.Keeper, validatorSetSource wasmkeeper.ValidatorSetSource) AppModule {
+func NewAppModule(
+	cdc codec.Codec,
+	keeper *keeper.Keeper,
+	validatorSetSource wasmkeeper.ValidatorSetSource,
+	ak wasmtypes.AccountKeeper,
+	bk simulation.BankKeeper,
+) AppModule {
 	return AppModule{
 		AppModuleBasic:     AppModuleBasic{},
 		cdc:                cdc,
 		keeper:             keeper,
 		validatorSetSource: validatorSetSource,
+		accountKeeper:      ak,
+		bankKeeper:         bk,
 	}
 }
 
@@ -171,7 +180,7 @@ func (am AppModule) EndBlock(ctx sdk.Context, b abci.RequestEndBlock) []abci.Val
 
 // GenerateGenesisState creates a randomized GenState of the bank module.
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
-	wasmsimuliation.RandomizedGenState(simState)
+	simulation.RandomizedGenState(simState)
 }
 
 // ProposalContents doesn't return any content functions for governance proposals.
@@ -181,16 +190,17 @@ func (AppModule) ProposalContents(simState module.SimulationState) []simtypes.We
 
 // RandomizedParams creates randomized bank param changes for the simulator.
 func (am AppModule) RandomizedParams(r *rand.Rand) []simtypes.ParamChange {
-	return wasmsimuliation.ParamChanges(r, am.cdc)
+	return wasmsimulation.ParamChanges(r, am.cdc)
 }
 
 // RegisterStoreDecoder registers a decoder for supply module's types
 func (am AppModule) RegisterStoreDecoder(sdr sdk.StoreDecoderRegistry) {
+	sdr[types.StoreKey] = simulation.NewDecodeStore()
 }
 
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
-	return nil
+	return simulation.WeightedOperations(&simState, am.accountKeeper, am.bankKeeper, am.keeper)
 }
 
 // ConsensusVersion is a sequence number for state-breaking change of the
@@ -200,8 +210,6 @@ func (am AppModule) WeightedOperations(simState module.SimulationState) []simtyp
 func (am AppModule) ConsensusVersion() uint64 {
 	return 1
 }
-
-//____________________________________________________________________________
 
 // AddModuleInitFlags implements servertypes.ModuleInitFlags interface.
 func AddModuleInitFlags(startCmd *cobra.Command) {
