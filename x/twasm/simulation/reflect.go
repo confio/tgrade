@@ -1,5 +1,7 @@
 package simulation
 
+// DONTCOVER
+
 import (
 	typwasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	"github.com/cosmos/cosmos-sdk/types"

@@ -1,5 +1,7 @@
 package simulation
 
+// DONTCOVER
+
 import (
 	"github.com/cosmos/cosmos-sdk/simapp/helpers"
 	sdk "github.com/cosmos/cosmos-sdk/types"
