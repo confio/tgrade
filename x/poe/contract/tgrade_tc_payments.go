@@ -21,25 +21,17 @@ func NewTCPaymentsContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types
 	}
 }
 
-// TCPaymentsInitMsg instantiation message
-type TCPaymentsInitMsg struct {
-	VotingRules VotingRules `json:"rules"`
-	// GroupContractAddress is the group contract that contains the member list
-	GroupContractAddress string `json:"group_addr"`
-	// EngagementContractAddress is the engagement contract that contains list for engagement rewards
-	EngagementContractAddress string `json:"engagement_addr"`
-	// ValsetContractAddress is the valset contract that we execute slashing on
-	ValsetContractAddress string `json:"valset_addr"`
-
+// TcPaymentsInitMsg instantiation message
+type TcPaymentsInitMsg struct {
 	// Admin (if set) can change the payment amount and period
 	Admin string `json:"admin,omitempty"`
 	// Trusted Circle / OC contract address
-	OCAddr string `json:"oc_addr"`
+	OcContractAddr string `json:"oc_addr"`
 	// Arbiter pool contract address
-	APAddr string `json:"ap_addr"`
-	// Engagement contract address.
+	ApContractAddr string `json:"ap_addr"`
+	// EngagementContractAddress is the engagement contract that contains the members list for engagement rewards.
 	// To send the remaining funds after payment
-	EngagementAddr string `json:"engagement_addr"`
+	EngagementContractAddr string `json:"engagement_addr"`
 	// The required payment amount, in the payments denom
 	Denom string `json:"denom"`
 	// The required payment amount, in the TC denom
