@@ -348,7 +348,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				InitialKeys:          []contract.Validator{},
 				ValidatorGroupCodeID: engagementID,
 				DistributionContracts: []contract.DistributionContract{
-					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.45")},
 					{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
 				},
 			},
@@ -371,7 +371,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				InitialKeys:          []contract.Validator{},
 				ValidatorGroupCodeID: engagementID,
 				DistributionContracts: []contract.DistributionContract{
-					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.45")},
 					{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
 				},
 			},
@@ -394,7 +394,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				InitialKeys:          []contract.Validator{},
 				ValidatorGroupCodeID: engagementID,
 				DistributionContracts: []contract.DistributionContract{
-					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.45")},
 					{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
 				},
 			},
@@ -417,7 +417,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				InitialKeys:          []contract.Validator{},
 				ValidatorGroupCodeID: engagementID,
 				DistributionContracts: []contract.DistributionContract{
-					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.45")},
 					{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
 				},
 			},

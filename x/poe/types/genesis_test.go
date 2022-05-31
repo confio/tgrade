@@ -357,7 +357,7 @@ func TestValidateValsetContractConfig(t *testing.T) {
 			src: *GenesisStateFixture(
 				func(m *GenesisState) {
 					m.GetSeedContracts().ValsetContractConfig.ValidatorRewardRatio = sdk.ZeroDec()
-					m.GetSeedContracts().ValsetContractConfig.CommunityPoolRewardRatio = sdk.MustNewDecFromStr("52.5")
+					m.GetSeedContracts().ValsetContractConfig.CommunityPoolRewardRatio = sdk.MustNewDecFromStr("55.0")
 				},
 			).GetSeedContracts().ValsetContractConfig,
 		},

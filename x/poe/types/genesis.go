@@ -37,7 +37,7 @@ func DefaultGenesisState() *GenesisState {
 					DoubleSignSlashRatio:     sdk.NewDec(50),
 					ValidatorRewardRatio:     sdk.MustNewDecFromStr("50.0"),
 					EngagementRewardRatio:    sdk.MustNewDecFromStr("45.0"),
-					CommunityPoolRewardRatio: sdk.MustNewDecFromStr("5"),
+					CommunityPoolRewardRatio: sdk.MustNewDecFromStr("5.0"),
 					VerifyValidators:         true,
 				},
 				EngagementContractConfig: &EngagementContractConfig{
