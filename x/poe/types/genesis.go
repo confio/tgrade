@@ -18,7 +18,7 @@ func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
 		Params: DefaultParams(),
 		SetupMode: &GenesisState_SeedContracts{
-			&SeedContracts{
+			SeedContracts: &SeedContracts{
 				BondDenom: DefaultBondDenom,
 				StakeContractConfig: &StakeContractConfig{
 					MinBond:              1,
@@ -79,6 +79,10 @@ func DefaultGenesisState() *GenesisState {
 						AllowEndEarly: true,
 					},
 					DisputeCost: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
+				},
+				TcPaymentsContractConfig: &TcPaymentsContractConfig{
+					PaymentAmount: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(100_000_000)),
+					PaymentPeriod: time.Hour * 24 * 28, // The minimum month
 				},
 				BootstrapAccountAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 			},

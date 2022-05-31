@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -463,10 +464,10 @@ func newTcPaymentsInitMsg(gs types.SeedContracts,
 	bootstrapAccountAddr sdk.AccAddress,
 ) contract.TcPaymentsInitMsg {
 	paymentPeriod := contract.Period{}
-	// FIXME? Handle this in a better way
-	if gs.TcPaymentsContractConfig.PaymentPeriod == 86400 {
+	// FIXME: Handle payment periods in a better way
+	if gs.TcPaymentsContractConfig.PaymentPeriod == time.Hour*24 {
 		paymentPeriod.Daily = true
-	} else if gs.TcPaymentsContractConfig.PaymentPeriod == 86400*365 {
+	} else if gs.TcPaymentsContractConfig.PaymentPeriod == time.Hour*24*365 {
 		paymentPeriod.Yearly = true
 	} else {
 		paymentPeriod.Monthly = true
