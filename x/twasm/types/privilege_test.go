@@ -100,28 +100,28 @@ func TestPrivilegeTypeMarshalJson(t *testing.T) {
 	}
 	specs := map[string]struct {
 		src     interface{}
-		expJson []byte
+		expJSON []byte
 		expErr  bool
 	}{
 		"all good": {
 			src:     PrivilegeTypeBeginBlock,
-			expJson: []byte(`"begin_blocker"`),
+			expJSON: []byte(`"begin_blocker"`),
 		},
 		"obj value": {
 			src:     myTestType{Foo: PrivilegeTypeBeginBlock},
-			expJson: []byte(`{"foo":"begin_blocker"}`),
+			expJSON: []byte(`{"foo":"begin_blocker"}`),
 		},
 		"empty obj": {
 			src:     myTestType{},
-			expJson: []byte(`{}`),
+			expJSON: []byte(`{}`),
 		},
 		"ref": {
 			src:     &PrivilegeTypeBeginBlock,
-			expJson: []byte(`"begin_blocker"`),
+			expJSON: []byte(`"begin_blocker"`),
 		},
 		"empty ref": {
 			src:     (*PrivilegeType)(nil),
-			expJson: []byte(`null`),
+			expJSON: []byte(`null`),
 		},
 		"undefined": {
 			src:    PrivilegeTypeEmpty,
@@ -141,7 +141,7 @@ func TestPrivilegeTypeMarshalJson(t *testing.T) {
 				return
 			}
 			require.NoError(t, gotErr)
-			require.Equal(t, spec.expJson, gotVal)
+			require.Equal(t, spec.expJSON, gotVal)
 		})
 	}
 }

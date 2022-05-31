@@ -27,10 +27,10 @@ type VotingRules struct {
 type Vote string
 
 const (
-	YES_VOTE     Vote = "yes"
-	NO_VOTE      Vote = "no"
-	ABSTAIN_VOTE Vote = "abstain"
-	VETO_VOTE    Vote = "veto"
+	YesVote     Vote = "yes"
+	NoVote      Vote = "no"
+	AbstainVote Vote = "abstain"
+	VetoVote    Vote = "veto"
 )
 
 type ProposalStatus string
@@ -127,13 +127,13 @@ type VoterListResponse struct {
 }
 
 type VotingContractAdapter struct {
-	ContractAdapter
+	BaseContractAdapter
 }
 
 // NewVotingContractAdapter  constructor
 func NewVotingContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWasmKeeper, addressLookupErr error) VotingContractAdapter {
 	return VotingContractAdapter{
-		ContractAdapter: NewContractAdapter(
+		BaseContractAdapter: NewBaseContractAdapter(
 			contractAddr,
 			twasmKeeper,
 			addressLookupErr,

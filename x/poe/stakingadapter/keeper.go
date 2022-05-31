@@ -125,16 +125,16 @@ func (s StakingAdapter) BondedRatio(ctx sdk.Context) sdk.Dec {
 	return sdk.ZeroDec()
 }
 
-func (s2 StakingAdapter) IterateBondedValidatorsByPower(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool)) {
+func (s StakingAdapter) IterateBondedValidatorsByPower(ctx sdk.Context, f func(index int64, validator stakingtypes.ValidatorI) (stop bool)) {
 	log(ctx, "IterateBondedValidatorsByPower")
 }
 
-func (s2 StakingAdapter) TotalBondedTokens(ctx sdk.Context) sdk.Int {
+func (s StakingAdapter) TotalBondedTokens(ctx sdk.Context) sdk.Int {
 	log(ctx, "TotalBondedTokens")
 	return sdk.NewInt(0)
 }
 
-func (s2 StakingAdapter) IterateDelegations(ctx sdk.Context, delegator sdk.AccAddress, fn func(index int64, delegation stakingtypes.DelegationI) (stop bool)) {
+func (s StakingAdapter) IterateDelegations(ctx sdk.Context, delegator sdk.AccAddress, fn func(index int64, delegation stakingtypes.DelegationI) (stop bool)) {
 	log(ctx, "IterateDelegations")
 }
 

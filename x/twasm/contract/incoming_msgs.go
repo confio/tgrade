@@ -130,9 +130,10 @@ func (p ExecuteGovProposal) GetProposalContent(sender sdk.AccAddress) govtypes.C
 // unpackInterfaces unpacks the Any type into the interface type in `Any.cachedValue`
 func (p *ExecuteGovProposal) unpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 	var err error
-	switch {
+	switch { //nolint:gocritic
 	case p.Proposal.RegisterUpgrade != nil:
-		if p.Proposal.RegisterUpgrade.UpgradedClientState != nil {
+		// revisit with https://github.com/confio/tgrade/issues/364
+		if p.Proposal.RegisterUpgrade.UpgradedClientState != nil { //nolint:staticcheck
 			return sdkerrors.ErrInvalidRequest.Wrap("upgrade logic for IBC has been moved to the IBC module")
 		}
 	}
@@ -141,14 +142,14 @@ func (p *ExecuteGovProposal) unpackInterfaces(unpacker codectypes.AnyUnpacker) e
 
 // ProtoAny data type to map from json to cosmos-sdk Any type.
 type ProtoAny struct {
-	TypeUrl string `json:"type_url"`
+	TypeURL string `json:"type_url"`
 	Value   []byte `json:"value"`
 }
 
 // Encode converts to a cosmos-sdk Any type.
 func (a ProtoAny) Encode() *codectypes.Any {
 	return &codectypes.Any{
-		TypeUrl: a.TypeUrl,
+		TypeUrl: a.TypeURL,
 		Value:   a.Value,
 	}
 }
@@ -170,14 +171,14 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 	customUnmarshalers := map[string]func(b []byte) error{
 		"ibc_client_update": func(b []byte) error {
 			proxy := struct {
-				ClientId string    `json:"client_id"`
+				ClientID string    `json:"client_id"`
 				Header   *ProtoAny `json:"header"`
 			}{}
 			if err := json.Unmarshal(b, &proxy); err != nil {
 				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 			}
 			result.IBCClientUpdate = &ibcclienttypes.ClientUpdateProposal{
-				SubjectClientId: proxy.ClientId,
+				SubjectClientId: proxy.ClientID,
 			}
 			return nil
 		},

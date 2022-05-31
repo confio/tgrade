@@ -9,7 +9,7 @@ import (
 )
 
 // GetEngagementPoints read engagement points from contract
-func (k Keeper) GetEngagementPoints(ctx sdk.Context, opAddr sdk.AccAddress) (uint64, error) {
+func (k *Keeper) GetEngagementPoints(ctx sdk.Context, opAddr sdk.AccAddress) (uint64, error) {
 	engagementContractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
 	if err != nil {
 		return 0, sdkerrors.Wrap(err, "get contract addr")
@@ -25,7 +25,7 @@ func (k Keeper) GetEngagementPoints(ctx sdk.Context, opAddr sdk.AccAddress) (uin
 }
 
 // setEngagementPoints set new engagement point value.
-func (k Keeper) setEngagementPoints(ctx sdk.Context, opAddr sdk.AccAddress, points uint64) error {
+func (k *Keeper) setEngagementPoints(ctx sdk.Context, opAddr sdk.AccAddress, points uint64) error {
 	engagementContractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
 	if err != nil {
 		return sdkerrors.Wrap(err, "get contract addr")
@@ -34,7 +34,7 @@ func (k Keeper) setEngagementPoints(ctx sdk.Context, opAddr sdk.AccAddress, poin
 }
 
 // SetValidatorInitialEngagementPoints set an initial amount of engagement points for a validator when it matches self delegation preconditions
-func (k Keeper) SetValidatorInitialEngagementPoints(ctx sdk.Context, opAddr sdk.AccAddress, selfDelegation sdk.Coin) error {
+func (k *Keeper) SetValidatorInitialEngagementPoints(ctx sdk.Context, opAddr sdk.AccAddress, selfDelegation sdk.Coin) error {
 	// distribute engagement points enabled ?
 	newPoints := k.GetInitialValidatorEngagementPoints(ctx)
 	if newPoints == 0 {

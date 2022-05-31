@@ -11,9 +11,10 @@ import (
 // PrivilegeType is a system callback to a contract
 type PrivilegeType byte
 
+// PrivilegeTypeEmpty is empty value
+const PrivilegeTypeEmpty PrivilegeType = 0
+
 var (
-	// PrivilegeTypeEmpty is empty value
-	PrivilegeTypeEmpty PrivilegeType = 0
 
 	// PrivilegeTypeBeginBlock called every block before the TX are processed
 	// Multiple contracts can register for this callback privilege

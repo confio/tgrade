@@ -92,7 +92,7 @@ func WeightedOperations(
 		),
 		simulation.NewWeightedOperation(
 			weightMsgInstantiateContract,
-			SimulateMsgInstantiateContract(ak, bk, wasmKeeper, TgradeSimulationCodeIdSelector),
+			SimulateMsgInstantiateContract(ak, bk, wasmKeeper, TgradeSimulationCodeIDSelector),
 		),
 		simulation.NewWeightedOperation(
 			weightMsgExecuteContract,
@@ -337,7 +337,7 @@ func DefaultSimulationExecutePayloader(msg *wasmtypes.MsgExecuteContract) error 
 	return nil
 }
 
-func TgradeSimulationCodeIdSelector(ctx sdk.Context, wasmKeeper WasmKeeper) uint64 {
+func TgradeSimulationCodeIDSelector(ctx sdk.Context, wasmKeeper WasmKeeper) uint64 {
 	var codeID uint64
 	wasmKeeper.IterateCodeInfos(ctx, func(u uint64, info wasmtypes.CodeInfo) bool {
 		if info.InstantiateConfig.Permission != wasmtypes.AccessTypeEverybody ||

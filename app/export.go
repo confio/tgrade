@@ -37,7 +37,7 @@ func (app *TgradeApp) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	validators, err := activeValidatorSet(app, ctx, err)
+	validators, err := activeValidatorSet(app, ctx)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
@@ -49,10 +49,11 @@ func (app *TgradeApp) ExportAppStateAndValidators(
 	}, err
 }
 
-func activeValidatorSet(app *TgradeApp, ctx sdk.Context, err error) ([]tmtypes.GenesisValidator, error) {
+func activeValidatorSet(app *TgradeApp, ctx sdk.Context) ([]tmtypes.GenesisValidator, error) {
 	var result []tmtypes.GenesisValidator
 	valset := app.poeKeeper.ValsetContract(ctx)
-	valset.IterateActiveValidators(ctx, func(c contract.ValidatorInfo) bool {
+	var err error
+	xerr := valset.IterateActiveValidators(ctx, func(c contract.ValidatorInfo) bool {
 		var opAddr sdk.AccAddress
 		opAddr, err = sdk.AccAddressFromBech32(c.Operator)
 		if err != nil {
@@ -85,5 +86,8 @@ func activeValidatorSet(app *TgradeApp, ctx sdk.Context, err error) ([]tmtypes.G
 		})
 		return false
 	}, nil)
+	if xerr != nil {
+		return nil, xerr
+	}
 	return result, err
 }

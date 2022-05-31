@@ -81,7 +81,7 @@ func TestProofOfEngagementSetup(t *testing.T) {
 	engagementUpdateMsg := poecontracts.UpdateMembersMsg{
 		Remove: []string{sortedMember[0].Addr},
 	}
-	eResult := cli.Execute(engagementGroupAddr, engagementUpdateMsg.Json(t), tg4BootstrapAccountAddr)
+	eResult := cli.Execute(engagementGroupAddr, engagementUpdateMsg.ToJSON(t), tg4BootstrapAccountAddr)
 	RequireTxSuccess(t, eResult)
 	t.Log("got execution result", eResult)
 	// wait for msg execution

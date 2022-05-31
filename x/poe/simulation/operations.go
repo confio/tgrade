@@ -31,8 +31,8 @@ const (
 // BankKeeper extended bank keeper used by simulations
 type BankKeeper interface {
 	types.BankKeeper
+	simulation.BankKeeper
 	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
-	SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 }
 
 // subset used in simulations
@@ -170,7 +170,7 @@ func SimulateMsgCreateValidator(bk BankKeeper, ak types.AccountKeeper, k poeKeep
 }
 
 // SimulateMsgUpdateValidator generates a MsgUpdateValidator with random values
-func SimulateMsgUpdateValidator(bk BankKeeper, ak types.AccountKeeper, k poeKeeper) simtypes.Operation {
+func SimulateMsgUpdateValidator(bk simulation.BankKeeper, ak types.AccountKeeper, k poeKeeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -273,7 +273,7 @@ func SimulateMsgDelegate(bk BankKeeper, ak types.AccountKeeper, k poeKeeper) sim
 }
 
 // SimulateMsgUndelegate generates a MsgUndelegate with random values
-func SimulateMsgUndelegate(bk BankKeeper, ak types.AccountKeeper, k poeKeeper) simtypes.Operation {
+func SimulateMsgUndelegate(bk simulation.BankKeeper, ak types.AccountKeeper, k poeKeeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {

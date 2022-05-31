@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/testutil"
+
 	"github.com/cosmos/cosmos-sdk/types/address"
 
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -12,7 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/server"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -61,7 +62,7 @@ func RandomGenTX(t *testing.T, power uint32, mutators ...func(*MsgCreateValidato
 	algo, err := keyring.NewSigningAlgoFromString(string(hd.Secp256k1Type), keyringAlgos)
 	require.NoError(t, err)
 	const myKey = "myKey"
-	addr, _, err := server.GenerateSaveCoinKey(kb, myKey, true, algo)
+	addr, _, err := testutil.GenerateSaveCoinKey(kb, myKey, "", true, algo)
 	require.NoError(t, err)
 
 	// prepare genesis tx

@@ -98,12 +98,11 @@ $ tgrade tx poe create-validator \
 	cmd.Flags().String(FlagNodeID, "", "The node's ID")
 	flags.AddTxFlagsToCmd(cmd)
 
-	_ = cmd.MarkFlagRequired(flags.FlagFrom)
-	_ = cmd.MarkFlagRequired(FlagAmount)
-	_ = cmd.MarkFlagRequired(FlagVestingAmount)
-	_ = cmd.MarkFlagRequired(FlagPubKey)
-	_ = cmd.MarkFlagRequired(FlagMoniker)
-
+	for _, v := range []string{flags.FlagFrom, FlagAmount, FlagVestingAmount, FlagPubKey, FlagMoniker} {
+		if err := cmd.MarkFlagRequired(v); err != nil {
+			panic(fmt.Sprintf("mark %q flag require: %s", v, err))
+		}
+	}
 	return cmd
 }
 
@@ -137,11 +136,11 @@ func NewBuildCreateValidatorMsg(clientCtx client.Context, txf tx.Factory, fs *fl
 		return txf, nil, err
 	}
 
-	moniker, _ := fs.GetString(FlagMoniker)
-	identity, _ := fs.GetString(FlagIdentity)
-	website, _ := fs.GetString(FlagWebsite)
-	security, _ := fs.GetString(FlagSecurityContact)
-	details, _ := fs.GetString(FlagDetails)
+	moniker, _ := fs.GetString(FlagMoniker)          //nolint:errcheck
+	identity, _ := fs.GetString(FlagIdentity)        //nolint:errcheck
+	website, _ := fs.GetString(FlagWebsite)          //nolint:errcheck
+	security, _ := fs.GetString(FlagSecurityContact) //nolint:errcheck
+	details, _ := fs.GetString(FlagDetails)          //nolint:errcheck
 	description := stakingtypes.NewDescription(
 		moniker,
 		identity,
@@ -158,11 +157,13 @@ func NewBuildCreateValidatorMsg(clientCtx client.Context, txf tx.Factory, fs *fl
 		return txf, nil, err
 	}
 
-	genOnly, _ := fs.GetBool(flags.FlagGenerateOnly)
+	genOnly, err := fs.GetBool(flags.FlagGenerateOnly)
+	if err != nil {
+		return txf, nil, sdkerrors.Wrap(err, "generate flag")
+	}
 	if genOnly {
-		ip, _ := fs.GetString(FlagIP)
-		nodeID, _ := fs.GetString(FlagNodeID)
-
+		ip, _ := fs.GetString(FlagIP)         //nolint:errcheck
+		nodeID, _ := fs.GetString(FlagNodeID) //nolint:errcheck
 		if nodeID != "" && ip != "" {
 			txf = txf.WithMemo(fmt.Sprintf("%s@%s:26656", nodeID, ip))
 		}
@@ -181,11 +182,11 @@ func NewEditValidatorCmd() *cobra.Command {
 				return err
 			}
 			valAddr := clientCtx.GetFromAddress()
-			moniker, _ := cmd.Flags().GetString(FlagMoniker)
-			identity, _ := cmd.Flags().GetString(FlagIdentity)
-			website, _ := cmd.Flags().GetString(FlagWebsite)
-			security, _ := cmd.Flags().GetString(FlagSecurityContact)
-			details, _ := cmd.Flags().GetString(FlagDetails)
+			moniker, _ := cmd.Flags().GetString(FlagMoniker)          //nolint:errcheck
+			identity, _ := cmd.Flags().GetString(FlagIdentity)        //nolint:errcheck
+			website, _ := cmd.Flags().GetString(FlagWebsite)          //nolint:errcheck
+			security, _ := cmd.Flags().GetString(FlagSecurityContact) //nolint:errcheck
+			details, _ := cmd.Flags().GetString(FlagDetails)          //nolint:errcheck
 			description := stakingtypes.NewDescription(moniker, identity, website, security, details)
 
 			msg := types.NewMsgUpdateValidator(valAddr, description)

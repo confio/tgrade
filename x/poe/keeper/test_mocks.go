@@ -139,7 +139,7 @@ func (m SmartQuerierMock) QuerySmart(ctx sdk.Context, contractAddr sdk.AccAddres
 }
 
 // return matching type or fail
-func newContractSourceMock(t *testing.T, myValsetContract sdk.AccAddress, myStakingContract sdk.AccAddress) PoEKeeperMock {
+func newContractSourceMock(t *testing.T, myValsetContract sdk.AccAddress, myStakingContract sdk.AccAddress) PoEKeeperMock { //nolint:deadcode,unused
 	return PoEKeeperMock{
 		GetPoEContractAddressFn: SwitchPoEContractAddressFn(t, myValsetContract, myStakingContract),
 	}

@@ -12,7 +12,6 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	proposaltypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v3/modules/light-clients/07-tendermint/types"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ func TestGetProposalContent(t *testing.T) {
 	mySenderContractAddr := types.RandomAddress(t)
 
 	ir := codectypes.NewInterfaceRegistry()
-	clienttypes.RegisterInterfaces(ir)
+	ibcclienttypes.RegisterInterfaces(ir)
 	ibctmtypes.RegisterInterfaces(ir)
 
 	specs := map[string]struct {

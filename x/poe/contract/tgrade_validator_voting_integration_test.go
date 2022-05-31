@@ -190,7 +190,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 			src: contract.ValidatorProposal{
 				MigrateContract: &contract.Migration{
 					Contract:   valVotingAddr.String(),
-					CodeId:     codeID,
+					CodeID:     codeID,
 					MigrateMsg: []byte("{}"),
 				},
 			},
@@ -229,7 +229,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 			for i, val := range vals[1:] {
 				t.Logf("%d %s - voting power: %s\n", i+1, val.OperatorAddress, val.Tokens)
 				opAddr, _ := sdk.AccAddressFromBech32(val.OperatorAddress)
-				require.NoError(t, adapter.VoteProposal(ctx, myProposalID, contract.YES_VOTE, opAddr), "voter: %d", i)
+				require.NoError(t, adapter.VoteProposal(ctx, myProposalID, contract.YesVote, opAddr), "voter: %d", i)
 			}
 			// then
 			rsp, err = adapter.QueryProposal(ctx, myProposalID)

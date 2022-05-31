@@ -51,7 +51,7 @@ type Migration struct {
 	/// the contract address to be migrated
 	Contract string `json:"contract"`
 	/// a reference to the new WASM code that it should be migrated to
-	CodeId uint64 `json:"code_id"`
+	CodeID uint64 `json:"code_id"`
 	/// encoded message to be passed to perform the migration
 	MigrateMsg []byte `json:"migrate_msg"`
 }

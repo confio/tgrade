@@ -60,9 +60,12 @@ func DefaultParams() Params {
 	)
 }
 
-// String returns a human readable string representation of the parameters.
+// String returns a human-readable string representation of the parameters.
 func (p Params) String() string {
-	out, _ := yaml.Marshal(p)
+	out, err := yaml.Marshal(p)
+	if err != nil {
+		out = []byte(fmt.Sprintf("failed to serialize: %s", err))
+	}
 	return string(out)
 }
 

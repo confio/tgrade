@@ -46,7 +46,7 @@ func TestQueryMinimumGasPrices(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			ctx, _, subspace := setupTestStore(t)
 			spec.setupStore(ctx, subspace)
-			q := NewGrpcQuerier(subspace)
+			q := NewQuerier(subspace)
 			gotResp, gotErr := q.MinimumGasPrices(sdk.WrapSDKContext(ctx), nil)
 			require.NoError(t, gotErr)
 			require.NotNil(t, gotResp)

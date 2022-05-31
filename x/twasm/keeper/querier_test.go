@@ -48,7 +48,7 @@ func TestQueryPrivilegedContracts(t *testing.T) {
 				},
 			}
 
-			q := NewGrpcQuerier(mock)
+			q := NewQuerier(mock)
 			// when
 			gotRsp, gotErr := q.PrivilegedContracts(sdk.WrapSDKContext(ctx), nil)
 			// then
@@ -116,7 +116,7 @@ func TestQueryContractsByPrivilegeType(t *testing.T) {
 				},
 			}
 
-			q := NewGrpcQuerier(mock)
+			q := NewQuerier(mock)
 			// when
 			gotRsp, gotErr := q.ContractsByPrivilegeType(sdk.WrapSDKContext(ctx), &spec.src)
 			// then

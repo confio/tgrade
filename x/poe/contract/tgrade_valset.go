@@ -342,13 +342,13 @@ func SimulateActiveValidators(ctx sdk.Context, k types.SmartQuerier, valset sdk.
 }
 
 type ValsetContractAdapter struct {
-	ContractAdapter
+	BaseContractAdapter
 }
 
 // NewValsetContractAdapter constructor
 func NewValsetContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWasmKeeper, addressLookupErr error) *ValsetContractAdapter {
 	return &ValsetContractAdapter{
-		ContractAdapter: NewContractAdapter(
+		BaseContractAdapter: NewBaseContractAdapter(
 			contractAddr,
 			twasmKeeper,
 			addressLookupErr,

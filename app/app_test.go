@@ -24,7 +24,8 @@ import (
 	poetypes "github.com/confio/tgrade/x/poe/types"
 )
 
-var emptyWasmOpts []wasm.Option = nil
+// default empty opts = nil
+var emptyWasmOpts []wasm.Option
 
 func TestTgradeExport(t *testing.T) {
 	db := db.NewMemDB()

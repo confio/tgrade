@@ -16,7 +16,7 @@ type DistributionContract interface {
 	Address() (sdk.AccAddress, error)
 }
 
-func (k Keeper) DistributionContract(ctx sdk.Context) DistributionContract {
+func (k *Keeper) DistributionContract(ctx sdk.Context) DistributionContract {
 	distContractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
 	return contract.NewDistributionContractAdapter(distContractAddr, k.twasmKeeper, err)
 }
@@ -31,7 +31,7 @@ type ValsetContract interface {
 	Address() (sdk.AccAddress, error)
 }
 
-func (k Keeper) ValsetContract(ctx sdk.Context) ValsetContract {
+func (k *Keeper) ValsetContract(ctx sdk.Context) ValsetContract {
 	distContractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	return contract.NewValsetContractAdapter(distContractAddr, k.twasmKeeper, err)
 }
@@ -45,7 +45,7 @@ type StakeContract interface {
 	Address() (sdk.AccAddress, error)
 }
 
-func (k Keeper) StakeContract(ctx sdk.Context) StakeContract {
+func (k *Keeper) StakeContract(ctx sdk.Context) StakeContract {
 	distContractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
 	return contract.NewStakeContractAdapter(distContractAddr, k.twasmKeeper, err)
 }
@@ -57,7 +57,7 @@ type EngagementContract interface {
 	Address() (sdk.AccAddress, error)
 }
 
-func (k Keeper) EngagementContract(ctx sdk.Context) EngagementContract {
+func (k *Keeper) EngagementContract(ctx sdk.Context) EngagementContract {
 	engContractAddr, err := k.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
 	return contract.NewEngagementContractAdapter(engContractAddr, k.twasmKeeper, err)
 }

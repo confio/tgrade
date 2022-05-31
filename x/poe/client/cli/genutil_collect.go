@@ -47,7 +47,11 @@ func CollectGenTxsCmd(genBalIterator types.GenesisBalancesIterator, defaultNodeH
 				return errors.Wrap(err, "failed to read genesis doc from file")
 			}
 
-			genTxDir, _ := cmd.Flags().GetString(flagGenTxDir)
+			genTxDir, err := cmd.Flags().GetString(flagGenTxDir)
+			if err != nil {
+				return errors.Wrapf(err, "failed to read %q flag", flagGenTxDir)
+			}
+
 			genTxsDir := genTxDir
 			if genTxsDir == "" {
 				genTxsDir = filepath.Join(config.RootDir, "config", "gentx")

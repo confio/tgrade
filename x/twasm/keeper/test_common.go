@@ -292,7 +292,7 @@ func createTestInput(
 	)
 	keeper.setParams(ctx, types.DefaultParams())
 
-	types.RegisterQueryServer(querier, NewGrpcQuerier(keeper))
+	types.RegisterQueryServer(querier, NewQuerier(keeper))
 	// wasm services
 	wasmtypes.RegisterMsgServer(querier, wasmkeeper.NewMsgServerImpl(wasmkeeper.NewDefaultPermissionKeeper(keeper)))
 	wasmtypes.RegisterQueryServer(querier, WasmQuerier(&keeper))
