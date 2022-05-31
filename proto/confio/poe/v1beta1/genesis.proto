@@ -87,6 +87,9 @@ message SeedContracts {
 
   ArbiterPoolContractConfig arbiter_pool_contract_config = 13
       [ (gogoproto.jsontag) = "arbiter_pool_contract_config,omitempty" ];
+
+  TcPaymentsContractConfig tc_payments_contract_config = 14
+  [ (gogoproto.jsontag) = "tc_payments_contract_config,omitempty" ];
 }
 
 // StakeContractConfig initial setup config
@@ -238,4 +241,13 @@ message ArbiterPoolContractConfig {
 
   google.protobuf.Duration waiting_period = 6
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+}
+
+// TcPaymentsContractConfig initial setup config for the trusted circle
+message TcPaymentsContractConfig {
+  // PaymentAmount The payment amount, in the default denom (utgd)
+  cosmos.base.v1beta1.Coin payment_amount = 1 [ (gogoproto.nullable) = false ];
+
+  google.protobuf.Duration payment_period = 2
+  [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 }

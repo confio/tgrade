@@ -30,6 +30,7 @@
     - [SeedContracts](#confio.poe.v1beta1.SeedContracts)
     - [StakeContractConfig](#confio.poe.v1beta1.StakeContractConfig)
     - [TG4Member](#confio.poe.v1beta1.TG4Member)
+    - [TcPaymentsContractConfig](#confio.poe.v1beta1.TcPaymentsContractConfig)
     - [ValidatorVotingContractConfig](#confio.poe.v1beta1.ValidatorVotingContractConfig)
     - [ValsetContractConfig](#confio.poe.v1beta1.ValsetContractConfig)
     - [VotingRules](#confio.poe.v1beta1.VotingRules)
@@ -386,6 +387,7 @@ all PoE contracts on chain.
 | `oversight_community_members` | [string](#string) | repeated |  |
 | `arbiter_pool_members` | [string](#string) | repeated |  |
 | `arbiter_pool_contract_config` | [ArbiterPoolContractConfig](#confio.poe.v1beta1.ArbiterPoolContractConfig) |  |  |
+| `tc_payments_contract_config` | [TcPaymentsContractConfig](#confio.poe.v1beta1.TcPaymentsContractConfig) |  |  |
 
 
 
@@ -420,6 +422,22 @@ TG4Member member of the Engagement group.
 | ----- | ---- | ----- | ----------- |
 | `address` | [string](#string) |  | Address is the bech32 address string |
 | `points` | [uint64](#uint64) |  |  |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.TcPaymentsContractConfig"></a>
+
+### TcPaymentsContractConfig
+TcPaymentsContractConfig initial setup config for the trusted circle
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `payment_amount` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  | PaymentAmount The payment amount, in the default denom (utgd) |
+| `payment_period` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
 
 
 
