@@ -36,7 +36,7 @@ var (
 	//go:embed contract/tgrade_ap_voting.wasm
 	tgArbiterPool []byte
 	//go:embed contract/version.txt
-	contractVersion []byte
+	contractVersion string
 )
 
 // ClearEmbeddedContracts release memory
@@ -298,7 +298,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err := setAllPoEContractsInstanceMigrators(ctx, k, poeKeeper, bootstrapAccountAddr, validatorVotingContractAddr); err != nil {
 		return sdkerrors.Wrap(err, "set new instance admin")
 	}
-
+	keeper.ModuleLogger(ctx).Info("Seeded PoE contracts", "version", contractVersion)
 	return nil
 }
 

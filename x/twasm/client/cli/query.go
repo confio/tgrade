@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -9,7 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/cobra"
-	flag "github.com/spf13/pflag"
 
 	"github.com/confio/tgrade/x/twasm/types"
 )
@@ -94,20 +92,4 @@ func GetCmdListPrivilegedContracts() *cobra.Command {
 	}
 	flags.AddQueryFlagsToCmd(cmd)
 	return cmd
-}
-
-// sdk ReadPageRequest expects binary but we encoded to base64 in our marshaller
-func withPageKeyDecoded(flagSet *flag.FlagSet) *flag.FlagSet {
-	encoded, err := flagSet.GetString(flags.FlagPageKey)
-	if err != nil {
-		panic(err.Error())
-	}
-	raw, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		panic(err.Error())
-	}
-	if err := flagSet.Set(flags.FlagPageKey, string(raw)); err != nil {
-		panic(err.Error())
-	}
-	return flagSet
 }

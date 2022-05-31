@@ -133,25 +133,6 @@ func TestGetMaccPerms(t *testing.T) {
 	require.Equal(t, maccPerms, dup, "duplicated module account permissions differed from actual module account permissions")
 }
 
-func setGenesis(gapp *TgradeApp) error {
-	genesisState := NewDefaultGenesisState()
-	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
-	if err != nil {
-		return err
-	}
-
-	// Initialize the chain
-	gapp.InitChain(
-		abci.RequestInitChain{
-			Validators:    []abci.ValidatorUpdate{},
-			AppStateBytes: stateBytes,
-		},
-	)
-
-	gapp.Commit()
-	return nil
-}
-
 func TestIBCKeeperLazyInitialization(t *testing.T) {
 	db := db.NewMemDB()
 	gapp := NewTgradeApp(log.NewTMLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, MakeEncodingConfig(), EmptyBaseAppOptions{}, emptyWasmOpts)

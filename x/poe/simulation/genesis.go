@@ -5,9 +5,7 @@ package simulation
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strings"
-	"time"
 
 	"github.com/tendermint/tendermint/libs/math"
 
@@ -16,7 +14,6 @@ import (
 	sdkhelpers "github.com/cosmos/cosmos-sdk/simapp/helpers"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -25,24 +22,7 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-// Simulation parameter constants
-const (
-	unbondingTime     = "unbonding_time"
-	maxValidators     = "max_validators"
-	historicalEntries = "historical_entries"
-)
-
 const defaultDenom = "utgd"
-
-// GenUnbondingTime randomized UnbondingTime
-func genUnbondingTime(r *rand.Rand) (ubdTime time.Duration) {
-	return time.Duration(simulation.RandIntBetween(r, 60, 60*60*24*3*2)) * time.Second
-}
-
-// GenMaxValidators randomized MaxValidators
-func genMaxValidators(r *rand.Rand) (maxValidators uint32) {
-	return uint32(r.Intn(250) + 1)
-}
 
 // RandomizedGenState generates a random GenesisState
 func RandomizedGenState(simState *module.SimulationState) {
