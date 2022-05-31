@@ -63,7 +63,8 @@ jobs:
 
   test-cover:
     executor: golang
-    parallelism: 2 # must not be more than number of packages with code
+    parallelism: 4 # must not be more than number of packages with code
+    resource_class: large
     steps:
       - setup_remote_docker:
           # >= v20.10 https://wiki.alpinelinux.org/wiki/Release_Notes_for_Alpine_3.14.0#faccessat2
