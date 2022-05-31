@@ -36,13 +36,6 @@ type BankKeeper interface {
 	DelegateCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 }
 
-// XBankKeeper extended bank keeper used by simulations
-type XBankKeeper interface {
-	BankKeeper
-	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
-	SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
-}
-
 // AccountKeeper is a subset of the SDK account keeper
 type AccountKeeper interface {
 	GetAccount(ctx sdk.Context, addr sdk.AccAddress) types.AccountI

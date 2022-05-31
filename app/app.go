@@ -429,7 +429,7 @@ func NewTgradeApp(
 	// must be passed by reference here.
 	app.mm = module.NewManager(
 		poe.NewAppModule(
-			app.poeKeeper,
+			&app.poeKeeper,
 			&app.twasmKeeper,
 			app.bankKeeper,
 			app.accountKeeper,
@@ -549,7 +549,7 @@ func NewTgradeApp(
 		params.NewAppModule(app.paramsKeeper),
 		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper, app.accountKeeper, app.bankKeeper),
 		poe.NewAppModule(
-			app.poeKeeper,
+			&app.poeKeeper,
 			&app.twasmKeeper,
 			app.bankKeeper,
 			app.accountKeeper,
@@ -581,7 +581,7 @@ func NewTgradeApp(
 			WasmConfig:        &twasmConfig.WasmConfig,
 			TXCounterStoreKey: keys[twasm.StoreKey],
 			GlobalFeeSubspace: app.getSubspace(globalfee.ModuleName),
-			ContractSource:    app.poeKeeper,
+			ContractSource:    &app.poeKeeper,
 		},
 	)
 	if err != nil {

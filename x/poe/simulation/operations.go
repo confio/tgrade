@@ -18,6 +18,7 @@ import (
 )
 
 // Simulation operation weights constants
+//nolint:gosec
 const (
 	OpWeightMsgCreateValidator = "op_weight_msg_create_validator"
 	OpWeightMsgUpdateValidator = "op_weight_msg_update_validator"
@@ -25,8 +26,22 @@ const (
 	OpWeightMsgUndelegate      = "op_weight_msg_undelegate"
 )
 
+// BankKeeper extended bank keeper used by simulations
+type BankKeeper interface {
+	types.BankKeeper
+	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
+	SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
+}
+
+// subset used in simulations
+type poeKeeper interface {
+	ValsetContract(ctx sdk.Context) keeper.ValsetContract
+	StakeContract(ctx sdk.Context) keeper.StakeContract
+	GetBondDenom(ctx sdk.Context) string
+}
+
 // WeightedOperations returns all the operations from the module with their respective weights
-func WeightedOperations(appParams simtypes.AppParams, cdc codec.JSONCodec, bk types.XBankKeeper, ak types.AccountKeeper, k keeper.Keeper) simulation.WeightedOperations {
+func WeightedOperations(appParams simtypes.AppParams, cdc codec.JSONCodec, bk BankKeeper, ak types.AccountKeeper, k poeKeeper) simulation.WeightedOperations {
 	var (
 		weightMsgCreateValidator int
 		weightMsgUpdateValidator int
@@ -79,7 +94,7 @@ func WeightedOperations(appParams simtypes.AppParams, cdc codec.JSONCodec, bk ty
 }
 
 // SimulateMsgCreateValidator generates a MsgCreateValidator with random values
-func SimulateMsgCreateValidator(bk types.XBankKeeper, ak types.AccountKeeper, k keeper.Keeper) simtypes.Operation {
+func SimulateMsgCreateValidator(bk BankKeeper, ak types.AccountKeeper, k poeKeeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -153,7 +168,7 @@ func SimulateMsgCreateValidator(bk types.XBankKeeper, ak types.AccountKeeper, k 
 }
 
 // SimulateMsgUpdateValidator generates a MsgUpdateValidator with random values
-func SimulateMsgUpdateValidator(bk types.XBankKeeper, ak types.AccountKeeper, k keeper.Keeper) simtypes.Operation {
+func SimulateMsgUpdateValidator(bk BankKeeper, ak types.AccountKeeper, k poeKeeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -196,7 +211,7 @@ func SimulateMsgUpdateValidator(bk types.XBankKeeper, ak types.AccountKeeper, k 
 }
 
 // SimulateMsgDelegate generates a MsgDelegate with random values
-func SimulateMsgDelegate(bk types.XBankKeeper, ak types.AccountKeeper, k keeper.Keeper) simtypes.Operation {
+func SimulateMsgDelegate(bk BankKeeper, ak types.AccountKeeper, k poeKeeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -256,7 +271,7 @@ func SimulateMsgDelegate(bk types.XBankKeeper, ak types.AccountKeeper, k keeper.
 }
 
 // SimulateMsgUndelegate generates a MsgUndelegate with random values
-func SimulateMsgUndelegate(bk types.XBankKeeper, ak types.AccountKeeper, k keeper.Keeper) simtypes.Operation {
+func SimulateMsgUndelegate(bk BankKeeper, ak types.AccountKeeper, k poeKeeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -288,8 +303,8 @@ func SimulateMsgUndelegate(bk types.XBankKeeper, ak types.AccountKeeper, k keepe
 		if !found {
 			return simtypes.NoOpMsg(types.ModuleName, types.TypeMsgUndelegate, "unable to find account"), nil, fmt.Errorf("delegator %s not found", valAddr.String())
 		}
-		// if simaccount.PrivKey == nil, delegation address does not exist in accs. Return error
 		if simAccount.PrivKey == nil {
+			// delegation address does not exist in accs
 			return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "account private key is nil"), nil, fmt.Errorf("delegation addr: %s does not exist in simulation accounts", valAddr.String())
 		}
 
@@ -311,7 +326,7 @@ func SimulateMsgUndelegate(bk types.XBankKeeper, ak types.AccountKeeper, k keepe
 	}
 }
 
-func getRandValidator(ctx sdk.Context, k keeper.Keeper) (stakingtypes.Validator, sdk.AccAddress, error) {
+func getRandValidator(ctx sdk.Context, k poeKeeper) (stakingtypes.Validator, sdk.AccAddress, error) {
 	validators, _, err := k.ValsetContract(ctx).ListValidators(ctx, nil)
 	if len(validators) == 0 || err != nil {
 		return stakingtypes.Validator{}, nil, fmt.Errorf("cannot fetch validator list: %s", err.Error())

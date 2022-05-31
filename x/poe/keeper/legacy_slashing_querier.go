@@ -15,7 +15,7 @@ type legacySlashingGRPCQuerier struct {
 	keeper ContractSource
 }
 
-func NewLegacySlashingGRPCQuerier(keeper Keeper) *legacySlashingGRPCQuerier { //nolint:golint
+func NewLegacySlashingGRPCQuerier(keeper ContractSource) *legacySlashingGRPCQuerier { //nolint:golint
 	return &legacySlashingGRPCQuerier{keeper: keeper}
 }
 

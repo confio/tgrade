@@ -166,15 +166,6 @@ func RandomizedGenState(simState *module.SimulationState) {
 		genTxs = append(genTxs, txBz)
 	}
 
-	// setup PoE genesis data
-	//poeGenesis := types.GenesisState{
-	//	Params:             types.DefaultParams(),
-	//	SeedContracts:      true,
-	//	GenTxs:             genTxs,
-	//	SystemAdminAddress: simState.Accounts[0].Address.String(),
-	//	Engagement:         engagements,
-	//	BondDenom:          "stake",
-	//}
 	poeGenesis := types.DefaultGenesisState()
 	poeGenesis.GetSeedContracts().GenTxs = genTxs
 	poeGenesis.GetSeedContracts().BootstrapAccountAddress = simState.Accounts[len(simState.Accounts)-1].Address.String() // use a non validator account

@@ -101,8 +101,8 @@ type AppModule struct {
 	txEncodingConfig client.TxEncodingConfig
 	twasmKeeper      twasmKeeper
 	contractKeeper   wasmtypes.ContractOpsKeeper
-	poeKeeper        keeper.Keeper
-	bankKeeper       types.XBankKeeper
+	poeKeeper        *keeper.Keeper
+	bankKeeper       simulation.BankKeeper
 	accountKeeper    types.AccountKeeper
 }
 
@@ -117,7 +117,7 @@ type twasmKeeper interface {
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(poeKeeper keeper.Keeper, twasmKeeper twasmKeeper, bankKeeper types.XBankKeeper, accountKeeper types.AccountKeeper, deliverTx DeliverTxfn, txEncodingConfig client.TxEncodingConfig, contractKeeper wasmtypes.ContractOpsKeeper) AppModule {
+func NewAppModule(poeKeeper *keeper.Keeper, twasmKeeper twasmKeeper, bankKeeper simulation.BankKeeper, accountKeeper types.AccountKeeper, deliverTx DeliverTxfn, txEncodingConfig client.TxEncodingConfig, contractKeeper wasmtypes.ContractOpsKeeper) AppModule {
 	return AppModule{
 		AppModuleBasic:   AppModuleBasic{},
 		twasmKeeper:      twasmKeeper,
