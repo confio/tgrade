@@ -35,6 +35,8 @@ var (
 	tgValidatorVoting []byte
 	//go:embed contract/tgrade_ap_voting.wasm
 	tgArbiterPool []byte
+	//go:embed contract/tgrade_tc_payments.wasm
+	tgTcPayments []byte
 	//go:embed contract/version.txt
 	contractVersion string
 )
@@ -177,6 +179,23 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "pin community pool contract")
 	}
 	logger.Info("community pool contract", "address", communityPoolContractAddr, "code_id", communityPoolCodeID)
+
+	// setup payments contract
+	//
+	tcPaymentsInitMsg := newTcPaymentsInitMsg(gs, ocContractAddr, ocContractAddr, engagementContractAddr, bootstrapAccountAddr)
+	tcPaymentsCodeID, err := k.Create(ctx, bootstrapAccountAddr, tgTcPayments, &wasmtypes.AllowEverybody)
+	if err != nil {
+		return sdkerrors.Wrap(err, "store tc payments contract")
+	}
+	tcPaymentsContractAddr, _, err := k.Instantiate(ctx, tcPaymentsCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJson(tcPaymentsInitMsg), "engagement", nil)
+	if err != nil {
+		return sdkerrors.Wrap(err, "instantiate tc payments")
+	}
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeTrustedCirclePayments, tcPaymentsContractAddr)
+	if err := k.PinCode(ctx, tcPaymentsCodeID); err != nil {
+		return sdkerrors.Wrap(err, "pin tc payments contract")
+	}
+	logger.Info("tc payments contract", "address", tcPaymentsContractAddr, "code_id", tcPaymentsCodeID)
 
 	// setup valset contract
 	//
@@ -435,6 +454,34 @@ func newStakeInitMsg(gs types.SeedContracts, adminAddr sdk.AccAddress) contract.
 		PreAuthsHooks:    1,
 		PreAuthsSlashing: 1,
 	}
+}
+
+func newTcPaymentsInitMsg(gs types.SeedContracts,
+	ocAddr sdk.AccAddress,
+	apAddr sdk.AccAddress,
+	engagementAddr sdk.AccAddress,
+	bootstrapAccountAddr sdk.AccAddress,
+) contract.TcPaymentsInitMsg {
+	paymentPeriod := contract.Period{}
+	// FIXME? Handle this in a better way
+	if gs.TcPaymentsContractConfig.PaymentPeriod == 86400 {
+		paymentPeriod.Daily = true
+	} else if gs.TcPaymentsContractConfig.PaymentPeriod == 86400*365 {
+		paymentPeriod.Yearly = true
+	} else {
+		paymentPeriod.Monthly = true
+	}
+
+	tcPaymentsInitMsg := contract.TcPaymentsInitMsg{
+		Admin:                  bootstrapAccountAddr.String(),
+		OcContractAddr:         ocAddr.String(),
+		ApContractAddr:         apAddr.String(),
+		EngagementContractAddr: engagementAddr.String(),
+		Denom:                  gs.TcPaymentsContractConfig.PaymentAmount.Denom,
+		PaymentAmount:          gs.TcPaymentsContractConfig.PaymentAmount.Amount.Uint64(),
+		PaymentPeriod:          paymentPeriod,
+	}
+	return tcPaymentsInitMsg
 }
 
 func newValsetInitMsg(
