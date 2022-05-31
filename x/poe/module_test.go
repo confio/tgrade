@@ -32,7 +32,7 @@ func TestInitGenesis(t *testing.T) {
 	ctx, example := keeper.CreateDefaultTestInput(t)
 	ctx = ctx.WithBlockHeight(0)
 	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	app := NewAppModule(&example.PoEKeeper, example.TWasmKeeper, example.BankKeeper, example.AccountKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
+	app := NewAppModule(example.PoEKeeper, example.TWasmKeeper, example.BankKeeper, example.AccountKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
 
 	const numValidators = 15
 	mutator, myValidators := withRandomValidators(t, ctx, example, numValidators)
@@ -204,7 +204,7 @@ func queryAllMembers(t *testing.T, ctx sdk.Context, k *twasmkeeper.Keeper, addr 
 }
 
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
-func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k keeper.Keeper, contractKeeper wasmtypes.ContractOpsKeeper, txDecoder sdk.TxDecoder) func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
+func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k *keeper.Keeper, contractKeeper wasmtypes.ContractOpsKeeper, txDecoder sdk.TxDecoder) func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
 	t.Helper()
 	h := NewHandler(k, contractKeeper, nil)
 	return func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {

@@ -94,7 +94,7 @@ type TestKeepers struct {
 	GovKeeper      govkeeper.Keeper
 	TWasmKeeper    *twasmkeeper.Keeper
 	IBCKeeper      *ibckeeper.Keeper
-	PoEKeeper      Keeper
+	PoEKeeper      *Keeper
 	EncodingConfig params2.EncodingConfig
 	UpgradeKeeper  upgradekeeper.Keeper
 	Faucet         *wasmkeeper.TestFaucet
@@ -320,7 +320,7 @@ func createTestInput(
 		TWasmKeeper:    &twasmKeeper,
 		BankKeeper:     bankKeeper,
 		IBCKeeper:      ibcKeeper,
-		PoEKeeper:      poeKeeper,
+		PoEKeeper:      &poeKeeper,
 		UpgradeKeeper:  upgradeKeeper,
 		EncodingConfig: encodingConfig,
 		BaseApp:        consensusParamsUpdater,

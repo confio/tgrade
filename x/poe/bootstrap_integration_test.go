@@ -180,7 +180,7 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 	t.Helper()
 	ctx, example := keeper.CreateDefaultTestInput(t)
 	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(&example.PoEKeeper, example.TWasmKeeper, example.BankKeeper, example.AccountKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
+	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, example.BankKeeper, example.AccountKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
 
 	mutator, _ := withRandomValidators(t, ctx, example, 3)
 	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
@@ -204,7 +204,7 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 }
 
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
-func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k keeper.Keeper, contractKeeper wasmtypes.ContractOpsKeeper, txDecoder sdk.TxDecoder) func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
+func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k *keeper.Keeper, contractKeeper wasmtypes.ContractOpsKeeper, txDecoder sdk.TxDecoder) func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
 	t.Helper()
 	h := poe.NewHandler(k, contractKeeper, nil)
 	return func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
