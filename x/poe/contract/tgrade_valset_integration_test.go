@@ -208,7 +208,7 @@ func TestQueryValsetConfig(t *testing.T) {
 		ValidatorGroup: distributionAddr.String(),
 		AutoUnjail:     false,
 		DistributionContracts: []contract.DistributionContract{
-			{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+			{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.45")},
 			{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
 		},
 	}
