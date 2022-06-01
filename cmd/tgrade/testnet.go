@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/testutil"
+
 	authvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -76,16 +78,16 @@ Example:
 			serverCtx := server.GetServerContextFromCmd(cmd)
 			config := serverCtx.Config
 
-			outputDir, _ := cmd.Flags().GetString(flagOutputDir)
-			keyringBackend, _ := cmd.Flags().GetString(flags.FlagKeyringBackend)
-			chainID, _ := cmd.Flags().GetString(flags.FlagChainID)
-			minGasPrices, _ := cmd.Flags().GetString(server.FlagMinGasPrices)
-			nodeDirPrefix, _ := cmd.Flags().GetString(flagNodeDirPrefix)
-			nodeDaemonHome, _ := cmd.Flags().GetString(flagNodeDaemonHome)
-			startingIPAddress, _ := cmd.Flags().GetString(flagStartingIPAddress)
-			numValidators, _ := cmd.Flags().GetInt(flagNumValidators)
-			algo, _ := cmd.Flags().GetString(flags.FlagKeyAlgorithm)
-			vestingVals, _ := cmd.Flags().GetBool(flagVestingValidatorAccounts)
+			outputDir, _ := cmd.Flags().GetString(flagOutputDir)                 //nolint:errcheck
+			keyringBackend, _ := cmd.Flags().GetString(flags.FlagKeyringBackend) //nolint:errcheck
+			chainID, _ := cmd.Flags().GetString(flags.FlagChainID)               //nolint:errcheck
+			minGasPrices, _ := cmd.Flags().GetString(server.FlagMinGasPrices)    //nolint:errcheck
+			nodeDirPrefix, _ := cmd.Flags().GetString(flagNodeDirPrefix)         //nolint:errcheck
+			nodeDaemonHome, _ := cmd.Flags().GetString(flagNodeDaemonHome)       //nolint:errcheck
+			startingIPAddress, _ := cmd.Flags().GetString(flagStartingIPAddress) //nolint:errcheck
+			numValidators, _ := cmd.Flags().GetInt(flagNumValidators)            //nolint:errcheck
+			algo, _ := cmd.Flags().GetString(flags.FlagKeyAlgorithm)             //nolint:errcheck
+			vestingVals, _ := cmd.Flags().GetBool(flagVestingValidatorAccounts)  //nolint:errcheck
 
 			config.Consensus.TimeoutCommit, err = cmd.Flags().GetDuration(flagCommitTimeout)
 			if err != nil {
@@ -148,7 +150,7 @@ func InitTestnet(
 	appConfig.Telemetry.EnableHostnameLabel = false
 	appConfig.Telemetry.GlobalLabels = [][]string{{"chain_id", chainID}}
 
-	var (
+	var ( //nolint:prealloc
 		genAccounts      []authtypes.GenesisAccount
 		genBalances      []banktypes.Balance
 		genOCMemberAddrs []string
@@ -234,7 +236,7 @@ func InitTestnet(
 			return err
 		}
 
-		addr, secret, err := server.GenerateSaveCoinKey(kb, nodeDirName, true, algo)
+		addr, secret, err := testutil.GenerateSaveCoinKey(kb, nodeDirName, "", true, algo)
 		if err != nil {
 			_ = os.RemoveAll(outputDir)
 			return err
@@ -243,7 +245,7 @@ func InitTestnet(
 		seeds["secret"] = secret // for sdk backward compatibility
 		if i == 0 {              // generate new key for system admin in node0 keychain. This keychain is used by system tests
 			// PoE setup
-			bootstrapAccountAddr, secret, err = server.GenerateSaveCoinKey(kb, "bootstrap-account", true, algo)
+			bootstrapAccountAddr, secret, err = testutil.GenerateSaveCoinKey(kb, "bootstrap-account", "", true, algo)
 			if err != nil {
 				_ = os.RemoveAll(outputDir)
 				return err
@@ -253,7 +255,7 @@ func InitTestnet(
 			addGenAccount(bootstrapAccountAddr, sdk.NewCoin(stakingToken, sdk.NewInt(100_000_000_000)))
 			// add a number of OC members
 			for i := 0; i < 3; i++ {
-				memberAddr, secret, err := server.GenerateSaveCoinKey(kb, fmt.Sprintf("oc-member-%d", i+1), true, algo)
+				memberAddr, secret, err := testutil.GenerateSaveCoinKey(kb, fmt.Sprintf("oc-member-%d", i+1), "", true, algo)
 				if err != nil {
 					_ = os.RemoveAll(outputDir)
 					return err
@@ -265,7 +267,7 @@ func InitTestnet(
 
 			// add a number of AP members
 			for i := 0; i < 2; i++ {
-				memberAddr, secret, err := server.GenerateSaveCoinKey(kb, fmt.Sprintf("ap-member-%d", i+1), true, algo)
+				memberAddr, secret, err := testutil.GenerateSaveCoinKey(kb, fmt.Sprintf("ap-member-%d", i+1), "", true, algo)
 				if err != nil {
 					_ = os.RemoveAll(outputDir)
 					return err
@@ -428,7 +430,7 @@ func initGenFiles(
 		Validators: nil,
 	}
 	// quick & dirty solution to set our denom instead of sdk default
-	genDoc.AppState = []byte(strings.Replace(string(genDoc.AppState), "\"stake\"", fmt.Sprintf("%q", stakingToken), -1))
+	genDoc.AppState = []byte(strings.ReplaceAll(string(genDoc.AppState), "\"stake\"", fmt.Sprintf("%q", stakingToken)))
 
 	// generate empty genesis files for each validator and save
 	for i := 0; i < numValidators; i++ {
@@ -521,10 +523,9 @@ func calculateIP(ip string, i int) (string, error) {
 }
 
 func writeFile(name string, dir string, contents []byte) error {
-	writePath := filepath.Join(dir)
-	file := filepath.Join(writePath, name)
+	file := filepath.Join(dir, name)
 
-	err := tmos.EnsureDir(writePath, 0o755)
+	err := tmos.EnsureDir(dir, 0o755)
 	if err != nil {
 		return err
 	}

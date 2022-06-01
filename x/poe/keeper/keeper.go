@@ -52,14 +52,14 @@ func NewKeeper(
 }
 
 // SetPoEContractAddress stores the contract address for the given type. If one exists already then it is overwritten.
-func (k Keeper) SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress) {
+func (k *Keeper) SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType, contractAddr sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	store.Set(poeContractAddressKey(ctype), contractAddr.Bytes())
 	k.contractAddrCache.Store(ctype, contractAddr)
 }
 
 // GetPoEContractAddress get the stored contract address for the given type or returns an error when not exists (yet)
-func (k Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
+func (k *Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
 	if err := ctype.ValidateBasic(); err != nil {
 		return nil, sdkerrors.Wrap(err, "contract type")
 	}
@@ -83,7 +83,7 @@ func (k Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractTy
 
 // IteratePoEContracts for each persisted PoE contract the given callback is called.
 // When the callback returns true, the loop is aborted early.
-func (k Keeper) IteratePoEContracts(ctx sdk.Context, cb func(types.PoEContractType, sdk.AccAddress) bool) {
+func (k *Keeper) IteratePoEContracts(ctx sdk.Context, cb func(types.PoEContractType, sdk.AccAddress) bool) {
 	prefixStore := prefix.NewStore(ctx.KVStore(k.storeKey), types.ContractPrefix)
 	iter := prefixStore.Iterator(nil, nil)
 	defer iter.Close()
@@ -97,7 +97,7 @@ func (k Keeper) IteratePoEContracts(ctx sdk.Context, cb func(types.PoEContractTy
 }
 
 // UnbondingTime returns the unbonding period from the staking contract
-func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
+func (k *Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
 	rsp, err := k.StakeContract(ctx).QueryStakingUnbondingPeriod(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("unboding period: %s", err))
@@ -105,7 +105,7 @@ func (k Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
 	return rsp
 }
 
-func (k Keeper) GetBondDenom(ctx sdk.Context) string {
+func (k *Keeper) GetBondDenom(ctx sdk.Context) string {
 	return types.DefaultBondDenom
 }
 

@@ -8,18 +8,18 @@ import (
 	"github.com/confio/tgrade/x/globalfee/types"
 )
 
-var _ types.QueryServer = &grpcQuerier{}
+var _ types.QueryServer = &Querier{}
 
-type grpcQuerier struct {
+type Querier struct {
 	paramSource paramSource
 }
 
-func NewGrpcQuerier(paramSource paramSource) grpcQuerier {
-	return grpcQuerier{paramSource: paramSource}
+func NewQuerier(paramSource paramSource) Querier {
+	return Querier{paramSource: paramSource}
 }
 
 // MinimumGasPrices return minimum gas prices
-func (g grpcQuerier) MinimumGasPrices(stdCtx context.Context, _ *types.QueryMinimumGasPricesRequest) (*types.QueryMinimumGasPricesResponse, error) {
+func (g Querier) MinimumGasPrices(stdCtx context.Context, _ *types.QueryMinimumGasPricesRequest) (*types.QueryMinimumGasPricesResponse, error) {
 	var minGasPrices sdk.DecCoins
 	ctx := sdk.UnwrapSDKContext(stdCtx)
 	if g.paramSource.Has(ctx, types.ParamStoreKeyMinGasPrices) {

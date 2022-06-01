@@ -35,7 +35,10 @@ type GenesisBalancesIterator = genutiltypes.GenesisBalancesIterator
 
 // GenTxCmd builds the application's gentx command.
 func GenTxCmd(mbm module.BasicManager, txEncCfg client.TxEncodingConfig, genBalIterator GenesisBalancesIterator, defaultNodeHome string) *cobra.Command {
-	ipDefault, _ := server.ExternalIP()
+	ipDefault, err := server.ExternalIP()
+	if err != nil {
+		panic(err)
+	}
 	fsCreateValidator, defaultsDesc := CreateValidatorMsgFlagSet(ipDefault)
 
 	cmd := &cobra.Command{
@@ -73,12 +76,12 @@ $ %s gentx my-key-name 1000000utgd --home=/path/to/home/dir --keyring-backend=os
 			}
 
 			// read --nodeID, if empty take it from priv_validator.json
-			if nodeIDString, _ := cmd.Flags().GetString(FlagNodeID); nodeIDString != "" {
+			if nodeIDString, _ := cmd.Flags().GetString(FlagNodeID); nodeIDString != "" { //nolint:errcheck
 				nodeID = nodeIDString
 			}
 
 			// read --pubkey, if empty take it from priv_validator.json
-			if pkStr, _ := cmd.Flags().GetString(FlagPubKey); pkStr != "" {
+			if pkStr, _ := cmd.Flags().GetString(FlagPubKey); pkStr != "" { //nolint:errcheck
 				if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(pkStr), &valPubKey); err != nil {
 					return errors.Wrap(err, "failed to unmarshal validator public key")
 				}
@@ -107,7 +110,7 @@ $ %s gentx my-key-name 1000000utgd --home=/path/to/home/dir --keyring-backend=os
 			}
 
 			moniker := config.Moniker
-			if m, _ := cmd.Flags().GetString(FlagMoniker); m != "" {
+			if m, _ := cmd.Flags().GetString(FlagMoniker); m != "" { //nolint:errcheck
 				moniker = m
 			}
 
@@ -196,7 +199,7 @@ $ %s gentx my-key-name 1000000utgd --home=/path/to/home/dir --keyring-backend=os
 				return errors.Wrap(err, "failed to sign std tx")
 			}
 
-			outputDocument, _ := cmd.Flags().GetString(flags.FlagOutputDocument)
+			outputDocument, _ := cmd.Flags().GetString(flags.FlagOutputDocument) //nolint:errcheck
 			if outputDocument == "" {
 				outputDocument, err = makeOutputFilepath(config.RootDir, nodeID)
 				if err != nil {

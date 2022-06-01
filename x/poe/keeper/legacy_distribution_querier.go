@@ -12,18 +12,18 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-var _ distributiontypes.QueryServer = &legacyDistributionGRPCQuerier{}
+var _ distributiontypes.QueryServer = &LegacyDistributionGRPCQuerier{}
 
-type legacyDistributionGRPCQuerier struct {
+type LegacyDistributionGRPCQuerier struct {
 	keeper      ViewKeeper
 	queryServer types.QueryServer
 }
 
-func NewLegacyDistributionGRPCQuerier(keeper ViewKeeper) *legacyDistributionGRPCQuerier { //nolint:golint
-	return &legacyDistributionGRPCQuerier{keeper: keeper, queryServer: NewGrpcQuerier(keeper)}
+func NewLegacyDistributionGRPCQuerier(keeper ViewKeeper) *LegacyDistributionGRPCQuerier { //nolint:golint
+	return &LegacyDistributionGRPCQuerier{keeper: keeper, queryServer: NewQuerier(keeper)}
 }
 
-func (q legacyDistributionGRPCQuerier) ValidatorOutstandingRewards(c context.Context, req *distributiontypes.QueryValidatorOutstandingRewardsRequest) (*distributiontypes.QueryValidatorOutstandingRewardsResponse, error) {
+func (q LegacyDistributionGRPCQuerier) ValidatorOutstandingRewards(c context.Context, req *distributiontypes.QueryValidatorOutstandingRewardsRequest) (*distributiontypes.QueryValidatorOutstandingRewardsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -38,7 +38,7 @@ func (q legacyDistributionGRPCQuerier) ValidatorOutstandingRewards(c context.Con
 	}, nil
 }
 
-func (q legacyDistributionGRPCQuerier) ValidatorCommission(c context.Context, req *distributiontypes.QueryValidatorCommissionRequest) (*distributiontypes.QueryValidatorCommissionResponse, error) {
+func (q LegacyDistributionGRPCQuerier) ValidatorCommission(c context.Context, req *distributiontypes.QueryValidatorCommissionRequest) (*distributiontypes.QueryValidatorCommissionResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -54,7 +54,7 @@ func (q legacyDistributionGRPCQuerier) ValidatorCommission(c context.Context, re
 	}, nil
 }
 
-func (q legacyDistributionGRPCQuerier) ValidatorSlashes(c context.Context, req *distributiontypes.QueryValidatorSlashesRequest) (*distributiontypes.QueryValidatorSlashesResponse, error) {
+func (q LegacyDistributionGRPCQuerier) ValidatorSlashes(c context.Context, req *distributiontypes.QueryValidatorSlashesRequest) (*distributiontypes.QueryValidatorSlashesResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -82,7 +82,7 @@ func (q legacyDistributionGRPCQuerier) ValidatorSlashes(c context.Context, req *
 	}, nil
 }
 
-func (q legacyDistributionGRPCQuerier) DelegationRewards(c context.Context, req *distributiontypes.QueryDelegationRewardsRequest) (*distributiontypes.QueryDelegationRewardsResponse, error) {
+func (q LegacyDistributionGRPCQuerier) DelegationRewards(c context.Context, req *distributiontypes.QueryDelegationRewardsRequest) (*distributiontypes.QueryDelegationRewardsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -96,7 +96,7 @@ func (q legacyDistributionGRPCQuerier) DelegationRewards(c context.Context, req 
 	return &distributiontypes.QueryDelegationRewardsResponse{}, nil
 }
 
-func (q legacyDistributionGRPCQuerier) DelegationTotalRewards(c context.Context, req *distributiontypes.QueryDelegationTotalRewardsRequest) (*distributiontypes.QueryDelegationTotalRewardsResponse, error) {
+func (q LegacyDistributionGRPCQuerier) DelegationTotalRewards(c context.Context, req *distributiontypes.QueryDelegationTotalRewardsRequest) (*distributiontypes.QueryDelegationTotalRewardsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -110,7 +110,7 @@ func (q legacyDistributionGRPCQuerier) DelegationTotalRewards(c context.Context,
 	return &distributiontypes.QueryDelegationTotalRewardsResponse{}, nil
 }
 
-func (q legacyDistributionGRPCQuerier) DelegatorValidators(c context.Context, req *distributiontypes.QueryDelegatorValidatorsRequest) (*distributiontypes.QueryDelegatorValidatorsResponse, error) {
+func (q LegacyDistributionGRPCQuerier) DelegatorValidators(c context.Context, req *distributiontypes.QueryDelegatorValidatorsRequest) (*distributiontypes.QueryDelegatorValidatorsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -134,7 +134,7 @@ func (q legacyDistributionGRPCQuerier) DelegatorValidators(c context.Context, re
 	}, nil
 }
 
-func (q legacyDistributionGRPCQuerier) DelegatorWithdrawAddress(c context.Context, req *distributiontypes.QueryDelegatorWithdrawAddressRequest) (*distributiontypes.QueryDelegatorWithdrawAddressResponse, error) {
+func (q LegacyDistributionGRPCQuerier) DelegatorWithdrawAddress(c context.Context, req *distributiontypes.QueryDelegatorWithdrawAddressRequest) (*distributiontypes.QueryDelegatorWithdrawAddressResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -158,7 +158,7 @@ func (q legacyDistributionGRPCQuerier) DelegatorWithdrawAddress(c context.Contex
 	}, nil
 }
 
-func (q legacyDistributionGRPCQuerier) CommunityPool(c context.Context, req *distributiontypes.QueryCommunityPoolRequest) (*distributiontypes.QueryCommunityPoolResponse, error) {
+func (q LegacyDistributionGRPCQuerier) CommunityPool(c context.Context, req *distributiontypes.QueryCommunityPoolRequest) (*distributiontypes.QueryCommunityPoolResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -166,7 +166,7 @@ func (q legacyDistributionGRPCQuerier) CommunityPool(c context.Context, req *dis
 }
 
 // Params is not supported. Method returns default distribution module params.
-func (q legacyDistributionGRPCQuerier) Params(c context.Context, req *distributiontypes.QueryParamsRequest) (*distributiontypes.QueryParamsResponse, error) {
+func (q LegacyDistributionGRPCQuerier) Params(c context.Context, req *distributiontypes.QueryParamsRequest) (*distributiontypes.QueryParamsResponse, error) {
 	return &distributiontypes.QueryParamsResponse{
 		Params: distributiontypes.Params{
 			CommunityTax:        sdk.ZeroDec(),

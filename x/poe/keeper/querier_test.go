@@ -58,7 +58,7 @@ func TestQueryContractAddress(t *testing.T) {
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			q := NewGrpcQuerier(PoEKeeperMock{GetPoEContractAddressFn: spec.mockFn})
+			q := NewQuerier(PoEKeeperMock{GetPoEContractAddressFn: spec.mockFn})
 			ctx := sdk.Context{}.WithContext(context.Background())
 			gotRes, gotErr := q.ContractAddress(sdk.WrapSDKContext(ctx), &spec.srcMsg)
 			if spec.expErrCode != 0 {
@@ -143,7 +143,7 @@ func TestQueryValidators(t *testing.T) {
 			ctx := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()))
 			poeKeeper.ValsetContractFn = func(ctx sdk.Context) ValsetContract { return spec.mock }
 			// when
-			s := NewGrpcQuerier(poeKeeper)
+			s := NewQuerier(poeKeeper)
 			gotRes, gotErr := s.Validators(ctx, spec.src)
 
 			// then
@@ -210,7 +210,7 @@ func TestQueryValidator(t *testing.T) {
 			ctx := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()))
 			poeKeeper := PoEKeeperMock{ValsetContractFn: func(ctx sdk.Context) ValsetContract { return spec.mock }}
 			// when
-			s := NewGrpcQuerier(poeKeeper)
+			s := NewQuerier(poeKeeper)
 			gotRes, gotErr := s.Validator(ctx, spec.src)
 
 			// then
@@ -259,7 +259,7 @@ func TestQueryUnbondingPeriod(t *testing.T) {
 			}}
 
 			// when
-			s := NewGrpcQuerier(poeKeeper)
+			s := NewQuerier(poeKeeper)
 			gotRes, gotErr := s.UnbondingPeriod(ctx, spec.src)
 
 			// then
@@ -318,7 +318,7 @@ func TestValidatorDelegation(t *testing.T) {
 				return spec.mock
 			}
 			// when
-			q := NewGrpcQuerier(poeKeeper)
+			q := NewQuerier(poeKeeper)
 			gotRes, gotErr := q.ValidatorDelegation(ctx, spec.src)
 
 			// then
@@ -396,7 +396,7 @@ func TestValidatorUnbondingDelegations(t *testing.T) {
 				return spec.mock
 			}
 			// when
-			q := NewGrpcQuerier(poeKeeper)
+			q := NewQuerier(poeKeeper)
 			gotRes, gotErr := q.ValidatorUnbondingDelegations(ctx, spec.src)
 
 			// then
@@ -452,7 +452,7 @@ func TestValidatorOutstandingReward(t *testing.T) {
 
 			c := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()))
 			// when
-			s := NewGrpcQuerier(keeperMock)
+			s := NewQuerier(keeperMock)
 			gotResp, gotErr := s.ValidatorOutstandingReward(c, spec.src)
 			// then
 			if spec.expErr != nil {

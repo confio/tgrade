@@ -82,7 +82,7 @@ func (s *SystemUnderTest) SetupChain() {
 		"--starting-ip-address", "", // empty to use host systems
 		"--single-host",
 	}
-	cmd := exec.Command(
+	cmd := exec.Command( //nolint:gosec
 		locateExecutable("tgrade"),
 		args...,
 	)
@@ -187,7 +187,7 @@ func appendToBuf(r io.Reader, b *ring.Ring, stop <-chan struct{}) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		select {
-		case _, _ = <-stop:
+		case <-stop:
 			return
 		default:
 		}
@@ -215,11 +215,11 @@ func (s *SystemUnderTest) AwaitNodeUp(t *testing.T, rpcAddr string) {
 			}
 			result, err := con.Status(ctx)
 			if err != nil || result.SyncInfo.LatestBlockHeight < 1 {
-				con.Stop()
+				con.Stop() //nolint:errcheck
 				continue
 			}
 			t.Logf("Node started. Current block: %d\n", result.SyncInfo.LatestBlockHeight)
-			con.Stop()
+			con.Stop() //nolint:errcheck
 			started <- struct{}{}
 		}
 	}()
@@ -244,7 +244,7 @@ func (s *SystemUnderTest) StopChain() {
 	}
 	s.cleanupFn = nil
 	// send SIGTERM
-	cmd := exec.Command(locateExecutable("pkill"), "-15", "tgrade")
+	cmd := exec.Command(locateExecutable("pkill"), "-15", "tgrade") //nolint:gosec
 	cmd.Dir = workDir
 	if _, err := cmd.CombinedOutput(); err != nil {
 		s.Logf("failed to stop chain: %s\n", err)
@@ -255,14 +255,14 @@ func (s *SystemUnderTest) StopChain() {
 		select {
 		case <-timeout:
 			s.Log("killing nodes now")
-			cmd = exec.Command(locateExecutable("pkill"), "-9", "tgrade")
+			cmd = exec.Command(locateExecutable("pkill"), "-9", "tgrade") //nolint:gosec
 			cmd.Dir = workDir
 			if _, err := cmd.CombinedOutput(); err != nil {
 				s.Logf("failed to kill process: %s\n", err)
 			}
 			shutdown = true
 		default:
-			if err := exec.Command(locateExecutable("pgrep"), "tgrade").Run(); err != nil {
+			if err := exec.Command(locateExecutable("pgrep"), "tgrade").Run(); err != nil { //nolint:gosec
 				shutdown = true
 			}
 		}
@@ -432,11 +432,11 @@ func (s *SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string)
 	s.withEachNodeHome(func(i int, home string) {
 		result[i] = make([]string, len(cmds))
 		for j, xargs := range cmds {
-			args := append(xargs, "--home", home)
-			s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
-			cmd := exec.Command(
+			xargs = append(xargs, "--home", home)
+			s.Logf("Execute `tgrade %s`\n", strings.Join(xargs, " "))
+			cmd := exec.Command( //nolint:gosec
 				locateExecutable("tgrade"),
-				args...,
+				xargs...,
 			)
 			cmd.Dir = workDir
 			out, err := cmd.CombinedOutput()
@@ -452,9 +452,9 @@ func (s *SystemUnderTest) ForEachNodeExecAndWait(t *testing.T, cmds ...[]string)
 func (s *SystemUnderTest) forEachNodesExecAsync(t *testing.T, xargs ...string) []func() error {
 	r := make([]func() error, s.nodesCount)
 	s.withEachNodeHome(func(i int, home string) {
-		args := append(xargs, "--home", home)
+		args := append(xargs, "--home", home) //nolint:gocritic
 		s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
-		cmd := exec.Command(
+		cmd := exec.Command( //nolint:gosec
 			locateExecutable("tgrade"),
 			args...,
 		)
@@ -533,7 +533,7 @@ func (s *SystemUnderTest) AddFullnode(t *testing.T, beforeStart ...func(nodeNumb
 	moniker := fmt.Sprintf("node%d", nodeNumber)
 	args := []string{"init", moniker, "--home", nodePath, "--overwrite"}
 	s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
-	cmd := exec.Command(
+	cmd := exec.Command( //nolint:gosec
 		locateExecutable("tgrade"),
 		args...,
 	)
@@ -551,9 +551,9 @@ func (s *SystemUnderTest) AddFullnode(t *testing.T, beforeStart ...func(nodeNumb
 	// start node
 	allNodes := s.AllNodes(t)
 	node := allNodes[len(allNodes)-1]
-	var peers []string
-	for _, n := range allNodes[0 : len(allNodes)-1] {
-		peers = append(peers, n.PeerAddr())
+	peers := make([]string, len(allNodes)-1)
+	for i, n := range allNodes[0 : len(allNodes)-1] {
+		peers[i] = n.PeerAddr()
 	}
 	for _, c := range beforeStart {
 		c(nodeNumber, nodePath)
@@ -570,7 +570,7 @@ func (s *SystemUnderTest) AddFullnode(t *testing.T, beforeStart ...func(nodeNumb
 		"--home", nodePath,
 	}
 	s.Logf("Execute `tgrade %s`\n", strings.Join(args, " "))
-	cmd = exec.Command(
+	cmd = exec.Command( //nolint:gosec
 		locateExecutable("tgrade"),
 		args...,
 	)
@@ -641,17 +641,14 @@ func (l *EventListener) Subscribe(query string, cb EventConsumer) func() {
 	eventsChan, err := l.client.WSEvents.Subscribe(ctx, "testing", query)
 	require.NoError(l.t, err)
 	cleanup := func() {
-		ctx, _ := context.WithTimeout(ctx, defaultWaitTime)
-		go l.client.WSEvents.Unsubscribe(ctx, "testing", query)
+		ctx, _ := context.WithTimeout(ctx, defaultWaitTime)     //nolint:govet
+		go l.client.WSEvents.Unsubscribe(ctx, "testing", query) //nolint:errcheck
 		done()
 	}
 	go func() {
-		for {
-			select {
-			case e := <-eventsChan:
-				if !cb(e) {
-					return
-				}
+		for e := range eventsChan {
+			if !cb(e) {
+				return
 			}
 		}
 	}()
@@ -677,20 +674,28 @@ func TimeoutConsumer(t *testing.T, maxWaitTime time.Duration, next EventConsumer
 	ctx, done := context.WithCancel(context.Background())
 	t.Cleanup(done)
 	timeout := time.NewTimer(maxWaitTime)
+	timedOut := make(chan struct{}, 1)
 	go func() {
 		select {
 		case <-ctx.Done():
 		case <-timeout.C:
-			t.Fatalf("Timeout waiting for new events %s", maxWaitTime)
+			timedOut <- struct{}{}
+			close(timedOut)
 		}
 	}()
 	return func(e ctypes.ResultEvent) (more bool) {
-		timeout.Reset(maxWaitTime)
-		result := next(e)
-		if !result {
-			done()
+		select {
+		case <-timedOut:
+			t.Fatalf("Timeout waiting for new events %s", maxWaitTime)
+			return false
+		default:
+			timeout.Reset(maxWaitTime)
+			result := next(e)
+			if !result {
+				done()
+			}
+			return result
 		}
-		return result
 	}
 }
 

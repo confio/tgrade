@@ -11,12 +11,12 @@ import (
 )
 
 // load validator nodes consensus pub key for given node number
-func loadValidatorPubKeyForNode(t *testing.T, sut *SystemUnderTest, nodeNumber int) cryptotypes.PubKey {
+func loadValidatorPubKeyForNode(t *testing.T, sut *SystemUnderTest, nodeNumber int) cryptotypes.PubKey { //nolint:unused,deadcode
 	return loadValidatorPubKey(t, filepath.Join(workDir, sut.nodePath(nodeNumber), "config", "priv_validator_key.json"))
 }
 
 // load validator nodes consensus pub key from disk
-func loadValidatorPubKey(t *testing.T, keyFile string) cryptotypes.PubKey {
+func loadValidatorPubKey(t *testing.T, keyFile string) cryptotypes.PubKey { //nolint:unused,deadcode
 	filePV := privval.LoadFilePVEmptyState(keyFile, "")
 	pubKey, err := filePV.GetPubKey()
 	require.NoError(t, err)
@@ -26,7 +26,7 @@ func loadValidatorPubKey(t *testing.T, keyFile string) cryptotypes.PubKey {
 }
 
 // queryTendermintValidatorPower returns the validator's power from tendermint RPC endpoint. 0 when not found
-func queryTendermintValidatorPower(t *testing.T, sut *SystemUnderTest, nodeNumber int) int64 {
+func queryTendermintValidatorPower(t *testing.T, sut *SystemUnderTest, nodeNumber int) int64 { //nolint:unused,deadcode
 	pubKey := loadValidatorPubKeyForNode(t, sut, nodeNumber)
 	valResult := NewTgradeCli(t, sut, false).GetTendermintValidatorSet()
 	for _, v := range valResult.Validators {

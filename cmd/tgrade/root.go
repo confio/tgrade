@@ -131,7 +131,9 @@ func customizeInitCmdDefaults(initCmd *cobra.Command) *cobra.Command {
 		cfg := server.GetServerContextFromCmd(cmd)
 		// set a high default value to have a more resilient network but this also puts a higher strain on node memory
 		cfg.Config.P2P.MaxNumOutboundPeers = 200
-		server.SetCmdServerContext(cmd, cfg)
+		if err := server.SetCmdServerContext(cmd, cfg); err != nil {
+			panic(err)
+		}
 		return orig(initCmd, args)
 	}
 	return initCmd

@@ -81,10 +81,10 @@ func TestInitExportGenesis(t *testing.T) {
 			ctx, encCfg, subspace := setupTestStore(t)
 			m := NewAppModule(subspace)
 			m.InitGenesis(ctx, encCfg.Marshaler, []byte(spec.src))
-			gotJson := m.ExportGenesis(ctx, encCfg.Marshaler)
+			gotJSON := m.ExportGenesis(ctx, encCfg.Marshaler)
 			var got types.GenesisState
-			require.NoError(t, encCfg.Marshaler.UnmarshalJSON(gotJson, &got))
-			assert.Equal(t, spec.exp, got, string(gotJson))
+			require.NoError(t, encCfg.Marshaler.UnmarshalJSON(gotJSON, &got))
+			assert.Equal(t, spec.exp, got, string(gotJSON))
 		})
 	}
 }

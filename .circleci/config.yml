@@ -63,7 +63,8 @@ jobs:
 
   test-cover:
     executor: golang
-    parallelism: 2 # must not be more than number of packages with code
+    parallelism: 4 # must not be more than number of packages with code
+    resource_class: large
     steps:
       - setup_remote_docker:
           # >= v20.10 https://wiki.alpinelinux.org/wiki/Release_Notes_for_Alpine_3.14.0#faccessat2
@@ -92,6 +93,7 @@ jobs:
   test-system:
     executor: golang
     parallelism: 1
+    resource_class: large
     steps:
       - attach_workspace:
           at: /tmp/workspace
@@ -114,7 +116,7 @@ jobs:
   simulations:
     executor: golang
     parallelism: 1
-    resource_class: large
+    resource_class: xlarge
     steps:
       - checkout
       - run:
@@ -249,10 +251,10 @@ workflows:
             - test-cover
       - test-system:
           requires:
-            - setup-dependencies
+            - test-cover
       - gosec:
           requires:
             - setup-dependencies
       - simulations:
           requires:
-            - setup-dependencies
+            - test-cover

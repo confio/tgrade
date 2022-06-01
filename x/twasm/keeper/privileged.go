@@ -232,7 +232,7 @@ func (k Keeper) removePrivilegeRegistration(ctx sdk.Context, privilegeType types
 }
 
 // getPrivilegedContract returns the key stored at the given type and position. Result can be nil when none exists
-func (k Keeper) getPrivilegedContract(ctx sdk.Context, privilegeType types.PrivilegeType, pos uint8) sdk.AccAddress {
+func (k Keeper) getPrivilegedContract(ctx sdk.Context, privilegeType types.PrivilegeType, pos uint8) sdk.AccAddress { //nolint:unused
 	store := ctx.KVStore(k.storeKey)
 	key := contractPrivilegesSecondaryIndexKey(privilegeType, pos)
 	return store.Get(key)

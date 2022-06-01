@@ -16,7 +16,7 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-var _ types.QueryServer = &grpcQuerier{}
+var _ types.QueryServer = &Querier{}
 
 // ContractSource subset of poe keeper
 type ContractSource interface {
@@ -33,17 +33,17 @@ type ViewKeeper interface {
 	EngagementContract(ctx sdk.Context) EngagementContract
 }
 
-type grpcQuerier struct {
+type Querier struct {
 	keeper ViewKeeper
 }
 
-// NewGrpcQuerier constructor
-func NewGrpcQuerier(keeper ViewKeeper) *grpcQuerier {
-	return &grpcQuerier{keeper: keeper}
+// NewQuerier constructor
+func NewQuerier(keeper ViewKeeper) *Querier {
+	return &Querier{keeper: keeper}
 }
 
 // ContractAddress query PoE contract address for given type
-func (q grpcQuerier) ContractAddress(c context.Context, req *types.QueryContractAddressRequest) (*types.QueryContractAddressResponse, error) {
+func (q Querier) ContractAddress(c context.Context, req *types.QueryContractAddressRequest) (*types.QueryContractAddressResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -59,7 +59,7 @@ func (q grpcQuerier) ContractAddress(c context.Context, req *types.QueryContract
 }
 
 // Validators query all validators that match the given status.
-func (q grpcQuerier) Validators(c context.Context, req *stakingtypes.QueryValidatorsRequest) (*stakingtypes.QueryValidatorsResponse, error) {
+func (q Querier) Validators(c context.Context, req *stakingtypes.QueryValidatorsRequest) (*stakingtypes.QueryValidatorsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -91,7 +91,7 @@ func (q grpcQuerier) Validators(c context.Context, req *stakingtypes.QueryValida
 
 // Validator queries validator info for a given validator address.
 // returns NotFound error code when none exists for the given address
-func (q grpcQuerier) Validator(c context.Context, req *stakingtypes.QueryValidatorRequest) (*stakingtypes.QueryValidatorResponse, error) {
+func (q Querier) Validator(c context.Context, req *stakingtypes.QueryValidatorRequest) (*stakingtypes.QueryValidatorResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -117,7 +117,7 @@ func (q grpcQuerier) Validator(c context.Context, req *stakingtypes.QueryValidat
 }
 
 // UnbondingPeriod query the global unbonding period
-func (q grpcQuerier) UnbondingPeriod(c context.Context, req *types.QueryUnbondingPeriodRequest) (*types.QueryUnbondingPeriodResponse, error) {
+func (q Querier) UnbondingPeriod(c context.Context, req *types.QueryUnbondingPeriodRequest) (*types.QueryUnbondingPeriodResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -131,7 +131,7 @@ func (q grpcQuerier) UnbondingPeriod(c context.Context, req *types.QueryUnbondin
 	}, nil
 }
 
-func (q grpcQuerier) ValidatorDelegation(c context.Context, req *types.QueryValidatorDelegationRequest) (*types.QueryValidatorDelegationResponse, error) {
+func (q Querier) ValidatorDelegation(c context.Context, req *types.QueryValidatorDelegationRequest) (*types.QueryValidatorDelegationResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -154,7 +154,7 @@ func (q grpcQuerier) ValidatorDelegation(c context.Context, req *types.QueryVali
 	}, nil
 }
 
-func (q grpcQuerier) ValidatorUnbondingDelegations(c context.Context, req *types.QueryValidatorUnbondingDelegationsRequest) (*types.QueryValidatorUnbondingDelegationsResponse, error) {
+func (q Querier) ValidatorUnbondingDelegations(c context.Context, req *types.QueryValidatorUnbondingDelegationsRequest) (*types.QueryValidatorUnbondingDelegationsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -171,7 +171,7 @@ func (q grpcQuerier) ValidatorUnbondingDelegations(c context.Context, req *types
 	return &types.QueryValidatorUnbondingDelegationsResponse{Entries: unbodings}, nil
 }
 
-func (q grpcQuerier) HistoricalInfo(c context.Context, req *stakingtypes.QueryHistoricalInfoRequest) (*stakingtypes.QueryHistoricalInfoResponse, error) {
+func (q Querier) HistoricalInfo(c context.Context, req *stakingtypes.QueryHistoricalInfoRequest) (*stakingtypes.QueryHistoricalInfoResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -183,7 +183,7 @@ func (q grpcQuerier) HistoricalInfo(c context.Context, req *stakingtypes.QueryHi
 	return &stakingtypes.QueryHistoricalInfoResponse{Hist: &hi}, nil
 }
 
-func (q grpcQuerier) ValidatorOutstandingReward(c context.Context, req *types.QueryValidatorOutstandingRewardRequest) (*types.QueryValidatorOutstandingRewardResponse, error) {
+func (q Querier) ValidatorOutstandingReward(c context.Context, req *types.QueryValidatorOutstandingRewardRequest) (*types.QueryValidatorOutstandingRewardResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}

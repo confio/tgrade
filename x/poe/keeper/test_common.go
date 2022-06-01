@@ -10,7 +10,6 @@ import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	params2 "github.com/cosmos/cosmos-sdk/simapp/params"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -80,7 +79,7 @@ var moduleBasics = module.NewBasicManager(
 	twasm.AppModuleBasic{},
 )
 
-func makeEncodingConfig(t testing.TB) params2.EncodingConfig {
+func makeEncodingConfig(t testing.TB) simappparams.EncodingConfig {
 	r := types.MakeEncodingConfig(t)
 	moduleBasics.RegisterLegacyAminoCodec(r.Amino)
 	moduleBasics.RegisterInterfaces(r.InterfaceRegistry)
@@ -94,8 +93,8 @@ type TestKeepers struct {
 	GovKeeper      govkeeper.Keeper
 	TWasmKeeper    *twasmkeeper.Keeper
 	IBCKeeper      *ibckeeper.Keeper
-	PoEKeeper      Keeper
-	EncodingConfig params2.EncodingConfig
+	PoEKeeper      *Keeper
+	EncodingConfig simappparams.EncodingConfig
 	UpgradeKeeper  upgradekeeper.Keeper
 	Faucet         *wasmkeeper.TestFaucet
 	BaseApp        *baseapp.BaseApp
@@ -320,7 +319,7 @@ func createTestInput(
 		TWasmKeeper:    &twasmKeeper,
 		BankKeeper:     bankKeeper,
 		IBCKeeper:      ibcKeeper,
-		PoEKeeper:      poeKeeper,
+		PoEKeeper:      &poeKeeper,
 		UpgradeKeeper:  upgradeKeeper,
 		EncodingConfig: encodingConfig,
 		BaseApp:        consensusParamsUpdater,
@@ -347,7 +346,7 @@ func RandomAddress(_ *testing.T) sdk.AccAddress {
 }
 
 // createMinTestInput minimum integration test setup for this package
-func createMinTestInput(t *testing.T) (sdk.Context, simappparams.EncodingConfig, Keeper) {
+func createMinTestInput(t *testing.T) (sdk.Context, simappparams.EncodingConfig, *Keeper) { //nolint:deadcode,unused
 	var (
 		keyPoe     = sdk.NewKVStoreKey(types.StoreKey)
 		keyParams  = sdk.NewKVStoreKey(paramstypes.StoreKey)
@@ -395,5 +394,5 @@ func createMinTestInput(t *testing.T) (sdk.Context, simappparams.EncodingConfig,
 	}, false, log.NewNopLogger())
 
 	k := NewKeeper(encodingConfig.Marshaler, keyPoe, paramsKeeper.Subspace(types.ModuleName), nil, accountKeeper)
-	return ctx, encodingConfig, k
+	return ctx, encodingConfig, &k
 }

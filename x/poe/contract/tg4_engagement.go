@@ -46,7 +46,7 @@ type UpdateMembersMsg struct {
 	Remove []string    `json:"remove"`
 }
 
-func (m *UpdateMembersMsg) Json(t *testing.T) string {
+func (m *UpdateMembersMsg) ToJSON(t *testing.T) string {
 	t.Helper()
 	switch {
 	case m.Add == nil:
@@ -63,13 +63,13 @@ func (m *UpdateMembersMsg) Json(t *testing.T) string {
 }
 
 type EngagementContractAdapter struct {
-	ContractAdapter
+	BaseContractAdapter
 }
 
 // NewEngagementContractAdapter constructor
 func NewEngagementContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWasmKeeper, addressLookupErr error) *EngagementContractAdapter {
 	return &EngagementContractAdapter{
-		ContractAdapter: NewContractAdapter(
+		BaseContractAdapter: NewBaseContractAdapter(
 			contractAddr,
 			twasmKeeper,
 			addressLookupErr,

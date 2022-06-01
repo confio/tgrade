@@ -8,7 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -29,8 +28,8 @@ func NewKeeper(
 	cdc codec.Codec,
 	storeKey sdk.StoreKey,
 	paramSpace paramtypes.Subspace,
-	accountKeeper authkeeper.AccountKeeper,
-	bankKeeper types.BankKeeper,
+	accountKeeper wasmtypes.AccountKeeper,
+	bankKeeper wasmtypes.BankKeeper,
 	stakingKeeper wasmtypes.StakingKeeper,
 	distKeeper wasmtypes.DistributionKeeper,
 	channelKeeper wasmtypes.ChannelKeeper,

@@ -155,9 +155,6 @@ var (
 		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
 		poetypes.BondedPoolName:     {authtypes.Burner, authtypes.Staking},
 	}
-
-	// module accounts that are allowed to receive tokens
-	allowedReceivingModAcc = map[string]bool{}
 )
 
 var (

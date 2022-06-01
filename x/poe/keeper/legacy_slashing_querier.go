@@ -9,18 +9,18 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var _ slashingtypes.QueryServer = &legacySlashingGRPCQuerier{}
+var _ slashingtypes.QueryServer = &LegacySlashingGRPCQuerier{}
 
-type legacySlashingGRPCQuerier struct {
+type LegacySlashingGRPCQuerier struct {
 	keeper ContractSource
 }
 
-func NewLegacySlashingGRPCQuerier(keeper ContractSource) *legacySlashingGRPCQuerier { //nolint:golint
-	return &legacySlashingGRPCQuerier{keeper: keeper}
+func NewLegacySlashingGRPCQuerier(keeper ContractSource) *LegacySlashingGRPCQuerier { //nolint:golint
+	return &LegacySlashingGRPCQuerier{keeper: keeper}
 }
 
 // SigningInfo legacy support for cosmos-sdk signing info. Note that not all field are available on tgrade
-func (g legacySlashingGRPCQuerier) SigningInfo(c context.Context, req *slashingtypes.QuerySigningInfoRequest) (*slashingtypes.QuerySigningInfoResponse, error) {
+func (g LegacySlashingGRPCQuerier) SigningInfo(c context.Context, req *slashingtypes.QuerySigningInfoRequest) (*slashingtypes.QuerySigningInfoResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -40,13 +40,13 @@ func (g legacySlashingGRPCQuerier) SigningInfo(c context.Context, req *slashingt
 }
 
 // SigningInfos is not supported and will return unimplemented error
-func (g legacySlashingGRPCQuerier) SigningInfos(c context.Context, req *slashingtypes.QuerySigningInfosRequest) (*slashingtypes.QuerySigningInfosResponse, error) {
+func (g LegacySlashingGRPCQuerier) SigningInfos(c context.Context, req *slashingtypes.QuerySigningInfosRequest) (*slashingtypes.QuerySigningInfosResponse, error) {
 	logNotImplemented(sdk.UnwrapSDKContext(c), "SigningInfos")
 	return nil, status.Error(codes.Unimplemented, "not available, yet")
 }
 
 // Params is not supported. Method returns default slashing module params.
-func (g legacySlashingGRPCQuerier) Params(c context.Context, req *slashingtypes.QueryParamsRequest) (*slashingtypes.QueryParamsResponse, error) {
+func (g LegacySlashingGRPCQuerier) Params(c context.Context, req *slashingtypes.QueryParamsRequest) (*slashingtypes.QueryParamsResponse, error) {
 	return &slashingtypes.QueryParamsResponse{
 		Params: slashingtypes.Params{
 			SignedBlocksWindow:      0,

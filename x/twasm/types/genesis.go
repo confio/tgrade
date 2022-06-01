@@ -91,8 +91,8 @@ func (g GenesisState) RawWasmState() wasmtypes.GenesisState {
 var _ codectypes.UnpackInterfacesMessage = GenesisState{}
 
 // UnpackInterfaces implements codectypes.UnpackInterfaces
-func (m GenesisState) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
-	for _, v := range m.Contracts {
+func (g GenesisState) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+	for _, v := range g.Contracts {
 		if err := v.UnpackInterfaces(unpacker); err != nil {
 			return err
 		}

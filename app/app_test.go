@@ -24,7 +24,8 @@ import (
 	poetypes "github.com/confio/tgrade/x/poe/types"
 )
 
-var emptyWasmOpts []wasm.Option = nil
+// default empty opts = nil
+var emptyWasmOpts []wasm.Option
 
 func TestTgradeExport(t *testing.T) {
 	db := db.NewMemDB()
@@ -131,25 +132,6 @@ func TestBlockedAddrs(t *testing.T) {
 func TestGetMaccPerms(t *testing.T) {
 	dup := GetMaccPerms()
 	require.Equal(t, maccPerms, dup, "duplicated module account permissions differed from actual module account permissions")
-}
-
-func setGenesis(gapp *TgradeApp) error {
-	genesisState := NewDefaultGenesisState()
-	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
-	if err != nil {
-		return err
-	}
-
-	// Initialize the chain
-	gapp.InitChain(
-		abci.RequestInitChain{
-			Validators:    []abci.ValidatorUpdate{},
-			AppStateBytes: stateBytes,
-		},
-	)
-
-	gapp.Commit()
-	return nil
 }
 
 func TestIBCKeeperLazyInitialization(t *testing.T) {

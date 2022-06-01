@@ -5,6 +5,8 @@ import (
 	"sort"
 	"testing"
 
+	twasmkeeper "github.com/confio/tgrade/x/twasm/keeper"
+
 	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/tendermint/tendermint/libs/rand"
 
@@ -123,48 +125,47 @@ func TestIntegrationBootstrapPoEContracts(t *testing.T) {
 
 func TestVerifyPoEContracts(t *testing.T) {
 	// setup contracts and seed some data
-	parentCtx, example, _ := setupPoEContracts(t)
 	specs := map[string]struct {
-		alterState func(t *testing.T, ctx sdk.Context)
+		alterState func(t *testing.T, ctx sdk.Context, poeKeeper *keeper.Keeper, twasmKeeper *twasmkeeper.Keeper)
 		expErr     bool
 	}{
 		"all good": {
-			alterState: func(t *testing.T, ctx sdk.Context) {}, //  noop
+			alterState: func(t *testing.T, ctx sdk.Context, poeKeeper *keeper.Keeper, twasmKeeper *twasmkeeper.Keeper) {}, //  noop
 		},
 		"poe contract not pinned": {
-			alterState: func(t *testing.T, ctx sdk.Context) {
-				require.NoError(t, example.TWasmKeeper.GetContractKeeper().UnpinCode(ctx, 1))
+			alterState: func(t *testing.T, ctx sdk.Context, poeKeeper *keeper.Keeper, twasmKeeper *twasmkeeper.Keeper) {
+				require.NoError(t, twasmKeeper.GetContractKeeper().UnpinCode(ctx, 1))
 			},
 			expErr: true,
 		},
 		"poe contract without correct migrator": {
-			alterState: func(t *testing.T, ctx sdk.Context) {
-				contractAddr, _ := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
-				valVotingAddr, _ := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValidatorVoting)
+			alterState: func(t *testing.T, ctx sdk.Context, poeKeeper *keeper.Keeper, twasmKeeper *twasmkeeper.Keeper) {
+				contractAddr, _ := poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
+				valVotingAddr, _ := poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValidatorVoting)
 				otherAddr := rand.Bytes(address.Len)
-				require.NoError(t, example.TWasmKeeper.GetContractKeeper().UpdateContractAdmin(ctx, contractAddr, valVotingAddr, otherAddr))
+				require.NoError(t, twasmKeeper.GetContractKeeper().UpdateContractAdmin(ctx, contractAddr, valVotingAddr, otherAddr))
 			},
 			expErr: true,
 		},
 		"without validator update privilege set": {
-			alterState: func(t *testing.T, ctx sdk.Context) {
-				otherContract, _ := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
-				example.PoEKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeValset, otherContract)
+			alterState: func(t *testing.T, ctx sdk.Context, poeKeeper *keeper.Keeper, twasmKeeper *twasmkeeper.Keeper) {
+				otherContract, _ := poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
+				poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeValset, otherContract)
 			},
 			expErr: true,
 		},
 		"without delegator privilege set": {
-			alterState: func(t *testing.T, ctx sdk.Context) {
-				otherContract, _ := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
-				example.PoEKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeStaking, otherContract)
+			alterState: func(t *testing.T, ctx sdk.Context, poeKeeper *keeper.Keeper, twasmKeeper *twasmkeeper.Keeper) {
+				otherContract, _ := poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
+				poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeStaking, otherContract)
 			},
 			expErr: true,
 		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
-			ctx, _ := parentCtx.CacheContext()
-			spec.alterState(t, ctx)
+			ctx, example, _ := setupPoEContracts(t)
+			spec.alterState(t, ctx, example.PoEKeeper, example.TWasmKeeper)
 
 			gotErr := poe.VerifyPoEContracts(ctx, example.TWasmKeeper, example.PoEKeeper)
 			if spec.expErr {
@@ -176,11 +177,11 @@ func TestVerifyPoEContracts(t *testing.T) {
 	}
 }
 
-func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, keeper.TestKeepers, types.GenesisState) {
+func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (sdk.Context, *keeper.TestKeepers, types.GenesisState) {
 	t.Helper()
 	ctx, example := keeper.CreateDefaultTestInput(t)
 	deliverTXFn := unAuthorizedDeliverTXFn(t, ctx, example.PoEKeeper, example.TWasmKeeper.GetContractKeeper(), example.EncodingConfig.TxConfig.TxDecoder())
-	module := poe.NewAppModule(&example.PoEKeeper, example.TWasmKeeper, example.BankKeeper, example.AccountKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
+	module := poe.NewAppModule(example.PoEKeeper, example.TWasmKeeper, example.BankKeeper, example.AccountKeeper, deliverTXFn, example.EncodingConfig.TxConfig, example.TWasmKeeper.GetContractKeeper())
 
 	mutator, _ := withRandomValidators(t, ctx, example, 3)
 	gs := types.GenesisStateFixture(append([]func(m *types.GenesisState){mutator}, mutators...)...)
@@ -200,11 +201,11 @@ func setupPoEContracts(t *testing.T, mutators ...func(m *types.GenesisState)) (s
 
 	genesisBz := example.EncodingConfig.Marshaler.MustMarshalJSON(gs)
 	module.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
-	return ctx, example, *gs
+	return ctx, &example, *gs
 }
 
 // unAuthorizedDeliverTXFn applies the TX without ante handler checks for testing purpose
-func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k keeper.Keeper, contractKeeper wasmtypes.ContractOpsKeeper, txDecoder sdk.TxDecoder) func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
+func unAuthorizedDeliverTXFn(t *testing.T, ctx sdk.Context, k *keeper.Keeper, contractKeeper wasmtypes.ContractOpsKeeper, txDecoder sdk.TxDecoder) func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
 	t.Helper()
 	h := poe.NewHandler(k, contractKeeper, nil)
 	return func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {

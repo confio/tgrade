@@ -200,20 +200,20 @@ func ConvertToTendermintPubKey(key ValidatorPubkey) (crypto.PublicKey, error) {
 	}
 }
 
-// ContractAdapter is the base contract adapter type that contains common methods to interact with the contract
-type ContractAdapter struct {
+// BaseContractAdapter is the base contract adapter type that contains common methods to interact with the contract
+type BaseContractAdapter struct {
 	contractAddr     sdk.AccAddress
 	twasmKeeper      types.TWasmKeeper
 	addressLookupErr error
 }
 
-// NewContractAdapter constructor
-func NewContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWasmKeeper, addressLookupErr error) ContractAdapter {
-	return ContractAdapter{contractAddr: contractAddr, twasmKeeper: twasmKeeper, addressLookupErr: addressLookupErr}
+// NewBaseContractAdapter constructor
+func NewBaseContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWasmKeeper, addressLookupErr error) BaseContractAdapter {
+	return BaseContractAdapter{contractAddr: contractAddr, twasmKeeper: twasmKeeper, addressLookupErr: addressLookupErr}
 }
 
 // send message via execute entry point
-func (a ContractAdapter) doExecute(ctx sdk.Context, msg interface{}, sender sdk.AccAddress, coin ...sdk.Coin) error {
+func (a BaseContractAdapter) doExecute(ctx sdk.Context, msg interface{}, sender sdk.AccAddress, coin ...sdk.Coin) error {
 	if err := a.addressLookupErr; err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ type PageableResult interface {
 
 // execute a smart query with the contract that returns multiple elements
 // returns a cursor whenever the result set has more than 1 element
-func (a ContractAdapter) doPageableQuery(ctx sdk.Context, query interface{}, result interface{}) (PaginationCursor, error) {
+func (a BaseContractAdapter) doPageableQuery(ctx sdk.Context, query interface{}, result interface{}) (PaginationCursor, error) {
 	if err := a.addressLookupErr; err != nil {
 		return nil, err
 	}
@@ -248,9 +248,7 @@ func (a ContractAdapter) doPageableQuery(ctx sdk.Context, query interface{}, res
 	if err := json.Unmarshal(res, result); err != nil {
 		return nil, sdkerrors.Wrap(err, "unmarshal result")
 	}
-	switch p := result.(type) {
-	case PageableResult:
-		// has cursor value
+	if p, ok := result.(PageableResult); ok {
 		return p.PaginationCursor(res)
 	}
 	// no pagination support (in tgrade, yet)
@@ -258,7 +256,7 @@ func (a ContractAdapter) doPageableQuery(ctx sdk.Context, query interface{}, res
 }
 
 // execute a smart query with the contract
-func (a ContractAdapter) doQuery(ctx sdk.Context, query interface{}, result interface{}) error {
+func (a BaseContractAdapter) doQuery(ctx sdk.Context, query interface{}, result interface{}) error {
 	if err := a.addressLookupErr; err != nil {
 		return err
 	}
@@ -274,7 +272,7 @@ func (a ContractAdapter) doQuery(ctx sdk.Context, query interface{}, result inte
 }
 
 // Address returns contract address
-func (a ContractAdapter) Address() (sdk.AccAddress, error) {
+func (a BaseContractAdapter) Address() (sdk.AccAddress, error) {
 	return a.contractAddr, a.addressLookupErr
 }
 

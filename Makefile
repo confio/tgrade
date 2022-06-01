@@ -152,7 +152,7 @@ format-tools:
 	go install github.com/client9/misspell/cmd/misspell@v0.3.4
 
 lint: format-tools
-	golangci-lint run
+	golangci-lint run --tests=false
 	find . -name '*.go' -type f -not -path "./vendor*" -not -path "*.git*" | xargs gofumpt -d -s
 
 format: format-tools

@@ -123,7 +123,7 @@ func (c TgradeCli) withTXFlags(args ...string) []string {
 }
 
 func (c TgradeCli) withKeyringFlags(args ...string) []string {
-	r := append(args,
+	r := append(args, //nolint:gocritic
 		"--home", c.homeDir,
 		"--keyring-backend", "test",
 	)

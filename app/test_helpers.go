@@ -196,7 +196,7 @@ func SetupWithGenesisAccounts(genAccs []authtypes.GenesisAccount, balances ...ba
 type GenerateAccountStrategy func(int) []sdk.AccAddress
 
 // createRandomAccounts is a strategy used by addTestAddrs() in order to generated addresses in random order.
-func createRandomAccounts(accNum int) []sdk.AccAddress {
+func createRandomAccounts(accNum int) []sdk.AccAddress { //nolint:deadcode,unused
 	testAddrs := make([]sdk.AccAddress, accNum)
 	for i := 0; i < accNum; i++ {
 		pk := ed25519.GenPrivKey().PubKey()
@@ -207,8 +207,8 @@ func createRandomAccounts(accNum int) []sdk.AccAddress {
 }
 
 // createIncrementalAccounts is a strategy used by addTestAddrs() in order to generated addresses in ascending order.
-func createIncrementalAccounts(accNum int) []sdk.AccAddress {
-	var addresses []sdk.AccAddress
+func createIncrementalAccounts(accNum int) []sdk.AccAddress { //nolint:deadcode,unused
+	var addresses []sdk.AccAddress //nolint:prealloc
 	var buffer bytes.Buffer
 
 	// start at 100 so we can make up to 999 test addresses with valid test addresses
@@ -216,72 +216,16 @@ func createIncrementalAccounts(accNum int) []sdk.AccAddress {
 		numString := strconv.Itoa(i)
 		buffer.WriteString("A58856F0FD53BF058B4909A21AEC019107BA6") // base address string
 
-		buffer.WriteString(numString) // adding on final two digits to make addresses unique
-		res, _ := sdk.AccAddressFromHex(buffer.String())
+		buffer.WriteString(numString)                    // adding on final two digits to make addresses unique
+		res, _ := sdk.AccAddressFromHex(buffer.String()) //nolint:errcheck
 		bech := res.String()
-		addr, _ := TestAddr(buffer.String(), bech)
+		addr, _ := TestAddr(buffer.String(), bech) //nolint:errcheck
 
 		addresses = append(addresses, addr)
 		buffer.Reset()
 	}
 
 	return addresses
-}
-
-// AddTestAddrsFromPubKeys adds the addresses into the TgradeApp providing only the public keys.
-//func AddTestAddrsFromPubKeys(app *TgradeApp, ctx sdk.Context, pubKeys []cryptotypes.PubKey, accAmt sdk.Int) {
-//	initCoins := sdk.NewCoins(sdk.NewCoin(app.stakingKeeper.BondDenom(ctx), accAmt))
-//
-//	setTotalSupply(app, ctx, accAmt, len(pubKeys))
-//
-//	// fill all the addresses with some coins, set the loose pool tokens simultaneously
-//	for _, pubKey := range pubKeys {
-//		saveAccount(app, ctx, sdk.AccAddress(pubKey.Address()), initCoins)
-//	}
-//}
-//
-//// setTotalSupply provides the total supply based on accAmt * totalAccounts.
-//func setTotalSupply(app *TgradeApp, ctx sdk.Context, accAmt sdk.Int, totalAccounts int) {
-//	totalSupply := sdk.NewCoins(sdk.NewCoin(app.stakingKeeper.BondDenom(ctx), accAmt.MulRaw(int64(totalAccounts))))
-//	prevSupply := app.bankKeeper.GetSupply(ctx)
-//	app.bankKeeper.SetSupply(ctx, banktypes.NewSupply(prevSupply.GetTotal().Add(totalSupply...)))
-//}
-
-// AddTestAddrs constructs and returns accNum amount of accounts with an
-// initial balance of accAmt in random order
-//func AddTestAddrs(app *TgradeApp, ctx sdk.Context, accNum int, accAmt sdk.Int) []sdk.AccAddress {
-//	return addTestAddrs(app, ctx, accNum, accAmt, createRandomAccounts)
-//}
-
-// AddTestAddrs constructs and returns accNum amount of accounts with an
-// initial balance of accAmt in random order
-//func AddTestAddrsIncremental(app *TgradeApp, ctx sdk.Context, accNum int, accAmt sdk.Int) []sdk.AccAddress {
-//	return addTestAddrs(app, ctx, accNum, accAmt, createIncrementalAccounts)
-//}
-
-//func addTestAddrs(app *TgradeApp, ctx sdk.Context, accNum int, accAmt sdk.Int, strategy GenerateAccountStrategy) []sdk.AccAddress {
-//	testAddrs := strategy(accNum)
-//
-//	initCoins := sdk.NewCoins(sdk.NewCoin(app.stakingKeeper.BondDenom(ctx), accAmt))
-//	setTotalSupply(app, ctx, accAmt, accNum)
-//
-//	// fill all the addresses with some coins, set the loose pool tokens simultaneously
-//	for _, addr := range testAddrs {
-//		saveAccount(app, ctx, addr, initCoins)
-//	}
-//
-//	return testAddrs
-//}
-
-// ConvertAddrsToValAddrs converts the provided addresses to ValAddress.
-func ConvertAddrsToValAddrs(addrs []sdk.AccAddress) []sdk.ValAddress {
-	valAddrs := make([]sdk.ValAddress, len(addrs))
-
-	for i, addr := range addrs {
-		valAddrs[i] = sdk.ValAddress(addr)
-	}
-
-	return valAddrs
 }
 
 func TestAddr(addr string, bech string) (sdk.AccAddress, error) {
@@ -397,8 +341,8 @@ func incrementAllSequenceNumbers(initSeqNums []uint64) {
 }
 
 // CreateTestPubKeys returns a total of numPubKeys public keys in ascending order.
-func CreateTestPubKeys(numPubKeys int) []cryptotypes.PubKey {
-	var publicKeys []cryptotypes.PubKey
+func CreateTestPubKeys(numPubKeys int) []cryptotypes.PubKey { //nolint:deadcode
+	var publicKeys []cryptotypes.PubKey //nolint:prealloc
 	var buffer bytes.Buffer
 
 	// start at 10 to avoid changing 1 to 01, 2 to 02, etc

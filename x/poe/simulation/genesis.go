@@ -5,9 +5,7 @@ package simulation
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strings"
-	"time"
 
 	"github.com/tendermint/tendermint/libs/math"
 
@@ -16,7 +14,6 @@ import (
 	sdkhelpers "github.com/cosmos/cosmos-sdk/simapp/helpers"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -25,24 +22,7 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-// Simulation parameter constants
-const (
-	unbondingTime     = "unbonding_time"
-	maxValidators     = "max_validators"
-	historicalEntries = "historical_entries"
-)
-
 const defaultDenom = "utgd"
-
-// GenUnbondingTime randomized UnbondingTime
-func genUnbondingTime(r *rand.Rand) (ubdTime time.Duration) {
-	return time.Duration(simulation.RandIntBetween(r, 60, 60*60*24*3*2)) * time.Second
-}
-
-// GenMaxValidators randomized MaxValidators
-func genMaxValidators(r *rand.Rand) (maxValidators uint32) {
-	return uint32(r.Intn(250) + 1)
-}
 
 // RandomizedGenState generates a random GenesisState
 func RandomizedGenState(simState *module.SimulationState) {
@@ -53,7 +33,7 @@ func RandomizedGenState(simState *module.SimulationState) {
 		if len(v) == 0 {
 			continue
 		}
-		simState.GenState[k] = []byte(strings.Replace(string(v), "\"stake\"", fmt.Sprintf("%q", defaultDenom), -1))
+		simState.GenState[k] = []byte(strings.ReplaceAll(string(v), "\"stake\"", fmt.Sprintf("%q", defaultDenom)))
 	}
 
 	// ensure bank module state for PoE
@@ -81,24 +61,24 @@ func RandomizedGenState(simState *module.SimulationState) {
 	}
 
 	// add some random oversight community members
-	var ocMembers []string
 	opMembersCount := math.MinInt(simState.Rand.Int()+1, len(simState.Accounts)-int(simState.NumBonded))
+	ocMembers := make([]string, opMembersCount)
 	for i := 0; i < opMembersCount; i++ {
-		ocMembers = append(ocMembers, simState.Accounts[int(simState.NumBonded)+i].Address.String())
+		ocMembers[i] = simState.Accounts[int(simState.NumBonded)+i].Address.String()
 	}
 
 	// add some random arbiter pool members
-	var apMembers []string
 	apMembersCount := math.MinInt(simState.Rand.Int()+1, len(simState.Accounts)-int(simState.NumBonded))
+	apMembers := make([]string, apMembersCount)
 	for i := 0; i < apMembersCount; i++ {
-		apMembers = append(apMembers, simState.Accounts[int(simState.NumBonded)+i].Address.String())
+		apMembers[i] = simState.Accounts[int(simState.NumBonded)+i].Address.String()
 	}
 
 	txConfig := types.MakeEncodingConfig(nil).TxConfig
 
 	// prepare genTX
-	var genTxs []json.RawMessage
-	var engagements []types.TG4Member
+	genTxs := make([]json.RawMessage, 0, int(simState.NumBonded))
+	engagements := make([]types.TG4Member, 0, int(simState.NumBonded))
 	for i := 1; i < int(simState.NumBonded); i++ {
 		acc := simState.Accounts[i]
 		if acc.Address.String() != bankGenesis.Balances[i].Address {
@@ -146,7 +126,7 @@ func RandomizedGenState(simState *module.SimulationState) {
 		}
 
 		// Second round: all signer infos are set, so each signer can sign.
-		var seq uint64 = 0
+		var seq uint64
 		data := authsigning.SignerData{
 			ChainID:       sdkhelpers.SimAppChainID,
 			AccountNumber: 0, // in genesis

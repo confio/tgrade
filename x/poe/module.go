@@ -77,11 +77,19 @@ func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the genutil module.
 func (b AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, serveMux *runtime.ServeMux) {
-	_ = types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(clientCtx))
+	if err := types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
 	// support cosmos queries
-	_ = slashingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, slashingtypes.NewQueryClient(clientCtx))
-	_ = stakingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, stakingtypes.NewQueryClient(clientCtx))
-	_ = distributiontypes.RegisterQueryHandlerClient(context.Background(), serveMux, distributiontypes.NewQueryClient(clientCtx))
+	if err := slashingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, slashingtypes.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
+	if err := stakingtypes.RegisterQueryHandlerClient(context.Background(), serveMux, stakingtypes.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
+	if err := distributiontypes.RegisterQueryHandlerClient(context.Background(), serveMux, distributiontypes.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
 }
 
 // GetTxCmd returns no root tx command for the genutil module.
@@ -91,8 +99,6 @@ func (AppModuleBasic) GetTxCmd() *cobra.Command { return cli.NewTxCmd() }
 func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 	return cli.GetQueryCmd()
 }
-
-//____________________________________________________________________________
 
 // AppModule implements an application module for the genutil module.
 type AppModule struct {
@@ -146,7 +152,7 @@ func (am AppModule) LegacyQuerierHandler(amino *codec.LegacyAmino) sdk.Querier {
 }
 
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewGrpcQuerier(am.poeKeeper))
+	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQuerier(am.poeKeeper))
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.poeKeeper, am.contractKeeper, am.twasmKeeper))
 
 	// support cosmos query path
@@ -206,7 +212,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	// in dump import mode
 	// query and return the active validator set
 	var activeSet []abci.ValidatorUpdate
-	am.poeKeeper.ValsetContract(ctx).IterateActiveValidators(ctx, func(c contract.ValidatorInfo) bool {
+	err = am.poeKeeper.ValsetContract(ctx).IterateActiveValidators(ctx, func(c contract.ValidatorInfo) bool {
 		pub, err := contract.ConvertToTendermintPubKey(c.ValidatorPubkey)
 		if err != nil {
 			panic(fmt.Sprintf("convert pubkey for %s", c.Operator))
@@ -217,6 +223,9 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 		})
 		return false
 	}, nil)
+	if err != nil {
+		panic(fmt.Sprintf("iterate active validators: %s", err))
+	}
 	if len(activeSet) == 0 { // fal fast
 		panic("active valset must not be empty")
 	}
@@ -237,10 +246,6 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 func (am AppModule) ConsensusVersion() uint64 {
 	return 1
 }
-
-// ____________________________________________________________________________
-
-// AppModuleSimulation functions
 
 // GenerateGenesisState creates a randomized GenState of the PoE module.
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {

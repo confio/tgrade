@@ -13,7 +13,7 @@ import (
 var _ ibccoretypes.StakingKeeper = &Keeper{}
 
 // GetHistoricalInfo gets the historical info at a given height
-func (k Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
+func (k *Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
 	store := ctx.KVStore(k.storeKey)
 	key := getHistoricalInfoKey(height)
 
@@ -26,7 +26,7 @@ func (k Keeper) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.H
 }
 
 // SetHistoricalInfo sets the historical info at a given height
-func (k Keeper) SetHistoricalInfo(ctx sdk.Context, height int64, hi *stakingtypes.HistoricalInfo) {
+func (k *Keeper) SetHistoricalInfo(ctx sdk.Context, height int64, hi *stakingtypes.HistoricalInfo) {
 	store := ctx.KVStore(k.storeKey)
 	key := getHistoricalInfoKey(height)
 	value := k.codec.MustMarshal(hi)
@@ -34,7 +34,7 @@ func (k Keeper) SetHistoricalInfo(ctx sdk.Context, height int64, hi *stakingtype
 }
 
 // DeleteHistoricalInfo deletes the historical info at a given height
-func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
+func (k *Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 	store := ctx.KVStore(k.storeKey)
 	key := getHistoricalInfoKey(height)
 
@@ -44,7 +44,7 @@ func (k Keeper) DeleteHistoricalInfo(ctx sdk.Context, height int64) {
 // iterateHistoricalInfo provides an interator over all stored HistoricalInfo
 //  objects. For each HistoricalInfo object, cb will be called. If the cb returns
 // true, the iterator will close and stop.
-func (k Keeper) iterateHistoricalInfo(ctx sdk.Context, cb func(stakingtypes.HistoricalInfo) bool) {
+func (k *Keeper) iterateHistoricalInfo(ctx sdk.Context, cb func(stakingtypes.HistoricalInfo) bool) { //nolint:unused
 	store := ctx.KVStore(k.storeKey)
 
 	iter := sdk.KVStorePrefixIterator(store, types.HistoricalInfoKey)
@@ -59,7 +59,7 @@ func (k Keeper) iterateHistoricalInfo(ctx sdk.Context, cb func(stakingtypes.Hist
 }
 
 // getAllHistoricalInfo returns all stored HistoricalInfo objects.
-func (k Keeper) getAllHistoricalInfo(ctx sdk.Context) []stakingtypes.HistoricalInfo {
+func (k *Keeper) getAllHistoricalInfo(ctx sdk.Context) []stakingtypes.HistoricalInfo { //nolint:unused
 	var infos []stakingtypes.HistoricalInfo
 
 	k.iterateHistoricalInfo(ctx, func(histInfo stakingtypes.HistoricalInfo) bool {
@@ -72,7 +72,7 @@ func (k Keeper) getAllHistoricalInfo(ctx sdk.Context) []stakingtypes.HistoricalI
 
 // TrackHistoricalInfo saves the latest historical-info and deletes the oldest
 // heights that are below pruning height
-func (k Keeper) TrackHistoricalInfo(ctx sdk.Context) {
+func (k *Keeper) TrackHistoricalInfo(ctx sdk.Context) {
 	entryNum := k.HistoricalEntries(ctx)
 
 	// Prune store to ensure we only have parameter-defined historical entries.

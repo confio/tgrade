@@ -11,35 +11,35 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-var _ stakingtypes.QueryServer = &legacyStakingGRPCQuerier{}
+var _ stakingtypes.QueryServer = &LegacyStakingGRPCQuerier{}
 
 type stakingQuerierKeeper interface {
 	ViewKeeper
 	HistoricalEntries(ctx sdk.Context) uint32
 }
-type legacyStakingGRPCQuerier struct {
+type LegacyStakingGRPCQuerier struct {
 	keeper      stakingQuerierKeeper
 	queryServer types.QueryServer
 }
 
-func NewLegacyStakingGRPCQuerier(poeKeeper stakingQuerierKeeper) *legacyStakingGRPCQuerier { //nolint:golint
-	return &legacyStakingGRPCQuerier{keeper: poeKeeper, queryServer: NewGrpcQuerier(poeKeeper)}
+func NewLegacyStakingGRPCQuerier(poeKeeper stakingQuerierKeeper) *LegacyStakingGRPCQuerier { //nolint:golint
+	return &LegacyStakingGRPCQuerier{keeper: poeKeeper, queryServer: NewQuerier(poeKeeper)}
 }
 
 // Validators legacy support for querying all validators that match the given status
-func (q legacyStakingGRPCQuerier) Validators(c context.Context, req *stakingtypes.QueryValidatorsRequest) (*stakingtypes.QueryValidatorsResponse, error) {
+func (q LegacyStakingGRPCQuerier) Validators(c context.Context, req *stakingtypes.QueryValidatorsRequest) (*stakingtypes.QueryValidatorsResponse, error) {
 	return q.queryServer.Validators(c, req)
 }
 
 // Validator legacy support for querying the validator info for a given validator address.
 // returns NotFound error code when none exists for the given address
-func (q legacyStakingGRPCQuerier) Validator(c context.Context, req *stakingtypes.QueryValidatorRequest) (*stakingtypes.QueryValidatorResponse, error) {
+func (q LegacyStakingGRPCQuerier) Validator(c context.Context, req *stakingtypes.QueryValidatorRequest) (*stakingtypes.QueryValidatorResponse, error) {
 	return q.queryServer.Validator(c, req)
 }
 
 // ValidatorDelegations legacy support for querying the delegate infos for a given validator.
 // In PoE only validator operators do self delegations/ unbondings. Result set is either zero or one element.
-func (q legacyStakingGRPCQuerier) ValidatorDelegations(c context.Context, req *stakingtypes.QueryValidatorDelegationsRequest) (*stakingtypes.QueryValidatorDelegationsResponse, error) {
+func (q LegacyStakingGRPCQuerier) ValidatorDelegations(c context.Context, req *stakingtypes.QueryValidatorDelegationsRequest) (*stakingtypes.QueryValidatorDelegationsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -67,7 +67,7 @@ func (q legacyStakingGRPCQuerier) ValidatorDelegations(c context.Context, req *s
 
 // ValidatorUnbondingDelegations legacy support for querying the unbonding delegations of a validator.
 // In PoE only validator operators do self delegations/ unbondings. Result set is either zero or one element.
-func (q legacyStakingGRPCQuerier) ValidatorUnbondingDelegations(c context.Context, req *stakingtypes.QueryValidatorUnbondingDelegationsRequest) (*stakingtypes.QueryValidatorUnbondingDelegationsResponse, error) {
+func (q LegacyStakingGRPCQuerier) ValidatorUnbondingDelegations(c context.Context, req *stakingtypes.QueryValidatorUnbondingDelegationsRequest) (*stakingtypes.QueryValidatorUnbondingDelegationsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -91,7 +91,7 @@ func (q legacyStakingGRPCQuerier) ValidatorUnbondingDelegations(c context.Contex
 
 // Delegation legacy support for querying the delegate info for a given validator delegator pair
 // Returns response or NotFound error when none exists.
-func (q legacyStakingGRPCQuerier) Delegation(c context.Context, req *stakingtypes.QueryDelegationRequest) (*stakingtypes.QueryDelegationResponse, error) {
+func (q LegacyStakingGRPCQuerier) Delegation(c context.Context, req *stakingtypes.QueryDelegationRequest) (*stakingtypes.QueryDelegationResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -126,7 +126,7 @@ func (q legacyStakingGRPCQuerier) Delegation(c context.Context, req *stakingtype
 
 // UnbondingDelegation legacy support for querying the unbonding info for given validator delegator pair
 // Returns response or NotFound error when none exists.
-func (q legacyStakingGRPCQuerier) UnbondingDelegation(c context.Context, req *stakingtypes.QueryUnbondingDelegationRequest) (*stakingtypes.QueryUnbondingDelegationResponse, error) {
+func (q LegacyStakingGRPCQuerier) UnbondingDelegation(c context.Context, req *stakingtypes.QueryUnbondingDelegationRequest) (*stakingtypes.QueryUnbondingDelegationResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -161,7 +161,7 @@ func (q legacyStakingGRPCQuerier) UnbondingDelegation(c context.Context, req *st
 
 // DelegatorDelegations legacy support for querying all delegations of a given delegator address.
 // In PoE only validator operators do self delegations/ unbondings. Result set is either zero or one element.
-func (q legacyStakingGRPCQuerier) DelegatorDelegations(c context.Context, req *stakingtypes.QueryDelegatorDelegationsRequest) (*stakingtypes.QueryDelegatorDelegationsResponse, error) {
+func (q LegacyStakingGRPCQuerier) DelegatorDelegations(c context.Context, req *stakingtypes.QueryDelegatorDelegationsRequest) (*stakingtypes.QueryDelegatorDelegationsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -180,7 +180,7 @@ func (q legacyStakingGRPCQuerier) DelegatorDelegations(c context.Context, req *s
 
 // DelegatorUnbondingDelegations legacy support for querying all unbonding delegations of a given delegator address
 // In PoE only validator operators do self delegations/ unbondings. Result set is either zero or one element.
-func (q legacyStakingGRPCQuerier) DelegatorUnbondingDelegations(c context.Context, req *stakingtypes.QueryDelegatorUnbondingDelegationsRequest) (*stakingtypes.QueryDelegatorUnbondingDelegationsResponse, error) {
+func (q LegacyStakingGRPCQuerier) DelegatorUnbondingDelegations(c context.Context, req *stakingtypes.QueryDelegatorUnbondingDelegationsRequest) (*stakingtypes.QueryDelegatorUnbondingDelegationsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -197,14 +197,14 @@ func (q legacyStakingGRPCQuerier) DelegatorUnbondingDelegations(c context.Contex
 	}, nil
 }
 
-func (q legacyStakingGRPCQuerier) Redelegations(c context.Context, req *stakingtypes.QueryRedelegationsRequest) (*stakingtypes.QueryRedelegationsResponse, error) {
+func (q LegacyStakingGRPCQuerier) Redelegations(c context.Context, req *stakingtypes.QueryRedelegationsRequest) (*stakingtypes.QueryRedelegationsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 	return &stakingtypes.QueryRedelegationsResponse{}, nil
 }
 
-func (q legacyStakingGRPCQuerier) DelegatorValidators(c context.Context, req *stakingtypes.QueryDelegatorValidatorsRequest) (*stakingtypes.QueryDelegatorValidatorsResponse, error) {
+func (q LegacyStakingGRPCQuerier) DelegatorValidators(c context.Context, req *stakingtypes.QueryDelegatorValidatorsRequest) (*stakingtypes.QueryDelegatorValidatorsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -219,7 +219,7 @@ func (q legacyStakingGRPCQuerier) DelegatorValidators(c context.Context, req *st
 	}, nil
 }
 
-func (q legacyStakingGRPCQuerier) DelegatorValidator(c context.Context, req *stakingtypes.QueryDelegatorValidatorRequest) (*stakingtypes.QueryDelegatorValidatorResponse, error) {
+func (q LegacyStakingGRPCQuerier) DelegatorValidator(c context.Context, req *stakingtypes.QueryDelegatorValidatorRequest) (*stakingtypes.QueryDelegatorValidatorResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -235,7 +235,7 @@ func (q legacyStakingGRPCQuerier) DelegatorValidator(c context.Context, req *sta
 }
 
 // HistoricalInfo queries the historical info for given height
-func (q legacyStakingGRPCQuerier) HistoricalInfo(c context.Context, req *stakingtypes.QueryHistoricalInfoRequest) (*stakingtypes.QueryHistoricalInfoResponse, error) {
+func (q LegacyStakingGRPCQuerier) HistoricalInfo(c context.Context, req *stakingtypes.QueryHistoricalInfoRequest) (*stakingtypes.QueryHistoricalInfoResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -247,7 +247,7 @@ func (q legacyStakingGRPCQuerier) HistoricalInfo(c context.Context, req *staking
 	return &stakingtypes.QueryHistoricalInfoResponse{Hist: &hi}, nil
 }
 
-func (q legacyStakingGRPCQuerier) Pool(c context.Context, req *stakingtypes.QueryPoolRequest) (*stakingtypes.QueryPoolResponse, error) {
+func (q LegacyStakingGRPCQuerier) Pool(c context.Context, req *stakingtypes.QueryPoolRequest) (*stakingtypes.QueryPoolResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -256,7 +256,7 @@ func (q legacyStakingGRPCQuerier) Pool(c context.Context, req *stakingtypes.Quer
 	return nil, status.Error(codes.Unimplemented, "not available, yet")
 }
 
-func (q legacyStakingGRPCQuerier) Params(c context.Context, req *stakingtypes.QueryParamsRequest) (*stakingtypes.QueryParamsResponse, error) {
+func (q LegacyStakingGRPCQuerier) Params(c context.Context, req *stakingtypes.QueryParamsRequest) (*stakingtypes.QueryParamsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
