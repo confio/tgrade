@@ -41,7 +41,7 @@ type TcPaymentsInitMsg struct {
 }
 
 type Period struct {
-	Daily   bool `json:"daily,omitempty"`
-	Monthly bool `json:"monthly,omitempty"`
-	Yearly  bool `json:"yearly,omitempty"`
+	Daily   *struct{} `json:"daily,omitempty"`
+	Monthly *struct{} `json:"monthly,omitempty"`
+	Yearly  *struct{} `json:"yearly,omitempty"`
 }

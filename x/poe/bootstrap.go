@@ -466,11 +466,11 @@ func newTcPaymentsInitMsg(gs types.SeedContracts,
 	paymentPeriod := contract.Period{}
 	// FIXME: Handle payment periods in a better way
 	if gs.TcPaymentsContractConfig.PaymentPeriod == time.Hour*24 {
-		paymentPeriod.Daily = true
+		paymentPeriod.Daily = &struct{}{}
 	} else if gs.TcPaymentsContractConfig.PaymentPeriod == time.Hour*24*365 {
-		paymentPeriod.Yearly = true
+		paymentPeriod.Yearly = &struct{}{}
 	} else {
-		paymentPeriod.Monthly = true
+		paymentPeriod.Monthly = &struct{}{}
 	}
 
 	tcPaymentsInitMsg := contract.TcPaymentsInitMsg{
