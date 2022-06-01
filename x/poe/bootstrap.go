@@ -225,8 +225,8 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "store valset contract")
 	}
 
-	valsetInitMsg := newValsetInitMsg(gs, bootstrapAccountAddr, mixerContractAddr, engagementContractAddr, communityPoolContractAddr, engagementCodeID)
-	valsetJSON := mustMarshalJSON(valsetInitMsg)
+	valsetInitMsg := newValsetInitMsg(gs, bootstrapAccountAddr, mixerContractAddr, tcPaymentsContractAddr, communityPoolContractAddr, engagementCodeID)
+	valsetJSON := mustMarshalJson(valsetInitMsg)
 	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, bootstrapAccountAddr, bootstrapAccountAddr, valsetJSON, "valset", nil)
 	if err != nil {
 		return sdkerrors.Wrapf(err, "instantiate valset with: %s", string(valsetJSON))
