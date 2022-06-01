@@ -113,7 +113,7 @@ jobs:
   simulations:
     executor: golang
     parallelism: 1
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - checkout
       - run:
