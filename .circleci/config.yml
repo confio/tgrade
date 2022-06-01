@@ -63,12 +63,9 @@ jobs:
 
   test-cover:
     executor: golang
-    parallelism: 4 # must not be more than number of packages with code
-    resource_class: large
+    parallelism: 3 # must not be more than number of packages with code
+    resource_class: medium+
     steps:
-      - setup_remote_docker:
-          # >= v20.10 https://wiki.alpinelinux.org/wiki/Release_Notes_for_Alpine_3.14.0#faccessat2
-          version: 20.10.11
       - checkout
       - restore_cache:
           keys:
@@ -93,7 +90,7 @@ jobs:
   test-system:
     executor: golang
     parallelism: 1
-    resource_class: large
+    resource_class: xlarge
     steps:
       - attach_workspace:
           at: /tmp/workspace
