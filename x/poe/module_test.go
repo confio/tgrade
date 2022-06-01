@@ -87,11 +87,11 @@ func TestInitGenesis(t *testing.T) {
 		Scaling:       1,
 		FeePercentage: sdk.MustNewDecFromStr("0.50"),
 		DistributionContracts: []contract.DistributionContract{
-			{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
+			{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.45")},
 			{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
 		},
 		EpochReward:    sdk.NewInt64Coin("utgd", 100000),
-		ValidatorGroup: twasm.ContractAddress(1, 7).String(),
+		ValidatorGroup: twasm.ContractAddress(1, 8).String(),
 		AutoUnjail:     false,
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)
