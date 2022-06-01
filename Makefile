@@ -137,7 +137,7 @@ benchmark:
 
 test-sim-import-export: runsim
 	@echo "Running application import/export simulation. This may take several minutes..."
-	@$(BINDIR)/runsim -Jobs=6 -SimAppPkg=$(SIMAPP) -ExitOnFail 50 5 TestAppImportExport
+	@$(BINDIR)/runsim -Jobs=4 -SimAppPkg=$(SIMAPP) -ExitOnFail 50 5 TestAppImportExport
 
 test-sim-multi-seed-short: runsim
 	@echo "Running short multi-seed application simulation. This may take awhile!"
