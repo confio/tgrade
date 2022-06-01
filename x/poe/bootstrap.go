@@ -181,9 +181,29 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 	logger.Info("community pool contract", "address", communityPoolContractAddr, "code_id", communityPoolCodeID)
 
+	// setup trusted circle for ap
+	apTrustedCircleInitMsg := newAPTrustedCircleInitMsg(gs)
+	apDeposit := sdk.NewCoins(gs.ArbiterPoolContractConfig.EscrowAmount)
+	firstAPMember, err := sdk.AccAddressFromBech32(gs.ArbiterPoolMembers[0])
+	if err != nil {
+		return sdkerrors.Wrap(err, "first ap member")
+	}
+
+	apContractAddr, _, err := k.Instantiate(ctx, trustedCircleCodeID, firstAPMember, bootstrapAccountAddr, mustMarshalJson(apTrustedCircleInitMsg), "arbiter_pool", apDeposit)
+	if err != nil {
+		return sdkerrors.Wrap(err, "instantiate tg trusted circle contract")
+	}
+	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeArbiterPool, apContractAddr)
+	if len(gs.ArbiterPoolMembers) > 1 {
+		err = addToTrustedCircle(ctx, apContractAddr, tk, gs.ArbiterPoolMembers[1:], firstAPMember, gs.ArbiterPoolContractConfig.EscrowAmount)
+		if err != nil {
+			return err
+		}
+	}
+
 	// setup payments contract
 	//
-	tcPaymentsInitMsg := newTcPaymentsInitMsg(gs, ocContractAddr, ocContractAddr, engagementContractAddr, bootstrapAccountAddr)
+	tcPaymentsInitMsg := newTcPaymentsInitMsg(gs, ocContractAddr, apContractAddr, engagementContractAddr, bootstrapAccountAddr)
 	tcPaymentsCodeID, err := k.Create(ctx, bootstrapAccountAddr, tgTcPayments, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tc payments contract")
@@ -278,26 +298,6 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "grant privileges to validator voting contract")
 	}
 	logger.Info("validator voting contract", "address", validatorVotingContractAddr, "code_id", validatorVotingCodeID)
-
-	// setup trusted circle for ap
-	apTrustedCircleInitMsg := newAPTrustedCircleInitMsg(gs)
-	apDeposit := sdk.NewCoins(gs.ArbiterPoolContractConfig.EscrowAmount)
-	firstAPMember, err := sdk.AccAddressFromBech32(gs.ArbiterPoolMembers[0])
-	if err != nil {
-		return sdkerrors.Wrap(err, "first ap member")
-	}
-
-	apContractAddr, _, err := k.Instantiate(ctx, trustedCircleCodeID, firstAPMember, bootstrapAccountAddr, mustMarshalJSON(apTrustedCircleInitMsg), "arbiter_pool", apDeposit)
-	if err != nil {
-		return sdkerrors.Wrap(err, "instantiate tg trusted circle contract")
-	}
-	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeArbiterPool, apContractAddr)
-	if len(gs.ArbiterPoolMembers) > 1 {
-		err = addToTrustedCircle(ctx, apContractAddr, tk, gs.ArbiterPoolMembers[1:], firstAPMember, gs.ArbiterPoolContractConfig.EscrowAmount)
-		if err != nil {
-			return err
-		}
-	}
 
 	// setup arbiter pool
 	apCodeID, err := k.Create(ctx, bootstrapAccountAddr, tgArbiterPool, &wasmtypes.AllowEverybody)
