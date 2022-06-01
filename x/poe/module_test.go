@@ -79,7 +79,7 @@ func TestInitGenesis(t *testing.T) {
 	require.NoError(t, err)
 
 	communityPoolAddr := twasm.ContractAddress(5, 5)
-	engagementAddr := twasm.ContractAddress(1, 1)
+	tcPaymentsAddr := twasm.ContractAddress(6, 7)
 	expConfig := &contract.ValsetConfigResponse{
 		Membership:    mixerAddr.String(),
 		MinPoints:     1,
@@ -87,7 +87,7 @@ func TestInitGenesis(t *testing.T) {
 		Scaling:       1,
 		FeePercentage: sdk.MustNewDecFromStr("0.50"),
 		DistributionContracts: []contract.DistributionContract{
-			{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.45")},
+			{Address: tcPaymentsAddr.String(), Ratio: sdk.MustNewDecFromStr("0.45")},
 			{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
 		},
 		EpochReward:    sdk.NewInt64Coin("utgd", 100000),
