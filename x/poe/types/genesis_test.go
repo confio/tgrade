@@ -332,6 +332,14 @@ func TestValidateValsetContractConfig(t *testing.T) {
 			).GetSeedContracts().ValsetContractConfig,
 			expErr: true,
 		},
+		"epoch length contains sub seconds": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) {
+					m.GetSeedContracts().ValsetContractConfig.EpochLength = time.Second + time.Millisecond
+				},
+			).GetSeedContracts().ValsetContractConfig,
+			expErr: true,
+		},
 		"fee percentage at min": {
 			src: *GenesisStateFixture(
 				func(m *GenesisState) {
@@ -416,6 +424,20 @@ func TestValidateValsetContractConfig(t *testing.T) {
 					m.GetSeedContracts().ValsetContractConfig.CommunityPoolRewardRatio = sdk.MustNewDecFromStr("10")
 					m.GetSeedContracts().ValsetContractConfig.EngagementRewardRatio = sdk.MustNewDecFromStr("10")
 					m.GetSeedContracts().ValsetContractConfig.ValidatorRewardRatio = sdk.MustNewDecFromStr("10")
+				},
+			).GetSeedContracts().ValsetContractConfig,
+			expErr: true,
+		},
+		"offline jail duration is empty": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) { m.GetSeedContracts().ValsetContractConfig.OfflineJailDuration = 0 },
+			).GetSeedContracts().ValsetContractConfig,
+			expErr: true,
+		},
+		"offline jail duration contains sub seconds": {
+			src: *GenesisStateFixture(
+				func(m *GenesisState) {
+					m.GetSeedContracts().ValsetContractConfig.OfflineJailDuration = time.Second + time.Millisecond
 				},
 			).GetSeedContracts().ValsetContractConfig,
 			expErr: true,

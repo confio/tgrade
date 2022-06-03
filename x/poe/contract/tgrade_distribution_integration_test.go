@@ -17,7 +17,9 @@ import (
 
 func TestQueryWithdrawableFunds(t *testing.T) {
 	// setup contracts and seed some data
-	ctx, example, vals, _ := setupPoEContracts(t)
+	ctx, example, vals, _ := setupPoEContracts(t, func(gs *types.GenesisState) {
+		gs.GetSeedContracts().ValsetContractConfig.VerifyValidators = false
+	})
 
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeDistribution)
 	require.NoError(t, err)

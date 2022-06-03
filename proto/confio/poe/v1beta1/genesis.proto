@@ -101,7 +101,11 @@ message StakeContractConfig {
 // ValsetContractConfig initial setup config
 message ValsetContractConfig {
   uint64 min_points = 1;
+  // MaxValidators The maximum number of validators that can be included in the Tendermint validator set.
   uint32 max_validators = 2;
+  // EpochLength We update the Tendermint validator set only once per epoch.
+  // Epoch # is env.block.time/epoch_length (round down). The first block with a new epoch number
+  // will trigger a new validator calculation.
   google.protobuf.Duration epoch_length = 3
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
   cosmos.base.v1beta1.Coin epoch_reward = 4 [ (gogoproto.nullable) = false ];
@@ -149,6 +153,12 @@ message ValsetContractConfig {
   // validator, including when they are unjailed or when they just gain enough
   // power to participate.
   bool verify_validators = 12;
+
+  // OfflineJailDuration duration to jail a validator for in case they don't
+  // sign their first epoch boundary block. After the period, they have to pass
+  // verification again, ad infinitum.
+  google.protobuf.Duration offlineJailDuration = 13
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
 }
 
 // EngagementContractConfig initial setup config
