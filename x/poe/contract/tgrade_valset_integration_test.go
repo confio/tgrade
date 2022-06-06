@@ -184,7 +184,7 @@ func TestQueryValsetConfig(t *testing.T) {
 	require.NoError(t, err)
 	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeValset)
 	require.NoError(t, err)
-	engagementAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
+	paymentsAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeTrustedCirclePayments)
 	require.NoError(t, err)
 	communityPoolAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeCommunityPool)
 	require.NoError(t, err)
@@ -208,7 +208,7 @@ func TestQueryValsetConfig(t *testing.T) {
 		ValidatorGroup: distributionAddr.String(),
 		AutoUnjail:     false,
 		DistributionContracts: []contract.DistributionContract{
-			{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.45")},
+			{Address: paymentsAddr.String(), Ratio: sdk.MustNewDecFromStr("0.45")},
 			{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
 		},
 	}
