@@ -7,13 +7,13 @@ import (
 )
 
 type TCPaymentsContractAdapter struct {
-	ContractAdapter
+	BaseContractAdapter
 }
 
 // NewTCPaymentsContractAdapter constructor
 func NewTCPaymentsContractAdapter(contractAddr sdk.AccAddress, twasmKeeper types.TWasmKeeper, addressLookupErr error) *TCPaymentsContractAdapter {
 	return &TCPaymentsContractAdapter{
-		ContractAdapter: NewContractAdapter(
+		BaseContractAdapter: NewBaseContractAdapter(
 			contractAddr,
 			twasmKeeper,
 			addressLookupErr,
