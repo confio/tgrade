@@ -216,6 +216,9 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err := k.PinCode(ctx, tcPaymentsCodeID); err != nil {
 		return sdkerrors.Wrap(err, "pin tc payments contract")
 	}
+	if err := tk.SetPrivileged(ctx, tcPaymentsContractAddr); err != nil {
+		return sdkerrors.Wrap(err, "grant privileges to tc payments contract")
+	}
 	logger.Info("tc payments contract", "address", tcPaymentsContractAddr, "code_id", tcPaymentsCodeID)
 
 	// setup valset contract
