@@ -189,7 +189,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "first ap member")
 	}
 
-	apContractAddr, _, err := k.Instantiate(ctx, trustedCircleCodeID, firstAPMember, bootstrapAccountAddr, mustMarshalJson(apTrustedCircleInitMsg), "arbiter_pool", apDeposit)
+	apContractAddr, _, err := k.Instantiate(ctx, trustedCircleCodeID, firstAPMember, bootstrapAccountAddr, mustMarshalJSON(apTrustedCircleInitMsg), "arbiter_pool", apDeposit)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg trusted circle contract")
 	}
@@ -208,7 +208,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tc payments contract")
 	}
-	tcPaymentsContractAddr, _, err := k.Instantiate(ctx, tcPaymentsCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJson(tcPaymentsInitMsg), "engagement", nil)
+	tcPaymentsContractAddr, _, err := k.Instantiate(ctx, tcPaymentsCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(tcPaymentsInitMsg), "engagement", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tc payments")
 	}
@@ -226,7 +226,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 
 	valsetInitMsg := newValsetInitMsg(gs, bootstrapAccountAddr, mixerContractAddr, tcPaymentsContractAddr, communityPoolContractAddr, engagementCodeID)
-	valsetJSON := mustMarshalJson(valsetInitMsg)
+	valsetJSON := mustMarshalJSON(valsetInitMsg)
 	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, bootstrapAccountAddr, bootstrapAccountAddr, valsetJSON, "valset", nil)
 	if err != nil {
 		return sdkerrors.Wrapf(err, "instantiate valset with: %s", string(valsetJSON))
