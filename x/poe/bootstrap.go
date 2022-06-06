@@ -213,9 +213,6 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "instantiate tc payments")
 	}
 	poeKeeper.SetPoEContractAddress(ctx, types.PoEContractTypeTrustedCirclePayments, tcPaymentsContractAddr)
-	if err := k.PinCode(ctx, tcPaymentsCodeID); err != nil {
-		return sdkerrors.Wrap(err, "pin tc payments contract")
-	}
 	if err := tk.SetPrivileged(ctx, tcPaymentsContractAddr); err != nil {
 		return sdkerrors.Wrap(err, "grant privileges to tc payments contract")
 	}
