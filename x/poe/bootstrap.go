@@ -208,7 +208,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tc payments contract")
 	}
-	tcPaymentsContractAddr, _, err := k.Instantiate(ctx, tcPaymentsCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(tcPaymentsInitMsg), "engagement", nil)
+	tcPaymentsContractAddr, _, err := k.Instantiate(ctx, tcPaymentsCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(tcPaymentsInitMsg), "tc_payments", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tc payments")
 	}
