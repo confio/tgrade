@@ -43,9 +43,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	crisiskeeper "github.com/cosmos/cosmos-sdk/x/crisis/keeper"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence"
-	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	feegrantkeeper "github.com/cosmos/cosmos-sdk/x/feegrant/keeper"
 	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
@@ -140,7 +137,6 @@ var (
 		authzmodule.AppModuleBasic{},
 		ibc.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
-		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		twasm.AppModuleBasic{},
@@ -184,7 +180,6 @@ type TgradeApp struct {
 	upgradeKeeper    upgradekeeper.Keeper
 	paramsKeeper     paramskeeper.Keeper
 	ibcKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	evidenceKeeper   evidencekeeper.Keeper
 	transferKeeper   ibctransferkeeper.Keeper
 	icaHostKeeper    icahostkeeper.Keeper
 	feeGrantKeeper   feegrantkeeper.Keeper
@@ -232,7 +227,7 @@ func NewTgradeApp(
 	keys := sdk.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey,
 		paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
-		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
+		ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		feegrant.StoreKey, authzkeeper.StoreKey, wasm.StoreKey, poe.StoreKey, icahosttypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -358,16 +353,6 @@ func NewTgradeApp(
 	icaModule := ica.NewAppModule(nil, &app.icaHostKeeper)
 	icaHostIBCModule := icahost.NewIBCModule(app.icaHostKeeper)
 
-	slashingAdapter := poestakingadapter.SlashingAdapter{}
-	// create evidence keeper with router
-	evidenceKeeper := evidencekeeper.NewKeeper(
-		appCodec,
-		keys[evidencetypes.StoreKey],
-		stakingKeeper,
-		slashingAdapter,
-	)
-	app.evidenceKeeper = *evidenceKeeper
-
 	wasmDir := filepath.Join(homePath, "wasm")
 	twasmConfig, err := twasm.ReadWasmConfig(appOpts)
 	if err != nil {
@@ -443,7 +428,6 @@ func NewTgradeApp(
 		capability.NewAppModule(appCodec, *app.capabilityKeeper),
 		upgrade.NewAppModule(app.upgradeKeeper),
 		twasm.NewAppModule(appCodec, &app.twasmKeeper, stakingKeeper, app.accountKeeper, app.bankKeeper),
-		evidence.NewAppModule(app.evidenceKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.accountKeeper, app.bankKeeper, app.feeGrantKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(appCodec, app.authzKeeper, app.accountKeeper, app.bankKeeper, app.interfaceRegistry),
 		ibc.NewAppModule(app.ibcKeeper),
@@ -461,7 +445,6 @@ func NewTgradeApp(
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
-		evidencetypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		crisistypes.ModuleName,
@@ -483,7 +466,6 @@ func NewTgradeApp(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		evidencetypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
@@ -510,7 +492,6 @@ func NewTgradeApp(
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		crisistypes.ModuleName,
-		evidencetypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
@@ -557,7 +538,6 @@ func NewTgradeApp(
 			encodingConfig.TxConfig,
 			app.twasmKeeper.GetContractKeeper(),
 		),
-		evidence.NewAppModule(app.evidenceKeeper),
 		ibc.NewAppModule(app.ibcKeeper),
 		transferModule,
 		globalfee.NewAppModule(app.getSubspace(globalfee.ModuleName)),
