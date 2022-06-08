@@ -21,7 +21,7 @@ func TestQueryValidatorSelfDelegation(t *testing.T) {
 	require.NoError(t, err)
 	opAddr, err := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
 	require.NoError(t, err)
-	selfDelegation := int(vals[0].Tokens.Uint64())
+	selfDelegation := int(sdk.TokensToConsensusPower(vals[0].Tokens, sdk.DefaultPowerReduction))
 	specs := map[string]struct {
 		srcOpAddr sdk.AccAddress
 		expAmount *int
