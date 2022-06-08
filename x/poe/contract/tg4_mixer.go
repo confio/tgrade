@@ -18,7 +18,7 @@ type MixerFunction struct {
 	GeometricMean    *struct{}         `json:"geometric_mean,omitempty"`
 	Sigmoid          *Sigmoid          `json:"sigmoid,omitempty"`
 	SigmoidSqrt      *SigmoidSqrt      `json:"sigmoid_sqrt,omitempty"`
-	AlgebraicSigmoid *AlgebraicSigmoid `json:"algebaic_sigmoid,omitempty"`
+	AlgebraicSigmoid *AlgebraicSigmoid `json:"algebraic_sigmoid,omitempty"`
 }
 
 type Sigmoid struct {
