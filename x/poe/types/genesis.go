@@ -22,7 +22,7 @@ func DefaultGenesisState() *GenesisState {
 				BondDenom: DefaultBondDenom,
 				StakeContractConfig: &StakeContractConfig{
 					MinBond:              1,
-					TokensPerPoint:       1,
+					TokensPerPoint:       sdk.DefaultPowerReduction.Uint64(),
 					UnbondingPeriod:      time.Hour * 21 * 24,
 					ClaimAutoreturnLimit: 20,
 				},
