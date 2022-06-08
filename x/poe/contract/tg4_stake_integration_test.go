@@ -35,7 +35,7 @@ func TestQueryUnbondingPeriod(t *testing.T) {
 	assert.Equal(t, configuredTime, res)
 }
 
-func TestQueryStakedAmount(t *testing.T) {
+func TestQueryStakedPoints(t *testing.T) {
 	// setup contracts and seed some data
 	ctx, example, _, _ := setupPoEContracts(t)
 	contractKeeper := example.TWasmKeeper.GetContractKeeper()
@@ -45,7 +45,7 @@ func TestQueryStakedAmount(t *testing.T) {
 
 	// fund account
 	var myOperatorAddr sdk.AccAddress = rand.Bytes(address.Len)
-	example.Faucet.Fund(ctx, myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100)))
+	example.Faucet.Fund(ctx, myOperatorAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(1000000)))
 
 	oneInt := sdk.OneInt()
 	specs := map[string]struct {
@@ -57,7 +57,7 @@ func TestQueryStakedAmount(t *testing.T) {
 		"address has staked amount": {
 			addr: myOperatorAddr,
 			setup: func(ctx sdk.Context) {
-				err := contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.OneInt())), nil, contractKeeper)
+				err := contract.BondDelegation(ctx, stakingContractAddr, myOperatorAddr, sdk.NewCoins(sdk.NewCoin("utgd", sdk.NewInt(1000000))), nil, contractKeeper)
 				require.NoError(t, err)
 			},
 			expAmount: &oneInt,
