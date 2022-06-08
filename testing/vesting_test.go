@@ -27,7 +27,7 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	//    and: the contract staking account balance is increased
 	// and when: block rewards are claimed by the validator operator
 	//   then: they are transferable
-	// and when: the node operator undelegate all tokens
+	// and when: the node operator undelegates all tokens
 	// 	 then: the validators power is updated and removed from the active set
 	//    and: the vesting account balance is restored
 	//    and: the staking account balance is decreased
@@ -38,7 +38,7 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	myEndTimestamp := time.Now().Add(365 * 24 * time.Hour).Unix()
 	sut.ModifyGenesisCLI(t,
 		// delayed vesting no cash
-		[]string{"add-genesis-account", vest1Addr, "100000000utgd", "--vesting-amount=100000000utgd", fmt.Sprintf("--vesting-end-time=%d", myEndTimestamp)},
+		[]string{"add-genesis-account", vest1Addr, "1000000000utgd", "--vesting-amount=1000000000utgd", fmt.Sprintf("--vesting-end-time=%d", myEndTimestamp)},
 	)
 	sut.modifyGenesisJSON(t,
 		SetUnbondingPeriod(t, time.Second),
@@ -57,7 +57,8 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	poolAddr := authtypes.NewModuleAddress(poetypes.BondedPoolName).String()
 	poolInitialBalance := cli.QueryBalance(poolAddr, "utgd")
 
-	const stakedVestingAmount = 10_000
+	// enough to enter the validator set
+	const stakedVestingAmount = 500_000_000
 	// when create validator
 	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=0utgd",
 		fmt.Sprintf("--vesting-amount=%dutgd", stakedVestingAmount),
