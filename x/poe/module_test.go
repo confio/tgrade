@@ -56,7 +56,11 @@ func TestInitGenesis(t *testing.T) {
 	gotValset := app.InitGenesis(ctx, example.EncodingConfig.Marshaler, genesisBz)
 
 	// then valset diff matches
-	assert.Equal(t, valsetAsMap(myValidators.expValidatorSet()), valsetAsMap(gotValset)) // compare unordered
+	assert.Equal(t, len(myValidators.expValidatorSet()), len(gotValset))
+	gotValsetMap := valsetAsMap(gotValset)
+	for _, v := range myValidators.expValidatorSet() {
+		assert.InEpsilon(t, v.Power, gotValsetMap[v.PubKey.String()], 1) // compare in epsilon (differences due to floating vs. fixed point math)
+	}
 
 	// and engagement group is setup as expected
 	addr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
@@ -133,7 +137,7 @@ func (v validator) sigmoidSqrt() int64 {
 	maxRewards := 1000
 	sSqrt := 0.0003
 
-	reward := float64(maxRewards) * (2./(1.+math.Exp(-sSqrt*math.Sqrt(float64(v.stakedAmount)*float64(v.engagement)))) - 1.)
+	reward := float64(maxRewards) * (2./(1.+math.Exp(-sSqrt*math.Sqrt(float64(v.stakedAmount/sdk.DefaultPowerReduction.Uint64())*float64(v.engagement)))) - 1.)
 
 	return int64(math.Trunc(reward))
 }
@@ -172,13 +176,13 @@ func (v validators) expEngagementGroup() []contract.TG4Member {
 	return contract.SortByWeightDesc(r)
 }
 
-// staking group members, sorted by staked amount desc
+// staking group members, sorted by points desc
 func (v validators) expStakingGroup() []contract.TG4Member {
 	r := make([]contract.TG4Member, len(v))
 	for i, x := range v {
 		r[i] = contract.TG4Member{
 			Addr:   x.operatorAddr.String(),
-			Points: x.stakedAmount,
+			Points: x.stakedAmount / sdk.DefaultPowerReduction.Uint64(),
 		}
 	}
 	return contract.SortByWeightDesc(r)
