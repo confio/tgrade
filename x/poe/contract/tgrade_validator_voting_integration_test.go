@@ -336,7 +336,10 @@ func TestQueryTG4MembersByWeight(t *testing.T) {
 	require.Len(t, expMembers, 3)
 
 	sort.Slice(expMembers, func(i, j int) bool {
-		return expMembers[i].Points > expMembers[j].Points
+		return expMembers[i].Points > expMembers[j].Points ||
+			(expMembers[i].Points == expMembers[j].Points && expMembers[i].StartHeight < expMembers[j].StartHeight) ||
+			(expMembers[i].Points == expMembers[j].Points && expMembers[i].StartHeight == expMembers[j].StartHeight &&
+				expMembers[i].Addr > expMembers[j].Addr)
 	})
 
 	specs := map[string]struct {
