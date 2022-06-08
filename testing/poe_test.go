@@ -125,12 +125,12 @@ func TestPoEAddPostGenesisValidatorWithAutoEngagementPoints(t *testing.T) {
 	newNode := sut.AddFullnode(t)
 	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
 	opAddr := cli.AddKey("newOperator")
-	cli.FundAddress(opAddr, "1000utgd")
+	cli.FundAddress(opAddr, "100000000utgd")
 	newPubKey := loadValidatorPubKeyForNode(t, sut, sut.nodesCount-1)
 	pubKeyEncoded, err := app.MakeEncodingConfig().Codec.MarshalInterfaceJSON(newPubKey)
 	require.NoError(t, err)
 	// when
-	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd", "--vesting-amount=0utgd",
+	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=100000000utgd", "--vesting-amount=0utgd",
 		"--pubkey="+string(pubKeyEncoded), "--from=newOperator", "--gas=275000")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
@@ -160,14 +160,14 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 	newNode := sut.AddFullnode(t)
 	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
 	opAddr := cli.AddKey("newOperator")
-	cli.FundAddress(opAddr, "1000utgd")
+	cli.FundAddress(opAddr, "100000000utgd")
 	newPubKey := loadValidatorPubKeyForNode(t, sut, sut.nodesCount-1)
 	t.Logf("new operator address %s", opAddr)
 	pubKeyEncoded, err := app.MakeEncodingConfig().Codec.MarshalInterfaceJSON(newPubKey)
 	require.NoError(t, err)
 
 	// when
-	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd", "--vesting-amount=0utgd",
+	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=100000000utgd", "--vesting-amount=0utgd",
 		"--pubkey="+string(pubKeyEncoded), "--from=newOperator")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
@@ -246,7 +246,7 @@ func TestPoESelfDelegate(t *testing.T) {
 	powerBefore := queryTendermintValidatorPower(t, sut, 0)
 
 	// when
-	txResult := cli.CustomCommand("tx", "poe", "self-delegate", "100000utgd", "0utgd", "--from=node0")
+	txResult := cli.CustomCommand("tx", "poe", "self-delegate", "900000000utgd", "0utgd", "--from=node0")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
@@ -255,7 +255,7 @@ func TestPoESelfDelegate(t *testing.T) {
 	// then
 	qRes = cli.CustomQuery("q", "poe", "self-delegation", cli.GetKeyAddr("node0"))
 	amountAfter := gjson.Get(qRes, "balance.amount").Int()
-	assert.Equal(t, int64(100000), amountAfter-amountBefore)
+	assert.Equal(t, int64(900), amountAfter-amountBefore)
 
 	powerAfter := queryTendermintValidatorPower(t, sut, 0)
 	assert.Greater(t, powerAfter, powerBefore)
