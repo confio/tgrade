@@ -255,7 +255,7 @@ func TestPoESelfDelegate(t *testing.T) {
 	// then
 	qRes = cli.CustomQuery("q", "poe", "self-delegation", cli.GetKeyAddr("node0"))
 	amountAfter := gjson.Get(qRes, "balance.amount").Int()
-	assert.Equal(t, int64(900), amountAfter-amountBefore)
+	assert.Equal(t, int64(900000000), amountAfter-amountBefore)
 
 	powerAfter := queryTendermintValidatorPower(t, sut, 0)
 	assert.Greater(t, powerAfter, powerBefore)
@@ -293,7 +293,7 @@ func TestPoEUndelegate(t *testing.T) {
 	// then
 	qRes = cli.CustomQuery("q", "poe", "self-delegation", cli.GetKeyAddr("node0"))
 	delegatedAmountAfter := gjson.Get(qRes, "balance.amount").Int()
-	assert.Equal(t, int64(-300), delegatedAmountAfter-delegatedAmountBefore)
+	assert.Equal(t, int64(-300000000), delegatedAmountAfter-delegatedAmountBefore)
 
 	// the total power decreases
 	powerAfter := queryTendermintValidatorPower(t, sut, 0)
@@ -378,7 +378,7 @@ func TestPoEQueries(t *testing.T) {
 			query: []string{"q", "poe", "self-delegation", cli.GetKeyAddr("node0")},
 			assert: func(t *testing.T, qResult string) {
 				delegatedAmount := gjson.Get(qResult, "balance.amount").Int()
-				assert.Equal(t, int64(700), delegatedAmount)
+				assert.Equal(t, int64(700000000), delegatedAmount)
 			},
 		},
 		"unbonding delegations": {
