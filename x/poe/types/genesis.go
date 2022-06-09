@@ -38,7 +38,8 @@ func DefaultGenesisState() *GenesisState {
 					ValidatorRewardRatio:     sdk.MustNewDecFromStr("47.5"),
 					EngagementRewardRatio:    sdk.MustNewDecFromStr("47.5"),
 					CommunityPoolRewardRatio: sdk.MustNewDecFromStr("5"),
-					VerifyValidators:         true,
+					VerifyValidators:         false,
+					OfflineJailDuration:      24 * time.Hour,
 				},
 				EngagementContractConfig: &EngagementContractConfig{
 					Halflife: 180 * 24 * time.Hour,
@@ -254,11 +255,17 @@ func (c *EngagementContractConfig) ValidateBasic() error {
 
 // ValidateBasic ensure basic constraints
 func (c ValsetContractConfig) ValidateBasic() error {
+	if c.VerifyValidators {
+		return ErrInvalid.Wrap("not supported currently. See https://github.com/confio/tgrade/issues/389")
+	}
 	if c.MaxValidators == 0 {
 		return sdkerrors.Wrap(ErrEmpty, "max validators")
 	}
 	if c.EpochLength == 0 {
 		return sdkerrors.Wrap(ErrEmpty, "epoch length")
+	}
+	if c.EpochLength != time.Duration(c.EpochLength.Seconds())*time.Second {
+		return ErrInvalid.Wrap("epoch length not convertible to seconds")
 	}
 	if c.Scaling == 0 {
 		return sdkerrors.Wrap(ErrEmpty, "scaling")
@@ -283,6 +290,13 @@ func (c ValsetContractConfig) ValidateBasic() error {
 	minFeePercentage := sdk.NewDecFromIntWithPrec(sdk.OneInt(), 16)
 	if c.FeePercentage.LT(minFeePercentage) {
 		return sdkerrors.Wrap(ErrEmpty, "fee percentage")
+	}
+
+	if c.OfflineJailDuration == 0 {
+		return ErrEmpty.Wrap("offline jail duration")
+	}
+	if c.OfflineJailDuration != time.Duration(c.OfflineJailDuration.Seconds())*time.Second {
+		return ErrInvalid.Wrap("offline jail duration not convertible to seconds")
 	}
 	return nil
 }

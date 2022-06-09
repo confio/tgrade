@@ -447,16 +447,18 @@ func newValsetInitMsg(
 ) contract.ValsetInitMsg {
 	config := gs.ValsetContractConfig
 	return contract.ValsetInitMsg{
-		Admin:         admin.String(),
-		Membership:    mixerContractAddr.String(),
-		MinPoints:     config.MinPoints,
-		MaxValidators: config.MaxValidators,
-		EpochLength:   uint64(config.EpochLength.Seconds()),
-		EpochReward:   config.EpochReward,
-		InitialKeys:   []contract.Validator{},
-		Scaling:       config.Scaling,
-		FeePercentage: contract.DecimalFromPercentage(config.FeePercentage),
-		AutoUnjail:    config.AutoUnjail,
+		Admin:               admin.String(),
+		Membership:          mixerContractAddr.String(),
+		MinPoints:           config.MinPoints,
+		MaxValidators:       config.MaxValidators,
+		EpochLength:         uint64(config.EpochLength.Seconds()),
+		EpochReward:         config.EpochReward,
+		InitialKeys:         []contract.Validator{},
+		Scaling:             config.Scaling,
+		FeePercentage:       contract.DecimalFromPercentage(config.FeePercentage),
+		AutoUnjail:          config.AutoUnjail,
+		VerifyValidators:    config.VerifyValidators,
+		OfflineJailDuration: uint64(config.OfflineJailDuration.Seconds()),
 		DistributionContracts: []contract.DistributionContract{
 			{Address: engagementAddr.String(), Ratio: *contract.DecimalFromPercentage(config.EngagementRewardRatio)},
 			{Address: communityPoolAddr.String(), Ratio: *contract.DecimalFromPercentage(config.CommunityPoolRewardRatio)},

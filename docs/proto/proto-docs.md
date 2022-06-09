@@ -462,6 +462,7 @@ ValsetContractConfig initial setup config
 | `verify_validators` | [bool](#bool) |  | When a validator joins the valset, verify they sign the first block since joining or jail them for a period otherwise.
 
 The verification happens every time the validator becomes an active validator, including when they are unjailed or when they just gain enough power to participate. |
+| `offlineJailDuration` | [google.protobuf.Duration](#google.protobuf.Duration) |  | OfflineJailDuration duration to jail a validator for in case they don't sign their first epoch boundary block. After the period, they have to pass verification again, ad infinitum. |
 
 
 
