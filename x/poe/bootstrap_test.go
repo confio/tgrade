@@ -347,7 +347,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				FeePercentage:        contract.DecimalFromProMille(500),
 				InitialKeys:          []contract.Validator{},
 				ValidatorGroupCodeID: engagementID,
-				VerifyValidators:     true,
+				VerifyValidators:     false,
 				OfflineJailDuration:  86400,
 				DistributionContracts: []contract.DistributionContract{
 					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
@@ -372,7 +372,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				FeePercentage:        contract.DecimalFromProMille(501),
 				InitialKeys:          []contract.Validator{},
 				ValidatorGroupCodeID: engagementID,
-				VerifyValidators:     true,
+				VerifyValidators:     false,
 				OfflineJailDuration:  86400,
 				DistributionContracts: []contract.DistributionContract{
 					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
@@ -397,7 +397,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				FeePercentage:        contract.DecimalFromProMille(1),
 				InitialKeys:          []contract.Validator{},
 				ValidatorGroupCodeID: engagementID,
-				VerifyValidators:     true,
+				VerifyValidators:     false,
 				OfflineJailDuration:  86400,
 				DistributionContracts: []contract.DistributionContract{
 					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},
@@ -422,7 +422,7 @@ func TestCreateValsetInitMsg(t *testing.T) {
 				FeePercentage:        &minDecimal,
 				InitialKeys:          []contract.Validator{},
 				ValidatorGroupCodeID: engagementID,
-				VerifyValidators:     true,
+				VerifyValidators:     false,
 				OfflineJailDuration:  86400,
 				DistributionContracts: []contract.DistributionContract{
 					{Address: engagementAddr.String(), Ratio: sdk.MustNewDecFromStr("0.475")},

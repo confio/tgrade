@@ -38,7 +38,7 @@ func DefaultGenesisState() *GenesisState {
 					ValidatorRewardRatio:     sdk.MustNewDecFromStr("47.5"),
 					EngagementRewardRatio:    sdk.MustNewDecFromStr("47.5"),
 					CommunityPoolRewardRatio: sdk.MustNewDecFromStr("5"),
-					VerifyValidators:         true,
+					VerifyValidators:         false,
 					OfflineJailDuration:      24 * time.Hour,
 				},
 				EngagementContractConfig: &EngagementContractConfig{
@@ -255,6 +255,9 @@ func (c *EngagementContractConfig) ValidateBasic() error {
 
 // ValidateBasic ensure basic constraints
 func (c ValsetContractConfig) ValidateBasic() error {
+	if c.VerifyValidators {
+		return ErrInvalid.Wrap("not supported currently. See https://github.com/confio/tgrade/issues/389")
+	}
 	if c.MaxValidators == 0 {
 		return sdkerrors.Wrap(ErrEmpty, "max validators")
 	}
