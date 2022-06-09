@@ -157,6 +157,9 @@ func (v StakeContractAdapter) QueryStakedAmount(ctx sdk.Context, opAddr sdk.AccA
 	if !ok {
 		return nil, sdkerrors.Wrap(err, "vesting amount convert")
 	}
+	if liquidAmount.IsZero() && vestingAmount.IsZero() {
+		return nil, nil
+	}
 	amount := liquidAmount.Add(vestingAmount)
 
 	return &amount, nil
