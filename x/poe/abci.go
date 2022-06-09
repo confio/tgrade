@@ -46,7 +46,6 @@ func EndBlocker(parentCtx sdk.Context, k endBlockKeeper) []abci.ValidatorUpdate 
 		if len(diff) != 0 {
 			logger.Info("update validator set", "new", diff)
 		}
-
 		return true // stop at first contract
 	})
 	return diff
