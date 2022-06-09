@@ -24,8 +24,9 @@ type abciKeeper interface {
 
 func BeginBlocker(ctx sdk.Context, k abciKeeper, b abci.RequestBeginBlock) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
-	evidence := make([]contract.Evidence, len(b.ByzantineValidators))
-	for i, e := range b.ByzantineValidators {
+	logger := keeper.ModuleLogger(ctx)
+	evidence := make([]contract.Evidence, 0, len(b.ByzantineValidators))
+	for _, e := range b.ByzantineValidators {
 		var et contract.EvidenceType
 		switch e.Type {
 		case abci.EvidenceType_DUPLICATE_VOTE:
@@ -33,10 +34,11 @@ func BeginBlocker(ctx sdk.Context, k abciKeeper, b abci.RequestBeginBlock) {
 		case abci.EvidenceType_LIGHT_CLIENT_ATTACK:
 			et = contract.EvidenceLightClientAttack
 		default:
-			panic(fmt.Sprintf("unsupported evidence type: %s", e.Type.String()))
+			logger.Error("Ignored unknown evidence type", "type", e.Type)
+			continue
 		}
 
-		evidence[i] = contract.Evidence{
+		evidence = append(evidence, contract.Evidence{
 			EvidenceType: et,
 			Validator: contract.Validator{
 				Address: e.Validator.Address,
@@ -45,12 +47,10 @@ func BeginBlocker(ctx sdk.Context, k abciKeeper, b abci.RequestBeginBlock) {
 			Height:           convUint64(e.Height),
 			Time:             convUint64(e.Time.Unix()),
 			TotalVotingPower: convUint64(e.TotalVotingPower),
-		}
+		})
+		logger.Info("Byzantine validator", "evidence", evidence)
 	}
-	if len(evidence) != 0 {
-		logger := keeper.ModuleLogger(ctx)
-		logger.Error("Byzantine validator", "evidence", evidence)
-	}
+
 	msg := contract.TgradeSudoMsg{BeginBlock: &contract.BeginBlock{
 		Evidence: evidence,
 	}}
@@ -59,7 +59,7 @@ func BeginBlocker(ctx sdk.Context, k abciKeeper, b abci.RequestBeginBlock) {
 	if err != nil {
 		panic(err) // this will crash the node as panics are not recovered
 	}
-	k.IteratePrivilegedContractsByType(ctx, types.PrivilegeTypeBeginBlock, abciContractCallback(ctx, keeper.ModuleLogger(ctx), k, msgBz))
+	k.IteratePrivilegedContractsByType(ctx, types.PrivilegeTypeBeginBlock, abciContractCallback(ctx, k, msgBz))
 }
 
 // EndBlocker ABCI end block callback. Does not modify the validator set
@@ -70,17 +70,19 @@ func EndBlocker(ctx sdk.Context, k abciKeeper) []abci.ValidatorUpdate {
 	if err != nil {
 		panic(err) // this will break consensus
 	}
-	k.IteratePrivilegedContractsByType(ctx, types.PrivilegeTypeEndBlock, abciContractCallback(ctx, keeper.ModuleLogger(ctx), k, msgBz))
+	k.IteratePrivilegedContractsByType(ctx, types.PrivilegeTypeEndBlock, abciContractCallback(ctx, k, msgBz))
 	return nil
 }
 
-func abciContractCallback(parentCtx sdk.Context, logger log.Logger, k abciKeeper, msgBz []byte) func(pos uint8, contractAddr sdk.AccAddress) bool {
+// returns safe method to send the message via sudo to the privileged contract
+func abciContractCallback(parentCtx sdk.Context, k abciKeeper, msgBz []byte) func(pos uint8, contractAddr sdk.AccAddress) bool {
+	logger := keeper.ModuleLogger(parentCtx)
 	return func(pos uint8, contractAddr sdk.AccAddress) bool {
-		logger.Debug("privileged contract callback", "type", types.PrivilegeTypeEndBlock.String(), "msg", string(msgBz))
-		ctx, commit := parentCtx.CacheContext()
-
 		// any panic will crash the node, so we are better taking care of them here
 		defer RecoverToLog(logger, contractAddr)()
+
+		logger.Debug("privileged contract callback", "type", types.PrivilegeTypeEndBlock.String(), "msg", string(msgBz))
+		ctx, commit := parentCtx.CacheContext()
 
 		if _, err := k.Sudo(ctx, contractAddr, msgBz); err != nil {
 			logger.Error(
