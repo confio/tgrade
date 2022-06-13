@@ -24,6 +24,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 	specs := map[string]struct {
 		setupStore func(ctx sdk.Context, s paramstypes.Subspace)
 		next       sdk.AnteDecorator
+		simulation bool
 		feeAmount  sdk.Coins
 		gasLimit   sdk.Gas
 		expErr     *sdkerrors.Error
@@ -159,6 +160,23 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 			gasLimit: 1,
 			expErr:   sdkerrors.ErrInsufficientFee,
 		},
+		"simulation with no fee set": {
+			setupStore: func(ctx sdk.Context, s paramstypes.Subspace) {
+				s.SetParamSet(ctx, &types.Params{
+					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt())),
+				})
+			},
+			simulation: true,
+		},
+		"simulation with fee set": {
+			setupStore: func(ctx sdk.Context, s paramstypes.Subspace) {
+				s.SetParamSet(ctx, &types.Params{
+					MinimumGasPrices: sdk.NewDecCoins(sdk.NewDecCoin("ALX", sdk.OneInt())),
+				})
+			},
+			simulation: true,
+			feeAmount:  sdk.NewCoins(sdk.NewCoin("ALX", sdk.NewInt(1))),
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
@@ -174,7 +192,7 @@ func TestGlobalMinimumChainFeeAnteHandler(t *testing.T) {
 				NewGlobalMinimumChainFeeDecorator(subspace),
 				captured,
 			)
-			_, gotErr := anteHandler(ctx, tx, false)
+			_, gotErr := anteHandler(ctx, tx, spec.simulation)
 			require.True(t, spec.expErr.Is(gotErr), "exp : %s but got %#+v", spec.expErr, gotErr)
 			if spec.expErr != nil {
 				require.Empty(t, captured.txs)

@@ -35,7 +35,7 @@ func NewGlobalMinimumChainFeeDecorator(paramSpace paramtypes.Subspace) GlobalMin
 
 // AnteHandle method that performs custom pre- and post-processing.
 func (g GlobalMinimumChainFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
-	if g.paramSource.Has(ctx, types.ParamStoreKeyMinGasPrices) {
+	if !simulate && g.paramSource.Has(ctx, types.ParamStoreKeyMinGasPrices) {
 		feeTx, ok := tx.(sdk.FeeTx)
 		if !ok {
 			return ctx, sdkerrors.Wrap(sdkerrors.ErrTxDecode, "tx must be a sdk FeeTx")
