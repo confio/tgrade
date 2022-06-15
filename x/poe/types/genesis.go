@@ -81,6 +81,13 @@ func DefaultGenesisState() *GenesisState {
 					},
 					DisputeCost: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
 				},
+				MixerContractConfig: &MixerContractConfig{
+					Sigmoid: MixerContractConfig_Sigmoid{
+						MaxRewards: 1000,
+						P:          sdk.MustNewDecFromStr("0.68"),
+						S:          sdk.MustNewDecFromStr("0.00003"),
+					},
+				},
 				BootstrapAccountAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 			},
 		},
@@ -167,6 +174,9 @@ func validateSeedContracts(g *SeedContracts, txJSONDecoder sdk.TxDecoder) error 
 	}
 	if err := g.ValidatorVotingContractConfig.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "validator voting config")
+	}
+	if err := g.MixerContractConfig.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "mixer config")
 	}
 
 	if _, err := sdk.AccAddressFromBech32(g.BootstrapAccountAddress); err != nil {
@@ -421,6 +431,23 @@ func (c ArbiterPoolContractConfig) ValidateBasic() error {
 	}
 	if time.Duration(uint64(c.WaitingPeriod.Seconds()))*time.Second != c.WaitingPeriod {
 		return sdkerrors.Wrap(ErrInvalid, "waiting period not convertible to seconds")
+	}
+	return nil
+}
+
+// ValidateBasic ensure basic constraints
+func (m *MixerContractConfig) ValidateBasic() error {
+	if m == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty")
+	}
+	if m.Sigmoid.MaxRewards == 0 {
+		return sdkerrors.Wrap(ErrEmpty, "max rewards")
+	}
+	if m.Sigmoid.S.IsNil() || m.Sigmoid.S.IsZero() {
+		return sdkerrors.Wrap(ErrEmpty, "S")
+	}
+	if m.Sigmoid.P.IsNil() || m.Sigmoid.P.IsZero() {
+		return sdkerrors.Wrap(ErrEmpty, "P")
 	}
 	return nil
 }

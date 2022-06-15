@@ -87,6 +87,28 @@ message SeedContracts {
 
   ArbiterPoolContractConfig arbiter_pool_contract_config = 13
       [ (gogoproto.jsontag) = "arbiter_pool_contract_config,omitempty" ];
+
+  MixerContractConfig mixer_contract_config = 14
+      [ (gogoproto.jsontag) = "mixer_contract_config,omitempty" ];
+}
+
+// Mixer contract setup. See
+// https://github.com/confio/poe-contracts/tree/main/contracts/tg4-mixer
+message MixerContractConfig {
+  message Sigmoid {
+    uint64 max_rewards = 1;
+    string p = 2 [
+      (gogoproto.nullable) = false,
+      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
+    ];
+    string s = 3 [
+      (gogoproto.nullable) = false,
+      (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
+    ];
+  }
+  // Sigmoid returns a sigmoid-like value of staked amount times engagement
+  // points. See the Proof-of-Engagement white-paper for details.
+  Sigmoid sigmoid = 1 [ (gogoproto.nullable) = false ];
 }
 
 // StakeContractConfig initial setup config
@@ -101,11 +123,12 @@ message StakeContractConfig {
 // ValsetContractConfig initial setup config
 message ValsetContractConfig {
   uint64 min_points = 1;
-  // MaxValidators The maximum number of validators that can be included in the Tendermint validator set.
+  // MaxValidators The maximum number of validators that can be included in the
+  // Tendermint validator set.
   uint32 max_validators = 2;
   // EpochLength We update the Tendermint validator set only once per epoch.
-  // Epoch # is env.block.time/epoch_length (round down). The first block with a new epoch number
-  // will trigger a new validator calculation.
+  // Epoch # is env.block.time/epoch_length (round down). The first block with a
+  // new epoch number will trigger a new validator calculation.
   google.protobuf.Duration epoch_length = 3
       [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
   cosmos.base.v1beta1.Coin epoch_reward = 4 [ (gogoproto.nullable) = false ];

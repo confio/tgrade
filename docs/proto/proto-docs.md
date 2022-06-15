@@ -25,6 +25,8 @@
     - [EngagementContractConfig](#confio.poe.v1beta1.EngagementContractConfig)
     - [GenesisState](#confio.poe.v1beta1.GenesisState)
     - [ImportDump](#confio.poe.v1beta1.ImportDump)
+    - [MixerContractConfig](#confio.poe.v1beta1.MixerContractConfig)
+    - [MixerContractConfig.Sigmoid](#confio.poe.v1beta1.MixerContractConfig.Sigmoid)
     - [OversightCommitteeContractConfig](#confio.poe.v1beta1.OversightCommitteeContractConfig)
     - [PoEContract](#confio.poe.v1beta1.PoEContract)
     - [SeedContracts](#confio.poe.v1beta1.SeedContracts)
@@ -329,6 +331,39 @@ ImportDump has all module data for non seed mode.
 
 
 
+<a name="confio.poe.v1beta1.MixerContractConfig"></a>
+
+### MixerContractConfig
+Mixer contract setup. See
+https://github.com/confio/poe-contracts/tree/main/contracts/tg4-mixer
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `sigmoid` | [MixerContractConfig.Sigmoid](#confio.poe.v1beta1.MixerContractConfig.Sigmoid) |  | Sigmoid returns a sigmoid-like value of staked amount times engagement points. See the Proof-of-Engagement white-paper for details. |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.MixerContractConfig.Sigmoid"></a>
+
+### MixerContractConfig.Sigmoid
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `max_rewards` | [uint64](#uint64) |  |  |
+| `p` | [string](#string) |  |  |
+| `s` | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="confio.poe.v1beta1.OversightCommitteeContractConfig"></a>
 
 ### OversightCommitteeContractConfig
@@ -385,6 +420,7 @@ all PoE contracts on chain.
 | `oversight_community_members` | [string](#string) | repeated |  |
 | `arbiter_pool_members` | [string](#string) | repeated |  |
 | `arbiter_pool_contract_config` | [ArbiterPoolContractConfig](#confio.poe.v1beta1.ArbiterPoolContractConfig) |  |  |
+| `mixer_contract_config` | [MixerContractConfig](#confio.poe.v1beta1.MixerContractConfig) |  |  |
 
 
 
@@ -449,8 +485,8 @@ ValsetContractConfig initial setup config
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | `min_points` | [uint64](#uint64) |  |  |
-| `max_validators` | [uint32](#uint32) |  |  |
-| `epoch_length` | [google.protobuf.Duration](#google.protobuf.Duration) |  |  |
+| `max_validators` | [uint32](#uint32) |  | MaxValidators The maximum number of validators that can be included in the Tendermint validator set. |
+| `epoch_length` | [google.protobuf.Duration](#google.protobuf.Duration) |  | EpochLength We update the Tendermint validator set only once per epoch. Epoch # is env.block.time/epoch_length (round down). The first block with a new epoch number will trigger a new validator calculation. |
 | `epoch_reward` | [cosmos.base.v1beta1.Coin](#cosmos.base.v1beta1.Coin) |  |  |
 | `scaling` | [uint32](#uint32) |  | Scaling is the factor to multiply cw4-group weights to produce the Tendermint validator power |
 | `fee_percentage` | [string](#string) |  | FeePercentage is the percentage of total accumulated fees that is subtracted from tokens minted as rewards. 50% by default. To disable this feature just set it to 0 (which effectively means that fees don't affect the per-epoch reward). |

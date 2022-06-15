@@ -144,7 +144,7 @@ func (v validator) sigmoidSqrt() int64 {
 
 func (v validator) power() int64 {
 	// FIXME: Select according to bootstrap / mixer setup params
-	//return v.geometricMean()
+	// return v.geometricMean()
 	return v.sigmoidSqrt()
 }
 

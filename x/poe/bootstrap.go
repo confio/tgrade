@@ -144,9 +144,9 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	//}
 	// Original sigmoid function, from the PoE white-paper
 	poeFunction := contract.Sigmoid{
-		MaxRewards: uint64(1000),
-		P:          sdk.MustNewDecFromStr("0.68"),
-		S:          sdk.MustNewDecFromStr("0.00003"),
+		MaxRewards: gs.MixerContractConfig.Sigmoid.MaxRewards,
+		P:          gs.MixerContractConfig.Sigmoid.P,
+		S:          gs.MixerContractConfig.Sigmoid.S,
 	}
 	tg4MixerInitMsg := contract.TG4MixerInitMsg{
 		LeftGroup:        engagementContractAddr.String(),
