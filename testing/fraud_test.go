@@ -82,6 +82,14 @@ func TestValidatorDoubleSign(t *testing.T) {
 	byzantineOperatorAddr := cli.GetKeyAddr("node0")
 	var validatorPubKey cryptotypes.PubKey
 
+	valsetContractAddr := cli.GetPoEContractAddress("VALSET")
+
+	// Check the validator is in the active set
+	rsp := cli.QuerySmart(valsetContractAddr, `{"list_active_validators":{}}`)
+	validatorIsActive := strings.Contains(rsp, byzantineOperatorAddr)
+
+	require.True(t, validatorIsActive)
+
 	newNode := sut.AddFullnode(t, func(nodeNumber int, nodePath string) {
 		valKeyFile := filepath.Join(workDir, nodePath, "config", "priv_validator_key.json")
 		_ = os.Remove(valKeyFile)
@@ -91,18 +99,17 @@ func TestValidatorDoubleSign(t *testing.T) {
 	})
 	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
 
-	valsetContractAddr := cli.GetPoEContractAddress("VALSET")
 	// let's wait some blocks to have evidence and update persisted
-	var validatorGotBytzantine bool
-	for i := 0; i < 10 && !validatorGotBytzantine; i++ {
-		sut.AwaitNextBlock(t)
+	var validatorGotByzantine bool
+	for i := 0; i < 15 && !validatorGotByzantine; i++ {
+		sut.AwaitNextBlock(t, defaultWaitTime*2)
 		rsp := cli.QuerySmart(valsetContractAddr, `{"list_active_validators":{}}`)
-		validatorGotBytzantine = !strings.Contains(rsp, byzantineOperatorAddr)
+		validatorGotByzantine = !strings.Contains(rsp, byzantineOperatorAddr)
 	}
 	sut.AwaitNextBlock(t)
 
-	require.True(t, validatorGotBytzantine)
-	rsp := cli.QuerySmart(valsetContractAddr, fmt.Sprintf(`{"validator":{"operator": %q}}`, byzantineOperatorAddr))
+	require.True(t, validatorGotByzantine)
+	rsp = cli.QuerySmart(valsetContractAddr, fmt.Sprintf(`{"validator":{"operator": %q}}`, byzantineOperatorAddr))
 	assert.Equal(t, `{"forever":{}}`, gjson.Get(rsp, "data.validator.jailed_until.end").String())
 	// and not in tendermint
 	valResult, found := cli.IsInTendermintValset(validatorPubKey)

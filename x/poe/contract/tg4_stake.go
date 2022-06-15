@@ -144,17 +144,24 @@ func (v StakeContractAdapter) QueryStakingUnbondingPeriod(ctx sdk.Context) (time
 }
 
 func (v StakeContractAdapter) QueryStakedAmount(ctx sdk.Context, opAddr sdk.AccAddress) (*sdk.Int, error) {
-	query := TG4Query{Member: &MemberQuery{Addr: opAddr.String()}}
-	var resp TG4MemberResponse
-	err := doQuery(ctx, v.contractQuerier, v.contractAddr, query, &resp)
+	resp, err := QueryStakedAmount(ctx, v.contractQuerier, v.contractAddr, opAddr)
 	if err != nil {
-		return nil, sdkerrors.Wrap(err, "contract query")
+		return nil, sdkerrors.Wrap(err, "query staked amount")
 	}
-	if resp.Points == nil {
+	// FIXME: We should return Coin / Coins instead
+	liquidAmount, ok := sdk.NewIntFromString(resp.Liquid.Amount)
+	if !ok {
+		return nil, sdkerrors.Wrap(err, "liquid amount convert")
+	}
+	vestingAmount, ok := sdk.NewIntFromString(resp.Vesting.Amount)
+	if !ok {
+		return nil, sdkerrors.Wrap(err, "vesting amount convert")
+	}
+	if liquidAmount.IsZero() && vestingAmount.IsZero() {
 		return nil, nil
 	}
-	amount := sdk.NewInt(int64(*resp.Points))
-	// we should return Coin instead: https://github.com/confio/tgrade-contracts/issues/265
+	amount := liquidAmount.Add(vestingAmount)
+
 	return &amount, nil
 }
 

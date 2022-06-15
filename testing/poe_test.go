@@ -125,12 +125,12 @@ func TestPoEAddPostGenesisValidatorWithAutoEngagementPoints(t *testing.T) {
 	newNode := sut.AddFullnode(t)
 	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
 	opAddr := cli.AddKey("newOperator")
-	cli.FundAddress(opAddr, "1000utgd")
+	cli.FundAddress(opAddr, "100000000utgd")
 	newPubKey := loadValidatorPubKeyForNode(t, sut, sut.nodesCount-1)
 	pubKeyEncoded, err := app.MakeEncodingConfig().Codec.MarshalInterfaceJSON(newPubKey)
 	require.NoError(t, err)
 	// when
-	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd", "--vesting-amount=0utgd",
+	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=100000000utgd", "--vesting-amount=0utgd",
 		"--pubkey="+string(pubKeyEncoded), "--from=newOperator", "--gas=275000")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
@@ -160,14 +160,14 @@ func TestPoEAddPostGenesisValidatorWithGovProposalEngagementPoints(t *testing.T)
 	newNode := sut.AddFullnode(t)
 	sut.AwaitNodeUp(t, fmt.Sprintf("http://127.0.0.1:%d", newNode.RPCPort))
 	opAddr := cli.AddKey("newOperator")
-	cli.FundAddress(opAddr, "1000utgd")
+	cli.FundAddress(opAddr, "100000000utgd")
 	newPubKey := loadValidatorPubKeyForNode(t, sut, sut.nodesCount-1)
 	t.Logf("new operator address %s", opAddr)
 	pubKeyEncoded, err := app.MakeEncodingConfig().Codec.MarshalInterfaceJSON(newPubKey)
 	require.NoError(t, err)
 
 	// when
-	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=10utgd", "--vesting-amount=0utgd",
+	txResult := cli.CustomCommand("tx", "poe", "create-validator", "--moniker=newMoniker", "--amount=100000000utgd", "--vesting-amount=0utgd",
 		"--pubkey="+string(pubKeyEncoded), "--from=newOperator")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
@@ -246,7 +246,7 @@ func TestPoESelfDelegate(t *testing.T) {
 	powerBefore := queryTendermintValidatorPower(t, sut, 0)
 
 	// when
-	txResult := cli.CustomCommand("tx", "poe", "self-delegate", "100000utgd", "0utgd", "--from=node0")
+	txResult := cli.CustomCommand("tx", "poe", "self-delegate", "900000000utgd", "0utgd", "--from=node0")
 	RequireTxSuccess(t, txResult)
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
@@ -255,7 +255,7 @@ func TestPoESelfDelegate(t *testing.T) {
 	// then
 	qRes = cli.CustomQuery("q", "poe", "self-delegation", cli.GetKeyAddr("node0"))
 	amountAfter := gjson.Get(qRes, "balance.amount").Int()
-	assert.Equal(t, int64(100000), amountAfter-amountBefore)
+	assert.Equal(t, int64(900000000), amountAfter-amountBefore)
 
 	powerAfter := queryTendermintValidatorPower(t, sut, 0)
 	assert.Greater(t, powerAfter, powerBefore)
@@ -271,7 +271,7 @@ func TestPoEUndelegate(t *testing.T) {
 	// when unboding time expired
 	// then claims got executed automatically
 
-	unbodingPeriod := 10 * time.Second // not too short so that claims not get auto unbonded
+	unbodingPeriod := 20 * time.Second // not too short so that claims not get auto unbonded
 	sut.ModifyGenesisJSON(t, SetUnbondingPeriod(t, unbodingPeriod), SetBlockRewards(t, sdk.NewCoin("utgd", sdk.ZeroInt())))
 	sut.StartChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
@@ -282,9 +282,9 @@ func TestPoEUndelegate(t *testing.T) {
 	balanceBefore := cli.QueryBalance(cli.GetKeyAddr("node0"), "utgd")
 
 	// when
-	txResult := cli.CustomCommand("tx", "poe", "unbond", "100000utgd", "--from=node0")
+	txResult := cli.CustomCommand("tx", "poe", "unbond", "100000000utgd", "--from=node0")
 	RequireTxSuccess(t, txResult)
-	txResult = cli.CustomCommand("tx", "poe", "unbond", "200000utgd", "--from=node0")
+	txResult = cli.CustomCommand("tx", "poe", "unbond", "200000000utgd", "--from=node0")
 	RequireTxSuccess(t, txResult)
 	// wait for msg executions
 	sut.AwaitNextBlock(t)
@@ -293,7 +293,7 @@ func TestPoEUndelegate(t *testing.T) {
 	// then
 	qRes = cli.CustomQuery("q", "poe", "self-delegation", cli.GetKeyAddr("node0"))
 	delegatedAmountAfter := gjson.Get(qRes, "balance.amount").Int()
-	assert.Equal(t, int64(-300000), delegatedAmountAfter-delegatedAmountBefore)
+	assert.Equal(t, int64(-300000000), delegatedAmountAfter-delegatedAmountBefore)
 
 	// the total power decreases
 	powerAfter := queryTendermintValidatorPower(t, sut, 0)
@@ -310,11 +310,11 @@ func TestPoEUndelegate(t *testing.T) {
 
 	amounts := gjson.Get(qRes, "entries.#.initial_balance").Array()
 	require.Len(t, amounts, 2, qRes)
-	assert.Equal(t, int64(100000), amounts[0].Int())
-	assert.Equal(t, int64(200000), amounts[1].Int())
+	assert.Equal(t, int64(100000000), amounts[0].Int())
+	assert.Equal(t, int64(200000000), amounts[1].Int())
 
 	// and when unboding time expired
-	expBalance := balanceBefore + 100000 + 200000
+	expBalance := balanceBefore + 100000000 + 200000000
 	balanceAfter = 0
 	for i := 0; i < int(unbodingPeriod/sut.blockTime); i++ {
 		balanceAfter = cli.QueryBalance(cli.GetKeyAddr("node0"), "utgd")
