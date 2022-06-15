@@ -122,29 +122,15 @@ type validator struct {
 	engagement   uint64
 }
 
-func (v validator) geometricMean() int64 {
-	// calculates sqrt(state * engagement)
-	return int64(math.Trunc(math.Sqrt(float64(v.stakedAmount) * float64(v.engagement))))
-}
-
 func (v validator) sigmoidSqrt() int64 {
-	// calculates sigmoid sqrt(state, engagement)
-	// sigmoidSqrt returns a sigmoid-like value of the geometric mean of staked amount and
-	// engagement points.
-	// It is equal to `sigmoid` with `p = 0.5`, but implemented using integer sqrt instead of
-	// fixed-point fractional power.
-	// FIXME: Use parameters from bootstrap / mixer setup
-	maxRewards := 1000
-	sSqrt := 0.0003
-
+	cfg := types.DefaultGenesisState().GetSeedContracts().MixerContractConfig.Sigmoid
+	maxRewards := cfg.MaxRewards
+	sSqrt := cfg.S.MustFloat64()
 	reward := float64(maxRewards) * (2./(1.+math.Exp(-sSqrt*math.Sqrt(float64(v.stakedAmount/sdk.DefaultPowerReduction.Uint64())*float64(v.engagement)))) - 1.)
-
 	return int64(math.Trunc(reward))
 }
 
 func (v validator) power() int64 {
-	// FIXME: Select according to bootstrap / mixer setup params
-	// return v.geometricMean()
 	return v.sigmoidSqrt()
 }
 
