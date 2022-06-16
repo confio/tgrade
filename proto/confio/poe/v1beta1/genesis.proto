@@ -96,7 +96,7 @@ message SeedContracts {
 // https://github.com/confio/poe-contracts/tree/main/contracts/tg4-mixer
 message MixerContractConfig {
   message Sigmoid {
-    uint64 max_rewards = 1;
+    uint64 max_points = 1;
     string p = 2 [
       (gogoproto.nullable) = false,
       (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"

@@ -85,9 +85,9 @@ func DefaultGenesisState() *GenesisState {
 					// These were the results of playing with possible values to find the best fit
 					// Reference: https://www.wolframcloud.com/obj/f94dfad3-522f-4888-a474-7434919400c4
 					Sigmoid: MixerContractConfig_Sigmoid{
-						MaxRewards: 1_000_000,
-						P:          sdk.MustNewDecFromStr("0.62"),
-						S:          sdk.MustNewDecFromStr("0.00001"),
+						MaxPoints: 1_000_000,
+						P:         sdk.MustNewDecFromStr("0.62"),
+						S:         sdk.MustNewDecFromStr("0.00001"),
 					},
 				},
 				BootstrapAccountAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
@@ -442,7 +442,7 @@ func (m *MixerContractConfig) ValidateBasic() error {
 	if m == nil {
 		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty")
 	}
-	if m.Sigmoid.MaxRewards == 0 {
+	if m.Sigmoid.MaxPoints == 0 {
 		return sdkerrors.Wrap(ErrEmpty, "max rewards")
 	}
 	if m.Sigmoid.S.IsNil() || m.Sigmoid.S.IsZero() {

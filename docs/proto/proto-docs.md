@@ -355,7 +355,7 @@ https://github.com/confio/poe-contracts/tree/main/contracts/tg4-mixer
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| `max_rewards` | [uint64](#uint64) |  |  |
+| `max_points` | [uint64](#uint64) |  |  |
 | `p` | [string](#string) |  |  |
 | `s` | [string](#string) |  |  |
 
