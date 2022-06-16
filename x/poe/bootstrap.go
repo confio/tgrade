@@ -134,19 +134,10 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 	logger.Info("stake contract", "address", stakeContractAddr, "code_id", stakeCodeID)
 
-	// setup mixer contract
-	//
-	// Sigmoid-like function, using sqrt instead of fractional exponent
-	// Parameter values from tg4-mixer benchmarks / tests
-	//poeFunction := contract.SigmoidSqrt{
-	//	MaxRewards: uint64(1000),
-	//	S:          sdk.MustNewDecFromStr("0.0003"),
-	//}
-	// Original sigmoid function, from the PoE white-paper
 	poeFunction := contract.Sigmoid{
-		MaxRewards: uint64(1000),
-		P:          sdk.MustNewDecFromStr("0.68"),
-		S:          sdk.MustNewDecFromStr("0.00003"),
+		MaxRewards: gs.MixerContractConfig.Sigmoid.MaxRewards,
+		P:          gs.MixerContractConfig.Sigmoid.P,
+		S:          gs.MixerContractConfig.Sigmoid.S,
 	}
 	tg4MixerInitMsg := contract.TG4MixerInitMsg{
 		LeftGroup:        engagementContractAddr.String(),

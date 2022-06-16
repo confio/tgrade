@@ -81,6 +81,15 @@ func DefaultGenesisState() *GenesisState {
 					},
 					DisputeCost: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
 				},
+				MixerContractConfig: &MixerContractConfig{
+					// These were the results of playing with possible values to find the best fit
+					// Reference: https://www.wolframcloud.com/obj/f94dfad3-522f-4888-a474-7434919400c4
+					Sigmoid: MixerContractConfig_Sigmoid{
+						MaxRewards: 1_000_000,
+						P:          sdk.MustNewDecFromStr("0.62"),
+						S:          sdk.MustNewDecFromStr("0.00001"),
+					},
+				},
 				BootstrapAccountAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
 			},
 		},
@@ -167,6 +176,9 @@ func validateSeedContracts(g *SeedContracts, txJSONDecoder sdk.TxDecoder) error 
 	}
 	if err := g.ValidatorVotingContractConfig.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "validator voting config")
+	}
+	if err := g.MixerContractConfig.ValidateBasic(); err != nil {
+		return sdkerrors.Wrap(err, "mixer config")
 	}
 
 	if _, err := sdk.AccAddressFromBech32(g.BootstrapAccountAddress); err != nil {
@@ -421,6 +433,23 @@ func (c ArbiterPoolContractConfig) ValidateBasic() error {
 	}
 	if time.Duration(uint64(c.WaitingPeriod.Seconds()))*time.Second != c.WaitingPeriod {
 		return sdkerrors.Wrap(ErrInvalid, "waiting period not convertible to seconds")
+	}
+	return nil
+}
+
+// ValidateBasic ensure basic constraints
+func (m *MixerContractConfig) ValidateBasic() error {
+	if m == nil {
+		return sdkerrors.Wrap(wasmtypes.ErrInvalidGenesis, "empty")
+	}
+	if m.Sigmoid.MaxRewards == 0 {
+		return sdkerrors.Wrap(ErrEmpty, "max rewards")
+	}
+	if m.Sigmoid.S.IsNil() || m.Sigmoid.S.IsZero() {
+		return sdkerrors.Wrap(ErrEmpty, "S")
+	}
+	if m.Sigmoid.P.IsNil() || m.Sigmoid.P.IsZero() {
+		return sdkerrors.Wrap(ErrEmpty, "P")
 	}
 	return nil
 }

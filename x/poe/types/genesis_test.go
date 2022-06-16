@@ -261,6 +261,18 @@ func TestValidateGenesis(t *testing.T) {
 			}),
 			expErr: true,
 		},
+		"mixer contract config not set": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.GetSeedContracts().MixerContractConfig = nil
+			}),
+			expErr: true,
+		},
+		"invalid mixer contract config": {
+			source: GenesisStateFixture(func(m *GenesisState) {
+				m.GetSeedContracts().MixerContractConfig.Sigmoid.S = sdk.Dec{}
+			}),
+			expErr: true,
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
@@ -698,6 +710,57 @@ func TestValidateArbiterPoolContractConfig(t *testing.T) {
 			src: *GenesisStateFixture(func(m *GenesisState) {
 				m.GetSeedContracts().ArbiterPoolContractConfig.WaitingPeriod = time.Second + time.Nanosecond
 			}).GetSeedContracts().ArbiterPoolContractConfig,
+			expErr: true,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			gotErr := spec.src.ValidateBasic()
+			if spec.expErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+		})
+	}
+}
+
+func TestValidateMixerContractConfig(t *testing.T) {
+	specs := map[string]struct {
+		src    MixerContractConfig
+		expErr bool
+	}{
+		"default": {
+			src: *(DefaultGenesisState().GetSeedContracts()).MixerContractConfig,
+		},
+		"max rewards empty": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.GetSeedContracts().MixerContractConfig.Sigmoid.MaxRewards = 0
+			}).GetSeedContracts().MixerContractConfig,
+			expErr: true,
+		},
+		"sigmoid p empty": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.GetSeedContracts().MixerContractConfig.Sigmoid.P = sdk.NewDec(0)
+			}).GetSeedContracts().MixerContractConfig,
+			expErr: true,
+		},
+		"sigmoid p unset": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.GetSeedContracts().MixerContractConfig.Sigmoid.P = sdk.Dec{}
+			}).GetSeedContracts().MixerContractConfig,
+			expErr: true,
+		},
+		"sigmoid s empty": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.GetSeedContracts().MixerContractConfig.Sigmoid.S = sdk.NewDec(0)
+			}).GetSeedContracts().MixerContractConfig,
+			expErr: true,
+		},
+		"sigmoid s unset": {
+			src: *GenesisStateFixture(func(m *GenesisState) {
+				m.GetSeedContracts().MixerContractConfig.Sigmoid.S = sdk.Dec{}
+			}).GetSeedContracts().MixerContractConfig,
 			expErr: true,
 		},
 	}
