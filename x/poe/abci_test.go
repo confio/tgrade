@@ -27,7 +27,6 @@ func TestEndBlock(t *testing.T) {
 	specs := map[string]struct {
 		setup           func(m *MockSudoer)
 		expSudoCalls    []tuple
-		expPanic        bool
 		expCommitted    []bool
 		expValsetUpdate []abci.ValidatorUpdate
 	}{
@@ -80,7 +79,7 @@ func TestEndBlock(t *testing.T) {
 				Power:  2,
 			}},
 		},
-		"valset update - panic not handled": {
+		"valset update - panic should be handled": {
 			setup: func(m *MockSudoer) {
 				m.SudoFn = func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error) {
 					if contractAddress.Equals(myAddr) {
@@ -90,7 +89,6 @@ func TestEndBlock(t *testing.T) {
 				}
 				m.IteratePrivilegedContractsByTypeFn = endBlockTypeIterateContractsFn(t, nil, []sdk.AccAddress{myAddr})
 			},
-			expPanic: true,
 		},
 	}
 	for name, spec := range specs {
@@ -103,12 +101,6 @@ func TestEndBlock(t *testing.T) {
 				WithMultiStore(&commitMultistore)
 
 			// when
-			if spec.expPanic {
-				require.Panics(t, func() {
-					_ = EndBlocker(ctx, &mock)
-				})
-				return
-			}
 			gotValsetUpdate := EndBlocker(ctx, &mock)
 			assert.Equal(t, spec.expValsetUpdate, gotValsetUpdate)
 

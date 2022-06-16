@@ -105,7 +105,7 @@ func TestBeginBlock(t *testing.T) {
 			}},
 			expCommitted: []bool{true},
 		},
-		"with evidence - unknown type": {
+		"with evidence - unknown type ignored": {
 			setup: func(m *MockSudoer) {
 				m.SudoFn = captureSudos(&capturedSudoCalls)
 				m.IteratePrivilegedContractsByTypeFn = iterateContractsFn(t, types.PrivilegeTypeBeginBlock, myAddr)
@@ -117,7 +117,8 @@ func TestBeginBlock(t *testing.T) {
 					},
 				},
 			},
-			expPanic: true,
+			expSudoCalls: []tuple{{addr: myAddr, msg: []byte(`{"begin_block":{"evidence":[]}}`)}},
+			expCommitted: []bool{true},
 		},
 		"sudo return error - handled": {
 			setup: func(m *MockSudoer) {
