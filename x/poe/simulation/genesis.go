@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/tendermint/tendermint/libs/math"
 
@@ -162,6 +163,7 @@ func RandomizedGenState(simState *module.SimulationState) {
 	poeGenesis.GetSeedContracts().ArbiterPoolContractConfig.EscrowAmount.Denom = poeGenesis.GetSeedContracts().BondDenom
 	poeGenesis.GetSeedContracts().ArbiterPoolContractConfig.DisputeCost.Denom = poeGenesis.GetSeedContracts().BondDenom
 	poeGenesis.GetSeedContracts().ValsetContractConfig.EpochReward.Denom = poeGenesis.GetSeedContracts().BondDenom
+	poeGenesis.GetSeedContracts().ValsetContractConfig.EpochLength = time.Second
 	poeGenesis.GetSeedContracts().OversightCommitteeContractConfig.EscrowAmount.Denom = poeGenesis.GetSeedContracts().BondDenom
 	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(poeGenesis)
 	if err := types.ValidateGenesis(*poeGenesis, txConfig.TxJSONDecoder()); err != nil {
