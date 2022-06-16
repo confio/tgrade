@@ -143,10 +143,23 @@ func (v validator) sigmoidSqrt() int64 {
 	return int64(math.Trunc(reward))
 }
 
+func (v validator) sigmoid() int64 {
+	// reward = r_max * (2 / (1 + e^(-s * (stake * engagement)^p) ) - 1)
+	maxRewards := 1000000
+	s := 0.00001
+	p := 0.62
+
+	reward := float64(maxRewards) * (2./(1.+
+		math.Exp(-s*math.Pow(float64(v.stakedAmount/sdk.DefaultPowerReduction.Uint64())*float64(v.engagement), p))) - 1.)
+
+	return int64(math.Trunc(reward))
+}
+
 func (v validator) power() int64 {
 	// FIXME: Select according to bootstrap / mixer setup params
 	//return v.geometricMean()
-	return v.sigmoidSqrt()
+	// return v.sigmoidSqrt()
+	return v.sigmoid()
 }
 
 // validator diff sorted by power desc
