@@ -84,8 +84,8 @@ func DefaultGenesisState() *GenesisState {
 				MixerContractConfig: &MixerContractConfig{
 					Sigmoid: MixerContractConfig_Sigmoid{
 						MaxRewards: 1000,
-						P:          sdk.MustNewDecFromStr("0.68"),
-						S:          sdk.MustNewDecFromStr("0.00003"),
+						P:          sdk.MustNewDecFromStr("0.62"),
+						S:          sdk.MustNewDecFromStr("0.00001"),
 					},
 				},
 				BootstrapAccountAddress: sdk.AccAddress(rand.Bytes(address.Len)).String(),
