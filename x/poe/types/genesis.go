@@ -82,6 +82,8 @@ func DefaultGenesisState() *GenesisState {
 					DisputeCost: sdk.NewCoin(DefaultBondDenom, sdk.NewInt(1_000_000)),
 				},
 				MixerContractConfig: &MixerContractConfig{
+					// These were the results of playing with possible values to find the best fit
+					// Reference: https://www.wolframcloud.com/obj/f94dfad3-522f-4888-a474-7434919400c4
 					Sigmoid: MixerContractConfig_Sigmoid{
 						MaxRewards: 1_000_000,
 						P:          sdk.MustNewDecFromStr("0.62"),
