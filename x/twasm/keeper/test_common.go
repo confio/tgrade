@@ -4,29 +4,21 @@ import (
 	"testing"
 	"time"
 
-	appparams "github.com/confio/tgrade/app/params"
-
-	"github.com/cosmos/cosmos-sdk/types/address"
-	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
-	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -37,6 +29,8 @@ import (
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/evidence"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/cosmos/cosmos-sdk/x/mint"
@@ -47,9 +41,12 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
+	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/cosmos/ibc-go/v3/modules/apps/transfer"
 	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v3/modules/core"
+	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	"github.com/stretchr/testify/require"
@@ -58,6 +55,7 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
+	appparams "github.com/confio/tgrade/app/params"
 	"github.com/confio/tgrade/x/twasm/types"
 )
 
@@ -241,7 +239,7 @@ func createTestInput(
 		appCodec,
 		keys[ibchost.StoreKey],
 		subspace(ibchost.ModuleName),
-		nil,
+		&IBCStakingKeeperMock{},
 		upgradeKeeper,
 		scopedIBCKeeper,
 	)
@@ -323,4 +321,25 @@ func NewWasmVMMock(mutators ...func(*wasmtesting.MockWasmer)) *wasmtesting.MockW
 
 func RandomAddress(_ *testing.T) sdk.AccAddress {
 	return rand.Bytes(address.Len)
+}
+
+var _ clienttypes.StakingKeeper = &IBCStakingKeeperMock{}
+
+type IBCStakingKeeperMock struct {
+	GetHistoricalInfoFn func(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool)
+	UnbondingTimeFn     func(ctx sdk.Context) time.Duration
+}
+
+func (m IBCStakingKeeperMock) GetHistoricalInfo(ctx sdk.Context, height int64) (stakingtypes.HistoricalInfo, bool) {
+	if m.GetHistoricalInfoFn == nil {
+		panic("not expected to be called")
+	}
+	return m.GetHistoricalInfoFn(ctx, height)
+}
+
+func (m IBCStakingKeeperMock) UnbondingTime(ctx sdk.Context) time.Duration {
+	if m.UnbondingTimeFn == nil {
+		panic("not expected to be called")
+	}
+	return m.UnbondingTimeFn(ctx)
 }
