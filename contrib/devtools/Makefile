@@ -71,7 +71,7 @@ $(STATIK):
 runsim: $(RUNSIM)
 $(RUNSIM):
 	@echo "Installing runsim..."
-	@(cd /tmp && go get github.com/cosmos/tools/cmd/runsim@v1.0.0)
+	@(cd /tmp && go install github.com/cosmos/tools/cmd/runsim@v1.0.0)
 
 golangci-lint: $(GOLANGCI_LINT)
 $(GOLANGCI_LINT):

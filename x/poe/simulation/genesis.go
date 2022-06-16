@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/tendermint/tendermint/libs/math"
 
@@ -86,7 +87,8 @@ func RandomizedGenState(simState *module.SimulationState) {
 		}
 		engagements = append(engagements, types.TG4Member{
 			Address: acc.Address.String(),
-			Points:  10,
+			// this is what genesis validators get
+			Points: 2000,
 		})
 
 		privkeySeed := make([]byte, 15)
@@ -147,6 +149,11 @@ func RandomizedGenState(simState *module.SimulationState) {
 	}
 
 	poeGenesis := types.DefaultGenesisState()
+	// ensure they have reasonable engagement for the simulations
+	poeGenesis.Params.InitialValEngagementPoints = 100
+	// we use 100.000 instead of 1.000.000 to make the simulated staked tokens a higher value
+	// (I couldn't figure out how to adjust how much each account had, so this effectivley multiplies by 10)
+	// poeGenesis.GetSeedContracts().StakeContractConfig.TokensPerPoint = 100000
 	poeGenesis.GetSeedContracts().GenTxs = genTxs
 	poeGenesis.GetSeedContracts().BootstrapAccountAddress = simState.Accounts[len(simState.Accounts)-1].Address.String() // use a non validator account
 	poeGenesis.GetSeedContracts().Engagement = engagements
@@ -156,6 +163,7 @@ func RandomizedGenState(simState *module.SimulationState) {
 	poeGenesis.GetSeedContracts().ArbiterPoolContractConfig.EscrowAmount.Denom = poeGenesis.GetSeedContracts().BondDenom
 	poeGenesis.GetSeedContracts().ArbiterPoolContractConfig.DisputeCost.Denom = poeGenesis.GetSeedContracts().BondDenom
 	poeGenesis.GetSeedContracts().ValsetContractConfig.EpochReward.Denom = poeGenesis.GetSeedContracts().BondDenom
+	poeGenesis.GetSeedContracts().ValsetContractConfig.EpochLength = time.Second
 	poeGenesis.GetSeedContracts().OversightCommitteeContractConfig.EscrowAmount.Denom = poeGenesis.GetSeedContracts().BondDenom
 	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(poeGenesis)
 	if err := types.ValidateGenesis(*poeGenesis, txConfig.TxJSONDecoder()); err != nil {
