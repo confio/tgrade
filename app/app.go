@@ -536,6 +536,8 @@ func NewTgradeApp(
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)
 
+	app.setupUpgradeHandlers()
+
 	// create the simulation manager and define the order of the modules for deterministic simulations
 	//
 	// NOTE: this is not required apps that don't use the simulator for fuzz testing
@@ -720,6 +722,17 @@ func (app *TgradeApp) RegisterTendermintService(clientCtx client.Context) {
 
 func (app *TgradeApp) AppCodec() codec.Codec {
 	return app.appCodec
+}
+
+func (app *TgradeApp) setupUpgradeHandlers() {
+	app.upgradeKeeper.SetUpgradeHandler(
+		"v2",
+		func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+			// do nothing but some logging
+			defer ctx.Logger().Info("Hello world! Now running on v2")
+			return app.mm.RunMigrations(ctx, app.configurator, fromVM)
+		},
+	)
 }
 
 // RegisterSwaggerAPI registers swagger route with API Server
