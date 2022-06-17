@@ -735,7 +735,7 @@ func TestValidateMixerContractConfig(t *testing.T) {
 		},
 		"max rewards empty": {
 			src: *GenesisStateFixture(func(m *GenesisState) {
-				m.GetSeedContracts().MixerContractConfig.Sigmoid.MaxRewards = 0
+				m.GetSeedContracts().MixerContractConfig.Sigmoid.MaxPoints = 0
 			}).GetSeedContracts().MixerContractConfig,
 			expErr: true,
 		},

@@ -135,9 +135,9 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	logger.Info("stake contract", "address", stakeContractAddr, "code_id", stakeCodeID)
 
 	poeFunction := contract.Sigmoid{
-		MaxRewards: gs.MixerContractConfig.Sigmoid.MaxRewards,
-		P:          gs.MixerContractConfig.Sigmoid.P,
-		S:          gs.MixerContractConfig.Sigmoid.S,
+		MaxPoints: gs.MixerContractConfig.Sigmoid.MaxPoints,
+		P:         gs.MixerContractConfig.Sigmoid.P,
+		S:         gs.MixerContractConfig.Sigmoid.S,
 	}
 	tg4MixerInitMsg := contract.TG4MixerInitMsg{
 		LeftGroup:        engagementContractAddr.String(),

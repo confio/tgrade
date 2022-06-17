@@ -22,19 +22,19 @@ type MixerFunction struct {
 }
 
 type Sigmoid struct {
-	MaxRewards uint64  `json:"max_rewards,string"`
-	P          sdk.Dec `json:"p"`
-	S          sdk.Dec `json:"s"`
+	MaxPoints uint64  `json:"max_points,string"`
+	P         sdk.Dec `json:"p"`
+	S         sdk.Dec `json:"s"`
 }
 
 type SigmoidSqrt struct {
-	MaxRewards uint64  `json:"max_rewards,string"`
-	S          sdk.Dec `json:"s"`
+	MaxPoints uint64  `json:"max_points,string"`
+	S         sdk.Dec `json:"s"`
 }
 
 type AlgebraicSigmoid struct {
-	MaxRewards uint64  `json:"max_rewards,string"`
-	A          sdk.Dec `json:"a"`
-	P          sdk.Dec `json:"p"`
-	S          sdk.Dec `json:"s"`
+	MaxPoints uint64  `json:"max_points,string"`
+	A         sdk.Dec `json:"a"`
+	P         sdk.Dec `json:"p"`
+	S         sdk.Dec `json:"s"`
 }
