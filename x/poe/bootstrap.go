@@ -221,7 +221,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "store tg oc gov proposals contract: ")
 	}
 	ocGovInitMsg := newOCGovProposalsInitMsg(gs, ocContractAddr, engagementContractAddr, valsetContractAddr)
-	ocGovProposalsContractAddr, _, err := k.Instantiate(ctx, ocGovCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(ocGovInitMsg), "oversight_committee gov proposals", ocDeposit)
+	ocGovProposalsContractAddr, _, err := k.Instantiate(ctx, ocGovCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(ocGovInitMsg), "oversight_committee gov proposals", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg oc gov proposals contract")
 	}
@@ -288,7 +288,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "store arbiter voting contract: ")
 	}
 	apVotingInitMsg := newArbiterPoolVotingInitMsg(gs, apContractAddr)
-	apVotingContractAddr, _, err := k.Instantiate(ctx, apCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(apVotingInitMsg), "arbiter pool voting", apDeposit)
+	apVotingContractAddr, _, err := k.Instantiate(ctx, apCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(apVotingInitMsg), "arbiter pool voting", nil)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg ap voting contract")
 	}
