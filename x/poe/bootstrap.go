@@ -74,7 +74,15 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 engagement contract")
 	}
-	engagementContractAddr, _, err := k.Instantiate(ctx, engagementCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(tg4EngagementInitMsg), "engagement", nil)
+	engagementContractAddr, _, err := k.Instantiate(
+		ctx,
+		engagementCodeID,
+		bootstrapAccountAddr,
+		bootstrapAccountAddr,
+		mustMarshalJSON(tg4EngagementInitMsg),
+		"engagement",
+		nil,
+	)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 engagement")
 	}
@@ -92,14 +100,20 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "store tg trusted circle contract")
 	}
 	ocInitMsg := newOCInitMsg(gs)
-	ocDeposit := sdk.NewCoins(gs.OversightCommitteeContractConfig.EscrowAmount)
-
 	firstOCMember, err := sdk.AccAddressFromBech32(gs.OversightCommunityMembers[0])
 	if err != nil {
 		return sdkerrors.Wrap(err, "first member")
 	}
 
-	ocContractAddr, _, err := k.Instantiate(ctx, trustedCircleCodeID, firstOCMember, bootstrapAccountAddr, mustMarshalJSON(ocInitMsg), "oversight_committee", ocDeposit)
+	ocContractAddr, _, err := k.Instantiate(
+		ctx,
+		trustedCircleCodeID,
+		firstOCMember,
+		bootstrapAccountAddr,
+		mustMarshalJSON(ocInitMsg),
+		"oversight_committee",
+		sdk.NewCoins(gs.OversightCommitteeContractConfig.EscrowAmount),
+	)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg trusted circle contract")
 	}
@@ -124,7 +138,15 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "store tg4 stake contract")
 	}
 	tg4StakeInitMsg := newStakeInitMsg(gs, bootstrapAccountAddr)
-	stakeContractAddr, _, err := k.Instantiate(ctx, stakeCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(tg4StakeInitMsg), "stakers", nil)
+	stakeContractAddr, _, err := k.Instantiate(
+		ctx,
+		stakeCodeID,
+		bootstrapAccountAddr,
+		bootstrapAccountAddr,
+		mustMarshalJSON(tg4StakeInitMsg),
+		"stakers",
+		nil,
+	)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 stake")
 	}
@@ -151,7 +173,15 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 mixer contract")
 	}
-	mixerContractAddr, _, err := k.Instantiate(ctx, mixerCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(tg4MixerInitMsg), "poe", nil)
+	mixerContractAddr, _, err := k.Instantiate(
+		ctx,
+		mixerCodeID,
+		bootstrapAccountAddr,
+		bootstrapAccountAddr,
+		mustMarshalJSON(tg4MixerInitMsg),
+		"poe",
+		nil,
+	)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg4 mixer")
 	}
@@ -171,7 +201,15 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		VotingRules:  toContractVotingRules(gs.CommunityPoolContractConfig.VotingRules),
 		GroupAddress: engagementContractAddr.String(),
 	}
-	communityPoolContractAddr, _, err := k.Instantiate(ctx, communityPoolCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(communityPoolInitMsg), "stakers", nil)
+	communityPoolContractAddr, _, err := k.Instantiate(
+		ctx,
+		communityPoolCodeID,
+		bootstrapAccountAddr,
+		bootstrapAccountAddr,
+		mustMarshalJSON(communityPoolInitMsg),
+		"stakers",
+		nil,
+	)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate community pool")
 	}
@@ -190,7 +228,15 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 
 	valsetInitMsg := newValsetInitMsg(gs, bootstrapAccountAddr, mixerContractAddr, engagementContractAddr, communityPoolContractAddr, engagementCodeID)
 	valsetJSON := mustMarshalJSON(valsetInitMsg)
-	valsetContractAddr, _, err := k.Instantiate(ctx, valSetCodeID, bootstrapAccountAddr, bootstrapAccountAddr, valsetJSON, "valset", nil)
+	valsetContractAddr, _, err := k.Instantiate(
+		ctx,
+		valSetCodeID,
+		bootstrapAccountAddr,
+		bootstrapAccountAddr,
+		valsetJSON,
+		"valset",
+		nil,
+	)
 	if err != nil {
 		return sdkerrors.Wrapf(err, "instantiate valset with: %s", string(valsetJSON))
 	}
@@ -221,7 +267,15 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "store tg oc gov proposals contract: ")
 	}
 	ocGovInitMsg := newOCGovProposalsInitMsg(gs, ocContractAddr, engagementContractAddr, valsetContractAddr)
-	ocGovProposalsContractAddr, _, err := k.Instantiate(ctx, ocGovCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(ocGovInitMsg), "oversight_committee gov proposals", ocDeposit)
+	ocGovProposalsContractAddr, _, err := k.Instantiate(
+		ctx,
+		ocGovCodeID,
+		bootstrapAccountAddr,
+		bootstrapAccountAddr,
+		mustMarshalJSON(ocGovInitMsg),
+		"oversight_committee gov proposals",
+		nil,
+	)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg oc gov proposals contract")
 	}
@@ -251,7 +305,15 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		VotingRules:  toContractVotingRules(gs.ValidatorVotingContractConfig.VotingRules),
 		GroupAddress: distrAddr.String(),
 	}
-	validatorVotingContractAddr, _, err := k.Instantiate(ctx, validatorVotingCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(validatorVotingInitMsg), "stakers", nil)
+	validatorVotingContractAddr, _, err := k.Instantiate(
+		ctx,
+		validatorVotingCodeID,
+		bootstrapAccountAddr,
+		bootstrapAccountAddr,
+		mustMarshalJSON(validatorVotingInitMsg),
+		"stakers",
+		nil,
+	)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate validator voting")
 	}
@@ -264,13 +326,20 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 
 	// setup trusted circle for ap
 	apTrustedCircleInitMsg := newAPTrustedCircleInitMsg(gs)
-	apDeposit := sdk.NewCoins(gs.ArbiterPoolContractConfig.EscrowAmount)
 	firstAPMember, err := sdk.AccAddressFromBech32(gs.ArbiterPoolMembers[0])
 	if err != nil {
 		return sdkerrors.Wrap(err, "first ap member")
 	}
 
-	apContractAddr, _, err := k.Instantiate(ctx, trustedCircleCodeID, firstAPMember, bootstrapAccountAddr, mustMarshalJSON(apTrustedCircleInitMsg), "arbiter_pool", apDeposit)
+	apContractAddr, _, err := k.Instantiate(
+		ctx,
+		trustedCircleCodeID,
+		firstAPMember,
+		bootstrapAccountAddr,
+		mustMarshalJSON(apTrustedCircleInitMsg),
+		"arbiter_pool",
+		sdk.NewCoins(gs.ArbiterPoolContractConfig.EscrowAmount),
+	)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg trusted circle contract")
 	}
@@ -288,7 +357,15 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 		return sdkerrors.Wrap(err, "store arbiter voting contract: ")
 	}
 	apVotingInitMsg := newArbiterPoolVotingInitMsg(gs, apContractAddr)
-	apVotingContractAddr, _, err := k.Instantiate(ctx, apCodeID, bootstrapAccountAddr, bootstrapAccountAddr, mustMarshalJSON(apVotingInitMsg), "arbiter pool voting", apDeposit)
+	apVotingContractAddr, _, err := k.Instantiate(
+		ctx,
+		apCodeID,
+		bootstrapAccountAddr,
+		bootstrapAccountAddr,
+		mustMarshalJSON(apVotingInitMsg),
+		"arbiter pool voting",
+		nil,
+	)
 	if err != nil {
 		return sdkerrors.Wrap(err, "instantiate tg ap voting contract")
 	}
