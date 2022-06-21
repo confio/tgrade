@@ -132,12 +132,13 @@ func TestVerifyPoEContracts(t *testing.T) {
 		"all good": {
 			alterState: func(t *testing.T, ctx sdk.Context, poeKeeper *keeper.Keeper, twasmKeeper *twasmkeeper.Keeper) {}, //  noop
 		},
-		"poe contract not pinned": {
-			alterState: func(t *testing.T, ctx sdk.Context, poeKeeper *keeper.Keeper, twasmKeeper *twasmkeeper.Keeper) {
-				require.NoError(t, twasmKeeper.GetContractKeeper().UnpinCode(ctx, 1))
-			},
-			expErr: true,
-		},
+		// deactivated cause of https://github.com/confio/tgrade/issues/402
+		//"poe contract not pinned": {
+		//	alterState: func(t *testing.T, ctx sdk.Context, poeKeeper *keeper.Keeper, twasmKeeper *twasmkeeper.Keeper) {
+		//		require.NoError(t, twasmKeeper.GetContractKeeper().UnpinCode(ctx, 1))
+		//	},
+		//	expErr: true,
+		//},
 		"poe contract without correct migrator": {
 			alterState: func(t *testing.T, ctx sdk.Context, poeKeeper *keeper.Keeper, twasmKeeper *twasmkeeper.Keeper) {
 				contractAddr, _ := poeKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeStaking)
