@@ -152,7 +152,7 @@ func RandomizedGenState(simState *module.SimulationState) {
 	// ensure they have reasonable engagement for the simulations
 	poeGenesis.Params.InitialValEngagementPoints = 100
 	// we use 100.000 instead of 1.000.000 to make the simulated staked tokens a higher value
-	// (I couldn't figure out how to adjust how much each account had, so this effectivley multiplies by 10)
+	// (I couldn't figure out how to adjust how much each account had, so this effectively multiplies by 10)
 	// poeGenesis.GetSeedContracts().StakeContractConfig.TokensPerPoint = 100000
 	poeGenesis.GetSeedContracts().GenTxs = genTxs
 	poeGenesis.GetSeedContracts().BootstrapAccountAddress = simState.Accounts[len(simState.Accounts)-1].Address.String() // use a non validator account
