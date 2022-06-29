@@ -571,10 +571,10 @@ func VerifyPoEContracts(ctx sdk.Context, tk twasmKeeper, poeKeeper keeper.Contra
 		}
 		// all poe contracts pinned
 		if !tk.IsPinnedCode(ctx, c.CodeID) {
-			keeper.ModuleLogger(ctx).Error("PoE contract is not pinned", "name", tp.String(), "code-id", c.CodeID, "addres", addr.String())
+			keeper.ModuleLogger(ctx).Error("PoE contract is not pinned", "name", tp.String(), "code-id", c.CodeID, "address", addr.String())
 			// fail when https://github.com/confio/tgrade/issues/402 is implemented
-			//err = sdkerrors.Wrapf(types.ErrInvalid, "code %d not pinned for poe contract :%s", c.CodeID, tp.String())
-			//return true
+			// err = sdkerrors.Wrapf(types.ErrInvalid, "code %d not pinned for poe contract :%s", c.CodeID, tp.String())
+			// return true
 		}
 		return false
 	})

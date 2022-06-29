@@ -58,6 +58,14 @@ func (k *Keeper) SetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractT
 	k.contractAddrCache.Store(ctype, contractAddr)
 }
 
+// InitContractAddressCache adds all poe contracts to the in memory cache
+func (k *Keeper) InitContractAddressCache(ctx sdk.Context) {
+	k.IteratePoEContracts(ctx, func(contractType types.PoEContractType, address sdk.AccAddress) bool {
+		k.contractAddrCache.Store(contractType, address)
+		return false
+	})
+}
+
 // GetPoEContractAddress get the stored contract address for the given type or returns an error when not exists (yet)
 func (k *Keeper) GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error) {
 	if err := ctype.ValidateBasic(); err != nil {

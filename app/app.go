@@ -600,6 +600,7 @@ func NewTgradeApp(
 		if err := app.twasmKeeper.InitializePinnedCodes(ctx); err != nil {
 			tmos.Exit(fmt.Sprintf("failed initialize pinned codes %s", err))
 		}
+		app.poeKeeper.InitContractAddressCache(ctx)
 	}
 
 	return app
