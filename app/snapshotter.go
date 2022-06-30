@@ -11,11 +11,14 @@ import (
 
 var _ snapshot.ExtensionSnapshotter = &TgradeSnapshotter{}
 
+// TgradeSnapshotter custom cosmos-sdk snapshotter that extends
+// the wasmd snapshotter to restore poe contract cache
 type TgradeSnapshotter struct {
 	*keeper.WasmSnapshotter
 	app *TgradeApp
 }
 
+// NewTgradeSnapshotter constructor
 func NewTgradeSnapshotter(app *TgradeApp, cms sdk.MultiStore, wasm *keeper.Keeper) *TgradeSnapshotter {
 	return &TgradeSnapshotter{
 		WasmSnapshotter: keeper.NewWasmSnapshotter(cms, wasm),
@@ -23,6 +26,7 @@ func NewTgradeSnapshotter(app *TgradeApp, cms sdk.MultiStore, wasm *keeper.Keepe
 	}
 }
 
+// Restore restores wasm files and caches
 func (t *TgradeSnapshotter) Restore(
 	height uint64, format uint32, protoReader protoio.Reader,
 ) (snapshot.SnapshotItem, error) {
