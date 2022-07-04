@@ -18,6 +18,8 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
+const flagAddress = "address"
+
 func GetQueryCmd() *cobra.Command {
 	queryCmd := &cobra.Command{
 		Use:                        types.ModuleName,
@@ -67,10 +69,15 @@ func GetCmdShowPoEContract() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			if printAddr, err := cmd.Flags().GetBool(flagAddress); err == nil && printAddr {
+				return clientCtx.PrintString(res.Address)
+			}
 			return clientCtx.PrintProto(res)
 		},
 	}
 	flags.AddQueryFlagsToCmd(cmd)
+	cmd.Flags().BoolP(flagAddress, "a", false, "print the bech32 address only")
 	return cmd
 }
 
