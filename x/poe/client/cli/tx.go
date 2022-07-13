@@ -492,7 +492,7 @@ $ %s tx poe claim-rewards
 $ %s tx poe claim-rewards --engagement
 $ %s tx poe claim-rewards --distribution
 $ %s tx poe claim-rewards --distribution --engagement
-`, version.AppName),
+`, version.AppName, version.AppName, version.AppName, version.AppName),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
