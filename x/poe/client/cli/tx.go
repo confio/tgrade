@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -29,6 +30,11 @@ import (
 var (
 	DefaultTokens = sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction)
 	defaultAmount = DefaultTokens.String() + types.DefaultBondDenom
+)
+
+const (
+	flagDistribution = "distribution"
+	flagEngagement   = "engagement"
 )
 
 // NewTxCmd returns a root CLI command handler for all x/staking transaction commands.
@@ -482,7 +488,10 @@ func NewClaimRewardsCmd() *cobra.Command {
 		Long: fmt.Sprintf(`Claim distribution and engagement rewards.
 
 Example:
-$ %s tx poe claim-rewards --from mykey
+$ %s tx poe claim-rewards
+$ %s tx poe claim-rewards --engagement
+$ %s tx poe claim-rewards --distribution
+$ %s tx poe claim-rewards --distribution --engagement
 `, version.AppName),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -490,31 +499,89 @@ $ %s tx poe claim-rewards --from mykey
 				return err
 			}
 			queryClient := types.NewQueryClient(clientCtx)
-			res, err := queryClient.ContractAddress(cmd.Context(), &types.QueryContractAddressRequest{ContractType: types.PoEContractTypeDistribution})
-			if err != nil {
-				return errors.Wrap(err, "query distribution contract address")
-			}
 			nodeOperator := clientCtx.GetFromAddress()
-			withdrawRewardsMsg := &poecontracts.TG4EngagementExecute{
-				WithdrawRewards: &poecontracts.WithdrawRewardsMsg{},
-			}
-			withdrawRewardsBz, err := json.Marshal(withdrawRewardsMsg)
-			if err != nil {
-				return errors.Wrap(err, "encode msg payload")
-			}
 
-			msg := &wasmtypes.MsgExecuteContract{
-				Sender:   nodeOperator.String(),
-				Contract: res.Address,
-				Msg:      withdrawRewardsBz,
-			}
-			if err := msg.ValidateBasic(); err != nil {
+			distrRewards, err := cmd.Flags().GetBool(flagDistribution)
+			if err != nil {
 				return err
 			}
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+			engRewards, err := cmd.Flags().GetBool(flagEngagement)
+			if err != nil {
+				return err
+			}
+
+			msgs := []sdk.Msg{}
+			if distrRewards || !(distrRewards || engRewards) {
+				distrMsg, err := buildDistributionWithdrawRewardsMsgExecute(cmd.Context(), queryClient, nodeOperator.String())
+				if err != nil {
+					return err
+				}
+				msgs = append(msgs, distrMsg)
+			}
+
+			if engRewards || !(distrRewards || engRewards) {
+				engMsg, err := buildEngagementWithdrawRewardsMsgExecute(cmd.Context(), queryClient, nodeOperator.String())
+				if err != nil {
+					return err
+				}
+				msgs = append(msgs, engMsg)
+			}
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msgs...)
 		},
 	}
 
 	flags.AddTxFlagsToCmd(cmd)
+	cmd.Flags().BoolP(flagEngagement, "", false, "claim engagement rewards")
+	cmd.Flags().BoolP(flagDistribution, "", false, "claim distribution rewards")
 	return cmd
+}
+
+func buildDistributionWithdrawRewardsMsgExecute(ctx context.Context, queryClient types.QueryClient, sender string) (*wasmtypes.MsgExecuteContract, error) {
+	res, err := queryClient.ContractAddress(ctx, &types.QueryContractAddressRequest{ContractType: types.PoEContractTypeDistribution})
+	if err != nil {
+		return nil, errors.Wrap(err, "query distribution contract address")
+	}
+	withdrawRewardsMsg := &poecontracts.TrustedCircleExecute{
+		WithdrawRewards: &struct{}{},
+	}
+	withdrawRewardsBz, err := json.Marshal(withdrawRewardsMsg)
+	if err != nil {
+		return nil, errors.Wrap(err, "encode msg payload")
+	}
+
+	msg := &wasmtypes.MsgExecuteContract{
+		Sender:   sender,
+		Contract: res.Address,
+		Msg:      withdrawRewardsBz,
+	}
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	return msg, nil
+}
+
+func buildEngagementWithdrawRewardsMsgExecute(ctx context.Context, queryClient types.QueryClient, sender string) (*wasmtypes.MsgExecuteContract, error) {
+	res, err := queryClient.ContractAddress(ctx, &types.QueryContractAddressRequest{ContractType: types.PoEContractTypeEngagement})
+	if err != nil {
+		return nil, errors.Wrap(err, "query engagement contract address")
+	}
+	withdrawRewardsMsg := &poecontracts.TG4EngagementExecute{
+		WithdrawRewards: &poecontracts.WithdrawRewardsMsg{},
+	}
+	withdrawRewardsBz, err := json.Marshal(withdrawRewardsMsg)
+	if err != nil {
+		return nil, errors.Wrap(err, "encode msg payload")
+	}
+
+	msg := &wasmtypes.MsgExecuteContract{
+		Sender:   sender,
+		Contract: res.Address,
+		Msg:      withdrawRewardsBz,
+	}
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	return msg, nil
 }
