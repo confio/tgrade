@@ -35,8 +35,9 @@ type TG4EngagementSudoMsg struct {
 // TG4EngagementExecute execute message
 // See https://github.com/confio/tgrade-contracts/blob/v0.5.0-alpha/contracts/tg4-engagement/src/msg.rs
 type TG4EngagementExecute struct {
-	UpdateMembers *UpdateMembersMsg  `json:"update_members,omitempty"`
-	UpdateAdmin   *TG4UpdateAdminMsg `json:"update_admin,omitempty"`
+	UpdateMembers   *UpdateMembersMsg   `json:"update_members,omitempty"`
+	UpdateAdmin     *TG4UpdateAdminMsg  `json:"update_admin,omitempty"`
+	WithdrawRewards *WithdrawRewardsMsg `json:"withdraw_rewards,omitempty"`
 }
 
 // UpdateMembersMsg contract execute message to update members
@@ -44,6 +45,12 @@ type TG4EngagementExecute struct {
 type UpdateMembersMsg struct {
 	Add    []TG4Member `json:"add"`
 	Remove []string    `json:"remove"`
+}
+
+// WithdrawRewardsMsg contract execute message to claim rewards
+type WithdrawRewardsMsg struct {
+	Owner    *string `json:"owner,omitempty"`
+	Receiver *string `json:"receiver,omitempty"`
 }
 
 func (m *UpdateMembersMsg) ToJSON(t *testing.T) string {

@@ -47,6 +47,7 @@ func NewTxCmd() *cobra.Command {
 		NewDelegateCmd(),
 		NewUnbondCmd(),
 		NewUnjailTxCmd(),
+		NewClaimRewardsCmd(),
 	)
 
 	return poeTxCmd
@@ -461,6 +462,51 @@ $ %s tx poe unjail --from mykey
 				Sender:   nodeOperator.String(),
 				Contract: res.Address,
 				Msg:      unjailBz,
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
+
+func NewClaimRewardsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "claim-rewards",
+		Args:  cobra.NoArgs,
+		Short: "Claim distribution and engagement rewards",
+		Long: fmt.Sprintf(`Claim distribution and engagement rewards.
+
+Example:
+$ %s tx poe claim-rewards --from mykey
+`, version.AppName),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.ContractAddress(cmd.Context(), &types.QueryContractAddressRequest{ContractType: types.PoEContractTypeDistribution})
+			if err != nil {
+				return errors.Wrap(err, "query distribution contract address")
+			}
+			nodeOperator := clientCtx.GetFromAddress()
+			withdrawRewardsMsg := &poecontracts.TG4EngagementExecute{
+				WithdrawRewards: &poecontracts.WithdrawRewardsMsg{},
+			}
+			withdrawRewardsBz, err := json.Marshal(withdrawRewardsMsg)
+			if err != nil {
+				return errors.Wrap(err, "encode msg payload")
+			}
+
+			msg := &wasmtypes.MsgExecuteContract{
+				Sender:   nodeOperator.String(),
+				Contract: res.Address,
+				Msg:      withdrawRewardsBz,
 			}
 			if err := msg.ValidateBasic(); err != nil {
 				return err
