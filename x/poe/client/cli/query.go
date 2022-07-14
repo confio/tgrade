@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/types/errors"
 	"strconv"
 	"strings"
 
@@ -18,7 +19,11 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-const flagAddress = "address"
+const (
+	flagAddress      = "address"
+	flagEngagement   = "engagement"
+	flagDistribution = "distribution"
+)
 
 func GetQueryCmd() *cobra.Command {
 	queryCmd := &cobra.Command{
@@ -375,19 +380,44 @@ $ %s query poe validator-reward %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 				return err
 			}
 
-			req := &types.QueryValidatorOutstandingRewardRequest{
-				ValidatorAddress: valAddr.String(),
+			distrRewards, err := cmd.Flags().GetBool(flagDistribution)
+			if err != nil {
+				return err
 			}
-			res, err := queryClient.ValidatorOutstandingReward(context.Background(), req)
+			engRewards, err := cmd.Flags().GetBool(flagEngagement)
 			if err != nil {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			if distrRewards || !(distrRewards || engRewards) {
+				req := &types.QueryValidatorOutstandingRewardRequest{
+					ValidatorAddress: valAddr.String(),
+				}
+				res, err := queryClient.ValidatorOutstandingReward(context.Background(), req)
+				if err != nil {
+					return err
+				}
+
+				err = clientCtx.PrintProto(res)
+				if err != nil {
+					return err
+				}
+			}
+
+			if engRewards || !(distrRewards || engRewards) {
+				res, err := queryClient.ContractAddress(cmd.Context(), &types.QueryContractAddressRequest{ContractType: types.PoEContractTypeEngagement})
+				if err != nil {
+					return errors.Wrap(err, "query engagement contract address")
+				}
+
+			}
+			return nil
 		},
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
+	cmd.Flags().BoolP(flagEngagement, "", false, "query engagement rewards")
+	cmd.Flags().BoolP(flagDistribution, "", false, "query distribution rewards")
 	return cmd
 }
 
