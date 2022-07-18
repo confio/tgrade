@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -31,6 +32,11 @@ var (
 	defaultAmount = DefaultTokens.String() + types.DefaultBondDenom
 )
 
+const (
+	flagDistribution = "distribution"
+	flagEngagement   = "engagement"
+)
+
 // NewTxCmd returns a root CLI command handler for all x/staking transaction commands.
 func NewTxCmd() *cobra.Command {
 	poeTxCmd := &cobra.Command{
@@ -47,6 +53,7 @@ func NewTxCmd() *cobra.Command {
 		NewDelegateCmd(),
 		NewUnbondCmd(),
 		NewUnjailTxCmd(),
+		NewClaimRewardsCmd(),
 	)
 
 	return poeTxCmd
@@ -471,4 +478,110 @@ $ %s tx poe unjail --from mykey
 
 	flags.AddTxFlagsToCmd(cmd)
 	return cmd
+}
+
+func NewClaimRewardsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "claim-rewards",
+		Args:  cobra.NoArgs,
+		Short: "Claim distribution and engagement rewards",
+		Long: fmt.Sprintf(`Claim distribution and engagement rewards.
+
+Example:
+$ %s tx poe claim-rewards
+$ %s tx poe claim-rewards --engagement
+$ %s tx poe claim-rewards --distribution
+$ %s tx poe claim-rewards --distribution --engagement
+`, version.AppName, version.AppName, version.AppName, version.AppName),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+			nodeOperator := clientCtx.GetFromAddress()
+
+			distrRewards, err := cmd.Flags().GetBool(flagDistribution)
+			if err != nil {
+				return err
+			}
+			engRewards, err := cmd.Flags().GetBool(flagEngagement)
+			if err != nil {
+				return err
+			}
+
+			msgs := []sdk.Msg{}
+			if distrRewards || !(distrRewards || engRewards) {
+				distrMsg, err := buildDistributionWithdrawRewardsMsgExecute(cmd.Context(), queryClient, nodeOperator.String())
+				if err != nil {
+					return err
+				}
+				msgs = append(msgs, distrMsg)
+			}
+
+			if engRewards || !(distrRewards || engRewards) {
+				engMsg, err := buildEngagementWithdrawRewardsMsgExecute(cmd.Context(), queryClient, nodeOperator.String())
+				if err != nil {
+					return err
+				}
+				msgs = append(msgs, engMsg)
+			}
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msgs...)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
+	cmd.Flags().BoolP(flagEngagement, "", false, "claim engagement rewards")
+	cmd.Flags().BoolP(flagDistribution, "", false, "claim distribution rewards")
+	return cmd
+}
+
+func buildDistributionWithdrawRewardsMsgExecute(ctx context.Context, queryClient types.QueryClient, sender string) (*wasmtypes.MsgExecuteContract, error) {
+	res, err := queryClient.ContractAddress(ctx, &types.QueryContractAddressRequest{ContractType: types.PoEContractTypeDistribution})
+	if err != nil {
+		return nil, errors.Wrap(err, "query distribution contract address")
+	}
+	withdrawRewardsMsg := &poecontracts.TrustedCircleExecute{
+		WithdrawRewards: &struct{}{},
+	}
+	withdrawRewardsBz, err := json.Marshal(withdrawRewardsMsg)
+	if err != nil {
+		return nil, errors.Wrap(err, "encode msg payload")
+	}
+
+	msg := &wasmtypes.MsgExecuteContract{
+		Sender:   sender,
+		Contract: res.Address,
+		Msg:      withdrawRewardsBz,
+	}
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	return msg, nil
+}
+
+func buildEngagementWithdrawRewardsMsgExecute(ctx context.Context, queryClient types.QueryClient, sender string) (*wasmtypes.MsgExecuteContract, error) {
+	res, err := queryClient.ContractAddress(ctx, &types.QueryContractAddressRequest{ContractType: types.PoEContractTypeEngagement})
+	if err != nil {
+		return nil, errors.Wrap(err, "query engagement contract address")
+	}
+	withdrawRewardsMsg := &poecontracts.TG4EngagementExecute{
+		WithdrawRewards: &poecontracts.WithdrawRewardsMsg{},
+	}
+	withdrawRewardsBz, err := json.Marshal(withdrawRewardsMsg)
+	if err != nil {
+		return nil, errors.Wrap(err, "encode msg payload")
+	}
+
+	msg := &wasmtypes.MsgExecuteContract{
+		Sender:   sender,
+		Contract: res.Address,
+		Msg:      withdrawRewardsBz,
+	}
+	if err := msg.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	return msg, nil
 }

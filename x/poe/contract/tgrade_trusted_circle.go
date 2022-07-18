@@ -34,9 +34,10 @@ type TrustedCircleInitMsg struct { //nolint:maligned
 }
 
 type TrustedCircleExecute struct {
-	DepositEscrow *struct{}   `json:"deposit_escrow,omitempty"`
-	Propose       *ProposeMsg `json:"propose,omitempty"`
-	Execute       *ExecuteMsg `json:"execute,omitempty"`
+	DepositEscrow   *struct{}   `json:"deposit_escrow,omitempty"`
+	Propose         *ProposeMsg `json:"propose,omitempty"`
+	Execute         *ExecuteMsg `json:"execute,omitempty"`
+	WithdrawRewards *struct{}   `json:"withdraw_rewards,omitempty"`
 }
 
 type ExecuteMsg struct {
