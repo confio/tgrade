@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	types2 "github.com/tendermint/tendermint/abci/types"
+
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -23,6 +25,7 @@ type Keeper struct {
 	paramStore        paramtypes.Subspace
 	twasmKeeper       types.TWasmKeeper
 	contractAddrCache sync.Map
+	validatorVotes    []types2.VoteInfo
 }
 
 // NewKeeper constructor
@@ -115,6 +118,14 @@ func (k *Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
 
 func (k *Keeper) GetBondDenom(ctx sdk.Context) string {
 	return types.DefaultBondDenom
+}
+
+func (k *Keeper) UpdateValidatorVotes(validatorVotes []types2.VoteInfo) {
+	k.validatorVotes = validatorVotes
+}
+
+func (k *Keeper) GetValidatorVotes() []types2.VoteInfo {
+	return k.validatorVotes
 }
 
 func ModuleLogger(ctx sdk.Context) log.Logger {

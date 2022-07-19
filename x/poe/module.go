@@ -162,7 +162,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 }
 
 func (am AppModule) BeginBlock(ctx sdk.Context, block abci.RequestBeginBlock) {
-	BeginBlocker(ctx, am.poeKeeper)
+	BeginBlocker(ctx, am.poeKeeper, block)
 }
 
 func (am AppModule) EndBlock(ctx sdk.Context, block abci.RequestEndBlock) []abci.ValidatorUpdate {

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	types2 "github.com/tendermint/tendermint/abci/types"
+
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -358,6 +360,7 @@ type ViewKeeperMock struct {
 	ValsetContractFn        func(ctx sdk.Context) keeper.ValsetContract
 	StakeContractFn         func(ctx sdk.Context) keeper.StakeContract
 	GetPoEContractAddressFn func(ctx sdk.Context, contractType poetypes.PoEContractType) (sdk.AccAddress, error)
+	GetValidatorVotesFn     func() []types2.VoteInfo
 }
 
 func (m ViewKeeperMock) GetBondDenom(ctx sdk.Context) string {
@@ -393,4 +396,11 @@ func (m ViewKeeperMock) GetPoEContractAddress(ctx sdk.Context, ctype poetypes.Po
 		panic("not expected to be called")
 	}
 	return m.GetPoEContractAddressFn(ctx, ctype)
+}
+
+func (m ViewKeeperMock) GetValidatorVotes() []types2.VoteInfo {
+	if m.GetValidatorVotesFn == nil {
+		panic("not expected to be called")
+	}
+	return m.GetValidatorVotesFn()
 }

@@ -19,6 +19,11 @@ type endBlockKeeper interface {
 	IteratePrivilegedContractsByType(ctx sdk.Context, privilegeType twasmtypes.PrivilegeType, cb func(prio uint8, contractAddr sdk.AccAddress) bool)
 }
 
+type abciKeeper interface {
+	UpdateValidatorVotes(validatorVotes []abci.VoteInfo)
+	TrackHistoricalInfo(ctx sdk.Context)
+}
+
 // EndBlocker calls the Valset contract for the validator diff.
 func EndBlocker(parentCtx sdk.Context, k endBlockKeeper) []abci.ValidatorUpdate {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
@@ -52,8 +57,9 @@ func EndBlocker(parentCtx sdk.Context, k endBlockKeeper) []abci.ValidatorUpdate 
 }
 
 // BeginBlocker ABCI begin block callback
-func BeginBlocker(ctx sdk.Context, k interface{ TrackHistoricalInfo(ctx sdk.Context) }) {
+func BeginBlocker(ctx sdk.Context, k abciKeeper, b abci.RequestBeginBlock) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
+	k.UpdateValidatorVotes(b.LastCommitInfo.Votes)
 	k.TrackHistoricalInfo(ctx)
 }
