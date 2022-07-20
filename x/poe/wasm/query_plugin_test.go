@@ -339,6 +339,23 @@ func TestCustomQuerier(t *testing.T) {
 			},
 			expErr: true,
 		},
+		"validator votes query": {
+			src: []byte(`{ "validator_votes": {} }`),
+			mock: ViewKeeperMock{
+				GetValidatorVotesFn: func() []types2.VoteInfo {
+					return []types2.VoteInfo{
+						{
+							Validator: types2.Validator{
+								Address: sdk.AccAddress("validator_addr"),
+								Power:   10,
+							},
+							SignedLastBlock: true,
+						},
+					}
+				},
+			},
+			expJSON: `{"votes":[{"address":"` + sdk.AccAddress("validator_addr").String() + `", "power":10, "voted":true}]}`,
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {

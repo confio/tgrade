@@ -164,8 +164,8 @@ type ValidatorVotesResponse struct {
 }
 
 type ValidatorVote struct {
-	Power uint64         `json:"power"`
 	Addr  sdk.AccAddress `json:"address"`
+	Power uint64         `json:"power"`
 	Voted bool           `json:"voted"`
 }
 
