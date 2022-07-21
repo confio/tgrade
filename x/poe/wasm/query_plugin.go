@@ -3,17 +3,14 @@ package wasm
 import (
 	"encoding/json"
 
-	types2 "github.com/tendermint/tendermint/abci/types"
-
-	"github.com/confio/tgrade/x/poe/contract"
-
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/confio/tgrade/x/poe/types"
-
+	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 type ViewKeeper interface {
@@ -22,7 +19,7 @@ type ViewKeeper interface {
 	ValsetContract(ctx sdk.Context) keeper.ValsetContract
 	StakeContract(ctx sdk.Context) keeper.StakeContract
 	GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error)
-	GetValidatorVotes() []types2.VoteInfo
+	GetValidatorVotes() []abcitypes.VoteInfo
 }
 
 func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmtypes.StakingQuery) ([]byte, error) {

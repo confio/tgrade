@@ -5,15 +5,13 @@ import (
 	"sync"
 	"time"
 
-	types2 "github.com/tendermint/tendermint/abci/types"
-
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/confio/tgrade/x/poe/types"
@@ -25,7 +23,7 @@ type Keeper struct {
 	paramStore        paramtypes.Subspace
 	twasmKeeper       types.TWasmKeeper
 	contractAddrCache sync.Map
-	validatorVotes    []types2.VoteInfo
+	validatorVotes    []abcitypes.VoteInfo
 }
 
 // NewKeeper constructor
@@ -120,11 +118,11 @@ func (k *Keeper) GetBondDenom(ctx sdk.Context) string {
 	return types.DefaultBondDenom
 }
 
-func (k *Keeper) UpdateValidatorVotes(validatorVotes []types2.VoteInfo) {
+func (k *Keeper) UpdateValidatorVotes(validatorVotes []abcitypes.VoteInfo) {
 	k.validatorVotes = validatorVotes
 }
 
-func (k *Keeper) GetValidatorVotes() []types2.VoteInfo {
+func (k *Keeper) GetValidatorVotes() []abcitypes.VoteInfo {
 	return k.validatorVotes
 }
 
