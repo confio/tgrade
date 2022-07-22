@@ -41,11 +41,11 @@ func TestGlobalFee(t *testing.T) {
 	txResult = cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1500000", "--fees=150node0token")
 	RequireTxSuccess(t, txResult)
 
-	t.Log("Transactions with too high fees should fail")
+	t.Log("Transactions with too high fees should fail (fees)")
 	txResult = cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--fees=150tgd")
 	RequireTxFailure(t, txResult)
 
-	t.Log("Transactions with too high fees should fail")
+	t.Log("Transactions with too high fees should fail (gas)")
 	txResult = cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--gas=150", "--gas-prices=1tgd")
 	RequireTxFailure(t, txResult)
 }
