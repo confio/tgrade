@@ -351,7 +351,6 @@ func areFeesTooHigh(cmd *cobra.Command) bool {
 		}
 
 		if parsedGasPrices.AmountOf(app.HumanCoinUnit).MulInt(sdk.NewInt(int64(parsedGas.Uint64()))).GT(sdk.NewDec(maxFees)) {
-
 			return true
 		}
 	}
