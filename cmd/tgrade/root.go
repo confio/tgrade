@@ -40,6 +40,7 @@ import (
 	"github.com/confio/tgrade/x/poe/client/cli"
 )
 
+// fees limit in tgd
 const maxFees = 100
 
 // NewRootCmd creates a new root command for wasmd. It is called once in the
@@ -81,7 +82,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 			}
 
 			if areFeesTooHigh(cmd) {
-				return fmt.Errorf("fees are higher than %dtgd", maxFees)
+				return fmt.Errorf("are you really really sure that you want to send this amount of fees? CLI is preventing fees higher than %dtgd", maxFees)
 			}
 
 			initClientCtx, err = config.ReadFromClientConfig(initClientCtx)
@@ -326,6 +327,7 @@ func extendUnsafeResetAllCmd(rootCmd *cobra.Command) {
 	}
 }
 
+// areFeesTooHigh prevents the common fat finger issue and rejects tx with fees beyond a certain limit
 func areFeesTooHigh(cmd *cobra.Command) bool {
 	if fees, err := cmd.Flags().GetString(flags.FlagFees); err == nil && fees != "" {
 		parsedFees, err := sdk.ParseCoinsNormalized(fees)
