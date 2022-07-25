@@ -2,12 +2,16 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
-	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	"github.com/cosmos/cosmos-sdk/version"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+
+	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -20,9 +24,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
@@ -37,6 +39,9 @@ import (
 	appparams "github.com/confio/tgrade/app/params"
 	"github.com/confio/tgrade/x/poe/client/cli"
 )
+
+// fees limit in tgd
+const maxFees = 100
 
 // NewRootCmd creates a new root command for wasmd. It is called once in the
 // main function.
@@ -74,6 +79,10 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
 			if err != nil {
 				return err
+			}
+
+			if areFeesTooHigh(cmd) {
+				return fmt.Errorf("are you really really sure that you want to send this amount of fees? CLI is preventing fees higher than %dtgd", maxFees)
 			}
 
 			initClientCtx, err = config.ReadFromClientConfig(initClientCtx)
@@ -316,6 +325,38 @@ func extendUnsafeResetAllCmd(rootCmd *cobra.Command) {
 			}
 		}
 	}
+}
+
+// areFeesTooHigh prevents the common fat finger issue and rejects tx with fees beyond a certain limit
+func areFeesTooHigh(cmd *cobra.Command) bool {
+	if fees, err := cmd.Flags().GetString(flags.FlagFees); err == nil && fees != "" {
+		parsedFees, err := sdk.ParseCoinsNormalized(fees)
+		if err != nil {
+			return false
+		}
+
+		if parsedFees.AmountOf(app.HumanCoinUnit).GT(sdk.NewInt(maxFees)) {
+			return true
+		}
+		return false
+	}
+
+	if gas, err := cmd.Flags().GetString(flags.FlagGas); err == nil && gas != "" && gas != flags.GasFlagAuto {
+		parsedGas, err := sdk.ParseUint(gas)
+		if err != nil {
+			return false
+		}
+
+		parsedGasPrices, err := sdk.ParseDecCoins(flags.FlagGasPrices)
+		if err != nil {
+			return false
+		}
+
+		if parsedGasPrices.AmountOf(app.HumanCoinUnit).MulInt(sdk.NewInt(int64(parsedGas.Uint64()))).GT(sdk.NewDec(maxFees)) {
+			return true
+		}
+	}
+	return false
 }
 
 // workaround for https://github.com/cosmos/cosmos-sdk/issues/11053
