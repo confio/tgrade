@@ -66,6 +66,13 @@ service Query {
     option (google.api.http).get = "/tgrade/poe/v1beta1/validators/"
                                    "{validator_address}/outstanding_reward";
   }
+
+  // ValidatorEngagementReward queries rewards of a validator address.
+  rpc ValidatorEngagementReward(QueryValidatorEngagementRewardRequest)
+      returns (QueryValidatorEngagementRewardResponse) {
+    option (google.api.http).get = "/tgrade/poe/v1beta1/validators/"
+                                   "{validator_address}/engagement_reward";
+  }
 }
 
 // QueryContractAddressRequest is the request type for the Query/ContractAddress
@@ -137,6 +144,23 @@ message QueryValidatorOutstandingRewardRequest {
 // QueryValidatorOutstandingRewardResponse is the response type for the
 // Query/ValidatorOutstandingReward RPC method.
 message QueryValidatorOutstandingRewardResponse {
+  cosmos.base.v1beta1.DecCoin reward = 1 [
+    (gogoproto.moretags) = "yaml:\"reward\"",
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoin",
+    (gogoproto.nullable) = false
+  ];
+}
+
+// QueryValidatorEngagementRewardRequest is the request type for the
+// Query/ValidatorEngagementReward RPC method.
+message QueryValidatorEngagementRewardRequest {
+  // validator_address defines the validator address to query for.
+  string validator_address = 1;
+}
+
+// QueryValidatorEngagementRewardResponse is the response type for the
+// Query/ValidatorEngagementReward RPC method.
+message QueryValidatorEngagementRewardResponse {
   cosmos.base.v1beta1.DecCoin reward = 1 [
     (gogoproto.moretags) = "yaml:\"reward\"",
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoin",

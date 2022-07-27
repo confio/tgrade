@@ -54,6 +54,7 @@ type EngagementContract interface {
 	UpdateAdmin(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error
 	// QueryDelegated returns withdrawal address when set
 	QueryDelegated(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error)
+	QueryWithdrawableRewards(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error)
 	Address() (sdk.AccAddress, error)
 }
 

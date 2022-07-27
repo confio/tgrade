@@ -131,9 +131,10 @@ func (m StakeContractMock) Address() (sdk.AccAddress, error) {
 // var _ keeper.EngagementContract = EngagementContractMock{}
 
 type EngagementContractMock struct {
-	UpdateAdminFn    func(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error
-	QueryDelegatedFn func(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error)
-	AddressFn        func() (sdk.AccAddress, error)
+	UpdateAdminFn              func(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error
+	QueryDelegatedFn           func(ctx sdk.Context, ownerAddr sdk.AccAddress) (*contract.DelegatedResponse, error)
+	QueryWithdrawableRewardsFn func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error)
+	AddressFn                  func() (sdk.AccAddress, error)
 }
 
 func (m EngagementContractMock) UpdateAdmin(ctx sdk.Context, newAdmin, sender sdk.AccAddress) error {
@@ -155,4 +156,11 @@ func (m EngagementContractMock) Address() (sdk.AccAddress, error) {
 		panic("not expected to be called")
 	}
 	return m.AddressFn()
+}
+
+func (m EngagementContractMock) QueryWithdrawableRewards(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+	if m.QueryWithdrawableRewardsFn == nil {
+		panic("not expected to be called")
+	}
+	return m.QueryWithdrawableRewardsFn(ctx, addr)
 }

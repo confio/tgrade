@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/types/errors"
 	"strconv"
 	"strings"
 
@@ -389,29 +388,38 @@ $ %s query poe validator-reward %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 				return err
 			}
 
-			if distrRewards || !(distrRewards || engRewards) {
-				req := &types.QueryValidatorOutstandingRewardRequest{
-					ValidatorAddress: valAddr.String(),
-				}
-				res, err := queryClient.ValidatorOutstandingReward(context.Background(), req)
+			total := sdk.ZeroDec()
+			if !(distrRewards || engRewards) {
+				reward, err := queryDistributionRewards(queryClient, valAddr)
 				if err != nil {
 					return err
 				}
+				total = total.Add(reward.Amount)
 
-				err = clientCtx.PrintProto(res)
+				reward, err = queryEngagementRewards(queryClient, valAddr)
 				if err != nil {
 					return err
 				}
+				total = total.Add(reward.Amount)
 			}
 
-			if engRewards || !(distrRewards || engRewards) {
-				res, err := queryClient.ContractAddress(cmd.Context(), &types.QueryContractAddressRequest{ContractType: types.PoEContractTypeEngagement})
+			if distrRewards {
+				reward, err := queryDistributionRewards(queryClient, valAddr)
 				if err != nil {
-					return errors.Wrap(err, "query engagement contract address")
+					return err
 				}
-
+				total = total.Add(reward.Amount)
 			}
-			return nil
+
+			if engRewards {
+				reward, err := queryEngagementRewards(queryClient, valAddr)
+				if err != nil {
+					return err
+				}
+				total = total.Add(reward.Amount)
+			}
+
+			return clientCtx.PrintString(total.String())
 		},
 	}
 
@@ -419,6 +427,28 @@ $ %s query poe validator-reward %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 	cmd.Flags().BoolP(flagEngagement, "", false, "query engagement rewards")
 	cmd.Flags().BoolP(flagDistribution, "", false, "query distribution rewards")
 	return cmd
+}
+
+func queryDistributionRewards(queryClient types.QueryClient, valAddr sdk.ValAddress) (sdk.DecCoin, error) {
+	req := &types.QueryValidatorOutstandingRewardRequest{
+		ValidatorAddress: valAddr.String(),
+	}
+	res, err := queryClient.ValidatorOutstandingReward(context.Background(), req)
+	if err != nil {
+		return sdk.DecCoin{}, err
+	}
+	return res.Reward, nil
+}
+
+func queryEngagementRewards(queryClient types.QueryClient, valAddr sdk.ValAddress) (sdk.DecCoin, error) {
+	req := &types.QueryValidatorEngagementRewardRequest{
+		ValidatorAddress: valAddr.String(),
+	}
+	res, err := queryClient.ValidatorEngagementReward(context.Background(), req)
+	if err != nil {
+		return sdk.DecCoin{}, err
+	}
+	return res.Reward, nil
 }
 
 // AddPaginationFlagsToCmd adds common pagination flags to cmd

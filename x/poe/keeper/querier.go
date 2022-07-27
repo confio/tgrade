@@ -207,3 +207,28 @@ func (q Querier) ValidatorOutstandingReward(c context.Context, req *types.QueryV
 		Reward: sdk.NewDecCoin(reward.Denom, reward.Amount),
 	}, nil
 }
+
+func (q Querier) ValidatorEngagementReward(c context.Context, req *types.QueryValidatorEngagementRewardRequest) (*types.QueryValidatorEngagementRewardResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	if req.ValidatorAddress == "" {
+		return nil, status.Error(codes.InvalidArgument, "address cannot be empty")
+	}
+	valAddr, err := sdk.AccAddressFromBech32(req.ValidatorAddress)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "address invalid")
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+	reward, err := q.keeper.EngagementContract(ctx).QueryWithdrawableRewards(ctx, valAddr)
+	if err != nil {
+		if types.ErrNotFound.Is(err) {
+			return nil, status.Error(codes.NotFound, "address")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryValidatorEngagementRewardResponse{
+		Reward: sdk.NewDecCoin(reward.Denom, reward.Amount),
+	}, nil
+}
