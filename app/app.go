@@ -7,6 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/confio/tgrade/app/upgrades"
+	v2 "github.com/confio/tgrade/app/upgrades/v2"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -150,6 +153,8 @@ var (
 		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
 		poetypes.BondedPoolName:     {authtypes.Burner, authtypes.Staking},
 	}
+
+	Upgrades = []upgrades.Upgrade{v2.Upgrade}
 )
 
 var (
@@ -516,6 +521,8 @@ func NewTgradeApp(
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)
 
+	app.setupUpgradeHandlers()
+
 	// create the simulation manager and define the order of the modules for deterministic simulations
 	//
 	// NOTE: this is not required apps that don't use the simulator for fuzz testing
@@ -700,6 +707,18 @@ func (app *TgradeApp) RegisterTendermintService(clientCtx client.Context) {
 
 func (app *TgradeApp) AppCodec() codec.Codec {
 	return app.appCodec
+}
+
+func (app *TgradeApp) setupUpgradeHandlers() {
+	for _, upgrade := range Upgrades {
+		app.upgradeKeeper.SetUpgradeHandler(
+			upgrade.UpgradeName,
+			upgrade.CreateUpgradeHandler(
+				app.mm,
+				app.configurator,
+			),
+		)
+	}
 }
 
 // RegisterSwaggerAPI registers swagger route with API Server
