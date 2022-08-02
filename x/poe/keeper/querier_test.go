@@ -464,3 +464,58 @@ func TestValidatorOutstandingReward(t *testing.T) {
 		})
 	}
 }
+
+func TestValidatorEngagementReward(t *testing.T) {
+	var anyAddr sdk.AccAddress = rand.Bytes(address.Len)
+
+	specs := map[string]struct {
+		src    *types.QueryValidatorEngagementRewardRequest
+		mock   EngagementContract
+		exp    *types.QueryValidatorEngagementRewardResponse
+		expErr error
+	}{
+		"reward": {
+			src: &types.QueryValidatorEngagementRewardRequest{ValidatorAddress: anyAddr.String()},
+			mock: poetesting.EngagementContractMock{QueryWithdrawableRewardsFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+				require.Equal(t, anyAddr, addr)
+				return sdk.NewCoin("utgd", sdk.OneInt()), nil
+			}},
+			exp: &types.QueryValidatorEngagementRewardResponse{
+				Reward: sdk.NewDecCoin("utgd", sdk.OneInt()),
+			},
+		},
+		"not found": {
+			src: &types.QueryValidatorEngagementRewardRequest{ValidatorAddress: anyAddr.String()},
+			mock: poetesting.EngagementContractMock{QueryWithdrawableRewardsFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+				return sdk.Coin{}, types.ErrNotFound
+			}},
+			expErr: status.Error(codes.NotFound, "address"),
+		},
+		"any error": {
+			src: &types.QueryValidatorEngagementRewardRequest{ValidatorAddress: anyAddr.String()},
+			mock: poetesting.EngagementContractMock{QueryWithdrawableRewardsFn: func(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+				return sdk.Coin{}, errors.New("testing")
+			}},
+			expErr: status.Error(codes.Internal, "testing"),
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			keeperMock := PoEKeeperMock{
+				EngagementContractFn: func(ctx sdk.Context) EngagementContract { return spec.mock },
+			}
+
+			c := sdk.WrapSDKContext(sdk.Context{}.WithContext(context.Background()))
+			// when
+			s := NewQuerier(keeperMock)
+			gotResp, gotErr := s.ValidatorEngagementReward(c, spec.src)
+			// then
+			if spec.expErr != nil {
+				assert.ErrorIs(t, gotErr, spec.expErr)
+				return
+			}
+			require.NoError(t, gotErr)
+			assert.Equal(t, spec.exp, gotResp)
+		})
+	}
+}

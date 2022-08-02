@@ -18,7 +18,11 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-const flagAddress = "address"
+const (
+	flagAddress      = "address"
+	flagEngagement   = "engagement"
+	flagDistribution = "distribution"
+)
 
 func GetQueryCmd() *cobra.Command {
 	queryCmd := &cobra.Command{
@@ -375,20 +379,76 @@ $ %s query poe validator-reward %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj
 				return err
 			}
 
-			req := &types.QueryValidatorOutstandingRewardRequest{
-				ValidatorAddress: valAddr.String(),
+			distrRewards, err := cmd.Flags().GetBool(flagDistribution)
+			if err != nil {
+				return err
 			}
-			res, err := queryClient.ValidatorOutstandingReward(context.Background(), req)
+			engRewards, err := cmd.Flags().GetBool(flagEngagement)
 			if err != nil {
 				return err
 			}
 
-			return clientCtx.PrintProto(res)
+			total := sdk.ZeroDec()
+			if !(distrRewards || engRewards) {
+				reward, err := queryDistributionRewards(queryClient, valAddr)
+				if err != nil {
+					return err
+				}
+				total = total.Add(reward.Amount)
+
+				reward, err = queryEngagementRewards(queryClient, valAddr)
+				if err != nil {
+					return err
+				}
+				total = total.Add(reward.Amount)
+			}
+
+			if distrRewards {
+				reward, err := queryDistributionRewards(queryClient, valAddr)
+				if err != nil {
+					return err
+				}
+				total = total.Add(reward.Amount)
+			}
+
+			if engRewards {
+				reward, err := queryEngagementRewards(queryClient, valAddr)
+				if err != nil {
+					return err
+				}
+				total = total.Add(reward.Amount)
+			}
+
+			return clientCtx.PrintString(total.String())
 		},
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
+	cmd.Flags().BoolP(flagEngagement, "", false, "query engagement rewards")
+	cmd.Flags().BoolP(flagDistribution, "", false, "query distribution rewards")
 	return cmd
+}
+
+func queryDistributionRewards(queryClient types.QueryClient, valAddr sdk.ValAddress) (sdk.DecCoin, error) {
+	req := &types.QueryValidatorOutstandingRewardRequest{
+		ValidatorAddress: valAddr.String(),
+	}
+	res, err := queryClient.ValidatorOutstandingReward(context.Background(), req)
+	if err != nil {
+		return sdk.DecCoin{}, err
+	}
+	return res.Reward, nil
+}
+
+func queryEngagementRewards(queryClient types.QueryClient, valAddr sdk.ValAddress) (sdk.DecCoin, error) {
+	req := &types.QueryValidatorEngagementRewardRequest{
+		ValidatorAddress: valAddr.String(),
+	}
+	res, err := queryClient.ValidatorEngagementReward(context.Background(), req)
+	if err != nil {
+		return sdk.DecCoin{}, err
+	}
+	return res.Reward, nil
 }
 
 // AddPaginationFlagsToCmd adds common pagination flags to cmd

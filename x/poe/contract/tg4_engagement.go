@@ -150,3 +150,13 @@ func (a EngagementContractAdapter) QueryDelegated(ctx sdk.Context, ownerAddr sdk
 	}
 	return &rsp, err
 }
+
+func (a EngagementContractAdapter) QueryWithdrawableRewards(ctx sdk.Context, addr sdk.AccAddress) (sdk.Coin, error) {
+	query := EngagementQuery{WithdrawableRewards: &WithdrawableRewardsQuery{Owner: addr.String()}}
+	var resp RewardsResponse
+	err := a.doQuery(ctx, query, &resp)
+	if err != nil {
+		return sdk.Coin{}, err
+	}
+	return resp.Rewards, err
+}

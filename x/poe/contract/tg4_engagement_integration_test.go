@@ -3,6 +3,8 @@ package contract_test
 import (
 	_ "embed"
 	"encoding/json"
+	"github.com/confio/tgrade/x/poe"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -99,6 +101,63 @@ func TestQueryDelegated(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, spec.expVal, *gotVal)
+		})
+	}
+}
+
+func TestQueryWithdrawableRewards(t *testing.T) {
+	// setup contracts and seed some data
+	ctx, example, vals, _ := setupPoEContracts(t, func(gs *types.GenesisState) {
+		gs.GetSeedContracts().ValsetContractConfig.VerifyValidators = false
+	})
+
+	contractAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
+	require.NoError(t, err)
+	opAddr, err := sdk.AccAddressFromBech32(vals[0].OperatorAddress)
+	require.NoError(t, err)
+
+	specs := map[string]struct {
+		setup      func(ctx sdk.Context) sdk.Context
+		src        sdk.AccAddress
+		expRewards bool
+		expErr     *sdkerrors.Error
+	}{
+		"empty rewards": {
+			src:        opAddr,
+			expRewards: false,
+		},
+		"with rewards after epoch": {
+			setup: func(ctx sdk.Context) sdk.Context {
+				ctx = ctx.WithBlockTime(ctx.BlockTime().Add(types.DefaultGenesisState().GetSeedContracts().ValsetContractConfig.EpochLength))
+				poe.EndBlocker(ctx, example.TWasmKeeper)
+				return ctx
+			},
+			src:        opAddr,
+			expRewards: true,
+		},
+		"unknown address": {
+			src:        rand.Bytes(address.Len),
+			expRewards: false,
+		},
+	}
+	for name, spec := range specs {
+		t.Run(name, func(t *testing.T) {
+			tCtx, _ := ctx.CacheContext()
+			if spec.setup != nil {
+				tCtx = spec.setup(tCtx)
+			}
+			gotAmount, gotErr := contract.NewEngagementContractAdapter(contractAddr, example.TWasmKeeper, nil).QueryWithdrawableRewards(tCtx, spec.src)
+			if spec.expErr != nil {
+				assert.True(t, spec.expErr.Is(gotErr), "got %s", gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+
+			if spec.expRewards {
+				assert.True(t, gotAmount.IsGTE(sdk.NewCoin("utgd", sdk.OneInt())))
+			} else {
+				assert.Equal(t, sdk.NewCoin("utgd", sdk.ZeroInt()), gotAmount)
+			}
 		})
 	}
 }

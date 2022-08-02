@@ -43,6 +43,8 @@
     - [QueryUnbondingPeriodResponse](#confio.poe.v1beta1.QueryUnbondingPeriodResponse)
     - [QueryValidatorDelegationRequest](#confio.poe.v1beta1.QueryValidatorDelegationRequest)
     - [QueryValidatorDelegationResponse](#confio.poe.v1beta1.QueryValidatorDelegationResponse)
+    - [QueryValidatorEngagementRewardRequest](#confio.poe.v1beta1.QueryValidatorEngagementRewardRequest)
+    - [QueryValidatorEngagementRewardResponse](#confio.poe.v1beta1.QueryValidatorEngagementRewardResponse)
     - [QueryValidatorOutstandingRewardRequest](#confio.poe.v1beta1.QueryValidatorOutstandingRewardRequest)
     - [QueryValidatorOutstandingRewardResponse](#confio.poe.v1beta1.QueryValidatorOutstandingRewardResponse)
     - [QueryValidatorUnbondingDelegationsRequest](#confio.poe.v1beta1.QueryValidatorUnbondingDelegationsRequest)
@@ -630,6 +632,38 @@ Query/ValidatorDelegation RPC method
 
 
 
+<a name="confio.poe.v1beta1.QueryValidatorEngagementRewardRequest"></a>
+
+### QueryValidatorEngagementRewardRequest
+QueryValidatorEngagementRewardRequest is the request type for the
+Query/ValidatorEngagementReward RPC method.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `validator_address` | [string](#string) |  | validator_address defines the validator address to query for. |
+
+
+
+
+
+
+<a name="confio.poe.v1beta1.QueryValidatorEngagementRewardResponse"></a>
+
+### QueryValidatorEngagementRewardResponse
+QueryValidatorEngagementRewardResponse is the response type for the
+Query/ValidatorEngagementReward RPC method.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `reward` | [cosmos.base.v1beta1.DecCoin](#cosmos.base.v1beta1.DecCoin) |  |  |
+
+
+
+
+
+
 <a name="confio.poe.v1beta1.QueryValidatorOutstandingRewardRequest"></a>
 
 ### QueryValidatorOutstandingRewardRequest
@@ -717,6 +751,7 @@ Query defines the gRPC querier service.
 | `ValidatorUnbondingDelegations` | [QueryValidatorUnbondingDelegationsRequest](#confio.poe.v1beta1.QueryValidatorUnbondingDelegationsRequest) | [QueryValidatorUnbondingDelegationsResponse](#confio.poe.v1beta1.QueryValidatorUnbondingDelegationsResponse) | ValidatorUnbondingDelegations queries unbonding delegations of a validator. | GET|/tgrade/poe/v1beta1/validators/{validator_addr}/unbonding_delegations|
 | `HistoricalInfo` | [.cosmos.staking.v1beta1.QueryHistoricalInfoRequest](#cosmos.staking.v1beta1.QueryHistoricalInfoRequest) | [.cosmos.staking.v1beta1.QueryHistoricalInfoResponse](#cosmos.staking.v1beta1.QueryHistoricalInfoResponse) | HistoricalInfo queries the historical info for given height. | GET|/tgrade/poe/v1beta1/historical_info/{height}|
 | `ValidatorOutstandingReward` | [QueryValidatorOutstandingRewardRequest](#confio.poe.v1beta1.QueryValidatorOutstandingRewardRequest) | [QueryValidatorOutstandingRewardResponse](#confio.poe.v1beta1.QueryValidatorOutstandingRewardResponse) | ValidatorOutstandingRewards queries rewards of a validator address. | GET|/tgrade/poe/v1beta1/validators/{validator_address}/outstanding_reward|
+| `ValidatorEngagementReward` | [QueryValidatorEngagementRewardRequest](#confio.poe.v1beta1.QueryValidatorEngagementRewardRequest) | [QueryValidatorEngagementRewardResponse](#confio.poe.v1beta1.QueryValidatorEngagementRewardResponse) | ValidatorEngagementReward queries rewards of a validator address. | GET|/tgrade/poe/v1beta1/validators/{validator_address}/engagement_reward|
 
  <!-- end services -->
 
