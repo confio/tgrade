@@ -32,11 +32,6 @@ var (
 	defaultAmount = DefaultTokens.String() + types.DefaultBondDenom
 )
 
-const (
-	flagDistribution = "distribution"
-	flagEngagement   = "engagement"
-)
-
 // NewTxCmd returns a root CLI command handler for all x/staking transaction commands.
 func NewTxCmd() *cobra.Command {
 	poeTxCmd := &cobra.Command{

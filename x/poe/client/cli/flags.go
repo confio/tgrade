@@ -15,6 +15,9 @@ const (
 	FlagDetails         = "details"
 	FlagNodeID          = "node-id"
 	FlagIP              = "ip"
+	flagAddress         = "address"
+	flagEngagement      = "engagement"
+	flagDistribution    = "distribution"
 )
 
 // FlagSetAmounts Returns the FlagSet for amount related operations.

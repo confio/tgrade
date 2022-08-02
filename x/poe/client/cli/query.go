@@ -18,12 +18,6 @@ import (
 	"github.com/confio/tgrade/x/poe/types"
 )
 
-const (
-	flagAddress      = "address"
-	flagEngagement   = "engagement"
-	flagDistribution = "distribution"
-)
-
 func GetQueryCmd() *cobra.Command {
 	queryCmd := &cobra.Command{
 		Use:                        types.ModuleName,
