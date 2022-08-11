@@ -564,7 +564,7 @@ $ %s tx poe set-withdraw-address tgrade1n4kjhlrpapnpv0n0e3048ydftrjs9m6mm473jf`,
 			}
 			delegateMsg := &poecontracts.TG4EngagementExecute{
 				DelegateWithdrawal: &poecontracts.DelegateWithdrawalMsg{
-					Delegate: delegateAddress.String(),
+					Delegated: delegateAddress.String(),
 				},
 			}
 			delegateBz, err := json.Marshal(delegateMsg)

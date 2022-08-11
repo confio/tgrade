@@ -56,7 +56,7 @@ type WithdrawRewardsMsg struct {
 
 // DelegateWithdrawalMsg contract sets given address as allowed for senders funds withdrawal
 type DelegateWithdrawalMsg struct {
-	Delegate string `json:"delegate"`
+	Delegated string `json:"delegated"`
 }
 
 func (m *UpdateMembersMsg) ToJSON(t *testing.T) string {
