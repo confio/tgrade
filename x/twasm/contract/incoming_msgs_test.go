@@ -3,7 +3,6 @@ package contract
 import (
 	"encoding/json"
 	"testing"
-	"time"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -47,9 +46,8 @@ func TestGetProposalContent(t *testing.T) {
         "height": 1,
         "info": "any information"
       }}}}`,
-			expGovProposal: &upgradetypes.SoftwareUpgradeProposal{Title: "myTitle", Description: "myDescription", Plan: upgradetypes.Plan{
+			expGovProposal: &ibcclienttypes.UpgradeProposal{Title: "myTitle", Description: "myDescription", Plan: upgradetypes.Plan{
 				Name:   "myUpgradeName",
-				Time:   time.Time{},
 				Height: 1,
 				Info:   "any information",
 			}},

@@ -65,11 +65,9 @@ func (p ExecuteGovProposal) GetProposalContent(sender sdk.AccAddress) govtypes.C
 		p.Proposal.Text.Description = p.Description
 		return p.Proposal.Text
 	case p.Proposal.RegisterUpgrade != nil:
-		return &upgradetypes.SoftwareUpgradeProposal{
-			Title:       p.Title,
-			Description: p.Description,
-			Plan:        *p.Proposal.RegisterUpgrade,
-		}
+		p.Proposal.RegisterUpgrade.Title = p.Title
+		p.Proposal.RegisterUpgrade.Description = p.Description
+		return p.Proposal.RegisterUpgrade
 	case p.Proposal.CancelUpgrade != nil:
 		p.Proposal.CancelUpgrade.Title = p.Title
 		p.Proposal.CancelUpgrade.Description = p.Description
@@ -129,15 +127,11 @@ func (p ExecuteGovProposal) GetProposalContent(sender sdk.AccAddress) govtypes.C
 
 // unpackInterfaces unpacks the Any type into the interface type in `Any.cachedValue`
 func (p *ExecuteGovProposal) unpackInterfaces(unpacker codectypes.AnyUnpacker) error {
-	var err error
 	switch { //nolint:gocritic
 	case p.Proposal.RegisterUpgrade != nil:
-		// revisit with https://github.com/confio/tgrade/issues/364
-		if p.Proposal.RegisterUpgrade.UpgradedClientState != nil { //nolint:staticcheck
-			return sdkerrors.ErrInvalidRequest.Wrap("upgrade logic for IBC has been moved to the IBC module")
-		}
+		return p.Proposal.RegisterUpgrade.UnpackInterfaces(unpacker)
 	}
-	return err
+	return nil
 }
 
 // ProtoAny data type to map from json to cosmos-sdk Any type.
@@ -191,10 +185,12 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 			if err := json.Unmarshal(b, &proxy); err != nil {
 				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 			}
-			result.RegisterUpgrade = &upgradetypes.Plan{
-				Name:   proxy.Name,
-				Height: proxy.Height,
-				Info:   proxy.Info,
+			result.RegisterUpgrade = &ibcclienttypes.UpgradeProposal{
+				Plan: upgradetypes.Plan{
+					Name:   proxy.Name,
+					Height: proxy.Height,
+					Info:   proxy.Info,
+				},
 			}
 			return nil
 		},
@@ -264,7 +260,7 @@ type proposalContent struct {
 
 	// Register an "live upgrade" on the x/upgrade module
 	// See https://github.com/cosmos/cosmos-sdk/blob/v0.42.3/proto/cosmos/upgrade/v1beta1/upgrade.proto#L12-L53
-	RegisterUpgrade *upgradetypes.Plan `json:"register_upgrade"`
+	RegisterUpgrade *ibcclienttypes.UpgradeProposal `json:"register_upgrade"`
 
 	// There can only be one pending upgrade at a given time. This cancels the pending upgrade, if any.
 	// See https://github.com/cosmos/cosmos-sdk/blob/v0.42.3/proto/cosmos/upgrade/v1beta1/upgrade.proto#L57-L62
