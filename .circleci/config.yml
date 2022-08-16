@@ -203,7 +203,7 @@ jobs:
       - run:
           name: Install gosec
           command: |
-            go install github.com/securego/gosec/v2/cmd/gosec
+            go install github.com/securego/gosec/v2/cmd/gosec@latest
       - run:
           name: Run gosec on modified files
           command: |
