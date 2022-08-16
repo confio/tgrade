@@ -49,6 +49,7 @@ func NewTxCmd() *cobra.Command {
 		NewUnbondCmd(),
 		NewUnjailTxCmd(),
 		NewClaimRewardsCmd(),
+		NewSetWithdrawAddressCmd(),
 	)
 
 	return poeTxCmd
@@ -528,6 +529,57 @@ $ %s tx poe claim-rewards --distribution --engagement
 	flags.AddTxFlagsToCmd(cmd)
 	cmd.Flags().BoolP(flagEngagement, "", false, "claim engagement rewards")
 	cmd.Flags().BoolP(flagDistribution, "", false, "claim distribution rewards")
+	return cmd
+}
+
+func NewSetWithdrawAddressCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "set-withdraw-address [address]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Set withdraw address",
+		Long: fmt.Sprintf(`Sets given address as allowed for senders funds withdrawal.
+
+Example:
+$ %s tx poe set-withdraw-address tgrade1n4kjhlrpapnpv0n0e3048ydftrjs9m6mm473jf`, version.AppName),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.ContractAddress(cmd.Context(), &types.QueryContractAddressRequest{ContractType: types.PoEContractTypeEngagement})
+			if err != nil {
+				return errors.Wrap(err, "query engagement contract address")
+			}
+			nodeOperator := clientCtx.GetFromAddress()
+
+			delegateAddress, err := sdk.AccAddressFromBech32(args[0])
+			if err != nil {
+				return err
+			}
+			delegateMsg := &poecontracts.TG4EngagementExecute{
+				DelegateWithdrawal: &poecontracts.DelegateWithdrawalMsg{
+					Delegated: delegateAddress.String(),
+				},
+			}
+			delegateBz, err := json.Marshal(delegateMsg)
+			if err != nil {
+				return errors.Wrap(err, "encode msg payload")
+			}
+
+			msg := &wasmtypes.MsgExecuteContract{
+				Sender:   nodeOperator.String(),
+				Contract: res.Address,
+				Msg:      delegateBz,
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+
+	flags.AddTxFlagsToCmd(cmd)
 	return cmd
 }
 

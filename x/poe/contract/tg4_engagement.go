@@ -35,9 +35,10 @@ type TG4EngagementSudoMsg struct {
 // TG4EngagementExecute execute message
 // See https://github.com/confio/tgrade-contracts/blob/v0.5.0-alpha/contracts/tg4-engagement/src/msg.rs
 type TG4EngagementExecute struct {
-	UpdateMembers   *UpdateMembersMsg   `json:"update_members,omitempty"`
-	UpdateAdmin     *TG4UpdateAdminMsg  `json:"update_admin,omitempty"`
-	WithdrawRewards *WithdrawRewardsMsg `json:"withdraw_rewards,omitempty"`
+	UpdateMembers      *UpdateMembersMsg      `json:"update_members,omitempty"`
+	UpdateAdmin        *TG4UpdateAdminMsg     `json:"update_admin,omitempty"`
+	WithdrawRewards    *WithdrawRewardsMsg    `json:"withdraw_rewards,omitempty"`
+	DelegateWithdrawal *DelegateWithdrawalMsg `json:"delegate_withdrawal,omitempty"`
 }
 
 // UpdateMembersMsg contract execute message to update members
@@ -51,6 +52,11 @@ type UpdateMembersMsg struct {
 type WithdrawRewardsMsg struct {
 	Owner    *string `json:"owner,omitempty"`
 	Receiver *string `json:"receiver,omitempty"`
+}
+
+// DelegateWithdrawalMsg contract sets given address as allowed for senders funds withdrawal
+type DelegateWithdrawalMsg struct {
+	Delegated string `json:"delegated"`
 }
 
 func (m *UpdateMembersMsg) ToJSON(t *testing.T) string {
