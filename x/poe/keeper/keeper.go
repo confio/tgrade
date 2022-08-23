@@ -23,7 +23,12 @@ type Keeper struct {
 	paramStore        paramtypes.Subspace
 	twasmKeeper       types.TWasmKeeper
 	contractAddrCache sync.Map
-	validatorVotes    []abcitypes.VoteInfo
+	validatorVotes    validatorVotes
+}
+
+type validatorVotes struct {
+	ValidatorVotes []abcitypes.VoteInfo
+	RwLock         sync.RWMutex
 }
 
 // NewKeeper constructor
@@ -119,11 +124,15 @@ func (k *Keeper) GetBondDenom(ctx sdk.Context) string {
 }
 
 func (k *Keeper) UpdateValidatorVotes(validatorVotes []abcitypes.VoteInfo) {
-	k.validatorVotes = validatorVotes
+	k.validatorVotes.RwLock.Lock()
+	k.validatorVotes.ValidatorVotes = validatorVotes
+	k.validatorVotes.RwLock.Unlock()
 }
 
 func (k *Keeper) GetValidatorVotes() []abcitypes.VoteInfo {
-	return k.validatorVotes
+	k.validatorVotes.RwLock.RLock()
+	defer k.validatorVotes.RwLock.RUnlock()
+	return k.validatorVotes.ValidatorVotes
 }
 
 func ModuleLogger(ctx sdk.Context) log.Logger {
