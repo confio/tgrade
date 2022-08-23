@@ -3,7 +3,7 @@ version: 2.1
 executors:
   golang:
     docker:
-      - image: cimg/go:1.17
+      - image: cimg/go:1.18
     working_directory: /home/circleci/go/src/github.com/confio/tgrade
 
 commands:
@@ -203,7 +203,7 @@ jobs:
       - run:
           name: Install gosec
           command: |
-            go get -u github.com/securego/gosec/v2/cmd/gosec
+            go install github.com/securego/gosec/v2/cmd/gosec@latest
       - run:
           name: Run gosec on modified files
           command: |

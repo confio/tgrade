@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine3.15 AS go-builder
+FROM golang:1.18-alpine3.15 AS go-builder
 ARG arch=x86_64
 
 # this comes from standard alpine nightly file
