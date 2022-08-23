@@ -1,10 +1,18 @@
 package v3
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+)
+
+const (
+	oldEndTime int64 = 1703435178
+	newEndTime int64 = 1688220000
 )
 
 var addresses = []string{
@@ -86,8 +94,15 @@ func CreateUpgradeHandler(
 			if err != nil {
 				return nil, err
 			}
-			ak.GetAccount(ctx, accAddr)
-			// TODO set endtime for vesting account
+			vestingAccount, ok := ak.GetAccount(ctx, accAddr).(*vestingtypes.ContinuousVestingAccount)
+			if !ok {
+				return nil, fmt.Errorf("cannot cast account %s to vesting account", accAddr)
+			}
+			if endTime := vestingAccount.GetEndTime(); endTime != oldEndTime {
+				return nil, fmt.Errorf("account %s end time is %d instead of %d", accAddr, endTime, oldEndTime)
+			}
+			vestingAccount.EndTime = newEndTime
+			ak.SetAccount(ctx, vestingAccount)
 		}
 		return mm.RunMigrations(ctx, configurator, fromVM)
 	}
