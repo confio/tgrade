@@ -3,15 +3,14 @@ package wasm
 import (
 	"encoding/json"
 
-	"github.com/confio/tgrade/x/poe/contract"
-
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/confio/tgrade/x/poe/types"
-
+	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
+	"github.com/confio/tgrade/x/poe/types"
 )
 
 type ViewKeeper interface {
@@ -20,6 +19,7 @@ type ViewKeeper interface {
 	ValsetContract(ctx sdk.Context) keeper.ValsetContract
 	StakeContract(ctx sdk.Context) keeper.StakeContract
 	GetPoEContractAddress(ctx sdk.Context, ctype types.PoEContractType) (sdk.AccAddress, error)
+	GetValidatorVotes() []abcitypes.VoteInfo
 }
 
 func StakingQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request *wasmvmtypes.StakingQuery) ([]byte, error) {
@@ -149,10 +149,21 @@ type PoEContractAddressQuery struct {
 
 type TgradeQuery struct {
 	PoEContractAddress *PoEContractAddressQuery `json:"poe_contract_address,omitempty"`
+	ValidatorVotes     *struct{}                `json:"validator_votes,omitempty"`
 }
 
 type ContractAddrResponse struct {
 	Addr sdk.AccAddress `json:"address"`
+}
+
+type ValidatorVotesResponse struct {
+	Votes []ValidatorVote `json:"votes"`
+}
+
+type ValidatorVote struct {
+	Addr  sdk.AccAddress `json:"address"`
+	Power uint64         `json:"power"`
+	Voted bool           `json:"voted"`
 }
 
 func CustomQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request json.RawMessage) ([]byte, error) {
@@ -162,23 +173,52 @@ func CustomQuerier(poeKeeper ViewKeeper) func(ctx sdk.Context, request json.RawM
 			return nil, sdkerrors.Wrap(err, "tgrade query")
 		}
 
-		if contractQuery.PoEContractAddress != nil {
-			ctype := types.PoEContractTypeFrom(contractQuery.PoEContractAddress.ContractType)
-
-			addr, err := poeKeeper.GetPoEContractAddress(ctx, ctype)
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "poe contract address query")
-			}
-
-			res := ContractAddrResponse{
-				Addr: addr,
-			}
-			bz, err := json.Marshal(res)
-			if err != nil {
-				return nil, sdkerrors.Wrap(err, "poe contract address query response")
-			}
-			return bz, nil
+		switch {
+		case contractQuery.PoEContractAddress != nil:
+			return handlePoEContractAddressQuery(ctx, contractQuery, poeKeeper)
+		case contractQuery.ValidatorVotes != nil:
+			return handleValidatorVotesQuery(poeKeeper)
 		}
 		return nil, wasmvmtypes.UnsupportedRequest{Kind: "unknown poe query variant"}
 	}
+}
+
+func handleValidatorVotesQuery(poeKeeper ViewKeeper) ([]byte, error) {
+	validatorVotes := poeKeeper.GetValidatorVotes()
+	votes := make([]ValidatorVote, len(validatorVotes))
+
+	for index, v := range validatorVotes {
+		vote := ValidatorVote{
+			Power: uint64(v.Validator.Power),
+			Addr:  v.Validator.Address,
+			Voted: v.SignedLastBlock,
+		}
+		votes[index] = vote
+	}
+	res := ValidatorVotesResponse{
+		Votes: votes,
+	}
+	bz, err := json.Marshal(res)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "validator votes query response")
+	}
+	return bz, nil
+}
+
+func handlePoEContractAddressQuery(ctx sdk.Context, contractQuery TgradeQuery, poeKeeper ViewKeeper) ([]byte, error) {
+	ctype := types.PoEContractTypeFrom(contractQuery.PoEContractAddress.ContractType)
+
+	addr, err := poeKeeper.GetPoEContractAddress(ctx, ctype)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "poe contract address query")
+	}
+
+	res := ContractAddrResponse{
+		Addr: addr,
+	}
+	bz, err := json.Marshal(res)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "poe contract address query response")
+	}
+	return bz, nil
 }

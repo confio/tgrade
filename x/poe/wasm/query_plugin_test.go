@@ -11,6 +11,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/confio/tgrade/x/poe/contract"
 	"github.com/confio/tgrade/x/poe/keeper"
@@ -337,6 +338,23 @@ func TestCustomQuerier(t *testing.T) {
 			},
 			expErr: true,
 		},
+		"validator votes query": {
+			src: []byte(`{ "validator_votes": {} }`),
+			mock: ViewKeeperMock{
+				GetValidatorVotesFn: func() []abcitypes.VoteInfo {
+					return []abcitypes.VoteInfo{
+						{
+							Validator: abcitypes.Validator{
+								Address: sdk.AccAddress("validator_addr"),
+								Power:   10,
+							},
+							SignedLastBlock: true,
+						},
+					}
+				},
+			},
+			expJSON: `{"votes":[{"address":"` + sdk.AccAddress("validator_addr").String() + `", "power":10, "voted":true}]}`,
+		},
 	}
 	for name, spec := range specs {
 		t.Run(name, func(t *testing.T) {
@@ -358,6 +376,7 @@ type ViewKeeperMock struct {
 	ValsetContractFn        func(ctx sdk.Context) keeper.ValsetContract
 	StakeContractFn         func(ctx sdk.Context) keeper.StakeContract
 	GetPoEContractAddressFn func(ctx sdk.Context, contractType poetypes.PoEContractType) (sdk.AccAddress, error)
+	GetValidatorVotesFn     func() []abcitypes.VoteInfo
 }
 
 func (m ViewKeeperMock) GetBondDenom(ctx sdk.Context) string {
@@ -393,4 +412,11 @@ func (m ViewKeeperMock) GetPoEContractAddress(ctx sdk.Context, ctype poetypes.Po
 		panic("not expected to be called")
 	}
 	return m.GetPoEContractAddressFn(ctx, ctype)
+}
+
+func (m ViewKeeperMock) GetValidatorVotes() []abcitypes.VoteInfo {
+	if m.GetValidatorVotesFn == nil {
+		panic("not expected to be called")
+	}
+	return m.GetValidatorVotesFn()
 }

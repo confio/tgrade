@@ -5,13 +5,13 @@ import (
 	"sync"
 	"time"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	abcitypes "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/confio/tgrade/x/poe/types"
@@ -23,6 +23,12 @@ type Keeper struct {
 	paramStore        paramtypes.Subspace
 	twasmKeeper       types.TWasmKeeper
 	contractAddrCache sync.Map
+	validatorVotes    validatorVotes
+}
+
+type validatorVotes struct {
+	ValidatorVotes []abcitypes.VoteInfo
+	RwLock         sync.RWMutex
 }
 
 // NewKeeper constructor
@@ -115,6 +121,18 @@ func (k *Keeper) UnbondingTime(ctx sdk.Context) time.Duration {
 
 func (k *Keeper) GetBondDenom(ctx sdk.Context) string {
 	return types.DefaultBondDenom
+}
+
+func (k *Keeper) UpdateValidatorVotes(validatorVotes []abcitypes.VoteInfo) {
+	k.validatorVotes.RwLock.Lock()
+	k.validatorVotes.ValidatorVotes = validatorVotes
+	k.validatorVotes.RwLock.Unlock()
+}
+
+func (k *Keeper) GetValidatorVotes() []abcitypes.VoteInfo {
+	k.validatorVotes.RwLock.RLock()
+	defer k.validatorVotes.RwLock.RUnlock()
+	return k.validatorVotes.ValidatorVotes
 }
 
 func ModuleLogger(ctx sdk.Context) log.Logger {
