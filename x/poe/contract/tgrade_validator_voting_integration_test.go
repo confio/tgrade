@@ -53,7 +53,7 @@ func TestValidatorsGovProposal(t *testing.T) {
 	var maxDuration int64 = 6000000
 
 	// upload any contract that is not pinned
-	codeID, err := contractKeeper.Create(ctx, anyAddress, validatorVotingContract, nil)
+	codeID, _, err := contractKeeper.Create(ctx, anyAddress, validatorVotingContract, nil)
 	require.NoError(t, err)
 	require.False(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "pinned")
 	specs := map[string]struct {

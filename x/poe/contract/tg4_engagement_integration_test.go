@@ -3,9 +3,11 @@ package contract_test
 import (
 	_ "embed"
 	"encoding/json"
-	"github.com/confio/tgrade/x/poe"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"testing"
+
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+
+	"github.com/confio/tgrade/x/poe"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
@@ -26,7 +28,7 @@ func TestEngagementUpdateAdmin(t *testing.T) {
 	var bootstrapAccountAddr sdk.AccAddress = rand.Bytes(address.Len)
 
 	k := example.TWasmKeeper.GetContractKeeper()
-	codeID, err := k.Create(ctx, bootstrapAccountAddr, tg4Engagement, nil)
+	codeID, _, err := k.Create(ctx, bootstrapAccountAddr, tg4Engagement, nil)
 	require.NoError(t, err)
 
 	var newAddress sdk.AccAddress = rand.Bytes(address.Len)

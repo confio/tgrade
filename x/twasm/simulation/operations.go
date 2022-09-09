@@ -17,6 +17,7 @@ import (
 )
 
 // Simulation operation weights constants
+//
 //nolint:gosec
 const (
 	OpWeightMsgStoreCode           = "op_weight_msg_store_code"

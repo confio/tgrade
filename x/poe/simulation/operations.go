@@ -20,6 +20,7 @@ import (
 )
 
 // Simulation operation weights constants
+//
 //nolint:gosec
 const (
 	OpWeightMsgCreateValidator = "op_weight_msg_create_validator"

@@ -30,15 +30,15 @@ func TestGlobalFee(t *testing.T) {
 
 	const anyContract = "testing/contract/hackatom.wasm.gzip"
 	t.Log("Any transaction without enough fees should fail")
-	txResult := cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1500000", "--fees=1utg")
+	txResult := cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1600000", "--fees=1utg")
 	RequireTxFailure(t, txResult, "insufficient fee")
 
 	t.Log("Any transaction with enough fees should pass")
-	txResult = cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1500000", "--fees=1500utgd")
+	txResult = cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1600000", "--fees=1600utgd")
 	RequireTxSuccess(t, txResult)
 
 	t.Log("Any transaction with enough alternative fee token amount should pass")
-	txResult = cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1500000", "--fees=150node0token")
+	txResult = cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=node0", "--gas=1600000", "--fees=160node0token")
 	RequireTxSuccess(t, txResult)
 
 	t.Log("Transactions with too high fees should fail (fees)")
@@ -66,7 +66,7 @@ func TestFeeDistribution(t *testing.T) {
 
 	// when
 	const anyContract = "testing/contract/hackatom.wasm.gzip"
-	txResult := cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=myFatFingerKey", "--gas=1500000", "--fees=200000000utgd")
+	txResult := cli.CustomCommand("tx", "wasm", "store", anyContract, "--from=myFatFingerKey", "--gas=1600000", "--fees=200000000utgd")
 	RequireTxSuccess(t, txResult)
 	AwaitValsetEpochCompleted(t) // so that fees are distributed
 
