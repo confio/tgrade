@@ -70,7 +70,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	// setup engagement contract
 	//
 	tg4EngagementInitMsg := newEngagementInitMsg(gs, bootstrapAccountAddr)
-	engagementCodeID, err := k.Create(ctx, bootstrapAccountAddr, tg4Engagement, &wasmtypes.AllowEverybody)
+	engagementCodeID, _, err := k.Create(ctx, bootstrapAccountAddr, tg4Engagement, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 engagement contract")
 	}
@@ -95,7 +95,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 
 	// setup trusted circle for oversight community
 	//
-	trustedCircleCodeID, err := k.Create(ctx, bootstrapAccountAddr, tgTrustedCircles, &wasmtypes.AllowEverybody)
+	trustedCircleCodeID, _, err := k.Create(ctx, bootstrapAccountAddr, tgTrustedCircles, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg trusted circle contract")
 	}
@@ -133,7 +133,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 
 	// setup stake contract
 	//
-	stakeCodeID, err := k.Create(ctx, bootstrapAccountAddr, tg4Stake, &wasmtypes.AllowEverybody)
+	stakeCodeID, _, err := k.Create(ctx, bootstrapAccountAddr, tg4Stake, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 stake contract")
 	}
@@ -169,7 +169,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 			Sigmoid: &poeFunction,
 		},
 	}
-	mixerCodeID, err := k.Create(ctx, bootstrapAccountAddr, tg4Mixer, &wasmtypes.AllowEverybody)
+	mixerCodeID, _, err := k.Create(ctx, bootstrapAccountAddr, tg4Mixer, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg4 mixer contract")
 	}
@@ -193,7 +193,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 
 	// setup community pool
 	//
-	communityPoolCodeID, err := k.Create(ctx, bootstrapAccountAddr, tgCommunityPool, &wasmtypes.AllowEverybody)
+	communityPoolCodeID, _, err := k.Create(ctx, bootstrapAccountAddr, tgCommunityPool, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store community pool contract")
 	}
@@ -221,7 +221,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 
 	// setup valset contract
 	//
-	valSetCodeID, err := k.Create(ctx, bootstrapAccountAddr, tgValset, &wasmtypes.AllowEverybody)
+	valSetCodeID, _, err := k.Create(ctx, bootstrapAccountAddr, tgValset, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store valset contract")
 	}
@@ -262,7 +262,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 
 	// setup oversight community gov proposals contract
 	//
-	ocGovCodeID, err := k.Create(ctx, bootstrapAccountAddr, tgOCGovProposalsCircles, &wasmtypes.AllowEverybody)
+	ocGovCodeID, _, err := k.Create(ctx, bootstrapAccountAddr, tgOCGovProposalsCircles, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store tg oc gov proposals contract: ")
 	}
@@ -297,7 +297,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 
 	// setup validator voting contract
 	//
-	validatorVotingCodeID, err := k.Create(ctx, bootstrapAccountAddr, tgValidatorVoting, &wasmtypes.AllowEverybody)
+	validatorVotingCodeID, _, err := k.Create(ctx, bootstrapAccountAddr, tgValidatorVoting, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store validator voting contract")
 	}
@@ -352,7 +352,7 @@ func BootstrapPoEContracts(ctx sdk.Context, k wasmtypes.ContractOpsKeeper, tk tw
 	}
 
 	// setup arbiter pool
-	apCodeID, err := k.Create(ctx, bootstrapAccountAddr, tgArbiterPool, &wasmtypes.AllowEverybody)
+	apCodeID, _, err := k.Create(ctx, bootstrapAccountAddr, tgArbiterPool, &wasmtypes.AllowEverybody)
 	if err != nil {
 		return sdkerrors.Wrap(err, "store arbiter voting contract: ")
 	}

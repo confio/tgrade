@@ -4,6 +4,7 @@
 package testing
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
@@ -138,9 +138,14 @@ func encodeBech32Addr(src []byte) string {
 	return bech32Addr
 }
 
-// ContractBech32Address build a tgrade bech32 contract address
-func ContractBech32Address(codeID, instanceID uint64) string {
-	return encodeBech32Addr(wasmkeeper.BuildContractAddress(codeID, instanceID))
+// build checksum for wasm file as wasmvm does
+func checksum(file string) []byte {
+	bz, err := os.ReadFile(file)
+	if err != nil {
+		panic(err)
+	}
+	r := sha256.Sum256(bz)
+	return r[:]
 }
 
 func AwaitValsetEpochCompleted(t *testing.T) {

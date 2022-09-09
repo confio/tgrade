@@ -7,19 +7,22 @@ import (
 	"fmt"
 	"testing"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )
 
 // Scenario: add reflect contract to genesis and set privileged
-// 			 trigger gov proposal to unset privileges
-//			 then verify that callback permission was removed
+//
+//	trigger gov proposal to unset privileges
+//	then verify that callback permission was removed
 func TestGovProposal(t *testing.T) {
 	cli := NewTgradeCli(t, sut, verbose)
 	myKey := cli.GetKeyAddr("node0")
 	require.NotEmpty(t, myKey)
-	t.Logf("key: %q", myKey)
-	myContractAddr := ContractBech32Address(1, 1)
+	myContractAddr := wasmkeeper.BuildContractAddress(checksum("x/poe/contract/tgrade_gov_reflect.wasm"), sdk.MustAccAddressFromBech32(myKey), "testing").String()
 	commands := [][]string{
 		{
 			"wasm-genesis-message",
@@ -56,7 +59,7 @@ func TestGovProposal(t *testing.T) {
 	// when
 	t.Log("Send a proposal to be returned")
 	excecMsg := fmt.Sprintf(`{"proposal":{"title":"foo", "description":"bar", "proposal":{"demote_privileged_contract":{"contract":%q}}}}`, myContractAddr)
-	txResult := cli.CustomCommand("tx", "wasm", "execute", myContractAddr, excecMsg, fmt.Sprintf("--from=%s", myKey), "--gas=1500000")
+	txResult := cli.CustomCommand("tx", "wasm", "execute", myContractAddr, excecMsg, fmt.Sprintf("--from=%s", myKey), "--gas=1600000")
 	RequireTxSuccess(t, txResult)
 
 	// then should not be privileged anymore

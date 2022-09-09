@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
@@ -157,6 +158,11 @@ func (c TgradeCli) AddKey(name string) string {
 	return addr
 }
 
+// GetDefaultKeyAddr returns the address of the default test key
+func (c TgradeCli) GetDefaultKeyAddr() string {
+	return c.GetKeyAddr(defaultSrcAddr)
+}
+
 // GetKeyAddr returns address
 func (c TgradeCli) GetKeyAddr(name string) string {
 	cmd := c.withKeyringFlags("keys", "show", name, "-a")
@@ -193,7 +199,7 @@ func (c TgradeCli) StoreWasm(file string, args ...string) int {
 // InstantiateWasm create a new contract instance. returns contract address
 func (c TgradeCli) InstantiateWasm(codeID int, initMsg string, args ...string) string {
 	if len(args) == 0 {
-		args = []string{"--label=testing", "--from=" + defaultSrcAddr, "--no-admin"}
+		args = []string{fmt.Sprintf("--label=testing%d", time.Now().UnixNano()), "--from=" + defaultSrcAddr, "--no-admin"}
 	}
 	rsp := c.run(c.withTXFlags(append([]string{"tx", "wasm", "instantiate", strconv.Itoa(codeID), initMsg}, args...)...))
 	RequireTxSuccess(c.t, rsp)

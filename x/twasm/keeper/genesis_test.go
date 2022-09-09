@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
@@ -33,6 +34,8 @@ func TestInitGenesis(t *testing.T) {
 			return &wasmvmtypes.Response{}, 0, nil
 		}
 	})
+
+	exampleCode := wasmtypes.CodeFixture()
 
 	type registeredCallback struct {
 		addr sdk.AccAddress
@@ -77,9 +80,9 @@ func TestInitGenesis(t *testing.T) {
 		},
 		"privilege set for dumped contract": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
-				state.PrivilegedContractAddresses = []string{genContractAddress(2, 2).String()}
+				state.PrivilegedContractAddresses = []string{genTestContractAddress(2, 2).String()}
 				state.Contracts[1] = types.ContractFixture(t, func(contract *types.Contract) {
-					contract.ContractAddress = genContractAddress(2, 2).String()
+					contract.ContractAddress = genTestContractAddress(2, 2).String()
 					err := contract.ContractInfo.SetExtension(&types.TgradeContractDetails{
 						RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 					})
@@ -88,18 +91,28 @@ func TestInitGenesis(t *testing.T) {
 				})
 			}),
 			wasmvm:         noopMock,
-			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeBeginBlock, addr: genContractAddress(2, 2)}},
+			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeBeginBlock, addr: genTestContractAddress(2, 2)}},
 		},
 		"privilege set for gen msg contract": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
-				state.PrivilegedContractAddresses = []string{genContractAddress(2, 1).String()}
+				state.PrivilegedContractAddresses = []string{wasmkeeper.BuildContractAddress(exampleCode.CodeInfo.CodeHash, wasmkeeper.DeterministicAccountAddress(t, 1), "testing").String()}
 				state.Contracts = nil
 				state.Sequences = []wasmtypes.Sequence{{IDKey: wasmtypes.KeyLastCodeID, Value: 3}}
+				state.Codes = []wasmtypes.Code{
+					wasmtypes.CodeFixture(func(code *wasmtypes.Code) {
+						code.CodeID = 2
+						code.CodeInfo.CodeHash = exampleCode.CodeInfo.CodeHash
+						code.CodeBytes = exampleCode.CodeBytes
+						code.Pinned = false
+					}),
+				}
 				state.GenMsgs = []wasmtypes.GenesisState_GenMsgs{
 					{Sum: &wasmtypes.GenesisState_GenMsgs_InstantiateContract{
 						InstantiateContract: wasmtypes.MsgInstantiateContractFixture(
 							func(msg *wasmtypes.MsgInstantiateContract) {
 								msg.CodeID = 2
+								msg.Label = "testing"
+								msg.Sender = wasmkeeper.DeterministicAccountAddress(t, byte(1)).String()
 								msg.Funds = nil
 							}),
 					}},
@@ -117,19 +130,19 @@ func TestInitGenesis(t *testing.T) {
 					}, 0, nil
 				}
 			}),
-			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeEndBlock, addr: genContractAddress(2, 1)}},
+			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeEndBlock, addr: wasmkeeper.BuildContractAddress(exampleCode.CodeInfo.CodeHash, wasmkeeper.DeterministicAccountAddress(t, 1), "testing")}},
 		},
 		"privileges set from dump": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
-				state.Contracts[1].ContractAddress = genContractAddress(2, 2).String()
+				state.Contracts[1].ContractAddress = genTestContractAddress(2, 2).String()
 				err := state.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
 					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 				})
 				require.NoError(t, err)
 			}),
 			wasmvm:         noopMock,
-			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeBeginBlock, addr: genContractAddress(2, 2)}},
+			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeBeginBlock, addr: genTestContractAddress(2, 2)}},
 		},
 		"invalid contract details from dump": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
@@ -153,7 +166,7 @@ func TestInitGenesis(t *testing.T) {
 		"privileged state importer contract imports from dump": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
-				state.Contracts[1].ContractAddress = genContractAddress(2, 2).String()
+				state.Contracts[1].ContractAddress = genTestContractAddress(2, 2).String()
 				state.Contracts[1].ContractState = &types.Contract_CustomModel{CustomModel: &types.CustomModel{Msg: wasmtypes.RawContractMessage(`{"my":"state"}`)}}
 				err := state.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
 					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "state_exporter_importer"}},
@@ -166,12 +179,12 @@ func TestInitGenesis(t *testing.T) {
 					return &wasmvmtypes.Response{}, 0, nil
 				}
 			}),
-			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeStateExporterImporter, addr: genContractAddress(2, 2)}},
+			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeStateExporterImporter, addr: genTestContractAddress(2, 2)}},
 		},
 		"privileged state importer contract imports from dump with custom model removed": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
-				state.Contracts[1].ContractAddress = genContractAddress(2, 2).String()
+				state.Contracts[1].ContractAddress = genTestContractAddress(2, 2).String()
 				state.Contracts[1].ContractState = &types.Contract_CustomModel{}
 				err := state.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
 					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "state_exporter_importer"}},
@@ -184,7 +197,7 @@ func TestInitGenesis(t *testing.T) {
 		"privileged state importer contract imports fails on sudo call with custom msg": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
-				state.Contracts[0].ContractAddress = genContractAddress(2, 2).String()
+				state.Contracts[0].ContractAddress = genTestContractAddress(2, 2).String()
 				state.Contracts[0].ContractState = &types.Contract_CustomModel{CustomModel: &types.CustomModel{Msg: wasmtypes.RawContractMessage(`{"my":"state"}`)}}
 				err := state.Contracts[0].ContractInfo.SetExtension(&types.TgradeContractDetails{
 					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "state_exporter_importer"}},
@@ -264,6 +277,9 @@ func TestExportGenesis(t *testing.T) {
 		}
 	})
 
+	fixture := types.DeterministicGenesisStateFixture
+	firstContractAddr := sdk.MustAccAddressFromBech32(fixture(t).Contracts[0].ContractAddress)
+
 	specs := map[string]struct {
 		srcState   types.GenesisState
 		expState   types.GenesisState
@@ -272,16 +288,16 @@ func TestExportGenesis(t *testing.T) {
 		mockVM     *wasmtesting.MockWasmer
 	}{
 		"export with privileged contract": {
-			srcState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
-				state.PrivilegedContractAddresses = []string{genContractAddress(1, 1).String()}
+			srcState: fixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = []string{firstContractAddr.String()}
 			}),
 			alterState: func(ctx sdk.Context, keepers TestKeepers) {
 				priv := types.PrivilegeTypeBeginBlock
-				setContractPrivilege(t, ctx, keepers, genContractAddress(1, 1), priv)
+				setContractPrivilege(t, ctx, keepers, firstContractAddr, priv)
 			},
-			expState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
+			expState: fixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
-				state.Contracts[1].ContractAddress = genContractAddress(1, 1).String()
+				state.Contracts[1].ContractAddress = firstContractAddr.String()
 				err := state.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
 					RegisteredPrivileges: []types.RegisteredPrivilege{{Position: 1, PrivilegeType: "begin_blocker"}},
 				})
@@ -290,10 +306,10 @@ func TestExportGenesis(t *testing.T) {
 			mockVM: noopVMMock,
 		},
 		"privileged state exporter contract": {
-			srcState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
-				state.PrivilegedContractAddresses = []string{genContractAddress(1, 1).String()}
+			srcState: fixture(t, func(state *types.GenesisState) {
+				state.PrivilegedContractAddresses = []string{firstContractAddr.String()}
 			}),
-			expState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
+			expState: fixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
 				state.Contracts[1].ContractState = &types.Contract_CustomModel{CustomModel: &types.CustomModel{Msg: wasmtypes.RawContractMessage(`{"my":"state"}`)}}
 				err := state.Contracts[1].ContractInfo.SetExtension(&types.TgradeContractDetails{
@@ -303,7 +319,7 @@ func TestExportGenesis(t *testing.T) {
 			}),
 			alterState: func(ctx sdk.Context, keepers TestKeepers) {
 				priv := types.PrivilegeStateExporterImporter
-				setContractPrivilege(t, ctx, keepers, genContractAddress(1, 1), priv)
+				setContractPrivilege(t, ctx, keepers, firstContractAddr, priv)
 			},
 			mockVM: NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
 				m.CreateFn = noopVMMock.CreateFn
@@ -318,10 +334,10 @@ func TestExportGenesis(t *testing.T) {
 			}),
 		},
 		"export without privileged contracts": {
-			srcState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
+			srcState: fixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
 			}),
-			expState: types.DeterministicGenesisStateFixture(t, func(state *types.GenesisState) {
+			expState: fixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
 			}),
 			mockVM: noopVMMock,
@@ -357,7 +373,11 @@ func setContractPrivilege(t *testing.T, ctx sdk.Context, keepers TestKeepers, co
 	require.NoError(t, keepers.TWasmKeeper.setContractDetails(ctx, contractAddr, &details))
 }
 
-// genContractAddress generates a contract address as wasmd keeper does
-func genContractAddress(codeID, instanceID uint64) sdk.AccAddress {
-	return wasmkeeper.BuildContractAddress(codeID, instanceID)
+// genTestContractAddress generates a deterministic contract address with n, v
+func genTestContractAddress(n, v uint64) sdk.AccAddress {
+	wasmCode := bytes.Repeat([]byte{byte(n)}, 20)
+	checksum := sha256.Sum256(wasmCode)
+
+	sender := wasmkeeper.DeterministicAccountAddress(nil, byte(v))
+	return wasmkeeper.BuildContractAddress(checksum[:], sender, "testing")
 }

@@ -362,7 +362,8 @@ type GenesisMutator func([]byte) []byte
 // ModifyGenesisJSON resets the chain and executes the callbacks to update the json representation
 // The mutator callbacks after each other receive the genesis as raw bytes and return the updated genesis for the next.
 // example:
-// 	return func(genesis []byte) []byte {
+//
+//	return func(genesis []byte) []byte {
 //		val, _ := json.Marshal(sdk.NewDecCoins(fees...))
 //		state, _ := sjson.SetRawBytes(genesis, "app_state.globalfee.params.minimum_gas_prices", val)
 //		return state
@@ -711,14 +712,15 @@ func CaptureSingleEventConsumer() (EventConsumer, *ctypes.ResultEvent) {
 // The consumer works async in the background and returns all the captured events when `done()` is called.
 // This can be used to verify that certain events have happened.
 // Example usage:
-// 	c, done := CaptureAllEventsConsumer(t)
-//	query := `tm.event='Tx'`
-//	cleanupFn := l.Subscribe(query, c)
-//	t.Cleanup(cleanupFn)
 //
-//  // do something in your test that create events
+//		c, done := CaptureAllEventsConsumer(t)
+//		query := `tm.event='Tx'`
+//		cleanupFn := l.Subscribe(query, c)
+//		t.Cleanup(cleanupFn)
 //
-//	assert.Len(t, done(), 1) // then verify your assumption
+//	 // do something in your test that create events
+//
+//		assert.Len(t, done(), 1) // then verify your assumption
 func CaptureAllEventsConsumer(t *testing.T, optMaxWaitTime ...time.Duration) (c EventConsumer, done func() []ctypes.ResultEvent) {
 	maxWaitTime := defaultWaitTime
 	if len(optMaxWaitTime) != 0 {

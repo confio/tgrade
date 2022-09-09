@@ -3,15 +3,13 @@ package testing
 import (
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/confio/tgrade/x/twasm"
 )
 
 var _ wasmtypes.ContractOpsKeeper = &ContractOpsKeeperMock{}
 
 // ContractOpsKeeperMock implements wasmtypes.ContractOpsKeeper for testing purpose
 type ContractOpsKeeperMock struct {
-	CreateFn                   func(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error)
+	CreateFn                   func(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, checksum []byte, err error)
 	InstantiateFn              func(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins) (sdk.AccAddress, []byte, error)
 	ExecuteFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error)
 	MigrateFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte) ([]byte, error)
@@ -21,10 +19,10 @@ type ContractOpsKeeperMock struct {
 	UnpinCodeFn                func(ctx sdk.Context, codeID uint64) error
 	SetContractInfoExtensionFn func(ctx sdk.Context, contract sdk.AccAddress, extra wasmtypes.ContractInfoExtension) error
 	SudoFn                     func(ctx sdk.Context, contractAddress sdk.AccAddress, msg []byte) ([]byte, error)
-	SetAccessConfigFn          func(ctx sdk.Context, codeID uint64, config wasmtypes.AccessConfig) error
+	SetAccessConfigFn          func(ctx sdk.Context, codeID uint64, caller sdk.AccAddress, config wasmtypes.AccessConfig) error
 }
 
-func (m ContractOpsKeeperMock) Create(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error) {
+func (m ContractOpsKeeperMock) Create(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, checksum []byte, err error) {
 	if m.CreateFn == nil {
 		panic("not expected to be called")
 	}
@@ -94,11 +92,11 @@ func (m ContractOpsKeeperMock) Sudo(ctx sdk.Context, contractAddress sdk.AccAddr
 	return m.SudoFn(ctx, contractAddress, msg)
 }
 
-func (m ContractOpsKeeperMock) SetAccessConfig(ctx sdk.Context, codeID uint64, config wasmtypes.AccessConfig) error {
+func (m ContractOpsKeeperMock) SetAccessConfig(ctx sdk.Context, codeID uint64, caller sdk.AccAddress, config wasmtypes.AccessConfig) error {
 	if m.SetAccessConfigFn == nil {
 		panic("not expected to be called")
 	}
-	return m.SetAccessConfigFn(ctx, codeID, config)
+	return m.SetAccessConfigFn(ctx, codeID, caller, config)
 }
 
 type CapturedCreateCalls struct {
@@ -124,25 +122,6 @@ type CapturedInstantiateCalls struct {
 	InitMsg        []byte
 	Label          string
 	Deposit        sdk.Coins
-}
-
-// DefaultCaptureInstantiateFnCodeID value used for building the contract address
-const DefaultCaptureInstantiateFnCodeID uint64 = 0
-
-// CaptureInstantiateFn records all calls in the returned slice
-func CaptureInstantiateFn(codeIDs ...uint64) (func(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins) (sdk.AccAddress, []byte, error), *[]CapturedInstantiateCalls) {
-	var callCounter uint64
-	var captured []CapturedInstantiateCalls
-	return func(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins) (sdk.AccAddress, []byte, error) {
-		captured = append(captured, CapturedInstantiateCalls{CodeID: codeID, Creator: creator, Admin: admin, InitMsg: initMsg, Label: label, Deposit: deposit})
-		callCounter++
-		nextInstanceID := callCounter
-		nextCodeID := DefaultCaptureInstantiateFnCodeID
-		if len(codeIDs) != 0 {
-			nextCodeID = codeIDs[callCounter-1]
-		}
-		return twasm.ContractAddress(nextCodeID, nextInstanceID), nil, nil
-	}, &captured
 }
 
 type CapturedExecuteCalls struct {
