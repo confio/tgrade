@@ -130,6 +130,8 @@ require (
 )
 
 replace (
+	// pin ibc for now as it requires a migration
+	github.com/cosmos/ibc-go/v3 => github.com/cosmos/ibc-go/v3 v3.1.0
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
 	// Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
