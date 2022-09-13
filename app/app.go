@@ -366,7 +366,7 @@ func NewTgradeApp(
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
-	supportedFeatures := "staking,stargate,iterator,tgrade"
+	availableCapabilities := "staking,stargate,iterator,tgrade,cosmwasm_1_1"
 
 	wasmOpts = append(SetupWasmHandlers(appCodec, app.bankKeeper, govRouter, &app.twasmKeeper, &app.poeKeeper, app), wasmOpts...)
 
@@ -388,7 +388,7 @@ func NewTgradeApp(
 		govRouter,
 		wasmDir,
 		twasmConfig,
-		supportedFeatures,
+		availableCapabilities,
 		wasmOpts...,
 	)
 

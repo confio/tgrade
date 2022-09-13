@@ -41,7 +41,7 @@ func NewKeeper(
 	govRouter govtypes.Router,
 	homeDir string,
 	twasmConfig types.TWasmConfig,
-	supportedFeatures string,
+	availableCapabilities string,
 	opts ...wasmkeeper.Option,
 ) Keeper {
 	result := Keeper{
@@ -67,7 +67,7 @@ func NewKeeper(
 		queryRouter,
 		homeDir,
 		twasmConfig.WasmConfig,
-		supportedFeatures,
+		availableCapabilities,
 		opts...,
 	)
 	result.contractKeeper = wasmkeeper.NewDefaultPermissionKeeper(&result.Keeper)
