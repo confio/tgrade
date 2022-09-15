@@ -18,7 +18,7 @@ const (
 var addresses = []string{
 	"tgrade1s0lankh33kprer2l22nank5rvsuh9ksa4nr6gl",
 	"tgrade179skd62nvdvvt440l0krmlj40ewywv4rscgq8z",
-	"tgrade1ukqqgpftlmwf2ylkvfj467e6wynef05lqcrtjn",
+	//"tgrade1ukqqgpftlmwf2ylkvfj467e6wynef05lqcrtjn",
 	"tgrade1tkgvwuns7l7vkpc0pq2nnjkkdz509vwrzf86sw",
 	"tgrade1we8a49nlqr3apex8zxxahh3zf2ye69dy8pcgmv",
 	"tgrade1wlagucxdxvsmvj6330864x8q3vxz4x02d0ssjl",
@@ -36,7 +36,7 @@ var addresses = []string{
 	"tgrade1qe8uuf5x69c526h4nzxwv4ltftr73v7qt4v8ku",
 	"tgrade10wxn2lv29yqnw2uf4jf439kwy5ef00qdms5tvk",
 	"tgrade1jdc8qm80m3lvgajuvn36x2nmxfjauclxtyp7rg",
-	"tgrade19g64psls2eqwd34nu03c2pcc45jptzxpmwmzu9",
+	//"tgrade19g64psls2eqwd34nu03c2pcc45jptzxpmwmzu9",
 	"tgrade1cxmsyzr90qh85gwgwnvptukhk2tvvhq6t4dr2a",
 	"tgrade1k8efqy9seesd0dcvr7207nmmlkfz944p97fypq",
 	"tgrade1tvzlc7n05ht0wx8n77a04kkv75yy8dpsfy4d6h",
@@ -83,12 +83,16 @@ var addresses = []string{
 	"tgrade1vrq3kjq95kkh26vp3g6sfx84xzw654qa4kg2pe",
 }
 
+func Addresses() []string {
+	return addresses
+}
+
 func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
 	ak authkeeper.AccountKeeper,
 ) upgradetypes.UpgradeHandler {
-	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+	return func(ctx sdk.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		for _, addr := range addresses {
 			accAddr, err := sdk.AccAddressFromBech32(addr)
 			if err != nil {
