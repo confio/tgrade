@@ -103,6 +103,11 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 	// AND when undelegate
 	txResult = cli.CustomCommand("tx", "poe", "unbond", fmt.Sprintf("%dutgd", stakedVestingAmount), "--from=vesting1")
 	RequireTxSuccess(t, txResult)
+
+	// claim unbondings
+	txResult = cli.Execute(stakingContractAddr, `{"claim":{}}`, "vesting1")
+	RequireTxSuccess(t, txResult)
+
 	// wait for msg execution
 	sut.AwaitNextBlock(t)
 	AwaitValsetEpochCompleted(t)
