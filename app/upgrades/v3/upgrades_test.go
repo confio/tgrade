@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	"github.com/stretchr/testify/assert"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -45,9 +48,9 @@ func TestCreateUpgradeHandler(t *testing.T) {
 	// then
 	require.NoError(t, err)
 	for _, a := range v3.Addresses() {
-		got := ak.GetAccount(ctx, sdk.MustAccAddressFromBech32(a))
-		_ = got
-		// todo: assert correct value set
+		vestingAccount, ok := ak.GetAccount(ctx, sdk.MustAccAddressFromBech32(a)).(*vestingtypes.ContinuousVestingAccount)
+		assert.True(t, ok, "vesting account")
+		assert.Equal(t, int64(1688220000), vestingAccount.GetEndTime())
 	}
 }
 
