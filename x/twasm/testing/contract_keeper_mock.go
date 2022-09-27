@@ -12,6 +12,7 @@ var _ wasmtypes.ContractOpsKeeper = &ContractOpsKeeperMock{}
 type ContractOpsKeeperMock struct {
 	CreateFn                   func(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, checksum []byte, err error)
 	InstantiateFn              func(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins) (sdk.AccAddress, []byte, error)
+	Instantiate2Fn             func(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins, salt []byte, fixMsg bool) (sdk.AccAddress, []byte, error)
 	ExecuteFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error)
 	MigrateFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte) ([]byte, error)
 	UpdateContractAdminFn      func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newAdmin sdk.AccAddress) error
@@ -38,10 +39,10 @@ func (m ContractOpsKeeperMock) Instantiate(ctx sdk.Context, codeID uint64, creat
 }
 
 func (m ContractOpsKeeperMock) Instantiate2(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins, salt []byte, fixMsg bool) (sdk.AccAddress, []byte, error) {
-	if m.Instantiate2 == nil {
+	if m.Instantiate2Fn == nil {
 		panic("not expected to be called")
 	}
-	return m.Instantiate2(ctx, codeID, creator, admin, initMsg, label, deposit, salt, fixMsg)
+	return m.Instantiate2Fn(ctx, codeID, creator, admin, initMsg, label, deposit, salt, fixMsg)
 }
 
 func (m ContractOpsKeeperMock) Execute(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error) {
