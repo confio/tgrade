@@ -1,6 +1,7 @@
 package testing
 
 import (
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -34,6 +35,13 @@ func (m ContractOpsKeeperMock) Instantiate(ctx sdk.Context, codeID uint64, creat
 		panic("not expected to be called")
 	}
 	return m.InstantiateFn(ctx, codeID, creator, admin, initMsg, label, deposit)
+}
+
+func (m ContractOpsKeeperMock) Instantiate2(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins, salt []byte, fixMsg bool) (sdk.AccAddress, []byte, error) {
+	if m.Instantiate2 == nil {
+		panic("not expected to be called")
+	}
+	return m.Instantiate2(ctx, codeID, creator, admin, initMsg, label, deposit, salt, fixMsg)
 }
 
 func (m ContractOpsKeeperMock) Execute(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error) {
@@ -122,6 +130,25 @@ type CapturedInstantiateCalls struct {
 	InitMsg        []byte
 	Label          string
 	Deposit        sdk.Coins
+}
+
+// DefaultCaptureInstantiateFnCodeID value used for building the contract address
+const DefaultCaptureInstantiateFnCodeID uint64 = 0
+
+// CaptureInstantiateFn records all calls in the returned slice
+func CaptureInstantiateFn(codeIDs ...uint64) (func(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins) (sdk.AccAddress, []byte, error), *[]CapturedInstantiateCalls) {
+	var callCounter uint64
+	var captured []CapturedInstantiateCalls
+	return func(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins) (sdk.AccAddress, []byte, error) {
+		captured = append(captured, CapturedInstantiateCalls{CodeID: codeID, Creator: creator, Admin: admin, InitMsg: initMsg, Label: label, Deposit: deposit})
+		callCounter++
+		nextInstanceID := callCounter
+		nextCodeID := DefaultCaptureInstantiateFnCodeID
+		if len(codeIDs) != 0 {
+			nextCodeID = codeIDs[callCounter-1]
+		}
+		return wasmkeeper.BuildContractAddressClassic(nextCodeID, nextInstanceID), nil, nil
+	}, &captured
 }
 
 type CapturedExecuteCalls struct {

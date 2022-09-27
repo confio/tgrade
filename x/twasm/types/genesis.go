@@ -51,10 +51,7 @@ func (g GenesisState) ValidateBasic() error {
 		return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "%d pinned codeIDs not found in genesis codeIDs", len(uniquePinnedCodeIDs))
 	}
 
-	genesisContracts, err := wasmcli.GetAllContracts(&wasmState)
-	if err != nil {
-		return err
-	}
+	genesisContracts := wasmcli.GetAllContracts(&wasmState)
 	for _, contract := range genesisContracts {
 		delete(uniqueAddr, contract.ContractAddress)
 	}

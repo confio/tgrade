@@ -1,17 +1,10 @@
 //go:build system_test
-// +build system_test
 
 package testing
 
 import (
-	"encoding/hex"
 	"fmt"
-	"strconv"
-	"strings"
 	"testing"
-
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,20 +35,15 @@ func TestSmokeTest(t *testing.T) {
 	codes := gjson.Get(qResult, "code_infos.#.code_id").Array()
 	t.Log("got query result", qResult)
 
+	const poeContractCount = 11
 	const poeCodeCount = 9
 	require.Len(t, codes, poeCodeCount+1, qResult)
 	require.Equal(t, int64(poeCodeCount+1), codes[poeCodeCount].Int(), "sequential ids")
-
 	codeID := poeCodeCount + 1
-	qResult = cli.CustomQuery("q", "wasm", "code-info", strconv.Itoa(codeID))
-	raw := strings.Trim(gjson.Get(qResult, "data_hash").Raw, "\"")
-	codeHash, err := hex.DecodeString(raw)
-	require.NoError(t, err, raw)
-	t.Logf("got codeHash %x", codeHash)
 
 	l := sut.NewEventListener(t)
 	c, done := CaptureAllEventsConsumer(t)
-	expContractAddr := wasmkeeper.BuildContractAddress(codeHash, sdk.MustAccAddressFromBech32(cli.GetDefaultKeyAddr()), "testing")
+	expContractAddr := ContractBech32Address(poeCodeCount+1, poeContractCount+1)
 	query := fmt.Sprintf(`tm.event='Tx' AND wasm._contract_address='%s'`, expContractAddr)
 	t.Logf("Subscribe to events: %s", query)
 	cleanupFn := l.Subscribe(query, c)
@@ -63,8 +51,8 @@ func TestSmokeTest(t *testing.T) {
 
 	t.Log("Instantiate wasm code")
 	initMsg := fmt.Sprintf(`{"verifier":%q, "beneficiary":%q}`, randomBech32Addr(), randomBech32Addr())
-	newContractAddr := cli.InstantiateWasm(codeID, initMsg, "--label=testing", "--from="+defaultSrcAddr, "--no-admin")
-	assert.Equal(t, expContractAddr.String(), newContractAddr)
+	newContractAddr := cli.InstantiateWasm(codeID, initMsg)
+	assert.Equal(t, expContractAddr, newContractAddr)
 
 	assert.Len(t, done(), 1)
 }
