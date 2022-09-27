@@ -1,15 +1,11 @@
 //go:build system_test
-// +build system_test
 
 package testing
 
 import (
 	"fmt"
-	"path/filepath"
 	"testing"
 
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )
@@ -22,9 +18,8 @@ func TestGovProposal(t *testing.T) {
 	cli := NewTgradeCli(t, sut, verbose)
 	myKey := cli.GetKeyAddr("node0")
 	require.NotEmpty(t, myKey)
-
-	hash := checksum(filepath.Join(workDir, "x/poe/contract/tgrade_gov_reflect.wasm"))
-	myContractAddr := wasmkeeper.BuildContractAddress(hash, sdk.MustAccAddressFromBech32(myKey), "testing").String()
+	t.Logf("key: %q", myKey)
+	myContractAddr := ContractBech32Address(1, 1)
 	commands := [][]string{
 		{
 			"wasm-genesis-message",

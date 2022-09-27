@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	"sort"
 	"testing"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
@@ -42,39 +41,24 @@ func DemoteProposalFixture(mutators ...func(proposal *DemotePrivilegedContractPr
 // DeterministicGenesisStateFixture is the same as GenesisStateFixture but with deterministic addresses and codes
 func DeterministicGenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisState {
 	genesisState := GenesisStateFixture(t)
+	for i := range genesisState.Contracts {
+		genesisState.Contracts[i].ContractAddress = wasmkeeper.BuildContractAddressClassic(uint64(i), uint64(i)).String()
+	}
 	for i := range genesisState.Codes {
 		wasmCode := bytes.Repeat([]byte{byte(i)}, 20)
 		genesisState.Codes[i].CodeInfo = wasmtypes.CodeInfoFixture(wasmtypes.WithSHA256CodeHash(wasmCode))
 		genesisState.Codes[i].CodeBytes = wasmCode
 	}
-
-	for i, contr := range genesisState.Contracts {
-		var checksum []byte
-		for _, code := range genesisState.Codes {
-			if code.CodeID == contr.ContractInfo.CodeID {
-				checksum = code.CodeInfo.CodeHash
-				break
-			}
-		}
-		if checksum == nil {
-			t.Fatal("no code found for contract")
-			return genesisState
-		}
-		genesisState.Contracts[i].ContractAddress = wasmkeeper.BuildContractAddress(checksum, wasmkeeper.DeterministicAccountAddress(t, byte(i)), "testing").String()
-	}
 	for _, m := range mutators {
 		m(&genesisState)
 	}
-	sort.Slice(genesisState.Contracts, func(i, j int) bool {
-		return genesisState.Contracts[i].ContractAddress < genesisState.Contracts[j].ContractAddress
-	})
 	return genesisState
 }
 
 // GenesisStateFixture test data fixture
 func GenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisState {
 	t.Helper()
-	anyContractAddr := wasmkeeper.DeterministicAccountAddress(t, 2).String()
+	anyContractAddr := RandomBech32Address(t)
 	wasmState := wasmtypes.GenesisFixture(func(state *wasmtypes.GenesisState) {
 		state.Codes[1] = wasmtypes.CodeFixture(func(code *wasmtypes.Code) {
 			code.CodeID = 2
@@ -86,6 +70,7 @@ func GenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisS
 		})
 		state.Sequences = []wasmtypes.Sequence{
 			{IDKey: wasmtypes.KeyLastCodeID, Value: 10},
+			{IDKey: wasmtypes.KeyLastInstanceID, Value: 11},
 		}
 		state.GenMsgs = nil
 	})

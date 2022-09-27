@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -84,11 +83,8 @@ func TestInitGenesis(t *testing.T) {
 	mixerAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
 	require.NoError(t, err)
 
-	communityPoolAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeCommunityPool)
-	require.NoError(t, err)
-	engagementAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeEngagement)
-	require.NoError(t, err)
-
+	communityPoolAddr := wasmkeeper.BuildContractAddressClassic(5, 5)
+	engagementAddr := wasmkeeper.BuildContractAddressClassic(1, 1)
 	expConfig := &contract.ValsetConfigResponse{
 		Membership:    mixerAddr.String(),
 		MinPoints:     1,
@@ -100,7 +96,7 @@ func TestInitGenesis(t *testing.T) {
 			{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
 		},
 		EpochReward:    sdk.NewInt64Coin("utgd", 100000),
-		ValidatorGroup: "cosmos1prjgku45gwz0y3ncuvtsda8yxwx6jj9pw49adgqcjx26uraqn6uq9z64e3",
+		ValidatorGroup: wasmkeeper.BuildContractAddressClassic(1, 7).String(),
 		AutoUnjail:     false,
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)
