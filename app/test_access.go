@@ -3,6 +3,8 @@ package app
 import (
 	"testing"
 
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+
 	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/cosmos/cosmos-sdk/codec"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -50,4 +52,8 @@ func (s TestSupport) BankKeeper() bankkeeper.Keeper {
 
 func (s TestSupport) TransferKeeper() ibctransferkeeper.Keeper {
 	return s.app.transferKeeper
+}
+
+func (s TestSupport) AccountKeeper() authkeeper.AccountKeeper {
+	return s.app.accountKeeper
 }

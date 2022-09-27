@@ -9,6 +9,7 @@ import (
 
 	"github.com/confio/tgrade/app/upgrades"
 	v2 "github.com/confio/tgrade/app/upgrades/v2"
+	v3 "github.com/confio/tgrade/app/upgrades/v3"
 
 	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -154,7 +155,7 @@ var (
 		poetypes.BondedPoolName:     {authtypes.Burner, authtypes.Staking},
 	}
 
-	Upgrades = []upgrades.Upgrade{v2.Upgrade}
+	Upgrades = []upgrades.Upgrade{v2.Upgrade, v3.Upgrade}
 )
 
 var (
@@ -716,6 +717,7 @@ func (app *TgradeApp) setupUpgradeHandlers() {
 			upgrade.CreateUpgradeHandler(
 				app.mm,
 				app.configurator,
+				app.accountKeeper,
 			),
 		)
 	}
