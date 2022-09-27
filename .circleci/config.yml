@@ -154,7 +154,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           # >= v20.10 https://wiki.alpinelinux.org/wiki/Release_Notes_for_Alpine_3.14.0#faccessat2
-          version: 20.10.11
+        docker_layer_caching: true
       - run:
           name: Build Docker artifact
           command: docker build --pull -t "confio/tgrade:${CIRCLE_SHA1}" .
@@ -191,7 +191,6 @@ jobs:
       - checkout
       - setup_remote_docker:
           # >= v20.10 https://wiki.alpinelinux.org/wiki/Release_Notes_for_Alpine_3.14.0#faccessat2
-          version: 20.10.11
           docker_layer_caching: true
       - run:
           name: Build Docker artifact
@@ -230,14 +229,9 @@ workflows:
   version: 2
   test-suite:
     jobs:
-      # this is now a slow process... let's only run on main
       - docker-image:
           requires:
             - setup-dependencies
-          filters:
-            branches:
-              only:
-                - main
       - docker-tagged:
           filters:
             tags:
