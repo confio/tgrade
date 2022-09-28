@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"sort"
 
+	lightclienttypes "github.com/cosmos/ibc-go/v3/modules/light-clients/09-localhost/types"
+
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -178,12 +180,18 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 		},
 		"register_upgrade": func(b []byte) error {
 			proxy := struct {
-				Name   string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-				Height int64  `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
-				Info   string `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
+				Name                string                        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+				Height              int64                         `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
+				Info                string                        `protobuf:"bytes,4,opt,name=info,proto3" json:"info,omitempty"`
+				UpgradedClientState *lightclienttypes.ClientState `protobuf:"bytes,4,opt,name=upgraded_client_state,json=upgradedClientState,proto3" json:"upgraded_client_state,omitempty"`
 			}{}
 			if err := json.Unmarshal(b, &proxy); err != nil {
 				return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
+			}
+
+			csAny, err := codectypes.NewAnyWithValue(proxy.UpgradedClientState)
+			if err != nil {
+				return sdkerrors.Wrap(sdkerrors.ErrPackAny, err.Error())
 			}
 			result.RegisterUpgrade = &ibcclienttypes.UpgradeProposal{
 				Plan: upgradetypes.Plan{
@@ -191,6 +199,7 @@ func (p *GovProposal) UnmarshalJSON(b []byte) error {
 					Height: proxy.Height,
 					Info:   proxy.Info,
 				},
+				UpgradedClientState: csAny,
 			}
 			return nil
 		},
