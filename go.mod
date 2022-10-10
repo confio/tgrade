@@ -139,3 +139,5 @@ replace (
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 
 )
+
+replace github.com/confio/ics23/go => ./ics23/
