@@ -20,6 +20,7 @@ import (
 )
 
 // Simulation operation weights constants
+//
 //nolint:gosec
 const (
 	OpWeightMsgCreateValidator = "op_weight_msg_create_validator"
@@ -152,25 +153,13 @@ func SimulateMsgCreateValidator(bk BankKeeper, ak types.AccountKeeper, k poeKeep
 			return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "unable to create CreateValidator message"), nil, err
 		}
 
-		txCtx := simulation.OperationInput{
-			AccountKeeper: ak,
-			Bankkeeper:    bk,
-			App:           app,
-			TxGen:         simappparams.MakeTestEncodingConfig().TxConfig,
-			Cdc:           nil,
-			Msg:           msg,
-			MsgType:       msg.Type(),
-			Context:       ctx,
-			SimAccount:    simAccount,
-			ModuleName:    types.ModuleName,
-		}
-
+		txCtx := BuildOperationInput(r, app, ctx, msg, simAccount, ak, bk, nil)
 		return simulation.GenAndDeliverTx(txCtx, fees)
 	}
 }
 
 // SimulateMsgUpdateValidator generates a MsgUpdateValidator with random values
-func SimulateMsgUpdateValidator(bk simulation.BankKeeper, ak types.AccountKeeper, k poeKeeper) simtypes.Operation {
+func SimulateMsgUpdateValidator(bk BankKeeper, ak types.AccountKeeper, k poeKeeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -193,21 +182,7 @@ func SimulateMsgUpdateValidator(bk simulation.BankKeeper, ak types.AccountKeeper
 		)
 
 		msg := types.NewMsgUpdateValidator(valAddr, description)
-
-		txCtx := simulation.OperationInput{
-			R:             r,
-			App:           app,
-			TxGen:         simappparams.MakeTestEncodingConfig().TxConfig,
-			Cdc:           nil,
-			Msg:           msg,
-			MsgType:       msg.Type(),
-			Context:       ctx,
-			SimAccount:    simAccount,
-			AccountKeeper: ak,
-			Bankkeeper:    bk,
-			ModuleName:    types.ModuleName,
-		}
-
+		txCtx := BuildOperationInput(r, app, ctx, msg, simAccount, ak, bk, nil)
 		return simulation.GenAndDeliverTxWithRandFees(txCtx)
 	}
 }
@@ -255,25 +230,13 @@ func SimulateMsgDelegate(bk BankKeeper, ak types.AccountKeeper, k poeKeeper) sim
 		}
 
 		msg := types.NewMsgDelegate(simAccount.Address, selfDelegation, sdk.NewCoin(denom, sdk.ZeroInt()))
-
-		txCtx := simulation.OperationInput{
-			App:           app,
-			TxGen:         simappparams.MakeTestEncodingConfig().TxConfig,
-			Cdc:           nil,
-			Msg:           msg,
-			MsgType:       msg.Type(),
-			Context:       ctx,
-			SimAccount:    simAccount,
-			AccountKeeper: ak,
-			ModuleName:    types.ModuleName,
-		}
-
+		txCtx := BuildOperationInput(r, app, ctx, msg, simAccount, ak, bk, nil)
 		return simulation.GenAndDeliverTx(txCtx, fees)
 	}
 }
 
 // SimulateMsgUndelegate generates a MsgUndelegate with random values
-func SimulateMsgUndelegate(bk simulation.BankKeeper, ak types.AccountKeeper, k poeKeeper) simtypes.Operation {
+func SimulateMsgUndelegate(bk BankKeeper, ak types.AccountKeeper, k poeKeeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -310,19 +273,7 @@ func SimulateMsgUndelegate(bk simulation.BankKeeper, ak types.AccountKeeper, k p
 			return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "account private key is nil"), nil, fmt.Errorf("delegation addr: %s does not exist in simulation accounts", valAddr.String())
 		}
 
-		txCtx := simulation.OperationInput{
-			R:             r,
-			App:           app,
-			TxGen:         simappparams.MakeTestEncodingConfig().TxConfig,
-			Cdc:           nil,
-			Msg:           msg,
-			MsgType:       msg.Type(),
-			Context:       ctx,
-			SimAccount:    simAccount,
-			AccountKeeper: ak,
-			Bankkeeper:    bk,
-			ModuleName:    types.ModuleName,
-		}
+		txCtx := BuildOperationInput(r, app, ctx, msg, simAccount, ak, bk, nil)
 
 		return simulation.GenAndDeliverTxWithRandFees(txCtx)
 	}
@@ -340,4 +291,34 @@ func getRandValidator(ctx sdk.Context, k poeKeeper) (stakingtypes.Validator, sdk
 		return stakingtypes.Validator{}, nil, err
 	}
 	return val, valAddr, nil
+}
+
+// BuildOperationInput helper to build object
+func BuildOperationInput(
+	r *rand.Rand,
+	app *baseapp.BaseApp,
+	ctx sdk.Context,
+	msg interface {
+		sdk.Msg
+		Type() string
+	},
+	simAccount simtypes.Account,
+	ak types.AccountKeeper,
+	bk BankKeeper,
+	deposit sdk.Coins,
+) simulation.OperationInput {
+	return simulation.OperationInput{
+		R:               r,
+		App:             app,
+		TxGen:           simappparams.MakeTestEncodingConfig().TxConfig,
+		Cdc:             nil,
+		Msg:             msg,
+		MsgType:         msg.Type(),
+		Context:         ctx,
+		SimAccount:      simAccount,
+		AccountKeeper:   ak,
+		Bankkeeper:      bk,
+		ModuleName:      types.ModuleName,
+		CoinsSpentInMsg: deposit,
+	}
 }

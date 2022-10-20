@@ -5,8 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/confio/tgrade/x/twasm"
-
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -36,7 +35,9 @@ func TestInitGenesis(t *testing.T) {
 
 	const numValidators = 15
 	mutator, myValidators := withRandomValidators(t, ctx, example, numValidators)
-	gs := types.GenesisStateFixture(mutator)
+	gs := types.GenesisStateFixture(mutator, func(m *types.GenesisState) {
+		m.GetSeedContracts().BootstrapAccountAddress = wasmkeeper.DeterministicAccountAddress(t, 255).String()
+	})
 	bootstrapAccountAddr, _ := sdk.AccAddressFromBech32(gs.GetSeedContracts().BootstrapAccountAddress)
 	example.Faucet.Fund(ctx, bootstrapAccountAddr, sdk.NewCoin(types.DefaultBondDenom, sdk.NewInt(100_000_000_000)))
 
@@ -82,8 +83,8 @@ func TestInitGenesis(t *testing.T) {
 	mixerAddr, err := example.PoEKeeper.GetPoEContractAddress(ctx, types.PoEContractTypeMixer)
 	require.NoError(t, err)
 
-	communityPoolAddr := twasm.ContractAddress(5, 5)
-	engagementAddr := twasm.ContractAddress(1, 1)
+	communityPoolAddr := wasmkeeper.BuildContractAddressClassic(5, 5)
+	engagementAddr := wasmkeeper.BuildContractAddressClassic(1, 1)
 	expConfig := &contract.ValsetConfigResponse{
 		Membership:    mixerAddr.String(),
 		MinPoints:     1,
@@ -95,7 +96,7 @@ func TestInitGenesis(t *testing.T) {
 			{Address: communityPoolAddr.String(), Ratio: sdk.MustNewDecFromStr("0.05")},
 		},
 		EpochReward:    sdk.NewInt64Coin("utgd", 100000),
-		ValidatorGroup: twasm.ContractAddress(1, 7).String(),
+		ValidatorGroup: wasmkeeper.BuildContractAddressClassic(1, 7).String(),
 		AutoUnjail:     false,
 	}
 	assert.Equal(t, expConfig, gotValsetConfig)

@@ -1,5 +1,4 @@
 //go:build system_test
-// +build system_test
 
 package testing
 
@@ -140,7 +139,7 @@ func encodeBech32Addr(src []byte) string {
 
 // ContractBech32Address build a tgrade bech32 contract address
 func ContractBech32Address(codeID, instanceID uint64) string {
-	return encodeBech32Addr(wasmkeeper.BuildContractAddress(codeID, instanceID))
+	return encodeBech32Addr(wasmkeeper.BuildContractAddressClassic(codeID, instanceID))
 }
 
 func AwaitValsetEpochCompleted(t *testing.T) {

@@ -41,7 +41,7 @@ func TestInitTrustedCircle(t *testing.T) {
 	initBz, err := json.Marshal(init)
 	require.NoError(t, err)
 	t.Log(string(initBz))
-	codeID, err := contractKeeper.Create(ctx, creator, tgTrustedCircles, nil)
+	codeID, _, err := contractKeeper.Create(ctx, creator, tgTrustedCircles, nil)
 	require.NoError(t, err)
 	// when
 	contractAddr, _, err := contractKeeper.Instantiate(ctx, codeID, creator, nil, initBz, "poe", sdk.NewCoins(depositAmount))

@@ -153,23 +153,35 @@ jobs:
           at: /tmp/workspace
       - checkout
       - setup_remote_docker:
-          # >= v20.10 https://wiki.alpinelinux.org/wiki/Release_Notes_for_Alpine_3.14.0#faccessat2
-          version: 20.10.11
+          docker_layer_caching: true
       - run:
           name: Build Docker artifact
           command: docker build --pull -t "confio/tgrade:${CIRCLE_SHA1}" .
       - run:
+          name: Ensure libwasmvm version is correct
+          command: |
+            IN_DOCKER=$(docker run --rm "confio/tgrade:${CIRCLE_SHA1}" /usr/bin/tgrade query wasm libwasmvm-version)
+            echo "Runtime libwasmvm-version in docker: $IN_DOCKER"
+            IN_GOMOD=$(go list -m github.com/CosmWasm/wasmvm | cut -d" " -f2 | cut -d"v" -f2)
+            echo "wasmvm version in go.mod: $IN_GOMOD"
+            if [[ "$IN_DOCKER" != "$IN_GOMOD" ]]; then
+              echo "Mismatch of wasmvm versions detected"
+              exit 1
+            fi
+      - run:
           name: Smoke test Docker artifact
           command: docker run "confio/tgrade:${CIRCLE_SHA1}" tgrade version
-      - run:
-          name: Push application Docker image to docker hub
-          command: |
-            if [ "${CIRCLE_BRANCH}" = "main" ]; then
-              docker tag "confio/tgrade:${CIRCLE_SHA1}" confio/tgrade:latest
-              docker login --password-stdin -u "$DOCKER_USER" \<<<"$DOCKER_PASS"
-              docker push confio/tgrade:latest
-              docker logout
-            fi
+      - when:
+          condition:
+            equal: [ main, << pipeline.git.branch >> ]
+          steps:
+            - run:
+                name: Push application Docker image to docker hub
+                command: |
+                  docker tag "confio/tgrade:${CIRCLE_SHA1}" confio/tgrade:latest
+                  docker login --password-stdin -u "$DOCKER_USER" \<<<"$DOCKER_PASS"
+                  docker push confio/tgrade:latest
+                  docker logout
 
   docker-tagged:
     executor: golang
@@ -178,8 +190,6 @@ jobs:
           at: /tmp/workspace
       - checkout
       - setup_remote_docker:
-          # >= v20.10 https://wiki.alpinelinux.org/wiki/Release_Notes_for_Alpine_3.14.0#faccessat2
-          version: 20.10.11
           docker_layer_caching: true
       - run:
           name: Build Docker artifact
@@ -218,14 +228,9 @@ workflows:
   version: 2
   test-suite:
     jobs:
-      # this is now a slow process... let's only run on main
       - docker-image:
           requires:
             - setup-dependencies
-          filters:
-            branches:
-              only:
-                - main
       - docker-tagged:
           filters:
             tags:

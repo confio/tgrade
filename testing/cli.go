@@ -157,6 +157,11 @@ func (c TgradeCli) AddKey(name string) string {
 	return addr
 }
 
+// GetDefaultKeyAddr returns the address of the default test key
+func (c TgradeCli) GetDefaultKeyAddr() string {
+	return c.GetKeyAddr(defaultSrcAddr)
+}
+
 // GetKeyAddr returns address
 func (c TgradeCli) GetKeyAddr(name string) string {
 	cmd := c.withKeyringFlags("keys", "show", name, "-a")

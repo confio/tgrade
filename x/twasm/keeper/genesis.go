@@ -123,7 +123,6 @@ func ExportGenesis(ctx sdk.Context, keeper *Keeper) *types.GenesisState {
 		}
 		contracts[i].ContractState = &types.Contract_CustomModel{CustomModel: &types.CustomModel{Msg: got}}
 	}
-
 	genState := types.GenesisState{
 		Params:    wasmState.Params,
 		Codes:     wasmState.Codes,

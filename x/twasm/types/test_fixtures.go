@@ -42,7 +42,7 @@ func DemoteProposalFixture(mutators ...func(proposal *DemotePrivilegedContractPr
 func DeterministicGenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisState {
 	genesisState := GenesisStateFixture(t)
 	for i := range genesisState.Contracts {
-		genesisState.Contracts[i].ContractAddress = wasmkeeper.BuildContractAddress(uint64(i), uint64(i)).String()
+		genesisState.Contracts[i].ContractAddress = wasmkeeper.BuildContractAddressClassic(uint64(i), uint64(i)).String()
 	}
 	for i := range genesisState.Codes {
 		wasmCode := bytes.Repeat([]byte{byte(i)}, 20)

@@ -418,7 +418,7 @@ func TestRemovePrivilegedContractRegistration(t *testing.T) {
 func seedTestContract(t *testing.T, ctx sdk.Context, k *Keeper) (uint64, sdk.AccAddress) {
 	t.Helper()
 	creatorAddr := rand.Bytes(address.Len)
-	codeID, err := k.contractKeeper.Create(ctx, creatorAddr, []byte{}, nil)
+	codeID, _, err := k.contractKeeper.Create(ctx, creatorAddr, []byte{}, nil)
 	require.NoError(t, err)
 	contractAddr, _, err := k.contractKeeper.Instantiate(ctx, codeID, creatorAddr, creatorAddr, nil, "", nil)
 	require.NoError(t, err)

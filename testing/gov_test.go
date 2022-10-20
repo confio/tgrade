@@ -1,5 +1,4 @@
 //go:build system_test
-// +build system_test
 
 package testing
 
@@ -12,8 +11,9 @@ import (
 )
 
 // Scenario: add reflect contract to genesis and set privileged
-// 			 trigger gov proposal to unset privileges
-//			 then verify that callback permission was removed
+//
+//	trigger gov proposal to unset privileges
+//	then verify that callback permission was removed
 func TestGovProposal(t *testing.T) {
 	cli := NewTgradeCli(t, sut, verbose)
 	myKey := cli.GetKeyAddr("node0")
@@ -56,7 +56,7 @@ func TestGovProposal(t *testing.T) {
 	// when
 	t.Log("Send a proposal to be returned")
 	excecMsg := fmt.Sprintf(`{"proposal":{"title":"foo", "description":"bar", "proposal":{"demote_privileged_contract":{"contract":%q}}}}`, myContractAddr)
-	txResult := cli.CustomCommand("tx", "wasm", "execute", myContractAddr, excecMsg, fmt.Sprintf("--from=%s", myKey), "--gas=1500000")
+	txResult := cli.CustomCommand("tx", "wasm", "execute", myContractAddr, excecMsg, fmt.Sprintf("--from=%s", myKey), "--gas=1600000")
 	RequireTxSuccess(t, txResult)
 
 	// then should not be privileged anymore

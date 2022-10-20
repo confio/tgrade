@@ -359,5 +359,5 @@ func setContractPrivilege(t *testing.T, ctx sdk.Context, keepers TestKeepers, co
 
 // genContractAddress generates a contract address as wasmd keeper does
 func genContractAddress(codeID, instanceID uint64) sdk.AccAddress {
-	return wasmkeeper.BuildContractAddress(codeID, instanceID)
+	return wasmkeeper.BuildContractAddressClassic(codeID, instanceID)
 }

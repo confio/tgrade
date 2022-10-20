@@ -1,11 +1,9 @@
 //go:build system_test
-// +build system_test
 
 package testing
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,7 +17,8 @@ import (
 )
 
 // Scenario: add WASM code as part of genesis and pin it in VM cache forever
-//           for faster execution.
+//
+//	for faster execution.
 func TestGenesisCodePin(t *testing.T) {
 	cli := NewTgradeCli(t, sut, verbose)
 	myKey := cli.GetKeyAddr("node0")
@@ -48,14 +47,14 @@ func TestGenesisCodePin(t *testing.T) {
 
 func TestUnsafeResetAll(t *testing.T) {
 	// scenario:
-	// 	given a non empty wasm dir exists in the node home
+	// 	given a non-empty wasm dir exists in the node home
 	//  when `unsafe-reset-all` is executed
 	// 	then the dir and all files in it are removed
 
 	wasmDir := filepath.Join(workDir, sut.nodePath(0), "wasm")
 	require.NoError(t, os.MkdirAll(wasmDir, os.ModePerm))
 
-	_, err := ioutil.TempFile(wasmDir, "testing")
+	_, err := os.CreateTemp(wasmDir, "testing")
 	require.NoError(t, err)
 
 	// when
@@ -72,7 +71,7 @@ func TestUnsafeResetAll(t *testing.T) {
 func TestVestingAccounts(t *testing.T) {
 	// Scenario:
 	//   given: a genesis file
-	//   when: a add-genesis-account with vesting flags is executed
+	//   when: add-genesis-account with vesting flags is executed
 	//   then: the vesting account data is added to the genesis
 	sut.ResetChain(t)
 	cli := NewTgradeCli(t, sut, verbose)
