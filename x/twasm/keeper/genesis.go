@@ -97,8 +97,9 @@ func ExportGenesis(ctx sdk.Context, keeper *Keeper) *types.GenesisState {
 	contracts := make([]types.Contract, len(wasmState.Contracts))
 	for i, v := range wasmState.Contracts {
 		contracts[i] = types.Contract{
-			ContractAddress: v.ContractAddress,
-			ContractInfo:    v.ContractInfo,
+			ContractAddress:     v.ContractAddress,
+			ContractInfo:        v.ContractInfo,
+			ContractCodeHistory: v.ContractCodeHistory,
 		}
 
 		var details types.TgradeContractDetails

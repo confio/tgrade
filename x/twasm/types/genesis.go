@@ -72,9 +72,10 @@ func (g GenesisState) RawWasmState() wasmtypes.GenesisState {
 			s = m.Models
 		}
 		contracts[i] = wasmtypes.Contract{
-			ContractAddress: v.ContractAddress,
-			ContractInfo:    v.ContractInfo,
-			ContractState:   s,
+			ContractAddress:     v.ContractAddress,
+			ContractInfo:        v.ContractInfo,
+			ContractState:       s,
+			ContractCodeHistory: v.ContractCodeHistory,
 		}
 	}
 	return wasmtypes.GenesisState{
