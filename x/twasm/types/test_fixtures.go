@@ -43,6 +43,11 @@ func DeterministicGenesisStateFixture(t *testing.T, mutators ...func(*GenesisSta
 	genesisState := GenesisStateFixture(t)
 	for i := range genesisState.Contracts {
 		genesisState.Contracts[i].ContractAddress = wasmkeeper.BuildContractAddressClassic(uint64(i), uint64(i)).String()
+		genesisState.Contracts[i].ContractInfo.Created = &wasmtypes.AbsoluteTxPosition{BlockHeight: 100, TxIndex: 10}
+
+		for j := range genesisState.Contracts[i].ContractCodeHistory {
+			genesisState.Contracts[i].ContractCodeHistory[j].Updated = &wasmtypes.AbsoluteTxPosition{BlockHeight: 30, TxIndex: 800}
+		}
 	}
 	for i := range genesisState.Codes {
 		wasmCode := bytes.Repeat([]byte{byte(i)}, 20)
@@ -77,9 +82,10 @@ func GenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisS
 	contracts := make([]Contract, len(wasmState.Contracts))
 	for i, v := range wasmState.Contracts {
 		contracts[i] = Contract{
-			ContractAddress: v.ContractAddress,
-			ContractInfo:    v.ContractInfo,
-			ContractState:   &Contract_KvModel{&KVModel{v.ContractState}},
+			ContractAddress:     v.ContractAddress,
+			ContractInfo:        v.ContractInfo,
+			ContractState:       &Contract_KvModel{&KVModel{v.ContractState}},
+			ContractCodeHistory: v.ContractCodeHistory,
 		}
 	}
 	genesisState := GenesisState{
@@ -101,10 +107,12 @@ func ContractFixture(t *testing.T, mutators ...func(contract *Contract)) Contrac
 	t.Helper()
 	wasmContract := wasmtypes.ContractFixture()
 	c := Contract{
-		ContractAddress: wasmContract.ContractAddress,
-		ContractInfo:    wasmContract.ContractInfo,
-		ContractState:   &Contract_KvModel{&KVModel{wasmContract.ContractState}},
+		ContractAddress:     wasmContract.ContractAddress,
+		ContractInfo:        wasmContract.ContractInfo,
+		ContractState:       &Contract_KvModel{&KVModel{wasmContract.ContractState}},
+		ContractCodeHistory: wasmContract.ContractCodeHistory,
 	}
+
 	for _, m := range mutators {
 		m(&c)
 	}

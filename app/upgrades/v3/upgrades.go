@@ -91,6 +91,8 @@ func CreateUpgradeHandler(
 	ak authkeeper.AccountKeeper,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		// transfer module consensus version has been bumped to 2
+
 		for _, addr := range addresses {
 			accAddr, err := sdk.AccAddressFromBech32(addr)
 			if err != nil {

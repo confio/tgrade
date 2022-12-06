@@ -59,6 +59,9 @@ message Contract {
     KVModel kv_model = 3;
     CustomModel custom_model = 4;
   }
+
+  repeated cosmwasm.wasm.v1.ContractCodeHistoryEntry contract_code_history = 5
+      [ (gogoproto.nullable) = false ];
 }
 
 // KVModel is a wrapper around the wasmd default key value model.

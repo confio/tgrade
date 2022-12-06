@@ -968,6 +968,7 @@ Contract struct encompasses ContractAddress, ContractInfo, and ContractState
 | `contract_info` | [cosmwasm.wasm.v1.ContractInfo](#cosmwasm.wasm.v1.ContractInfo) |  |  |
 | `kv_model` | [KVModel](#confio.twasm.v1beta1.KVModel) |  |  |
 | `custom_model` | [CustomModel](#confio.twasm.v1beta1.CustomModel) |  |  |
+| `contract_code_history` | [cosmwasm.wasm.v1.ContractCodeHistoryEntry](#cosmwasm.wasm.v1.ContractCodeHistoryEntry) | repeated |  |
 
 
 
