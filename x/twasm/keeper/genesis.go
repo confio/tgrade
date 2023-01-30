@@ -30,7 +30,7 @@ func InitGenesis(
 	data types.GenesisState,
 	msgHandler sdk.Handler,
 ) ([]abci.ValidatorUpdate, error) {
-	result, err := wasmkeeper.InitGenesis(ctx, &keeper.Keeper, data.RawWasmState(), noopValsetUpdater{}, msgHandler)
+	result, err := wasmkeeper.InitGenesis(ctx, &keeper.Keeper, data.RawWasmState())
 	if err != nil {
 		return nil, sdkerrors.Wrap(err, "wasm")
 	}
@@ -97,8 +97,9 @@ func ExportGenesis(ctx sdk.Context, keeper *Keeper) *types.GenesisState {
 	contracts := make([]types.Contract, len(wasmState.Contracts))
 	for i, v := range wasmState.Contracts {
 		contracts[i] = types.Contract{
-			ContractAddress: v.ContractAddress,
-			ContractInfo:    v.ContractInfo,
+			ContractAddress:     v.ContractAddress,
+			ContractInfo:        v.ContractInfo,
+			ContractCodeHistory: v.ContractCodeHistory,
 		}
 
 		var details types.TgradeContractDetails
@@ -128,7 +129,6 @@ func ExportGenesis(ctx sdk.Context, keeper *Keeper) *types.GenesisState {
 		Codes:     wasmState.Codes,
 		Contracts: contracts,
 		Sequences: wasmState.Sequences,
-		GenMsgs:   wasmState.GenMsgs,
 	}
 
 	// pinned is stored in code info

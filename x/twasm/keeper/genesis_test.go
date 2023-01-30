@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"errors"
 	"testing"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/confio/tgrade/x/twasm/types"
 )
 
@@ -89,35 +87,6 @@ func TestInitGenesis(t *testing.T) {
 			}),
 			wasmvm:         noopMock,
 			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeBeginBlock, addr: genContractAddress(2, 2)}},
-		},
-		"privilege set for gen msg contract": {
-			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
-				state.PrivilegedContractAddresses = []string{genContractAddress(2, 1).String()}
-				state.Contracts = nil
-				state.Sequences = []wasmtypes.Sequence{{IDKey: wasmtypes.KeyLastCodeID, Value: 3}}
-				state.GenMsgs = []wasmtypes.GenesisState_GenMsgs{
-					{Sum: &wasmtypes.GenesisState_GenMsgs_InstantiateContract{
-						InstantiateContract: wasmtypes.MsgInstantiateContractFixture(
-							func(msg *wasmtypes.MsgInstantiateContract) {
-								msg.CodeID = 2
-								msg.Funds = nil
-							}),
-					}},
-				}
-			}),
-			wasmvm: NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
-				// callback registers for end block on sudo call
-				m.PinFn = func(checksum cosmwasm.Checksum) error { return nil }
-				m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
-					tradeMsg := contract.TgradeMsg{Privilege: &contract.PrivilegeMsg{Request: types.PrivilegeTypeEndBlock}}
-					msgBz, err := json.Marshal(&tradeMsg)
-					require.NoError(t, err)
-					return &wasmvmtypes.Response{
-						Messages: []wasmvmtypes.SubMsg{{ReplyOn: wasmvmtypes.ReplyNever, Msg: wasmvmtypes.CosmosMsg{Custom: msgBz}}},
-					}, 0, nil
-				}
-			}),
-			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeEndBlock, addr: genContractAddress(2, 1)}},
 		},
 		"privileges set from dump": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {

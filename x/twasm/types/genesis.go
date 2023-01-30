@@ -1,7 +1,6 @@
 package types
 
 import (
-	wasmcli "github.com/CosmWasm/wasmd/x/wasm/client/cli"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -43,16 +42,14 @@ func (g GenesisState) ValidateBasic() error {
 		uniquePinnedCodeIDs[code] = struct{}{}
 	}
 
-	genesisCodes := wasmcli.GetAllCodes(&wasmState)
-	for _, code := range genesisCodes {
+	for _, code := range wasmState.GetCodes() {
 		delete(uniquePinnedCodeIDs, code.CodeID)
 	}
 	if len(uniquePinnedCodeIDs) > 0 {
 		return sdkerrors.Wrapf(wasmtypes.ErrInvalidGenesis, "%d pinned codeIDs not found in genesis codeIDs", len(uniquePinnedCodeIDs))
 	}
 
-	genesisContracts := wasmcli.GetAllContracts(&wasmState)
-	for _, contract := range genesisContracts {
+	for _, contract := range wasmState.Contracts {
 		delete(uniqueAddr, contract.ContractAddress)
 	}
 	if len(uniqueAddr) > 0 {
@@ -72,9 +69,10 @@ func (g GenesisState) RawWasmState() wasmtypes.GenesisState {
 			s = m.Models
 		}
 		contracts[i] = wasmtypes.Contract{
-			ContractAddress: v.ContractAddress,
-			ContractInfo:    v.ContractInfo,
-			ContractState:   s,
+			ContractAddress:     v.ContractAddress,
+			ContractInfo:        v.ContractInfo,
+			ContractState:       s,
+			ContractCodeHistory: v.ContractCodeHistory,
 		}
 	}
 	return wasmtypes.GenesisState{
@@ -82,7 +80,6 @@ func (g GenesisState) RawWasmState() wasmtypes.GenesisState {
 		Codes:     g.Codes,
 		Contracts: contracts,
 		Sequences: g.Sequences,
-		GenMsgs:   g.GenMsgs,
 	}
 }
 

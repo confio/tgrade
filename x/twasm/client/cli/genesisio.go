@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	wasmcli "github.com/CosmWasm/wasmd/x/wasm/client/cli"
+	tmtypes "github.com/tendermint/tendermint/types"
+
 	"github.com/cosmos/cosmos-sdk/server"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 
@@ -16,8 +17,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	"github.com/spf13/cobra"
 )
-
-var _ wasmcli.GenesisMutator = GenesisIO{}
 
 // GenesisIO to alter the genesis state for this module. To be used with the wasm cli extension point.
 type GenesisIO struct {
@@ -38,8 +37,6 @@ func (x GenesisIO) AlterWasmModuleState(cmd *cobra.Command, callback func(state 
 		if err := callback(&wasmState, appState); err != nil {
 			return err
 		}
-		// update genesis messages as they can be modified
-		state.GenMsgs = wasmState.GenMsgs
 		return nil
 	})
 }
@@ -79,11 +76,9 @@ func (x GenesisIO) AlterTWasmModuleState(cmd *cobra.Command, callback func(state
 
 // TWasmGenesisData extends the wasmcli GenesisData for this module state.
 type TWasmGenesisData struct {
-	*wasmcli.GenesisData
+	*GenesisData
 	twasmModuleState types.GenesisState
 }
-
-var _ wasmcli.GenesisReader = GenesisReader{}
 
 // GenesisReader reads the genesis data for this module. To be used with the wasm cli extension point
 type GenesisReader struct{}
@@ -106,7 +101,7 @@ func (d GenesisReader) ReadTWasmGenesis(cmd *cobra.Command) (*TWasmGenesisData, 
 	}
 	wasmState := twasmGenesisState.RawWasmState()
 	return &TWasmGenesisData{
-		GenesisData: wasmcli.NewGenesisData(
+		GenesisData: NewGenesisData(
 			genFile,
 			genDoc,
 			appState,
@@ -116,10 +111,22 @@ func (d GenesisReader) ReadTWasmGenesis(cmd *cobra.Command) (*TWasmGenesisData, 
 	}, nil
 }
 
-func (d GenesisReader) ReadWasmGenesis(cmd *cobra.Command) (*wasmcli.GenesisData, error) {
+func (d GenesisReader) ReadWasmGenesis(cmd *cobra.Command) (*GenesisData, error) {
 	r, err := d.ReadTWasmGenesis(cmd)
 	if err != nil {
 		return nil, err
 	}
 	return r.GenesisData, nil
+}
+
+// GenesisData contains raw and unmarshalled data from the genesis file
+type GenesisData struct {
+	GenesisFile     string
+	GenDoc          *tmtypes.GenesisDoc
+	AppState        map[string]json.RawMessage
+	WasmModuleState *wasmtypes.GenesisState
+}
+
+func NewGenesisData(genesisFile string, genDoc *tmtypes.GenesisDoc, appState map[string]json.RawMessage, wasmModuleState *wasmtypes.GenesisState) *GenesisData {
+	return &GenesisData{GenesisFile: genesisFile, GenDoc: genDoc, AppState: appState, WasmModuleState: wasmModuleState}
 }

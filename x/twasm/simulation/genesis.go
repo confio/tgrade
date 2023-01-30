@@ -16,7 +16,6 @@ func RandomizedGenState(simstate *module.SimulationState) {
 		Codes:                       nil,
 		Contracts:                   nil,
 		Sequences:                   nil,
-		GenMsgs:                     nil,
 		PrivilegedContractAddresses: nil,
 		PinnedCodeIDs:               nil,
 	}
