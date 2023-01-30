@@ -1003,7 +1003,6 @@ import
 | `codes` | [cosmwasm.wasm.v1.Code](#cosmwasm.wasm.v1.Code) | repeated | Codes has all stored wasm codes and metadata |
 | `contracts` | [Contract](#confio.twasm.v1beta1.Contract) | repeated | Contracts contains all instantiated contracts, state and metadata |
 | `sequences` | [cosmwasm.wasm.v1.Sequence](#cosmwasm.wasm.v1.Sequence) | repeated | Sequences names and values |
-| `gen_msgs` | [cosmwasm.wasm.v1.GenesisState.GenMsgs](#cosmwasm.wasm.v1.GenesisState.GenMsgs) | repeated | GenMsgs has wasmd sdk type messages to execute in the genesis phase |
 | `privileged_contract_addresses` | [string](#string) | repeated | PrivilegedContractAddresses is a list of contract addresses that can have special permissions |
 | `pinned_code_ids` | [uint64](#uint64) | repeated | PinnedCodeIDs has codeInfo ids for wasm codes that are pinned in cache |
 

@@ -77,7 +77,6 @@ func GenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisS
 			{IDKey: wasmtypes.KeyLastCodeID, Value: 10},
 			{IDKey: wasmtypes.KeyLastInstanceID, Value: 11},
 		}
-		state.GenMsgs = nil
 	})
 	contracts := make([]Contract, len(wasmState.Contracts))
 	for i, v := range wasmState.Contracts {
@@ -93,7 +92,6 @@ func GenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisS
 		Codes:                       wasmState.Codes,
 		Contracts:                   contracts,
 		Sequences:                   wasmState.Sequences,
-		GenMsgs:                     wasmState.GenMsgs,
 		PrivilegedContractAddresses: []string{anyContractAddr},
 	}
 	for _, m := range mutators {

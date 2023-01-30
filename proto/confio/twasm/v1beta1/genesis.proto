@@ -30,11 +30,8 @@ message GenesisState {
     (gogoproto.jsontag) = "sequences,omitempty"
   ];
 
-  // GenMsgs has wasmd sdk type messages to execute in the genesis phase
-  repeated cosmwasm.wasm.v1.GenesisState.GenMsgs gen_msgs = 5 [
-    (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "gen_msgs,omitempty"
-  ];
+  // was "gen_msgs"
+  reserved 5;
 
   // PrivilegedContractAddresses is a list of contract addresses that can have
   // special permissions

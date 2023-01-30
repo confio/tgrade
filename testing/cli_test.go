@@ -20,6 +20,8 @@ import (
 //
 //	for faster execution.
 func TestGenesisCodePin(t *testing.T) {
+	t.Skip("genesis messages not supported anymore")
+
 	cli := NewTgradeCli(t, sut, verbose)
 	myKey := cli.GetKeyAddr("node0")
 	require.NotEmpty(t, myKey)
