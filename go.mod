@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/CosmWasm/wasmd v0.29.1
-	github.com/CosmWasm/wasmvm v1.1.1
+	github.com/CosmWasm/wasmvm v1.2.1
 	github.com/cosmos/cosmos-sdk v0.45.9
 	github.com/cosmos/ibc-go/v3 v3.3.0
 	github.com/gogo/protobuf v1.3.3
@@ -19,7 +19,7 @@ require (
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/tendermint/tendermint v0.34.21
 	github.com/tendermint/tm-db v0.6.7
 	github.com/tidwall/gjson v1.14.3
