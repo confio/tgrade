@@ -132,6 +132,8 @@ require (
 replace (
 	// Use the cosmos-flavored keyring library
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
+	// fix for cherry
+	github.com/CosmWasm/wasmvm => github.com/CosmWasm/wasmvm v1.0.1
 	// fix for dragonberry
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
@@ -141,5 +143,4 @@ replace (
 	// the following version across all dependencies.
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
-
 )
