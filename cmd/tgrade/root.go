@@ -30,7 +30,7 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
-	tmcmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
+	tmcmd "github.com/tendermint/tendermint/cmd/cometbft/commands"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
