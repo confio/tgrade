@@ -64,6 +64,11 @@ func (s StakingAdapter) GetDelegation(ctx sdk.Context, delAddr sdk.AccAddress, v
 	return
 }
 
+func (s StakingAdapter) GetDelegatorWithdrawAddr(ctx sdk.Context, delAddr sdk.AccAddress) sdk.AccAddress {
+	log(ctx, "GetDelegatorWithdrawAddr")
+	return nil
+}
+
 func (s StakingAdapter) HasReceivingRedelegation(ctx sdk.Context, delAddr sdk.AccAddress, valDstAddr sdk.ValAddress) bool {
 	// not supported
 	return false
