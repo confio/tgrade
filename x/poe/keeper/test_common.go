@@ -331,7 +331,7 @@ func createTestInput(
 // NewWasmVMMock creates a new WasmerEngine mock with basic ops for create/instantiation set to noops.
 func NewWasmVMMock(mutators ...func(*wasmtesting.MockWasmer)) *wasmtesting.MockWasmer {
 	mock := &wasmtesting.MockWasmer{
-		CreateFn:      wasmtesting.HashOnlyCreateFn,
+		StoreCodeFn:   wasmtesting.HashOnlyStoreCodeFn,
 		InstantiateFn: wasmtesting.NoOpInstantiateFn,
 		AnalyzeCodeFn: wasmtesting.HasIBCAnalyzeFn,
 	}

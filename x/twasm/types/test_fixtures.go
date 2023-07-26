@@ -12,6 +12,10 @@ import (
 	"github.com/tendermint/tendermint/libs/rand"
 )
 
+// magic number for Wasm is "\0asm"
+// See https://webassembly.github.io/spec/core/binary/modules.html#binary-module
+var wasmIdent = []byte("\x00\x61\x73\x6D")
+
 func PromoteProposalFixture(mutators ...func(*PromoteToPrivilegedContractProposal)) *PromoteToPrivilegedContractProposal {
 	const anyAddress = "cosmos1qyqszqgpqyqszqgpqyqszqgpqyqszqgpjnp7du"
 	p := &PromoteToPrivilegedContractProposal{
@@ -42,10 +46,12 @@ func DemoteProposalFixture(mutators ...func(proposal *DemotePrivilegedContractPr
 func DeterministicGenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisState {
 	genesisState := GenesisStateFixture(t)
 	for i := range genesisState.Contracts {
-		genesisState.Contracts[i].ContractAddress = wasmkeeper.BuildContractAddress(uint64(i), uint64(i)).String()
+		genesisState.Contracts[i].ContractAddress = wasmkeeper.BuildContractAddressClassic(uint64(i), uint64(i)).String()
+		genesisState.Contracts[i].ContractCodeHistory = []wasmtypes.ContractCodeHistoryEntry{wasmtypes.ContractCodeHistoryEntryFixture()}
+		genesisState.Contracts[i].ContractInfo.Created = genesisState.Contracts[i].ContractCodeHistory[0].Updated
 	}
 	for i := range genesisState.Codes {
-		wasmCode := bytes.Repeat([]byte{byte(i)}, 20)
+		wasmCode := append(wasmIdent, bytes.Repeat([]byte{byte(i)}, 20)...)
 		genesisState.Codes[i].CodeInfo = wasmtypes.CodeInfoFixture(wasmtypes.WithSHA256CodeHash(wasmCode))
 		genesisState.Codes[i].CodeBytes = wasmCode
 	}
@@ -72,14 +78,14 @@ func GenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisS
 			{IDKey: wasmtypes.KeyLastCodeID, Value: 10},
 			{IDKey: wasmtypes.KeyLastInstanceID, Value: 11},
 		}
-		state.GenMsgs = nil
 	})
 	contracts := make([]Contract, len(wasmState.Contracts))
 	for i, v := range wasmState.Contracts {
 		contracts[i] = Contract{
-			ContractAddress: v.ContractAddress,
-			ContractInfo:    v.ContractInfo,
-			ContractState:   &Contract_KvModel{&KVModel{v.ContractState}},
+			ContractAddress:     v.ContractAddress,
+			ContractInfo:        v.ContractInfo,
+			ContractState:       &Contract_KvModel{&KVModel{v.ContractState}},
+			ContractCodeHistory: v.ContractCodeHistory,
 		}
 	}
 	genesisState := GenesisState{
@@ -87,7 +93,6 @@ func GenesisStateFixture(t *testing.T, mutators ...func(*GenesisState)) GenesisS
 		Codes:                       wasmState.Codes,
 		Contracts:                   contracts,
 		Sequences:                   wasmState.Sequences,
-		GenMsgs:                     wasmState.GenMsgs,
 		PrivilegedContractAddresses: []string{anyContractAddr},
 	}
 	for _, m := range mutators {
@@ -101,9 +106,10 @@ func ContractFixture(t *testing.T, mutators ...func(contract *Contract)) Contrac
 	t.Helper()
 	wasmContract := wasmtypes.ContractFixture()
 	c := Contract{
-		ContractAddress: wasmContract.ContractAddress,
-		ContractInfo:    wasmContract.ContractInfo,
-		ContractState:   &Contract_KvModel{&KVModel{wasmContract.ContractState}},
+		ContractAddress:     wasmContract.ContractAddress,
+		ContractInfo:        wasmContract.ContractInfo,
+		ContractState:       &Contract_KvModel{&KVModel{wasmContract.ContractState}},
+		ContractCodeHistory: wasmContract.ContractCodeHistory,
 	}
 	for _, m := range mutators {
 		m(&c)
