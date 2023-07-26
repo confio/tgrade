@@ -2,23 +2,20 @@ package keeper
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"errors"
 	"testing"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-
-	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	"github.com/CosmWasm/wasmd/x/wasm/keeper/wasmtesting"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 	cosmwasm "github.com/CosmWasm/wasmvm"
+	wasmvm "github.com/CosmWasm/wasmvm"
 	wasmvmtypes "github.com/CosmWasm/wasmvm/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/confio/tgrade/x/twasm/contract"
 	"github.com/confio/tgrade/x/twasm/types"
 )
 
@@ -31,6 +28,9 @@ func TestInitGenesis(t *testing.T) {
 		m.PinFn = func(checksum cosmwasm.Checksum) error { return nil }
 		m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 			return &wasmvmtypes.Response{}, 0, nil
+		}
+		m.StoreCodeUncheckedFn = func(codeID cosmwasm.WasmCode) (cosmwasm.Checksum, error) {
+			return wasmvm.CreateChecksum(codeID)
 		}
 	})
 
@@ -90,35 +90,6 @@ func TestInitGenesis(t *testing.T) {
 			wasmvm:         noopMock,
 			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeBeginBlock, addr: genContractAddress(2, 2)}},
 		},
-		"privilege set for gen msg contract": {
-			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
-				state.PrivilegedContractAddresses = []string{genContractAddress(2, 1).String()}
-				state.Contracts = nil
-				state.Sequences = []wasmtypes.Sequence{{IDKey: wasmtypes.KeyLastCodeID, Value: 3}}
-				state.GenMsgs = []wasmtypes.GenesisState_GenMsgs{
-					{Sum: &wasmtypes.GenesisState_GenMsgs_InstantiateContract{
-						InstantiateContract: wasmtypes.MsgInstantiateContractFixture(
-							func(msg *wasmtypes.MsgInstantiateContract) {
-								msg.CodeID = 2
-								msg.Funds = nil
-							}),
-					}},
-				}
-			}),
-			wasmvm: NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
-				// callback registers for end block on sudo call
-				m.PinFn = func(checksum cosmwasm.Checksum) error { return nil }
-				m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
-					tradeMsg := contract.TgradeMsg{Privilege: &contract.PrivilegeMsg{Request: types.PrivilegeTypeEndBlock}}
-					msgBz, err := json.Marshal(&tradeMsg)
-					require.NoError(t, err)
-					return &wasmvmtypes.Response{
-						Messages: []wasmvmtypes.SubMsg{{ReplyOn: wasmvmtypes.ReplyNever, Msg: wasmvmtypes.CosmosMsg{Custom: msgBz}}},
-					}, 0, nil
-				}
-			}),
-			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeTypeEndBlock, addr: genContractAddress(2, 1)}},
-		},
 		"privileges set from dump": {
 			state: types.GenesisStateFixture(t, func(state *types.GenesisState) {
 				state.PrivilegedContractAddresses = nil
@@ -165,6 +136,9 @@ func TestInitGenesis(t *testing.T) {
 				m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 					return &wasmvmtypes.Response{}, 0, nil
 				}
+				m.StoreCodeUncheckedFn = func(codeID cosmwasm.WasmCode) (cosmwasm.Checksum, error) {
+					return wasmvm.CreateChecksum(codeID)
+				}
 			}),
 			expCallbackReg: []registeredCallback{{pos: 1, cbt: types.PrivilegeStateExporterImporter, addr: genContractAddress(2, 2)}},
 		},
@@ -197,6 +171,9 @@ func TestInitGenesis(t *testing.T) {
 				m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
 					return &wasmvmtypes.Response{}, 0, errors.New("testing error")
 				}
+				m.StoreCodeUncheckedFn = func(codeID cosmwasm.WasmCode) (cosmwasm.Checksum, error) {
+					return wasmvm.CreateChecksum(codeID)
+				}
 			}),
 			expErr: true,
 		},
@@ -207,8 +184,7 @@ func TestInitGenesis(t *testing.T) {
 			k := keepers.TWasmKeeper
 
 			// when
-			msgHandler := wasm.NewHandler(wasmkeeper.NewDefaultPermissionKeeper(k))
-			valset, gotErr := InitGenesis(ctx, k, spec.state, msgHandler)
+			valset, gotErr := InitGenesis(ctx, k, spec.state)
 
 			// then
 			if spec.expErr {
@@ -248,7 +224,7 @@ func TestInitGenesis(t *testing.T) {
 func TestExportGenesis(t *testing.T) {
 	wasmCodes := make(map[string]cosmwasm.WasmCode)
 	noopVMMock := NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
-		m.CreateFn = func(code cosmwasm.WasmCode) (cosmwasm.Checksum, error) {
+		m.StoreCodeFn = func(code cosmwasm.WasmCode) (cosmwasm.Checksum, error) {
 			hash := sha256.Sum256(code)
 			wasmCodes[string(hash[:])] = code
 			return hash[:], nil
@@ -261,6 +237,11 @@ func TestExportGenesis(t *testing.T) {
 			r, ok := wasmCodes[string(checksum)]
 			require.True(t, ok)
 			return r, nil
+		}
+		m.StoreCodeUncheckedFn = func(codeID wasmvm.WasmCode) (wasmvm.Checksum, error) {
+			hash := sha256.Sum256(codeID)
+			wasmCodes[string(hash[:])] = codeID
+			return hash[:], nil
 		}
 	})
 
@@ -306,7 +287,8 @@ func TestExportGenesis(t *testing.T) {
 				setContractPrivilege(t, ctx, keepers, genContractAddress(1, 1), priv)
 			},
 			mockVM: NewWasmVMMock(func(m *wasmtesting.MockWasmer) {
-				m.CreateFn = noopVMMock.CreateFn
+				m.StoreCodeUncheckedFn = noopVMMock.StoreCodeUnchecked
+				m.StoreCodeFn = noopVMMock.StoreCode
 				m.PinFn = noopVMMock.PinFn
 				m.GetCodeFn = noopVMMock.GetCodeFn
 				m.SudoFn = func(codeID cosmwasm.Checksum, env wasmvmtypes.Env, sudoMsg []byte, store cosmwasm.KVStore, goapi cosmwasm.GoAPI, querier cosmwasm.Querier, gasMeter cosmwasm.GasMeter, gasLimit uint64, deserCost wasmvmtypes.UFraction) (*wasmvmtypes.Response, uint64, error) {
@@ -332,8 +314,7 @@ func TestExportGenesis(t *testing.T) {
 			ctx, keepers := CreateDefaultTestInput(t, wasmkeeper.WithWasmEngine(spec.mockVM))
 			k := keepers.TWasmKeeper
 
-			msgHandler := wasm.NewHandler(wasmkeeper.NewDefaultPermissionKeeper(k))
-			_, err := InitGenesis(ctx, k, spec.srcState, msgHandler)
+			_, err := InitGenesis(ctx, k, spec.srcState)
 			require.NoError(t, err)
 
 			if spec.alterState != nil {

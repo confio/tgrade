@@ -62,6 +62,8 @@ import (
 	icahostkeeper "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/types"
+	ibcfeekeeper "github.com/cosmos/ibc-go/v4/modules/apps/29-fee/keeper"
+	ibcfeetypes "github.com/cosmos/ibc-go/v4/modules/apps/29-fee/types"
 	transfer "github.com/cosmos/ibc-go/v4/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v4/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
@@ -151,6 +153,7 @@ var (
 	maccPerms = map[string][]string{
 		ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 		icatypes.ModuleName:         nil,
+		ibcfeetypes.ModuleName:      nil,
 		twasm.ModuleName:            {authtypes.Minter, authtypes.Burner},
 		poetypes.BondedPoolName:     {authtypes.Burner, authtypes.Staking},
 	}
@@ -185,6 +188,7 @@ type TgradeApp struct {
 	upgradeKeeper    upgradekeeper.Keeper
 	paramsKeeper     paramskeeper.Keeper
 	ibcKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
+	ibcFeeKeeper     ibcfeekeeper.Keeper
 	transferKeeper   ibctransferkeeper.Keeper
 	icaHostKeeper    icahostkeeper.Keeper
 	feeGrantKeeper   feegrantkeeper.Keeper
@@ -233,7 +237,7 @@ func NewTgradeApp(
 		authtypes.StoreKey, banktypes.StoreKey,
 		paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
-		feegrant.StoreKey, authzkeeper.StoreKey, wasm.StoreKey, poe.StoreKey, icahosttypes.StoreKey,
+		feegrant.StoreKey, authzkeeper.StoreKey, wasm.StoreKey, poe.StoreKey, icahosttypes.StoreKey, ibcfeetypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -330,6 +334,14 @@ func NewTgradeApp(
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.upgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.ibcKeeper.ClientKeeper))
 
+	// IBC Fee Module keeper
+	app.ibcFeeKeeper = ibcfeekeeper.NewKeeper(
+		appCodec, keys[ibcfeetypes.StoreKey], app.getSubspace(ibcfeetypes.ModuleName),
+		app.ibcKeeper.ChannelKeeper, // may be replaced with IBC middleware
+		app.ibcKeeper.ChannelKeeper,
+		&app.ibcKeeper.PortKeeper, app.accountKeeper, app.bankKeeper,
+	)
+
 	// Create Transfer Keepers
 	app.transferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
@@ -366,7 +378,7 @@ func NewTgradeApp(
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
-	availableCapabilities := "staking,stargate,iterator,tgrade,cosmwasm_1_1"
+	availableCapabilities := "staking,stargate,iterator,tgrade,cosmwasm_1_1,cosmwasm_1_2,cosmwasm_1_3"
 
 	wasmOpts = append(SetupWasmHandlers(appCodec, app.bankKeeper, govRouter, &app.twasmKeeper, &app.poeKeeper, app), wasmOpts...)
 
@@ -397,7 +409,7 @@ func NewTgradeApp(
 	// Create static IBC router, add app routes, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.
-		AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.twasmKeeper, app.ibcKeeper.ChannelKeeper)).
+		AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.twasmKeeper, app.ibcKeeper.ChannelKeeper, app.ibcFeeKeeper)).
 		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule)
 	app.ibcKeeper.SetRouter(ibcRouter)
@@ -462,6 +474,7 @@ func NewTgradeApp(
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
+		ibcfeetypes.ModuleName,
 		poe.ModuleName,
 		twasm.ModuleName,
 		globalfee.ModuleName,
@@ -480,6 +493,7 @@ func NewTgradeApp(
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
+		ibcfeetypes.ModuleName,
 		globalfee.ModuleName,
 		twasm.ModuleName,
 		poe.ModuleName, // poe after twasm to have valset update at the end
@@ -506,6 +520,7 @@ func NewTgradeApp(
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
+		ibcfeetypes.ModuleName,
 		// wasm after ibc transfer
 		twasm.ModuleName,
 		// poe after wasm contract instantiation

@@ -30,11 +30,8 @@ message GenesisState {
     (gogoproto.jsontag) = "sequences,omitempty"
   ];
 
-  // GenMsgs has wasmd sdk type messages to execute in the genesis phase
-  repeated cosmwasm.wasm.v1.GenesisState.GenMsgs gen_msgs = 5 [
-    (gogoproto.nullable) = false,
-    (gogoproto.jsontag) = "gen_msgs,omitempty"
-  ];
+  // was "gen_msgs"
+  reserved 5;
 
   // PrivilegedContractAddresses is a list of contract addresses that can have
   // special permissions
@@ -59,6 +56,9 @@ message Contract {
     KVModel kv_model = 3;
     CustomModel custom_model = 4;
   }
+
+  repeated cosmwasm.wasm.v1.ContractCodeHistoryEntry contract_code_history = 5
+      [ (gogoproto.nullable) = false ];
 }
 
 // KVModel is a wrapper around the wasmd default key value model.

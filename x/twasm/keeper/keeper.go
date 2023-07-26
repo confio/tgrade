@@ -59,6 +59,7 @@ func NewKeeper(
 		bankKeeper,
 		stakingKeeper,
 		distKeeper,
+		nil,
 		channelKeeper,
 		portKeeper,
 		capabilityKeeper,
