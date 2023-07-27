@@ -390,6 +390,7 @@ func NewTgradeApp(
 		app.bankKeeper,
 		stakingAdapter,
 		stakingAdapter,
+		app.ibcFeeKeeper,
 		app.ibcKeeper.ChannelKeeper,
 		&app.ibcKeeper.PortKeeper,
 		scopedWasmKeeper,

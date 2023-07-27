@@ -43,6 +43,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	ibcfeekeeper "github.com/cosmos/ibc-go/v4/modules/apps/29-fee/keeper"
+	ibcfeetypes "github.com/cosmos/ibc-go/v4/modules/apps/29-fee/types"
 	"github.com/cosmos/ibc-go/v4/modules/apps/transfer"
 	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v4/modules/core"
@@ -127,7 +129,7 @@ func createTestInput(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
 		minttypes.StoreKey, distributiontypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
-		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
+		evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcfeetypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
 		types.StoreKey,
 	)
@@ -185,6 +187,7 @@ func createTestInput(
 	maccPerms := map[string][]string{ // module account permissions
 		authtypes.FeeCollectorName:     nil,
 		distributiontypes.ModuleName:   nil,
+		ibcfeetypes.ModuleName:         nil,
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
@@ -244,6 +247,14 @@ func createTestInput(
 		scopedIBCKeeper,
 	)
 
+	ibcFeeSubsp, _ := paramsKeeper.GetSubspace(ibcfeetypes.ModuleName)
+	ibcFeeKeeper := ibcfeekeeper.NewKeeper(
+		appCodec, keys[ibcfeetypes.StoreKey], ibcFeeSubsp,
+		ibcKeeper.ChannelKeeper, // may be replaced with IBC middleware
+		ibcKeeper.ChannelKeeper,
+		&ibcKeeper.PortKeeper, accountKeeper, bankKeeper,
+	)
+
 	querier := baseapp.NewGRPCQueryRouter()
 	querier.SetInterfaceRegistry(encodingConfig.InterfaceRegistry)
 	msgRouter := baseapp.NewMsgServiceRouter()
@@ -276,6 +287,7 @@ func createTestInput(
 		bankKeeper,
 		nil,
 		nil,
+		ibcFeeKeeper,
 		ibcKeeper.ChannelKeeper,
 		&ibcKeeper.PortKeeper,
 		scopedWasmKeeper,
