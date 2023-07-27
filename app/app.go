@@ -733,7 +733,6 @@ func (app *TgradeApp) setupUpgradeHandlers() {
 			upgrade.CreateUpgradeHandler(
 				app.mm,
 				app.configurator,
-				app.accountKeeper,
 			),
 		)
 	}
