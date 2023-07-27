@@ -7,5 +7,5 @@ import (
 
 // ContractAddress generator function. Same as in wasm
 func ContractAddress(codeID, instanceID uint64) sdk.AccAddress {
-	return wasmkeeper.BuildContractAddress(codeID, instanceID)
+	return wasmkeeper.BuildContractAddressClassic(codeID, instanceID)
 }

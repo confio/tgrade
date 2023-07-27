@@ -400,7 +400,7 @@ func NewTgradeApp(
 		govRouter,
 		wasmDir,
 		twasmConfig,
-		supportedFeatures,
+		availableCapabilities,
 		wasmOpts...,
 	)
 

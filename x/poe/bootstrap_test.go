@@ -29,15 +29,15 @@ import (
 func TestBootstrapPoEContracts(t *testing.T) {
 	t.Skip()
 	var (
-		engagementContractAddr    = wasmkeeper.BuildContractAddress(1, 1)
-		ocContractAddr            = wasmkeeper.BuildContractAddress(2, 2)
-		stakingContractAdddr      = wasmkeeper.BuildContractAddress(3, 3)
-		mixerContractAddr         = wasmkeeper.BuildContractAddress(4, 4)
-		communityPoolContractAddr = wasmkeeper.BuildContractAddress(5, 5)
-		valsetContractAddr        = wasmkeeper.BuildContractAddress(6, 6)
-		distributionContractAddr  = wasmkeeper.BuildContractAddress(1, 6) // created by a contract so not really persisted
-		ocGovProposalContractAddr = wasmkeeper.BuildContractAddress(7, 7) // instanceID = 7
-		valVotingContractAddr     = wasmkeeper.BuildContractAddress(8, 8)
+		engagementContractAddr    = wasmkeeper.BuildContractAddressClassic(1, 1)
+		ocContractAddr            = wasmkeeper.BuildContractAddressClassic(2, 2)
+		stakingContractAdddr      = wasmkeeper.BuildContractAddressClassic(3, 3)
+		mixerContractAddr         = wasmkeeper.BuildContractAddressClassic(4, 4)
+		communityPoolContractAddr = wasmkeeper.BuildContractAddressClassic(5, 5)
+		valsetContractAddr        = wasmkeeper.BuildContractAddressClassic(6, 6)
+		distributionContractAddr  = wasmkeeper.BuildContractAddressClassic(1, 6) // created by a contract so not really persisted
+		ocGovProposalContractAddr = wasmkeeper.BuildContractAddressClassic(7, 7) // instanceID = 7
+		valVotingContractAddr     = wasmkeeper.BuildContractAddressClassic(8, 8)
 	)
 	var (
 		defaultLimit       uint64 = 20

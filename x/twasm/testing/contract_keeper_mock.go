@@ -11,7 +11,7 @@ var _ wasmtypes.ContractOpsKeeper = &ContractOpsKeeperMock{}
 
 // ContractOpsKeeperMock implements wasmtypes.ContractOpsKeeper for testing purpose
 type ContractOpsKeeperMock struct {
-	CreateFn                   func(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error)
+	CreateFn                   func(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, checksum []byte, err error)
 	InstantiateFn              func(ctx sdk.Context, codeID uint64, creator, admin sdk.AccAddress, initMsg []byte, label string, deposit sdk.Coins) (sdk.AccAddress, []byte, error)
 	ExecuteFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, msg []byte, coins sdk.Coins) ([]byte, error)
 	MigrateFn                  func(ctx sdk.Context, contractAddress sdk.AccAddress, caller sdk.AccAddress, newCodeID uint64, msg []byte) ([]byte, error)
@@ -24,7 +24,7 @@ type ContractOpsKeeperMock struct {
 	SetAccessConfigFn          func(ctx sdk.Context, codeID uint64, config wasmtypes.AccessConfig) error
 }
 
-func (m ContractOpsKeeperMock) Create(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, err error) {
+func (m ContractOpsKeeperMock) Create(ctx sdk.Context, creator sdk.AccAddress, wasmCode []byte, instantiateAccess *wasmtypes.AccessConfig) (codeID uint64, checksum []byte, err error) {
 	if m.CreateFn == nil {
 		panic("not expected to be called")
 	}
