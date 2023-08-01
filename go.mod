@@ -3,7 +3,7 @@ module github.com/confio/tgrade
 go 1.20
 
 require (
-	github.com/CosmWasm/wasmd v0.33.0-rc.0
+	github.com/CosmWasm/wasmd v0.33.0
 	github.com/CosmWasm/wasmvm v1.3.0
 	github.com/cosmos/cosmos-sdk v0.45.16
 	github.com/cosmos/ibc-go/v4 v4.3.0
