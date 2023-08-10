@@ -45,13 +45,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	transfer "github.com/cosmos/ibc-go/v3/modules/apps/transfer"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v3/modules/core"
-	ibcclient "github.com/cosmos/ibc-go/v3/modules/core/02-client"
-	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
+	ibcfeekeeper "github.com/cosmos/ibc-go/v4/modules/apps/29-fee/keeper"
+	ibcfeetypes "github.com/cosmos/ibc-go/v4/modules/apps/29-fee/types"
+	transfer "github.com/cosmos/ibc-go/v4/modules/apps/transfer"
+	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v4/modules/core"
+	ibcclient "github.com/cosmos/ibc-go/v4/modules/core/02-client"
+	ibcclienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -126,7 +128,7 @@ func createTestInput(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
 		minttypes.StoreKey, distributiontypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
-		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
+		evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcfeetypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
 		twasmtypes.StoreKey,
 		types.StoreKey,
@@ -248,6 +250,14 @@ func createTestInput(
 		upgradeKeeper,
 		scopedIBCKeeper,
 	)
+
+	ibcFeeSubsp, _ := paramsKeeper.GetSubspace(ibcfeetypes.ModuleName)
+	ibcFeeKeeper := ibcfeekeeper.NewKeeper(
+		appCodec, keys[ibcfeetypes.StoreKey], ibcFeeSubsp,
+		ibcKeeper.ChannelKeeper, // may be replaced with IBC middleware
+		ibcKeeper.ChannelKeeper,
+		&ibcKeeper.PortKeeper, accountKeeper, bankKeeper,
+	)
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(paramsKeeper)).
@@ -295,6 +305,7 @@ func createTestInput(
 		bankKeeper,
 		stakingAdapter,
 		nil,
+		ibcFeeKeeper,
 		ibcKeeper.ChannelKeeper,
 		&ibcKeeper.PortKeeper,
 		scopedWasmKeeper,
@@ -331,7 +342,7 @@ func createTestInput(
 // NewWasmVMMock creates a new WasmerEngine mock with basic ops for create/instantiation set to noops.
 func NewWasmVMMock(mutators ...func(*wasmtesting.MockWasmer)) *wasmtesting.MockWasmer {
 	mock := &wasmtesting.MockWasmer{
-		CreateFn:      wasmtesting.HashOnlyCreateFn,
+		StoreCodeFn:   wasmtesting.HashOnlyStoreCodeFn,
 		InstantiateFn: wasmtesting.NoOpInstantiateFn,
 		AnalyzeCodeFn: wasmtesting.HasIBCAnalyzeFn,
 	}

@@ -43,12 +43,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/upgrade"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/cosmos/ibc-go/v3/modules/apps/transfer"
-	ibctransfertypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v3/modules/core"
-	clienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
-	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
+	ibcfeekeeper "github.com/cosmos/ibc-go/v4/modules/apps/29-fee/keeper"
+	ibcfeetypes "github.com/cosmos/ibc-go/v4/modules/apps/29-fee/types"
+	"github.com/cosmos/ibc-go/v4/modules/apps/transfer"
+	ibctransfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
+	ibc "github.com/cosmos/ibc-go/v4/modules/core"
+	clienttypes "github.com/cosmos/ibc-go/v4/modules/core/02-client/types"
+	ibchost "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v4/modules/core/keeper"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -127,7 +129,7 @@ func createTestInput(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
 		minttypes.StoreKey, distributiontypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
-		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
+		evidencetypes.StoreKey, ibctransfertypes.StoreKey, ibcfeetypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey,
 		types.StoreKey,
 	)
@@ -185,6 +187,7 @@ func createTestInput(
 	maccPerms := map[string][]string{ // module account permissions
 		authtypes.FeeCollectorName:     nil,
 		distributiontypes.ModuleName:   nil,
+		ibcfeetypes.ModuleName:         nil,
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
@@ -244,6 +247,14 @@ func createTestInput(
 		scopedIBCKeeper,
 	)
 
+	ibcFeeSubsp, _ := paramsKeeper.GetSubspace(ibcfeetypes.ModuleName)
+	ibcFeeKeeper := ibcfeekeeper.NewKeeper(
+		appCodec, keys[ibcfeetypes.StoreKey], ibcFeeSubsp,
+		ibcKeeper.ChannelKeeper, // may be replaced with IBC middleware
+		ibcKeeper.ChannelKeeper,
+		&ibcKeeper.PortKeeper, accountKeeper, bankKeeper,
+	)
+
 	querier := baseapp.NewGRPCQueryRouter()
 	querier.SetInterfaceRegistry(encodingConfig.InterfaceRegistry)
 	msgRouter := baseapp.NewMsgServiceRouter()
@@ -276,6 +287,7 @@ func createTestInput(
 		bankKeeper,
 		nil,
 		nil,
+		ibcFeeKeeper,
 		ibcKeeper.ChannelKeeper,
 		&ibcKeeper.PortKeeper,
 		scopedWasmKeeper,
@@ -309,7 +321,7 @@ func createTestInput(
 // NewWasmVMMock creates a new WasmerEngine mock with basic ops for create/instantiation set to noops.
 func NewWasmVMMock(mutators ...func(*wasmtesting.MockWasmer)) *wasmtesting.MockWasmer {
 	mock := &wasmtesting.MockWasmer{
-		CreateFn:      wasmtesting.HashOnlyCreateFn,
+		StoreCodeFn:   wasmtesting.HashOnlyStoreCodeFn,
 		InstantiateFn: wasmtesting.NoOpInstantiateFn,
 		AnalyzeCodeFn: wasmtesting.HasIBCAnalyzeFn,
 	}

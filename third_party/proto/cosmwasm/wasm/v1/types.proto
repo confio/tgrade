@@ -84,15 +84,14 @@ message ContractInfo {
   // Label is optional metadata to be stored with a contract instance.
   string label = 4;
   // Created Tx position when the contract was instantiated.
-  // This data should kept internal and not be exposed via query results. Just
-  // use for sorting
   AbsoluteTxPosition created = 5;
   string ibc_port_id = 6 [ (gogoproto.customname) = "IBCPortID" ];
 
   // Extension is an extension point to store custom metadata within the
   // persistence model.
   google.protobuf.Any extension = 7
-      [ (cosmos_proto.accepts_interface) = "ContractInfoExtension" ];
+      [ (cosmos_proto.accepts_interface) =
+            "cosmwasm.wasm.v1.ContractInfoExtension" ];
 }
 
 // ContractCodeHistoryOperationType actions that caused a code change

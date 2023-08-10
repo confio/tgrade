@@ -22,6 +22,10 @@ import (
 	"github.com/confio/tgrade/x/twasm/types"
 )
 
+// magic number for Wasm is "\0asm"
+// See https://webassembly.github.io/spec/core/binary/modules.html#binary-module
+var wasmIdent = []byte("\x00\x61\x73\x6D")
+
 func TestSetPrivileged(t *testing.T) {
 	var (
 		capturedPinChecksum  *cosmwasm.Checksum
@@ -418,7 +422,7 @@ func TestRemovePrivilegedContractRegistration(t *testing.T) {
 func seedTestContract(t *testing.T, ctx sdk.Context, k *Keeper) (uint64, sdk.AccAddress) {
 	t.Helper()
 	creatorAddr := rand.Bytes(address.Len)
-	codeID, _, err := k.contractKeeper.Create(ctx, creatorAddr, []byte{}, nil)
+	codeID, _, err := k.contractKeeper.Create(ctx, creatorAddr, append(wasmIdent, bytes.Repeat([]byte{byte(1)}, 20)...), nil)
 	require.NoError(t, err)
 	contractAddr, _, err := k.contractKeeper.Instantiate(ctx, codeID, creatorAddr, creatorAddr, nil, "", nil)
 	require.NoError(t, err)
