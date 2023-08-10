@@ -422,6 +422,9 @@ func NewTgradeApp(
 		app.twasmKeeper,
 		app.accountKeeper,
 	)
+
+	app.setupUpgradeStoreLoaders()
+
 	/****  Module Options ****/
 
 	// NOTE: we may consider parsing `appOpts` inside module constructors. For the moment
@@ -724,6 +727,26 @@ func (app *TgradeApp) RegisterTendermintService(clientCtx client.Context) {
 
 func (app *TgradeApp) AppCodec() codec.Codec {
 	return app.appCodec
+}
+
+// configure store loader that checks if version == upgradeHeight and applies store upgrades
+func (app *TgradeApp) setupUpgradeStoreLoaders() {
+	upgradeInfo, err := app.upgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic("failed to read upgrade info from disk" + err.Error())
+	}
+
+	if app.upgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		return
+	}
+
+	for _, upgrade := range Upgrades {
+		if upgradeInfo.Name == upgrade.UpgradeName {
+			app.SetStoreLoader(
+				upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &upgrade.StoreUpgrades),
+			)
+		}
+	}
 }
 
 func (app *TgradeApp) setupUpgradeHandlers() {
