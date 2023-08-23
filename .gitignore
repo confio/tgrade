@@ -1,6 +1,7 @@
 mytestnet/
 testnet/
 vendor/
+testing/binaries/
 coverage.txt
 .DS_Store
 .idea

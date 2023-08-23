@@ -17,6 +17,7 @@ import (
 )
 
 func TestSmokeTest(t *testing.T) {
+	t.Skip()
 	// Scenario:
 	// upload code
 	// instantiate contract

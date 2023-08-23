@@ -28,15 +28,17 @@ type TgradeCli struct {
 	Debug         bool
 	amino         *codec.LegacyAmino
 	assertErrorFn func(t require.TestingT, err error, msgAndArgs ...interface{})
+	execBinary    string
 }
 
 func NewTgradeCli(t *testing.T, sut *SystemUnderTest, verbose bool) *TgradeCli {
-	return NewTgradeCliX(t, sut.rpcAddr, sut.chainID, filepath.Join(workDir, sut.outputDir), verbose)
+	return NewTgradeCliX(t, sut.ExecBinary, sut.rpcAddr, sut.chainID, filepath.Join(workDir, sut.outputDir), verbose)
 }
 
-func NewTgradeCliX(t *testing.T, nodeAddress string, chainID string, homeDir string, debug bool) *TgradeCli {
+func NewTgradeCliX(t *testing.T, execBinary string, nodeAddress string, chainID string, homeDir string, debug bool) *TgradeCli {
 	return &TgradeCli{
 		t:             t,
+		execBinary:    execBinary,
 		nodeAddress:   nodeAddress,
 		chainID:       chainID,
 		homeDir:       homeDir,
@@ -53,6 +55,7 @@ type RunErrorAssert func(t require.TestingT, err error, msgAndArgs ...interface{
 func (c TgradeCli) WithRunErrorMatcher(f RunErrorAssert) TgradeCli {
 	return TgradeCli{
 		t:             c.t,
+		execBinary:    c.execBinary,
 		nodeAddress:   c.nodeAddress,
 		chainID:       c.chainID,
 		homeDir:       c.homeDir,
@@ -65,6 +68,7 @@ func (c TgradeCli) WithRunErrorMatcher(f RunErrorAssert) TgradeCli {
 func (c TgradeCli) WithNodeAddress(addr string) TgradeCli {
 	return TgradeCli{
 		t:             c.t,
+		execBinary:    c.execBinary,
 		nodeAddress:   addr,
 		chainID:       c.chainID,
 		homeDir:       c.homeDir,
