@@ -26,8 +26,9 @@ import (
 )
 
 var (
-	sut     *SystemUnderTest
-	verbose bool
+	sut            *SystemUnderTest
+	verbose        bool
+	execBinaryName string
 )
 
 func init() {
@@ -42,6 +43,7 @@ func TestMain(m *testing.M) {
 	waitTime := flag.Duration("wait-time", defaultWaitTime, "time to wait for chain events")
 	nodesCount := flag.Int("nodes-count", 4, "number of nodes in the cluster")
 	blockTime := flag.Duration("block-time", 1000*time.Millisecond, "block creation time")
+	execBinary := flag.String("binary", "tgrade", "executable binary for server/ client side")
 	flag.BoolVar(&verbose, "verbose", false, "verbose output")
 	flag.Parse()
 
@@ -56,8 +58,13 @@ func TestMain(m *testing.M) {
 	if verbose {
 		println("Work dir: ", workDir)
 	}
+
 	defaultWaitTime = *waitTime
-	sut = NewSystemUnderTest(verbose, *nodesCount, *blockTime)
+	if *execBinary == "" {
+		panic("executable binary name must not be empty")
+	}
+	execBinaryName = *execBinary
+	sut = NewSystemUnderTest(*execBinary, verbose, *nodesCount, *blockTime)
 	if *rebuild {
 		sut.BuildNewBinary()
 	}

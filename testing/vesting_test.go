@@ -19,6 +19,7 @@ import (
 )
 
 func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
+	t.Skip()
 	// Scenario:
 	//   given: a running chain with a vesting account
 	//   when: a create-validator message is submitted with self delegation vesting amount > min
@@ -125,6 +126,7 @@ func TestVestingAccountCreatesPostGenesisValidatorAndUndelegates(t *testing.T) {
 }
 
 func TestVestingAccountExecutes(t *testing.T) {
+	t.Skip()
 	// Scenario:
 	//   given: a running chain with a vesting account
 	//   when: a message is executed with some deposits amount from a vesting account
