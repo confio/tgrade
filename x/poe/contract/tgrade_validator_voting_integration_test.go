@@ -7,12 +7,15 @@ import (
 	"testing"
 	"time"
 
+	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
+
 	wasmapp "github.com/CosmWasm/wasmd/app"
 
 	"github.com/confio/tgrade/x/poe/contract"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	lightclienttypes "github.com/cosmos/ibc-go/v3/modules/light-clients/09-localhost/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -56,6 +59,12 @@ func TestValidatorsGovProposal(t *testing.T) {
 	codeID, _, err := contractKeeper.Create(ctx, anyAddress, validatorVotingContract, nil)
 	require.NoError(t, err)
 	require.False(t, example.TWasmKeeper.IsPinnedCode(ctx, codeID), "pinned")
+
+	clientState := lightclienttypes.NewClientState("test-chain", ibcclienttypes.Height{
+		RevisionNumber: 7654321,
+		RevisionHeight: 7654321,
+	})
+
 	specs := map[string]struct {
 		src       contract.ValidatorProposal
 		assertExp func(t *testing.T, ctx sdk.Context)
@@ -79,9 +88,10 @@ func TestValidatorsGovProposal(t *testing.T) {
 		"chain upgrade": {
 			src: contract.ValidatorProposal{
 				RegisterUpgrade: &contract.ChainUpgrade{
-					Name:   "v2",
-					Info:   "v2-info",
-					Height: 7654321,
+					Name:                "v2",
+					Info:                "v2-info",
+					Height:              7654321,
+					UpgradedClientState: clientState,
 				},
 			},
 			assertExp: func(t *testing.T, ctx sdk.Context) {

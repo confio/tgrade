@@ -1,6 +1,9 @@
 package contract
 
-import "github.com/confio/tgrade/x/twasm/contract"
+import (
+	"github.com/confio/tgrade/x/twasm/contract"
+	lightclienttypes "github.com/cosmos/ibc-go/v3/modules/light-clients/09-localhost/types"
+)
 
 // ValidatorVotingInitMsg setup contract on instantiation
 type ValidatorVotingInitMsg struct {
@@ -38,9 +41,10 @@ type ValidatorProposal struct {
 }
 
 type ChainUpgrade struct {
-	Name   string `json:"name"`
-	Height uint64 `json:"height"`
-	Info   string `json:"info"`
+	Name                string                        `json:"name"`
+	Height              uint64                        `json:"height"`
+	Info                string                        `json:"info"`
+	UpgradedClientState *lightclienttypes.ClientState `json:"UpgradedClientState"`
 }
 
 type ConsensusBlockParamsUpdate = contract.BlockParams
